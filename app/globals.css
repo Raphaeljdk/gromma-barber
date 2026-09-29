@@ -238,3 +238,8 @@ tr:hover td { background:#131313; }
 .review-points span { display:inline-flex; border:1px solid #2f2f2f; background:#111; border-radius:999px; padding:7px 9px; color:#cfc8bb; font-size:.76rem; }
 .review-checklist { display:grid; grid-template-columns:.7fr 1.3fr; gap:24px; align-items:center; margin-top:18px; }
 @media (max-width:760px) { .review-checklist { grid-template-columns:1fr; } }
+
+.tenant-erp .demo-sidebar { border-right-color:#302a20; }
+.pro-operation-strip { margin-top:14px; }
+.pro-operation-strip .card { display:grid; gap:6px; min-height:120px; }
+.pro-operation-strip strong { font-size:1.15rem; }

@@ -85,7 +85,7 @@ export default async function BarberShopDetail({
             {shop.tenantCode && <span className="badge">{shop.tenantCode}</span>}
           </div>
         </div>
-        {shop.isDemo && <Link className="btn" href={`/demo/${demoSlug}`}>Abrir ERP de demonstração</Link>}
+        {shop.accessReleased && shop.tenantCode && <Link className="btn" href={`/erp/${shop.tenantCode}`}>Abrir ERP do cliente</Link>}
       </div>
 
       {qs.erro === "banco" && <div className="notice error-notice" style={{ marginBottom: 18 }}>Não foi possível salvar a ação no banco. Nenhuma alteração parcial foi aplicada.</div>}
@@ -160,7 +160,7 @@ export default async function BarberShopDetail({
               <div className="eyebrow">Cadastro protegido</div>
               <h2 style={{ marginTop: 8 }}>Ambiente de demonstração</h2>
               <p>Este tenant é recriado/atualizado automaticamente para apresentações e não pode ser bloqueado ou rejeitado pelo painel.</p>
-              <Link className="btn full" href={`/demo/${demoSlug}`}>Entrar no ERP fictício</Link>
+              <Link className="btn full" href={`/erp/${shop.tenantCode}`}>Entrar no ERP do tenant</Link>
             </div>
           ) : (
             <form action={reviewBarberShop} className="card grid">

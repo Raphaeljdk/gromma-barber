@@ -118,7 +118,7 @@ export default async function BarberiasPage({ searchParams }: { searchParams: Pr
                   <td>
                     <div className="row-actions">
                       <Link className="btn secondary" href={`/admin/barbearias/${shop.id}`}>Detalhes</Link>
-                      {shop.isDemo && <Link className="btn" href={`/demo/${demoSlug}`}>Abrir ERP</Link>}
+                      {shop.accessReleased && shop.tenantCode && <Link className="btn" href={`/erp/${shop.tenantCode}`}>Abrir ERP</Link>}
                     </div>
                   </td>
                 </tr>

@@ -156,6 +156,7 @@ model ShopUser {
   name         String
   email        String
   phone        String?
+  passwordHash String?
   role         ShopUserRole
   active       Boolean      @default(true)
   createdAt    DateTime     @default(now())
