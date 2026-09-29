@@ -22,106 +22,112 @@ export async function reviewBarberShop(formData: FormData) {
 
   if (!id) return;
 
-  if (action === "approve") {
-    const plan = PLAN_CONFIG[selectedPlan];
+  try {
+    if (action === "approve") {
+      const plan = PLAN_CONFIG[selectedPlan];
 
-    await prisma.$transaction([
-      prisma.barberShop.update({
-        where: { id },
-        data: {
-          status: "APPROVED",
-          accessReleased: true,
-          activePlan: selectedPlan,
-          enabledFeatures: {
-            version: 2,
-            plan: selectedPlan,
-            features: [...plan.features],
-            commercial: {
-              setupLabel: plan.setupLabel,
+      await prisma.$transaction([
+        prisma.barberShop.update({
+          where: { id },
+          data: {
+            status: "APPROVED",
+            accessReleased: true,
+            activePlan: selectedPlan,
+            enabledFeatures: {
+              version: 2,
+              plan: selectedPlan,
+              features: [...plan.features],
+              commercial: {
+                setupLabel: plan.setupLabel,
+                setupFee: plan.setupFee,
+                monthlyFee: plan.monthlyFee,
+                additionalUnitPercent: plan.additionalUnitPercent,
+                maxUnits: plan.maxUnits,
+                personalizedBrand: plan.personalizedBrand,
+              },
+            },
+            adminNotes: notes,
+            reviewedAt: new Date(),
+            reviewedBy: session.email,
+          },
+        }),
+        prisma.adminAuditLog.create({
+          data: {
+            barberShopId: id,
+            action: "APPROVED",
+            adminEmail: session.email,
+            details: {
+              plan: selectedPlan,
               setupFee: plan.setupFee,
               monthlyFee: plan.monthlyFee,
-              additionalUnitPercent: plan.additionalUnitPercent,
               maxUnits: plan.maxUnits,
-              personalizedBrand: plan.personalizedBrand,
             },
           },
-          adminNotes: notes,
-          reviewedAt: new Date(),
-          reviewedBy: session.email,
-        },
-      }),
-      prisma.adminAuditLog.create({
-        data: {
-          barberShopId: id,
-          action: "APPROVED",
-          adminEmail: session.email,
-          details: {
-            plan: selectedPlan,
-            setupFee: plan.setupFee,
-            monthlyFee: plan.monthlyFee,
-            maxUnits: plan.maxUnits,
+        }),
+      ]);
+    }
+
+    if (action === "block") {
+      await prisma.$transaction([
+        prisma.barberShop.update({
+          where: { id },
+          data: {
+            status: "BLOCKED",
+            accessReleased: false,
+            adminNotes: notes,
+            reviewedAt: new Date(),
+            reviewedBy: session.email,
           },
-        },
-      }),
-    ]);
-  }
+        }),
+        prisma.adminAuditLog.create({
+          data: { barberShopId: id, action: "BLOCKED", adminEmail: session.email },
+        }),
+      ]);
+    }
 
-  if (action === "block") {
-    await prisma.$transaction([
-      prisma.barberShop.update({
-        where: { id },
-        data: {
-          status: "BLOCKED",
-          accessReleased: false,
-          adminNotes: notes,
-          reviewedAt: new Date(),
-          reviewedBy: session.email,
-        },
-      }),
-      prisma.adminAuditLog.create({
-        data: { barberShopId: id, action: "BLOCKED", adminEmail: session.email },
-      }),
-    ]);
-  }
+    if (action === "reject") {
+      await prisma.$transaction([
+        prisma.barberShop.update({
+          where: { id },
+          data: {
+            status: "REJECTED",
+            accessReleased: false,
+            activePlan: null,
+            enabledFeatures: [],
+            adminNotes: notes,
+            reviewedAt: new Date(),
+            reviewedBy: session.email,
+          },
+        }),
+        prisma.adminAuditLog.create({
+          data: { barberShopId: id, action: "REJECTED", adminEmail: session.email },
+        }),
+      ]);
+    }
 
-  if (action === "reject") {
-    await prisma.$transaction([
-      prisma.barberShop.update({
-        where: { id },
-        data: {
-          status: "REJECTED",
-          accessReleased: false,
-          activePlan: null,
-          enabledFeatures: [],
-          adminNotes: notes,
-          reviewedAt: new Date(),
-          reviewedBy: session.email,
-        },
-      }),
-      prisma.adminAuditLog.create({
-        data: { barberShopId: id, action: "REJECTED", adminEmail: session.email },
-      }),
-    ]);
-  }
-
-  if (action === "pending") {
-    await prisma.$transaction([
-      prisma.barberShop.update({
-        where: { id },
-        data: {
-          status: "PENDING",
-          accessReleased: false,
-          adminNotes: notes,
-          reviewedAt: null,
-          reviewedBy: null,
-        },
-      }),
-      prisma.adminAuditLog.create({
-        data: { barberShopId: id, action: "RETURNED_TO_PENDING", adminEmail: session.email },
-      }),
-    ]);
+    if (action === "pending") {
+      await prisma.$transaction([
+        prisma.barberShop.update({
+          where: { id },
+          data: {
+            status: "PENDING",
+            accessReleased: false,
+            adminNotes: notes,
+            reviewedAt: null,
+            reviewedBy: null,
+          },
+        }),
+        prisma.adminAuditLog.create({
+          data: { barberShopId: id, action: "RETURNED_TO_PENDING", adminEmail: session.email },
+        }),
+      ]);
+    }
+  } catch (error) {
+    console.error("Failed to review barber shop", error);
+    redirect(`/admin/barbearias/${id}?erro=banco`);
   }
 
   revalidatePath("/admin/barbearias");
   revalidatePath(`/admin/barbearias/${id}`);
+  redirect(`/admin/barbearias/${id}`);
 }

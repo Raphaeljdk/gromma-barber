@@ -135,3 +135,13 @@ tr:hover td { background:#131313; }
   .topnav .btn { width:100%; }
   .hero-wide { padding-top:46px; }
 }
+
+.system-state { display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:flex-start; max-width:820px; }
+.state-icon { width:42px; height:42px; display:grid; place-items:center; border-radius:12px; border:1px solid #6b5426; background:#1b150a; color:var(--gold-2); font-weight:900; font-size:1.2rem; }
+.system-meta { display:flex; justify-content:space-between; gap:20px; padding:12px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin-top:14px; }
+.error-boundary { padding:20px 0; }
+.error-notice { border-color:#6b2c2c; background:#201010; color:#ffb2b2; }
+.loading-block { min-height:180px; position:relative; overflow:hidden; }
+.loading-block::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent); transform:translateX(-100%); animation:loading-shimmer 1.25s infinite; }
+@keyframes loading-shimmer { to { transform:translateX(100%); } }
+@media (max-width: 620px) { .system-state { grid-template-columns:1fr; } }

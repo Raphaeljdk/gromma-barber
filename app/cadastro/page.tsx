@@ -42,6 +42,11 @@ export default async function CadastroPage({
       {qs.sucesso && <div className="notice form-notice">Cadastro enviado. Agora ele aparece no painel administrativo como <strong>Pendente</strong>.</div>}
       {qs.erro === "dados" && <div className="notice form-notice">Revise os campos obrigatórios e tente novamente.</div>}
       {qs.erro === "documento" && <div className="notice form-notice">Este CPF/CNPJ já possui um cadastro.</div>}
+      {qs.erro === "banco" && (
+        <div className="notice error-notice form-notice">
+          Não foi possível conectar ao banco neste momento. Nenhum cadastro incompleto foi salvo. Tente novamente em instantes.
+        </div>
+      )}
 
       <form action={registerBarberShop} className="card grid signup-form">
         <div className="grid grid-2">
@@ -66,9 +71,8 @@ export default async function CadastroPage({
         <label><span className="label">Endereço</span><input className="input" name="address" /></label>
 
         <div className="notice">
-          A automação no WhatsApp, o agente IA e a emissão de NF dependem das integrações
-          externas da barbearia. A liberação do plano habilita o módulo no sistema; a ativação
-          operacional ocorre após configurar os respectivos provedores.
+          A automação no WhatsApp, o agente IA e a emissão de NF dependem das integrações externas da barbearia.
+          A liberação do plano habilita o módulo no sistema; a ativação operacional ocorre após configurar os respectivos provedores.
         </div>
 
         <button className="btn" type="submit">Enviar cadastro para análise</button>

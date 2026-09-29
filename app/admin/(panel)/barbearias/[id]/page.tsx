@@ -15,14 +15,41 @@ const essentialSet = new Set<string>(PLAN_FEATURES.ESSENTIAL);
 
 export default async function BarberShopDetail({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { id } = await params;
-  const shop = await prisma.barberShop.findUnique({
-    where: { id },
-    include: { auditLogs: { orderBy: { createdAt: "desc" }, take: 12 } },
-  });
+  const qs = await searchParams;
+
+  let shop;
+
+  try {
+    shop = await prisma.barberShop.findUnique({
+      where: { id },
+      include: { auditLogs: { orderBy: { createdAt: "desc" }, take: 12 } },
+    });
+  } catch (error) {
+    console.error("Failed to load barber shop detail", error);
+
+    return (
+      <section>
+        <Link className="small muted" href="/admin/barbearias">← Voltar para cadastros</Link>
+        <div className="card system-state" style={{ marginTop: 18 }}>
+          <div className="state-icon">!</div>
+          <div>
+            <h2>Não foi possível consultar este cadastro.</h2>
+            <p>O painel continua ativo. Tente novamente ou verifique a conexão com o banco.</p>
+            <div className="actions">
+              <Link className="btn" href={`/admin/barbearias/${id}`}>Tentar novamente</Link>
+              <a className="btn secondary" href="/api/health/db" target="_blank" rel="noreferrer">Diagnóstico do banco</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (!shop) notFound();
 
@@ -37,6 +64,12 @@ export default async function BarberShopDetail({
           <div style={{ marginTop: 8 }}><StatusBadge status={shop.status} /></div>
         </div>
       </div>
+
+      {qs.erro === "banco" && (
+        <div className="notice error-notice" style={{ marginBottom: 18 }}>
+          Não foi possível salvar a ação no banco. Nenhuma alteração parcial foi aplicada.
+        </div>
+      )}
 
       <div className="detail-grid">
         <div className="grid">
@@ -97,14 +130,16 @@ export default async function BarberShopDetail({
             <div>
               <span className="label">Essencial libera</span>
               <div className="feature-list">
-                {PLAN_FEATURES.ESSENTIAL.map((f) => <span className="feature" key={f}>{f}</span>)}
+                {PLAN_FEATURES.ESSENTIAL.map((feature) => <span className="feature" key={feature}>{feature}</span>)}
               </div>
             </div>
 
             <div>
               <span className="label">Pro adiciona</span>
               <div className="feature-list">
-                {PLAN_FEATURES.PRO.filter((x) => !essentialSet.has(x)).map((f) => <span className="feature" key={f}>{f}</span>)}
+                {PLAN_FEATURES.PRO.filter((item) => !essentialSet.has(item)).map((feature) => (
+                  <span className="feature" key={feature}>{feature}</span>
+                ))}
               </div>
             </div>
 
@@ -128,17 +163,19 @@ export default async function BarberShopDetail({
             <div className="grid audit-list">
               {shop.auditLogs.length === 0 ? (
                 <span className="muted small">Nenhuma ação administrativa ainda.</span>
-              ) : shop.auditLogs.map((log) => (
-                <div key={log.id} className="small">
-                  <strong>{log.action}</strong>
-                  <div className="muted">
-                    {log.adminEmail} · {new Intl.DateTimeFormat("pt-BR", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    }).format(log.createdAt)}
+              ) : (
+                shop.auditLogs.map((log) => (
+                  <div key={log.id} className="small">
+                    <strong>{log.action}</strong>
+                    <div className="muted">
+                      {log.adminEmail} · {new Intl.DateTimeFormat("pt-BR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      }).format(log.createdAt)}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
