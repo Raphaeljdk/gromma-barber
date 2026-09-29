@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BarberShopStatus {
+  PENDING
+  APPROVED
+  BLOCKED
+  REJECTED
+}
+
+enum PlanType {
+  ESSENTIAL
+  PRO
+}
+
+model BarberShop {
+  id              String           @id @default(cuid())
+  tradeName       String
+  legalName       String?
+  document        String           @unique
+  ownerName       String
+  email           String
+  phone           String
+  whatsapp        String?
+  address         String?
+  city            String
+  state           String
+  requestedPlan   PlanType         @default(ESSENTIAL)
+  activePlan      PlanType?
+  status          BarberShopStatus @default(PENDING)
+  accessReleased  Boolean          @default(false)
+  enabledFeatures Json?
+  adminNotes      String?
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  auditLogs       AdminAuditLog[]
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model AdminAuditLog {
+  id           String     @id @default(cuid())
+  barberShopId String
+  action       String
+  adminEmail   String
+  details      Json?
+  createdAt    DateTime   @default(now())
+  barberShop   BarberShop @relation(fields: [barberShopId], references: [id], onDelete: Cascade)
+
+  @@index([barberShopId, createdAt])
+}

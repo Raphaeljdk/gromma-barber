@@ -1,0 +1,81 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { PLAN_FEATURES } from "@/lib/plans";
+import { StatusBadge } from "@/components/status-badge";
+import { reviewBarberShop } from "../../actions";
+
+const essentialSet = new Set<string>(PLAN_FEATURES.ESSENTIAL);
+
+export default async function BarberShopDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const shop = await prisma.barberShop.findUnique({
+    where: { id },
+    include: { auditLogs: { orderBy: { createdAt: "desc" }, take: 8 } },
+  });
+  if (!shop) notFound();
+
+  return (
+    <section>
+      <div className="page-head">
+        <div>
+          <Link className="small muted" href="/admin/barbearias">← Voltar para cadastros</Link>
+          <h2 style={{ marginTop: 10 }}>{shop.tradeName}</h2>
+          <div style={{ marginTop: 8 }}><StatusBadge status={shop.status} /></div>
+        </div>
+      </div>
+
+      <div className="detail-grid">
+        <div className="card">
+          <div className="eyebrow">Dados enviados</div>
+          <div className="kv"><span>Barbearia</span><strong>{shop.tradeName}</strong></div>
+          <div className="kv"><span>Razão social</span><span>{shop.legalName || "—"}</span></div>
+          <div className="kv"><span>CPF/CNPJ</span><span>{shop.document}</span></div>
+          <div className="kv"><span>Responsável</span><span>{shop.ownerName}</span></div>
+          <div className="kv"><span>E-mail</span><span>{shop.email}</span></div>
+          <div className="kv"><span>Telefone</span><span>{shop.phone}</span></div>
+          <div className="kv"><span>WhatsApp</span><span>{shop.whatsapp || "—"}</span></div>
+          <div className="kv"><span>Local</span><span>{shop.city}/{shop.state}</span></div>
+          <div className="kv"><span>Endereço</span><span>{shop.address || "—"}</span></div>
+          <div className="kv"><span>Plano solicitado</span><span>{shop.requestedPlan === "PRO" ? "Pro" : "Essencial"}</span></div>
+          <div className="kv"><span>Acesso liberado</span><span>{shop.accessReleased ? "Sim" : "Não"}</span></div>
+        </div>
+
+        <div className="grid">
+          <form action={reviewBarberShop} className="card grid">
+            <input type="hidden" name="id" value={shop.id} />
+            <div><div className="eyebrow">Decisão do administrador</div><h2 style={{ marginTop: 6 }}>Liberar cadastro</h2></div>
+            <label>
+              <span className="label">Plano que será liberado</span>
+              <select className="select" name="plan" defaultValue={shop.activePlan ?? shop.requestedPlan}>
+                <option value="ESSENTIAL">Essencial</option>
+                <option value="PRO">Pro</option>
+              </select>
+            </label>
+            <div><span className="label">Essencial libera</span><div className="feature-list">{PLAN_FEATURES.ESSENTIAL.map((f) => <span className="feature" key={f}>{f}</span>)}</div></div>
+            <div><span className="label">Pro adiciona</span><div className="feature-list">{PLAN_FEATURES.PRO.filter((x) => !essentialSet.has(x)).map((f) => <span className="feature" key={f}>{f}</span>)}</div></div>
+            <label><span className="label">Observação interna</span><textarea className="textarea" name="adminNotes" defaultValue={shop.adminNotes ?? ""} /></label>
+            <button className="btn" name="action" value="approve" type="submit">Aprovar e liberar acesso</button>
+            <div className="grid grid-2">
+              <button className="btn secondary" name="action" value="pending" type="submit">Voltar para pendente</button>
+              <button className="btn danger" name="action" value="block" type="submit">Bloquear acesso</button>
+            </div>
+            <button className="btn danger" name="action" value="reject" type="submit">Rejeitar cadastro</button>
+          </form>
+
+          <div className="card">
+            <div className="eyebrow">Auditoria</div>
+            <div className="grid" style={{ marginTop: 12 }}>
+              {shop.auditLogs.length === 0 ? <span className="muted small">Nenhuma ação administrativa ainda.</span> : shop.auditLogs.map((log) => (
+                <div key={log.id} className="small">
+                  <strong>{log.action}</strong>
+                  <div className="muted">{log.adminEmail} · {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(log.createdAt)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
