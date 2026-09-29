@@ -107,7 +107,7 @@ export default async function BarberiasPage({ searchParams }: { searchParams: Pr
               return (
                 <tr key={shop.id}>
                   <td>
-                    <div className="tenant-name"><strong>{shop.tradeName}</strong>{shop.isDemo && <span className="demo-tag">DEMO</span>}</div>
+                    <div className="tenant-name"><strong>{shop.tradeName}</strong>{shop.isDemo && <span className="demo-tag">DEMO</span>}{shop.adminNotes?.includes("Cliente piloto") && <span className="demo-tag">PILOTO</span>}</div>
                     <div className="small muted">{shop.ownerName} · {shop.email}</div>
                   </td>
                   <td><strong>{shop.tenantCode ?? "Aguardando"}</strong><div className="small muted">{shop.city}/{shop.state}</div></td>

@@ -78,7 +78,7 @@ export default async function BarberShopDetail({
           <Link className="small muted" href="/admin/barbearias">← Voltar para cadastros</Link>
           <div className="tenant-name" style={{ marginTop: 10 }}>
             <h2>{shop.tradeName}</h2>
-            {shop.isDemo && <span className="demo-tag">DEMO</span>}
+            {shop.isDemo && <span className="demo-tag">DEMO</span>}{shop.adminNotes?.includes("Cliente piloto") && <span className="demo-tag">PILOTO</span>}
           </div>
           <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <StatusBadge status={shop.status} />
