@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 const COOKIE_NAME = "gromma_platform_admin";
 const MAX_AGE = 60 * 60 * 8;
+const PARTNER_ADMIN_EMAIL = "socio@gromma.app";
 
 type SessionPayload = { email: string; exp: number };
 
@@ -53,11 +54,17 @@ function decodeSession(value?: string): SessionPayload | null {
   }
 }
 
+function allowedAdminEmails() {
+  const primary = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  return new Set([primary, PARTNER_ADMIN_EMAIL].filter(Boolean) as string[]);
+}
+
 export async function createAdminSession(email: string) {
+  const normalized = email.trim().toLowerCase();
   const jar = await cookies();
   jar.set(
     COOKIE_NAME,
-    encodeSession({ email, exp: Date.now() + MAX_AGE * 1000 }),
+    encodeSession({ email: normalized, exp: Date.now() + MAX_AGE * 1000 }),
     {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -80,10 +87,12 @@ export async function getAdminSession() {
 
 export async function requireAdmin() {
   const session = await getAdminSession();
-  const expected = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  if (!session || !expected || session.email.toLowerCase() !== expected) {
+  const allowed = allowedAdminEmails();
+
+  if (!session || !allowed.has(session.email.toLowerCase())) {
     redirect("/admin/login");
   }
+
   return session;
 }
 

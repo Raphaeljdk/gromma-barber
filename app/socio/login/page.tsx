@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { loginReviewer } from "./actions";
 
-export default async function ReviewerLogin({
+export default async function PartnerLogin({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -12,10 +12,10 @@ export default async function ReviewerLogin({
     <main className="review-login">
       <section className="card review-login-card">
         <Link href="/" className="brand"><span className="brand-mark">G</span> GROMMA BARBER</Link>
-        <div className="review-lock">ACESSO DE REVISÃO</div>
+        <div className="review-lock">ACESSO DO SÓCIO</div>
         <h1>Área do sócio</h1>
         <p>
-          Ambiente somente leitura para analisar os planos Essencial e Pro antes da apresentação comercial.
+          Acesso completo ao ambiente de revisão, aos ERPs fictícios e ao painel administrativo da plataforma.
         </p>
 
         {qs.erro === "credenciais" && (
@@ -31,13 +31,13 @@ export default async function ReviewerLogin({
             <span className="label">Senha</span>
             <input className="input" type="password" name="password" autoComplete="current-password" required />
           </label>
-          <button className="btn full" type="submit">Entrar para analisar</button>
+          <button className="btn full" type="submit">Entrar no GROMMA</button>
         </form>
 
         <div className="review-security">
-          <span>✓ Somente leitura</span>
-          <span>✓ Sem acesso administrativo</span>
-          <span>✓ Dados fictícios</span>
+          <span>✓ Acesso administrativo completo</span>
+          <span>✓ Essencial e Pro</span>
+          <span>✓ ERP e cadastros</span>
         </div>
       </section>
     </main>

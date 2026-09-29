@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireReviewer } from "@/lib/reviewer-auth";
 import { logoutReviewer } from "./login/actions";
 
-export default async function ReviewerHome() {
+export default async function PartnerHome() {
   const reviewer = await requireReviewer();
 
   return (
@@ -14,12 +14,17 @@ export default async function ReviewerHome() {
 
       <section className="review-hero">
         <div>
-          <div className="eyebrow">Revisão de produto · somente leitura</div>
-          <h1>Escolha o ambiente para analisar.</h1>
+          <div className="eyebrow">Sócio · acesso completo</div>
+          <h1>Central de análise do GROMMA.</h1>
           <p>
-            Use os dois cenários abaixo para revisar navegação, módulos, apresentação comercial e diferenças entre os planos.
+            Você pode revisar os ambientes Essencial e Pro e também acessar o painel administrativo completo da plataforma.
           </p>
           <div className="small muted">Sessão: {reviewer.email}</div>
+          <div className="actions">
+            <Link className="btn" href="/admin/barbearias">Abrir painel administrativo</Link>
+            <Link className="btn secondary" href="/planos">Ver planos comerciais</Link>
+            <Link className="btn secondary" href="/recursos">Ver recursos</Link>
+          </div>
         </div>
       </section>
 
@@ -47,16 +52,16 @@ export default async function ReviewerHome() {
 
       <section className="card review-checklist">
         <div>
-          <div className="eyebrow">Checklist para o sócio</div>
-          <h2>O que vale analisar</h2>
+          <div className="eyebrow">Área administrativa</div>
+          <h2>Acesso equivalente ao administrador da plataforma</h2>
         </div>
         <div className="review-points">
-          <span>Clareza dos planos</span>
-          <span>Facilidade de navegação</span>
-          <span>Visual de ERP</span>
-          <span>Fluxo comercial</span>
-          <span>Diferenças Essencial x Pro</span>
-          <span>O que falta antes de vender</span>
+          <span>Cadastros de barbearias</span>
+          <span>Aprovação e bloqueio</span>
+          <span>Planos e tenants</span>
+          <span>Unidades e assinaturas</span>
+          <span>Ambientes DEMO</span>
+          <span>Auditoria</span>
         </div>
       </section>
     </main>
