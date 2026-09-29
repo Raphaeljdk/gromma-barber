@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { brl } from "@/lib/plans";
 import { getDemoProfile } from "@/lib/demo-profiles";
+import { requireDemoAccess } from "@/lib/reviewer-auth";
 
 function DataTable({
   headers,
@@ -25,6 +26,7 @@ function DataTable({
 }
 
 export default async function DemoPlanPage({ params }: { params: Promise<{ plan: string }> }) {
+  await requireDemoAccess();
   const { plan } = await params;
   const profile = getDemoProfile(plan);
   if (!profile) notFound();

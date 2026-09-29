@@ -220,3 +220,21 @@ tr:hover td { background:#131313; }
 .erp-count-grid span { color:var(--muted); font-size:.72rem; }
 .erp-count-grid strong { font-size:1.25rem; }
 @media (max-width:700px) { .erp-count-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+.review-login { min-height:100vh; display:grid; place-items:center; padding:24px; background:radial-gradient(circle at 50% -10%,#302414 0,transparent 28rem),#090909; }
+.review-login-card { width:min(470px,100%); padding:30px; }
+.review-login-card h1 { font-size:clamp(2.1rem,7vw,3.4rem); margin:.3em 0 .12em; }
+.review-lock { display:inline-flex; margin-top:26px; border:1px solid #5f4a22; background:#181309; color:var(--gold-2); border-radius:999px; padding:6px 9px; font-size:.68rem; font-weight:900; letter-spacing:.13em; }
+.review-form { margin-top:20px; }
+.review-security { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; color:#9dc9aa; font-size:.74rem; }
+.review-security span { border:1px solid #294634; background:#0d1710; border-radius:999px; padding:6px 8px; }
+.review-home { padding-bottom:72px; }
+.review-hero { padding:64px 0 34px; max-width:850px; }
+.review-hero h1 { margin:.18em 0; }
+.review-grid { margin-bottom:22px; }
+.review-plan-card { display:grid; gap:14px; }
+.review-plan-card.featured { border-color:#6f5728; }
+.review-points { display:flex; flex-wrap:wrap; gap:8px; }
+.review-points span { display:inline-flex; border:1px solid #2f2f2f; background:#111; border-radius:999px; padding:7px 9px; color:#cfc8bb; font-size:.76rem; }
+.review-checklist { display:grid; grid-template-columns:.7fr 1.3fr; gap:24px; align-items:center; margin-top:18px; }
+@media (max-width:760px) { .review-checklist { grid-template-columns:1fr; } }
