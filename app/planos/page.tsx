@@ -24,13 +24,15 @@ export default function PlanosPage() {
         <h1>Escolha como a sua operação será liberada.</h1>
         <p>
           O administrador da plataforma confirma o cadastro e libera os módulos de acordo
-          com o plano contratado.
+          com o plano contratado. Para apresentação, cada plano possui um perfil fictício pronto.
         </p>
       </section>
 
       <div className="plan-grid">
         {(Object.keys(PLAN_CONFIG) as Array<keyof typeof PLAN_CONFIG>).map((key) => {
           const plan = PLAN_CONFIG[key];
+          const demoSlug = key === "PRO" ? "pro" : "essential";
+
           return (
             <article className={`card plan-card ${key === "PRO" ? "featured" : ""}`} key={key}>
               <div className="plan-top">
@@ -51,7 +53,10 @@ export default function PlanosPage() {
                 {plan.features.map((feature) => <span className="feature" key={feature}>{feature}</span>)}
               </div>
 
-              <Link className="btn full" href={`/cadastro?plano=${key}`}>Solicitar {plan.name}</Link>
+              <div className="plan-actions">
+                <Link className="btn full" href={`/demo/${demoSlug}`}>Ver perfil fictício {plan.name}</Link>
+                <Link className="btn secondary full" href={`/cadastro?plano=${key}`}>Solicitar {plan.name}</Link>
+              </div>
             </article>
           );
         })}
