@@ -1,7 +1,7 @@
 "use server";
 
 import { clearAdminSession, requireAdmin } from "@/lib/auth";
-import { PLAN_FEATURES, PlanKey } from "@/lib/plans";
+import { PLAN_CONFIG, PlanKey } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -15,11 +15,16 @@ export async function reviewBarberShop(formData: FormData) {
   const session = await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const action = String(formData.get("action") ?? "");
-  const selectedPlan = (String(formData.get("plan") ?? "ESSENTIAL") === "PRO" ? "PRO" : "ESSENTIAL") as PlanKey;
+  const selectedPlan = (String(formData.get("plan") ?? "ESSENTIAL") === "PRO"
+    ? "PRO"
+    : "ESSENTIAL") as PlanKey;
   const notes = String(formData.get("adminNotes") ?? "").trim() || null;
+
   if (!id) return;
 
   if (action === "approve") {
+    const plan = PLAN_CONFIG[selectedPlan];
+
     await prisma.$transaction([
       prisma.barberShop.update({
         where: { id },
@@ -27,7 +32,19 @@ export async function reviewBarberShop(formData: FormData) {
           status: "APPROVED",
           accessReleased: true,
           activePlan: selectedPlan,
-          enabledFeatures: [...PLAN_FEATURES[selectedPlan]],
+          enabledFeatures: {
+            version: 2,
+            plan: selectedPlan,
+            features: [...plan.features],
+            commercial: {
+              setupLabel: plan.setupLabel,
+              setupFee: plan.setupFee,
+              monthlyFee: plan.monthlyFee,
+              additionalUnitPercent: plan.additionalUnitPercent,
+              maxUnits: plan.maxUnits,
+              personalizedBrand: plan.personalizedBrand,
+            },
+          },
           adminNotes: notes,
           reviewedAt: new Date(),
           reviewedBy: session.email,
@@ -38,7 +55,12 @@ export async function reviewBarberShop(formData: FormData) {
           barberShopId: id,
           action: "APPROVED",
           adminEmail: session.email,
-          details: { plan: selectedPlan },
+          details: {
+            plan: selectedPlan,
+            setupFee: plan.setupFee,
+            monthlyFee: plan.monthlyFee,
+            maxUnits: plan.maxUnits,
+          },
         },
       }),
     ]);

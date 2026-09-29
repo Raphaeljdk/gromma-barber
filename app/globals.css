@@ -69,3 +69,69 @@ tr:hover td { background:#131313; }
 .login-card { width:min(440px,100%); }
 .notice { border:1px solid #4c4028; background:#161208; border-radius:12px; padding:12px 14px; color:#d8c18f; }
 @media (max-width: 900px) { .hero,.detail-grid { grid-template-columns:1fr; } .admin-shell { grid-template-columns:1fr; } .sidebar { border-right:0; border-bottom:1px solid var(--line); } .stats { grid-template-columns:repeat(2,1fr); } .grid-2,.grid-3 { grid-template-columns:1fr; } }
+
+
+/* Product presentation */
+.topnav { display:flex; align-items:center; gap:18px; }
+.topnav > a:not(.btn) { color:#c9c3b7; font-size:.9rem; font-weight:700; }
+.topnav > a:not(.btn):hover { color:var(--gold-2); }
+.hero-wide { padding-top:86px; padding-bottom:70px; }
+.hero-card { padding:28px; }
+.actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+.section-block { padding:40px 0; }
+.section-head { display:flex; justify-content:space-between; align-items:end; gap:18px; margin-bottom:18px; }
+.section-head h2, .intro-block h1 { margin-top:8px; }
+.plan-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.plan-card { display:grid; gap:18px; position:relative; overflow:hidden; }
+.plan-card.featured { border-color:#6f5728; box-shadow:0 24px 70px rgba(215,168,77,.08); }
+.plan-card.featured::before { content:""; position:absolute; inset:0 auto auto 0; width:100%; height:2px; background:linear-gradient(90deg,var(--gold),var(--gold-2),transparent); }
+.plan-top { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
+.plan-top h2 { margin-top:10px; font-size:1.8rem; }
+.plan-top p { margin:5px 0 0; }
+.pill { display:inline-flex; border:1px solid #5c4820; background:#181309; color:var(--gold-2); padding:5px 8px; border-radius:999px; font-size:.7rem; letter-spacing:.12em; font-weight:900; }
+.price { font-size:1.7rem; color:var(--gold-2); white-space:nowrap; }
+.price small { display:block; color:var(--muted); font-size:.68rem; text-align:right; font-weight:700; margin-top:2px; }
+.commercial-line { display:flex; align-items:center; justify-content:space-between; gap:18px; border-top:1px solid var(--line); padding-top:12px; }
+.commercial-line > span { color:var(--muted); }
+.value-section { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:34px; border-top:1px solid var(--line); margin-top:20px; }
+.value-section h2 { font-size:clamp(1.8rem,4vw,3rem); margin-top:8px; }
+.check-list { display:grid; gap:10px; margin-top:18px; }
+.check-list span { position:relative; padding-left:22px; color:#e4dfd4; line-height:1.45; }
+.check-list span::before { content:"✓"; position:absolute; left:0; top:0; color:var(--gold-2); font-weight:900; }
+.check-list.two-columns { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.page-space { padding-bottom:70px; }
+.intro-block { max-width:850px; padding:64px 0 34px; }
+.intro-block.compact { padding-bottom:24px; }
+.intro-block p { max-width:720px; }
+.plan-features { margin:0; align-content:flex-start; }
+.resource-grid { grid-template-columns:repeat(2,minmax(0,1fr)); padding-bottom:60px; }
+.resource-card { min-height:100%; }
+.resource-card h2 { font-size:1.2rem; line-height:1.35; margin-top:10px; color:#ece6da; }
+.mini-plan-grid { margin-bottom:18px; }
+.mini-plan { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.mini-plan h2 { font-size:1.05rem; margin-top:8px; }
+.mini-plan.selected { border-color:#755b28; box-shadow:0 0 0 2px rgba(215,168,77,.08); }
+.signup-form { gap:18px; max-width:900px; margin:0 auto; }
+.form-notice { margin:0 auto 18px; max-width:900px; }
+.integration-grid .card { min-height:150px; }
+.integration-row { display:grid; gap:5px; padding:11px 0; border-bottom:1px solid #242424; }
+.integration-row:last-child { border-bottom:0; }
+.audit-list { margin-top:12px; }
+
+@media (max-width: 900px) {
+  .topbar { align-items:flex-start; gap:16px; padding:18px 0; }
+  .topnav { flex-wrap:wrap; justify-content:flex-end; gap:10px 14px; }
+  .plan-grid, .resource-grid, .value-section { grid-template-columns:1fr; }
+  .check-list.two-columns { grid-template-columns:1fr; }
+  .plan-top { flex-direction:column; }
+  .price small { text-align:left; }
+  .section-head { align-items:flex-start; flex-direction:column; }
+  .mini-plan { align-items:flex-start; flex-direction:column; }
+}
+
+@media (max-width: 620px) {
+  .brand { font-size:.9rem; }
+  .brand-mark { width:30px; height:30px; }
+  .topnav .btn { width:100%; }
+  .hero-wide { padding-top:46px; }
+}
