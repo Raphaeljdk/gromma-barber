@@ -416,3 +416,50 @@ tr:hover td { background:#131313; }
   .login-help { align-items:stretch; flex-direction:column; }
   .login-help .btn { width:100%; }
 }
+
+/* Home access hub */
+.access-section { scroll-margin-top:18px; border-top:1px solid var(--line); }
+.access-section-head { max-width:760px; }
+.access-section-head p { max-width:680px; margin-bottom:0; }
+.access-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.access-card {
+  min-height:280px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:24px;
+  position:relative;
+  overflow:hidden;
+}
+.access-card h2 { margin-top:8px; font-size:1.8rem; }
+.access-card.featured {
+  border-color:#735a27;
+  box-shadow:0 24px 70px rgba(215,168,77,.08);
+}
+.access-card.featured::before {
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:2px;
+  background:linear-gradient(90deg,var(--gold),var(--gold-2),transparent);
+}
+.access-admin-actions { display:grid; gap:9px; }
+.access-help {
+  margin-top:12px;
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  align-items:center;
+  color:var(--muted);
+  font-size:.84rem;
+}
+.access-help a { color:var(--gold-2); font-weight:800; }
+
+@media (max-width:900px) {
+  .access-grid { grid-template-columns:1fr; }
+}
+@media (max-width:620px) {
+  .access-section { padding-top:32px; }
+  .access-card { min-height:auto; padding:20px; }
+  .access-help { justify-content:flex-start; flex-wrap:wrap; }
+}

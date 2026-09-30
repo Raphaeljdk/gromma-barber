@@ -83,6 +83,44 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section id="acessos" className="section-block access-section">
+          <div className="section-head access-section-head">
+            <div>
+              <div className="eyebrow">Acessar o GROMMA</div>
+              <h2>Entre no ambiente correto.</h2>
+              <p>Clientes entram no ERP da própria barbearia. A gestão da plataforma fica concentrada em um único bloco administrativo.</p>
+            </div>
+          </div>
+
+          <div className="access-grid">
+            <article className="card access-card featured">
+              <div>
+                <div className="eyebrow">ERP da barbearia</div>
+                <h2>Cliente</h2>
+                <p>Acesse agenda, clientes, comandas, equipe, estoque, financeiro, unidades e os recursos liberados pelo seu plano.</p>
+              </div>
+              <Link className="btn full" href="/cliente/login">Entrar como cliente</Link>
+            </article>
+
+            <article className="card access-card">
+              <div>
+                <div className="eyebrow">Gestão da plataforma</div>
+                <h2>Administração GROMMA</h2>
+                <p>Painel para gestão dos cadastros, tenants, planos, liberações e ambientes da plataforma.</p>
+              </div>
+              <div className="access-admin-actions">
+                <Link className="btn secondary full" href="/admin/login">Entrar como administrador</Link>
+                <Link className="btn secondary full" href="/socio/login">Login do sócio</Link>
+              </div>
+            </article>
+          </div>
+
+          <div className="access-help">
+            <span>Ainda não é cliente?</span>
+            <Link href="/cadastro">Cadastrar minha barbearia →</Link>
+          </div>
+        </section>
+
         <section className="section-block value-section">
           <div>
             <div className="eyebrow">Proposta</div>

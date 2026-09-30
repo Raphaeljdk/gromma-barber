@@ -12,7 +12,7 @@ export function PublicHeader() {
         <Link href="/recursos">Recursos</Link>
         <Link href="/planos">Planos</Link>
         <Link href="/cadastro">Cadastrar</Link>
-        <Link className="btn login-button" href="/login">Entrar</Link>
+        <Link className="btn login-button" href="/#acessos">Entrar</Link>
       </nav>
 
       <details className="mobile-nav">
@@ -26,7 +26,7 @@ export function PublicHeader() {
           <Link href="/planos">Planos</Link>
           <Link href="/cadastro">Cadastrar barbearia</Link>
           <div className="mobile-nav-divider" />
-          <Link className="mobile-login-link" href="/login">Entrar no GROMMA</Link>
+          <Link className="mobile-login-link" href="/#acessos">Entrar no GROMMA</Link>
         </div>
       </details>
     </header>
