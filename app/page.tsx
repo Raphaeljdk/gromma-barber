@@ -7,12 +7,12 @@ export default function HomePage() {
   const pro = PLAN_CONFIG.PRO;
 
   return (
-    <main>
+    <main className="home-page">
       <div className="container">
         <PublicHeader />
 
-        <section className="hero hero-wide">
-          <div>
+        <section className="hero hero-wide hero-premium">
+          <div className="hero-copy reveal-up reveal-delay-1">
             <div className="eyebrow">Mente e gestão que transformam</div>
             <h1>Automação, gestão e produtividade para barbearias.</h1>
             <p>
@@ -25,7 +25,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="card hero-card">
+          <div className="card hero-card reveal-up reveal-delay-2">
             <div className="eyebrow">Recepção automática</div>
             <h2>Menos tarefas manuais. Mais foco no atendimento.</h2>
             <div className="check-list">
@@ -39,7 +39,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="section-block">
+        <section className="section-block reveal-up reveal-delay-3">
           <div className="section-head">
             <div>
               <div className="eyebrow">Modelo de negócio</div>
@@ -83,7 +83,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="acessos" className="section-block access-section">
+        <section id="acessos" className="section-block access-section reveal-up reveal-delay-4">
           <div className="section-head access-section-head">
             <div>
               <div className="eyebrow">Acessar o GROMMA</div>
@@ -121,7 +121,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="section-block value-section">
+        <section className="section-block value-section reveal-up reveal-delay-5">
           <div>
             <div className="eyebrow">Proposta</div>
             <h2>Controle da operação na mão do gestor e autonomia para o cliente.</h2>
