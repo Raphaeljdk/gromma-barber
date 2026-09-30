@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicHeader } from "@/components/public-header";
 import {
   additionalUnitMonthly,
   brl,
@@ -11,13 +12,7 @@ import {
 export default function PlanosPage() {
   return (
     <main className="container page-space">
-      <header className="topbar">
-        <Link href="/" className="brand"><span className="brand-mark">G</span> GROMMA BARBER</Link>
-        <nav className="topnav">
-          <Link href="/recursos">Recursos</Link>
-          <Link href="/cadastro">Cadastro</Link>
-        </nav>
-      </header>
+      <PublicHeader />
 
       <section className="intro-block">
         <div className="eyebrow">Planos comerciais</div>

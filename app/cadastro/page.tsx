@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicHeader } from "@/components/public-header";
 import { brl, PLAN_CONFIG } from "@/lib/plans";
 import { registerBarberShop } from "./actions";
 
@@ -12,13 +13,7 @@ export default async function CadastroPage({
 
   return (
     <main className="container page-space">
-      <header className="topbar">
-        <Link href="/" className="brand"><span className="brand-mark">G</span> GROMMA BARBER</Link>
-        <nav className="topnav">
-          <Link href="/recursos">Recursos</Link>
-          <Link href="/planos">Planos</Link>
-        </nav>
-      </header>
+      <PublicHeader />
 
       <section className="intro-block compact">
         <div className="eyebrow">Cadastro de barbearia</div>

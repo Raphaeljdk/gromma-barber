@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { brl, PLAN_CONFIG } from "@/lib/plans";
+import { PublicHeader } from "@/components/public-header";
 
 export default function HomePage() {
   const essential = PLAN_CONFIG.ESSENTIAL;
@@ -8,14 +9,7 @@ export default function HomePage() {
   return (
     <main>
       <div className="container">
-        <header className="topbar">
-          <div className="brand"><span className="brand-mark">G</span> GROMMA BARBER</div>
-          <nav className="topnav">
-            <Link href="/recursos">Recursos</Link>
-            <Link href="/planos">Planos</Link>
-            <Link className="btn secondary" href="/admin/login">Área administrativa</Link>
-          </nav>
-        </header>
+        <PublicHeader />
 
         <section className="hero hero-wide">
           <div>
