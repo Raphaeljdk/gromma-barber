@@ -7,8 +7,8 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  CircleUserRound,
   LayoutDashboard,
+  MessageCircle,
   LogOut,
   Menu,
   PackageSearch,
@@ -33,6 +33,7 @@ type Props = {
   planPrice: string;
   email: string;
   viewerType: "TENANT" | "ADMIN";
+  supportHref: string;
   logoutAction?: () => Promise<void>;
 };
 
@@ -75,6 +76,7 @@ export function ErpSidebar({
   planPrice,
   email,
   viewerType,
+  supportHref,
   logoutAction,
 }: Props) {
   const router = useRouter();
@@ -205,17 +207,10 @@ export function ErpSidebar({
             <ChevronLeft size={16} />
             <span className="erp-sidebar-label">Voltar</span>
           </button>
-          {viewerType === "ADMIN" ? (
-            <Link href="/admin/barbearias" title="Painel administrativo">
-              <LayoutDashboard size={16} />
-              <span className="erp-sidebar-label">Admin</span>
-            </Link>
-          ) : (
-            <Link href="/login" title="Trocar conta">
-              <CircleUserRound size={16} />
-              <span className="erp-sidebar-label">Trocar conta</span>
-            </Link>
-          )}
+          <a href={supportHref} title="Enviar mensagem para o suporte">
+            <MessageCircle size={16} />
+            <span className="erp-sidebar-label">Suporte</span>
+          </a>
         </div>
 
         <nav className="erp-nav" aria-label="Módulos do ERP">

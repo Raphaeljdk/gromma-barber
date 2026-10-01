@@ -119,15 +119,17 @@ export async function getTenantSession() {
 }
 
 export async function requireTenantAccess(tenantCode: string) {
+  const normalizedTenant = tenantCode.trim().toUpperCase();
+
+  const session = await getTenantSession();
+  if (session && session.tenantCode === normalizedTenant) {
+    return { type: "TENANT" as const, ...session };
+  }
+
   const admin = await getAdminSession();
   if (admin) {
     return { type: "ADMIN" as const, email: admin.email };
   }
 
-  const session = await getTenantSession();
-  if (!session || session.tenantCode !== tenantCode.trim().toUpperCase()) {
-    redirect("/cliente/login");
-  }
-
-  return { type: "TENANT" as const, ...session };
+  redirect("/cliente/login");
 }

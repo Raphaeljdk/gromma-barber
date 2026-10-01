@@ -55,6 +55,13 @@ export default async function TenantERP({
     .filter((entry) => entry.type === "PAYABLE")
     .reduce((sum, entry) => sum + Number(entry.amount), 0);
 
+  const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
+  const supportSubject = encodeURIComponent(`Suporte GROMMA - ${shop.tradeName} - ${tenantCode}`);
+  const supportBody = encodeURIComponent(
+    `Olá, equipe GROMMA. Preciso de suporte no tenant ${tenantCode} (${shop.tradeName}).\n\nDescreva aqui o que aconteceu:\n`,
+  );
+  const supportHref = `mailto:${supportEmail}?subject=${supportSubject}&body=${supportBody}`;
+
   return (
     <main className="demo-shell tenant-erp">
       <ErpSidebar
@@ -69,6 +76,7 @@ export default async function TenantERP({
         planPrice={brl(plan.monthlyFee)}
         email={viewer.email}
         viewerType={viewer.type}
+        supportHref={supportHref}
         logoutAction={viewer.type === "TENANT" ? logoutTenant : undefined}
       />
 
@@ -82,9 +90,9 @@ export default async function TenantERP({
             <strong>{shop.tradeName}</strong>
           </div>
           <div className="erp-top-actions">
-            <BackButton fallback="/#acessos" label="Voltar" />
+            <BackButton fallback="/login" label="Voltar" />
             <Link href="/" className="nav-quiet-link">Início</Link>
-            {viewer.type === "ADMIN" && <Link href="/admin/barbearias" className="nav-quiet-link">Administração</Link>}
+            <a href={supportHref} className="nav-quiet-link">Suporte</a>
           </div>
         </div>
 

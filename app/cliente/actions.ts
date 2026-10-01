@@ -1,5 +1,6 @@
 "use server";
 
+import { clearAdminSession } from "@/lib/auth";
 import {
   authenticateTenant,
   clearTenantSession,
@@ -18,6 +19,7 @@ export async function loginTenant(formData: FormData) {
     redirect("/cliente/login?erro=credenciais");
   }
 
+  await clearAdminSession();
   await createTenantSession(access);
   redirect(`/erp/${access.tenantCode}`);
 }
