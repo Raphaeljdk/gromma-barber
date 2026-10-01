@@ -5,6 +5,7 @@ import { requireTenantAccess } from "@/lib/tenant-auth";
 import { logoutTenant } from "@/app/cliente/actions";
 import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
 import { BackButton } from "@/components/back-button";
+import { ErpSidebar } from "@/components/erp-sidebar";
 
 export default async function TenantERP({
   params,
@@ -56,52 +57,20 @@ export default async function TenantERP({
 
   return (
     <main className="demo-shell tenant-erp">
-      <aside className="demo-sidebar erp-sidebar">
-        <Link href="/" className="brand"><span className="brand-mark">G</span> GROMMA</Link>
-
-        <div className="erp-sidebar-actions">
-          <BackButton fallback="/#acessos" label="Voltar" />
-          {viewer.type === "TENANT" ? (
-            <Link href="/cliente/login" className="erp-sidebar-link">Trocar conta</Link>
-          ) : (
-            <Link href="/admin/barbearias" className="erp-sidebar-link">Painel admin</Link>
-          )}
-        </div>
-
-        <div className="demo-badge">{isPro ? "CLIENTE PRO" : "CLIENTE ESSENCIAL"}</div>
-
-        <div className="demo-company">
-          <strong>{shop.tradeName}</strong>
-          <span>{shop.tenantCode}</span>
-          <span>{shop.city}/{shop.state}</span>
-          <span>{shop.units.length} {shop.units.length === 1 ? "unidade" : "unidades"} · {shop.users.length} usuários</span>
-        </div>
-
-        <nav className="demo-nav">
-          <a className="active" href="#dashboard">Dashboard</a>
-          <a href="#clientes">Clientes</a>
-          <a href="#agenda">Agenda</a>
-          <a href="#comandas">Comandas</a>
-          <a href="#equipe">Equipe</a>
-          <a href="#estoque">Estoque</a>
-          <a href="#financeiro">Financeiro</a>
-          <a href="#unidades">Unidades</a>
-          <a href="#plano">Plano</a>
-        </nav>
-
-        <div className="demo-plan-card">
-          <span className="pill">{planKey}</span>
-          <strong>{plan.name}</strong>
-          <span>{brl(plan.monthlyFee)}/mês</span>
-          <small>{viewer.type === "TENANT" ? viewer.email : "Visualização administrativa"}</small>
-        </div>
-
-        {viewer.type === "TENANT" && (
-          <form action={logoutTenant}>
-            <button className="btn secondary full" type="submit">Sair</button>
-          </form>
-        )}
-      </aside>
+      <ErpSidebar
+        business={shop.tradeName}
+        tenantCode={shop.tenantCode ?? tenantCode}
+        city={shop.city}
+        state={shop.state}
+        units={shop.units.length}
+        users={shop.users.length}
+        planKey={planKey}
+        planName={plan.name}
+        planPrice={brl(plan.monthlyFee)}
+        email={viewer.email}
+        viewerType={viewer.type}
+        logoutAction={viewer.type === "TENANT" ? logoutTenant : undefined}
+      />
 
       <section className="demo-main erp-main">
         <div className="erp-topbar">
