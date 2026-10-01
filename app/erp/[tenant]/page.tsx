@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { logoutTenant } from "@/app/cliente/actions";
 import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
+import { BackButton } from "@/components/back-button";
 
 export default async function TenantERP({
   params,
@@ -55,8 +56,18 @@ export default async function TenantERP({
 
   return (
     <main className="demo-shell tenant-erp">
-      <aside className="demo-sidebar">
+      <aside className="demo-sidebar erp-sidebar">
         <Link href="/" className="brand"><span className="brand-mark">G</span> GROMMA</Link>
+
+        <div className="erp-sidebar-actions">
+          <BackButton fallback="/#acessos" label="Voltar" />
+          {viewer.type === "TENANT" ? (
+            <Link href="/cliente/login" className="erp-sidebar-link">Trocar conta</Link>
+          ) : (
+            <Link href="/admin/barbearias" className="erp-sidebar-link">Painel admin</Link>
+          )}
+        </div>
+
         <div className="demo-badge">{isPro ? "CLIENTE PRO" : "CLIENTE ESSENCIAL"}</div>
 
         <div className="demo-company">
@@ -92,7 +103,22 @@ export default async function TenantERP({
         )}
       </aside>
 
-      <section className="demo-main">
+      <section className="demo-main erp-main">
+        <div className="erp-topbar">
+          <div className="erp-breadcrumbs" aria-label="Breadcrumb">
+            <Link href="/">GROMMA</Link>
+            <span>/</span>
+            <span>{plan.name}</span>
+            <span>/</span>
+            <strong>{shop.tradeName}</strong>
+          </div>
+          <div className="erp-top-actions">
+            <BackButton fallback="/#acessos" label="Voltar" />
+            <Link href="/" className="nav-quiet-link">Início</Link>
+            {viewer.type === "ADMIN" && <Link href="/admin/barbearias" className="nav-quiet-link">Administração</Link>}
+          </div>
+        </div>
+
         <header className="demo-header">
           <div>
             <div className="eyebrow">ERP · {plan.name}</div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackButton } from "@/components/back-button";
 import { loginTenant } from "../actions";
 
 export default async function ClientLogin({
@@ -10,7 +11,12 @@ export default async function ClientLogin({
 
   return (
     <main className="review-login">
-      <section className="card review-login-card">
+      <section className="card review-login-card professional-login-card">
+        <div className="login-topbar">
+          <BackButton fallback="/#acessos" label="Voltar" />
+          <Link href="/" className="login-home-link">Início</Link>
+        </div>
+
         <Link href="/" className="brand"><span className="brand-mark">G</span> GROMMA BARBER</Link>
         <div className="review-lock">PORTAL DO CLIENTE</div>
         <h1>Entrar no ERP</h1>
@@ -40,6 +46,11 @@ export default async function ClientLogin({
           <span>✓ Ambiente isolado por empresa</span>
           <span>✓ Recursos por plano</span>
           <span>✓ Sessão protegida</span>
+        </div>
+
+        <div className="login-footer-nav">
+          <Link href="/#acessos">Outros acessos</Link>
+          <Link href="/cadastro">Cadastrar barbearia</Link>
         </div>
       </section>
     </main>
