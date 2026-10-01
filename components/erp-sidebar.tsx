@@ -3,16 +3,25 @@
 import Link from "next/link";
 import {
   BadgeDollarSign,
+  BellRing,
+  BookOpenCheck,
   Building2,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  FileText,
   LayoutDashboard,
-  MessageCircle,
   LogOut,
   Menu,
+  MessageCircle,
   PackageSearch,
   ReceiptText,
+  ScrollText,
+  Settings2,
+  Star,
+  Store,
+  Tags,
   Users,
   UserRoundCog,
   WalletCards,
@@ -42,23 +51,52 @@ const NAV_GROUPS = [
     label: "Operação",
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { id: "clientes", label: "Clientes", icon: Users },
       { id: "agenda", label: "Agenda", icon: CalendarDays },
+      { id: "clientes", label: "Clientes", icon: Users },
+      { id: "servicos", label: "Serviços", icon: Store },
       { id: "comandas", label: "Comandas", icon: ReceiptText },
+    ],
+  },
+  {
+    label: "Comercial",
+    items: [
+      { id: "assinaturas", label: "Clube / Assinaturas", icon: BadgeDollarSign },
+      { id: "mensagens", label: "Mensagens", icon: MessageCircle },
+      { id: "promocoes", label: "Promoções / Cupons", icon: Tags },
+    ],
+  },
+  {
+    label: "Financeiro",
+    items: [
+      { id: "financeiro", label: "Financeiro", icon: WalletCards },
+      { id: "caixa", label: "Caixa", icon: ClipboardList },
+      { id: "estoque", label: "Estoque", icon: PackageSearch },
+      { id: "comissoes", label: "Comissões", icon: ScrollText },
     ],
   },
   {
     label: "Gestão",
     items: [
-      { id: "equipe", label: "Equipe", icon: UserRoundCog },
-      { id: "estoque", label: "Estoque", icon: PackageSearch },
-      { id: "financeiro", label: "Financeiro", icon: WalletCards },
+      { id: "equipe", label: "Profissionais", icon: UserRoundCog },
       { id: "unidades", label: "Unidades", icon: Building2 },
+      { id: "relatorios", label: "Relatórios", icon: FileText },
+      { id: "gerencial", label: "Gerencial", icon: LayoutDashboard },
     ],
   },
   {
-    label: "Conta",
+    label: "Experiência",
     items: [
+      { id: "documentos", label: "Documentos", icon: FileText },
+      { id: "avaliacoes", label: "Avaliações", icon: Star },
+      { id: "alertas", label: "Alertas", icon: BellRing },
+      { id: "treinamentos", label: "Tutoriais / Cursos", icon: BookOpenCheck },
+      { id: "totem", label: "Totem / Check-in", icon: Store, proOnly: true },
+    ],
+  },
+  {
+    label: "Sistema",
+    items: [
+      { id: "configuracoes", label: "Configurações", icon: Settings2 },
       { id: "plano", label: "Plano", icon: BadgeDollarSign },
     ],
   },
@@ -121,9 +159,20 @@ export function ErpSidebar({
     };
   }, [mobileOpen]);
 
-  function goTo(id: string) {
-    setActive(id);
+  function goTo(id: string, proOnly?: boolean) {
     setMobileOpen(false);
+
+    if (id === "totem") {
+      if (proOnly && planKey !== "PRO") {
+        setActive("plano");
+        document.getElementById("plano")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      router.push(`/erp/${encodeURIComponent(tenantCode)}/totem`);
+      return;
+    }
+
+    setActive(id);
     document.getElementById(id)?.scrollIntoView({
       behavior: "smooth",
       block: "start",
@@ -220,13 +269,18 @@ export function ErpSidebar({
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = active === item.id;
+                const isLocked = "proOnly" in item && item.proOnly && planKey !== "PRO";
 
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    className={isActive ? "erp-nav-item active" : "erp-nav-item"}
-                    onClick={() => goTo(item.id)}
+                    className={[
+                      "erp-nav-item",
+                      isActive ? "active" : "",
+                      isLocked ? "locked" : "",
+                    ].join(" ")}
+                    onClick={() => goTo(item.id, "proOnly" in item ? item.proOnly : false)}
                     aria-current={isActive ? "page" : undefined}
                     title={collapsed ? item.label : undefined}
                   >
@@ -234,7 +288,11 @@ export function ErpSidebar({
                       <Icon size={18} strokeWidth={1.9} />
                     </span>
                     <span className="erp-sidebar-label">{item.label}</span>
-                    {isActive && <span className="erp-nav-active-dot" />}
+                    {isLocked ? (
+                      <span className="erp-nav-plan-tag">PRO</span>
+                    ) : isActive ? (
+                      <span className="erp-nav-active-dot" />
+                    ) : null}
                   </button>
                 );
               })}

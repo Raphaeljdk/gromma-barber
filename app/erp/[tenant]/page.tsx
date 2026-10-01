@@ -1,11 +1,56 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  BellRing,
+  CalendarDays,
+  ClipboardList,
+  FileText,
+  MessageCircle,
+  PackageSearch,
+  ReceiptText,
+  Star,
+  Store,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { logoutTenant } from "@/app/cliente/actions";
 import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
 import { BackButton } from "@/components/back-button";
 import { ErpSidebar } from "@/components/erp-sidebar";
+
+function StatusPill({
+  children,
+  tone = "neutral",
+}: {
+  children: React.ReactNode;
+  tone?: "neutral" | "ready" | "pending" | "pro";
+}) {
+  return <span className={`erp-status-pill ${tone}`}>{children}</span>;
+}
+
+function ModuleCard({
+  title,
+  description,
+  status,
+  tone = "neutral",
+}: {
+  title: string;
+  description: string;
+  status: string;
+  tone?: "neutral" | "ready" | "pending" | "pro";
+}) {
+  return (
+    <article className="card erp-module-card">
+      <div className="erp-module-card-head">
+        <strong>{title}</strong>
+        <StatusPill tone={tone}>{status}</StatusPill>
+      </div>
+      <p>{description}</p>
+    </article>
+  );
+}
 
 export default async function TenantERP({
   params,
@@ -21,22 +66,22 @@ export default async function TenantERP({
     include: {
       units: { orderBy: { createdAt: "asc" } },
       users: { where: { active: true }, orderBy: [{ role: "asc" }, { name: "asc" }] },
-      customers: { where: { active: true }, orderBy: { createdAt: "desc" }, take: 12 },
+      customers: { where: { active: true }, orderBy: { createdAt: "desc" }, take: 20 },
       services: { where: { active: true }, orderBy: { name: "asc" } },
-      products: { where: { active: true }, orderBy: { name: "asc" }, take: 12 },
+      products: { where: { active: true }, orderBy: { name: "asc" }, take: 20 },
       appointments: {
         orderBy: { startsAt: "desc" },
-        take: 10,
+        take: 16,
         include: { customer: true, barber: true, service: true, unit: true },
       },
       commands: {
         orderBy: { openedAt: "desc" },
-        take: 10,
+        take: 16,
         include: { customer: true, unit: true, items: true },
       },
-      financialEntries: { orderBy: { createdAt: "desc" }, take: 12, include: { unit: true } },
+      financialEntries: { orderBy: { createdAt: "desc" }, take: 20, include: { unit: true } },
       subscriptions: { where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" }, take: 1 },
-      stockMovements: { orderBy: { createdAt: "desc" }, take: 20, include: { product: true, unit: true } },
+      stockMovements: { orderBy: { createdAt: "desc" }, take: 40, include: { product: true, unit: true } },
     },
   });
 
@@ -54,6 +99,9 @@ export default async function TenantERP({
   const payables = shop.financialEntries
     .filter((entry) => entry.type === "PAYABLE")
     .reduce((sum, entry) => sum + Number(entry.amount), 0);
+  const cashBalance = receivables - payables;
+  const openCommands = shop.commands.filter((command) => command.status === "OPEN").length;
+  const pendingFinance = shop.financialEntries.filter((entry) => entry.status === "PENDING").length;
 
   const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
   const supportSubject = encodeURIComponent(`Suporte GROMMA - ${shop.tradeName} - ${tenantCode}`);
@@ -61,6 +109,12 @@ export default async function TenantERP({
     `Olá, equipe GROMMA. Preciso de suporte no tenant ${tenantCode} (${shop.tradeName}).\n\nDescreva aqui o que aconteceu:\n`,
   );
   const supportHref = `mailto:${supportEmail}?subject=${supportSubject}&body=${supportBody}`;
+
+  const today = new Intl.DateTimeFormat("pt-BR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  }).format(new Date());
 
   return (
     <main className="demo-shell tenant-erp">
@@ -96,61 +150,88 @@ export default async function TenantERP({
           </div>
         </div>
 
-        <header className="demo-header">
+        <header className="demo-header erp-hero-header">
           <div>
             <div className="eyebrow">ERP · {plan.name}</div>
             <h1>{shop.tradeName}</h1>
             <p>
-              Ambiente do cliente com dados isolados por tenant. Este cadastro foi criado para validar o fluxo real de venda, onboarding e operação.
+              Gestão operacional centralizada por tenant, com módulos organizados para rotina,
+              atendimento, financeiro e expansão da barbearia.
             </p>
           </div>
           <div className="demo-header-actions">
-            <span className="badge approved">Assinatura {subscription?.status ?? "—"}</span>
-            {isPro && <span className="badge">White label preparado</span>}
+            <span className="badge approved">Tenant ativo</span>
+            <span className="badge">Assinatura {subscription?.status ?? "—"}</span>
+            {isPro && <span className="badge">Experiência Pro</span>}
           </div>
         </header>
 
-        <div className="demo-disclaimer">
-          <strong>CLIENTE PILOTO FICTÍCIO.</strong>
-          <span>Estrutura configurada como um cliente vendido para validação antes do primeiro contrato real.</span>
+        <div className="erp-command-center">
+          <article className="erp-command-card">
+            <CalendarDays size={19} />
+            <div><span>Hoje</span><strong>{today}</strong></div>
+          </article>
+          <article className="erp-command-card">
+            <ClipboardList size={19} />
+            <div><span>Lista de espera</span><strong>Estrutura pronta</strong></div>
+          </article>
+          <a className="erp-command-card" href="#agenda">
+            <CalendarDays size={19} />
+            <div><span>Horários</span><strong>Consultar agenda</strong></div>
+          </a>
+          <a className="erp-command-card" href="#servicos">
+            <Store size={19} />
+            <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {shop.products.length} produtos</strong></div>
+          </a>
+          {isPro ? (
+            <Link className="erp-command-card pro" href={`/erp/${encodeURIComponent(tenantCode)}/totem`}>
+              <Store size={19} />
+              <div><span>Totem / Tablet</span><strong>Abrir experiência</strong></div>
+            </Link>
+          ) : (
+            <a className="erp-command-card" href="#plano">
+              <Store size={19} />
+              <div><span>Totem / Tablet</span><strong>Disponível no Pro</strong></div>
+            </a>
+          )}
         </div>
 
         <section id="dashboard" className="demo-section">
           <div className="section-head">
-            <div><div className="eyebrow">Dashboard</div><h2>Visão geral</h2></div>
-            <span className="badge approved">Tenant ativo</span>
+            <div><div className="eyebrow">Dashboard</div><h2>Visão geral da operação</h2></div>
+            <StatusPill tone="ready">Atualizado</StatusPill>
           </div>
 
           <div className="demo-metrics">
-            <article className="card demo-metric"><span className="small muted">Clientes</span><strong>{shop.customers.length}</strong><small>base inicial do piloto</small></article>
-            <article className="card demo-metric"><span className="small muted">Equipe ativa</span><strong>{shop.users.length}</strong><small>perfis e permissões</small></article>
-            <article className="card demo-metric"><span className="small muted">Contas a receber</span><strong>{brl(receivables)}</strong><small>lançamentos recentes</small></article>
-            <article className="card demo-metric"><span className="small muted">Contas a pagar</span><strong>{brl(payables)}</strong><small>lançamentos recentes</small></article>
+            <article className="card demo-metric"><span className="small muted">Clientes</span><strong>{shop.customers.length}</strong><small>base ativa carregada</small></article>
+            <article className="card demo-metric"><span className="small muted">Equipe ativa</span><strong>{shop.users.length}</strong><small>usuários e profissionais</small></article>
+            <article className="card demo-metric"><span className="small muted">Comandas abertas</span><strong>{openCommands}</strong><small>atendimentos em andamento</small></article>
+            <article className="card demo-metric"><span className="small muted">Saldo operacional</span><strong>{brl(cashBalance)}</strong><small>recebíveis menos pagáveis</small></article>
           </div>
 
-          {isPro && (
-            <div className="grid grid-3 pro-operation-strip">
-              <div className="card"><span className="small muted">Totem</span><strong>Preparado</strong><small>check-in / checkout</small></div>
-              <div className="card"><span className="small muted">Multiunidade</span><strong>{shop.units.length} unidades</strong><small>consolidação central</small></div>
-              <div className="card"><span className="small muted">Comandas</span><strong>Automação Pro</strong><small>fechamento após checkout</small></div>
-            </div>
-          )}
-        </section>
-
-        <section id="clientes" className="demo-section">
-          <div className="section-head"><div><div className="eyebrow">CRM</div><h2>Clientes</h2></div></div>
-          <div className="table-wrap"><table>
-            <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th></tr></thead>
-            <tbody>{shop.customers.length ? shop.customers.map((customer) => (
-              <tr key={customer.id}><td><strong>{customer.name}</strong></td><td>{customer.email ?? "—"}</td><td>{customer.phone ?? "—"}</td><td><span className="badge approved">Ativo</span></td></tr>
-            )) : <tr><td colSpan={4} className="muted">Nenhum cliente cadastrado.</td></tr>}</tbody>
-          </table></div>
+          <div className="grid grid-3 erp-dashboard-strip">
+            <article className="card">
+              <span className="small muted">Pendências financeiras</span>
+              <strong>{pendingFinance}</strong>
+              <small>lançamentos pendentes</small>
+            </article>
+            <article className="card">
+              <span className="small muted">Unidades</span>
+              <strong>{shop.units.length}</strong>
+              <small>{isPro ? "visão consolidada" : "operação atual"}</small>
+            </article>
+            <article className="card">
+              <span className="small muted">Agenda</span>
+              <strong>{shop.appointments.length}</strong>
+              <small>agendamentos carregados</small>
+            </article>
+          </div>
         </section>
 
         <section id="agenda" className="demo-section">
-          <div className="section-head"><div><div className="eyebrow">Agenda</div><h2>Agendamentos</h2></div></div>
+          <div className="section-head"><div><div className="eyebrow">Agenda</div><h2>Agendamentos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
-            <thead><tr><th>Data</th><th>Cliente</th><th>Barbeiro</th><th>Serviço</th><th>Unidade</th><th>Status</th></tr></thead>
+            <thead><tr><th>Data</th><th>Cliente</th><th>Profissional</th><th>Serviço</th><th>Unidade</th><th>Status</th></tr></thead>
             <tbody>{shop.appointments.length ? shop.appointments.map((item) => (
               <tr key={item.id}>
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(item.startsAt)}</td>
@@ -160,8 +241,28 @@ export default async function TenantERP({
           </table></div>
         </section>
 
+        <section id="clientes" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Clientes</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="table-wrap"><table>
+            <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th></tr></thead>
+            <tbody>{shop.customers.length ? shop.customers.map((customer) => (
+              <tr key={customer.id}><td><strong>{customer.name}</strong></td><td>{customer.email ?? "—"}</td><td>{customer.phone ?? "—"}</td><td><span className="badge approved">Ativo</span></td></tr>
+            )) : <tr><td colSpan={4} className="muted">Nenhum cliente cadastrado.</td></tr>}</tbody>
+          </table></div>
+        </section>
+
+        <section id="servicos" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="table-wrap"><table>
+            <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
+            <tbody>{shop.services.length ? shop.services.map((service) => (
+              <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
+            )) : <tr><td colSpan={4} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
+          </table></div>
+        </section>
+
         <section id="comandas" className="demo-section">
-          <div className="section-head"><div><div className="eyebrow">PDV / Comandas</div><h2>Comandas</h2></div></div>
+          <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Abertura</th><th>Cliente</th><th>Unidade</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
             <tbody>{shop.commands.length ? shop.commands.map((command) => (
@@ -170,8 +271,74 @@ export default async function TenantERP({
           </table></div>
         </section>
 
+        <section id="assinaturas" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Clube de assinaturas</div><h2>Planos e assinantes</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Planos do clube" description="Cadastro de planos recorrentes da barbearia, benefícios e regras de uso." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Assinantes" description="Base de clientes assinantes, situação do plano e histórico de cobranças." status="Modelo de dados pendente" tone="pending" />
+            <ModuleCard title="Cobrança automática" description="Regularização de mensalidades, atrasos e avisos de cobrança." status="Integração pendente" tone="pending" />
+          </div>
+        </section>
+
+        <section id="mensagens" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Relacionamento</div><h2>Mensagens para clientes</h2></div><StatusPill tone="pending">Integração externa</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="WhatsApp Business" description="Canal para respostas, agenda, confirmações e atendimento automatizado." status="Configuração pendente" tone="pending" />
+            <ModuleCard title="Follow-up" description="Campanhas para clientes inativos em 30, 60 ou 90 dias." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Aniversariantes" description="Segmentação para mensagens e ações comerciais de aniversário." status="Estrutura pronta" tone="ready" />
+          </div>
+        </section>
+
+        <section id="promocoes" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Comercial</div><h2>Promoções, grupos e cupons</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Anúncios / Promoções" description="Campanhas direcionadas para clientes e períodos específicos." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Grupos de clientes" description="Segmentação por comportamento, frequência e relacionamento." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Cupons de desconto" description="Regras de cupom, validade e rastreamento de uso." status="Modelo de dados pendente" tone="pending" />
+          </div>
+        </section>
+
+        <section id="financeiro" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="table-wrap"><table>
+            <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status</th></tr></thead>
+            <tbody>{shop.financialEntries.map((entry) => (
+              <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{entry.type}</td><td>{entry.category}</td><td>{brl(Number(entry.amount))}</td><td>{entry.status}</td></tr>
+            ))}</tbody>
+          </table></div>
+        </section>
+
+        <section id="caixa" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Caixa</div><h2>Resumo de caixa</h2></div><StatusPill tone="ready">Dados do financeiro</StatusPill></div>
+          <div className="demo-metrics">
+            <article className="card demo-metric"><span className="small muted">Receitas / recebíveis</span><strong>{brl(receivables)}</strong><small>lançamentos carregados</small></article>
+            <article className="card demo-metric"><span className="small muted">Despesas / pagáveis</span><strong>{brl(payables)}</strong><small>lançamentos carregados</small></article>
+            <article className="card demo-metric"><span className="small muted">Saldo</span><strong>{brl(cashBalance)}</strong><small>visão consolidada</small></article>
+            <article className="card demo-metric"><span className="small muted">Comandas abertas</span><strong>{openCommands}</strong><small>impacto operacional</small></article>
+          </div>
+        </section>
+
+        <section id="estoque" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="table-wrap"><table>
+            <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque mínimo</th></tr></thead>
+            <tbody>{shop.products.map((product) => (
+              <tr key={product.id}><td>{product.sku ?? "—"}</td><td><strong>{product.name}</strong></td><td>{brl(Number(product.costPrice))}</td><td>{brl(Number(product.salePrice))}</td><td>{Number(product.stockMin)}</td></tr>
+            ))}</tbody>
+          </table></div>
+        </section>
+
+        <section id="comissoes" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Remuneração</div><h2>Comissões e contas profissionais</h2></div><StatusPill tone="pending">Modelo de dados pendente</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Comissões" description="Regras de remuneração por profissional, serviço e produto." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Conta do profissional" description="Extrato individual de produção, comissão, deduções e metas." status="Backend pendente" tone="pending" />
+            <ModuleCard title="Deduções" description="Controle de descontos, adiantamentos e ajustes de remuneração." status="Backend pendente" tone="pending" />
+          </div>
+        </section>
+
         <section id="equipe" className="demo-section">
-          <div className="section-head"><div><div className="eyebrow">Equipe</div><h2>Usuários e permissões</h2></div></div>
+          <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="demo-team-grid">
             {shop.users.map((user) => (
               <article className="card demo-team-card" key={user.id}>
@@ -184,28 +351,8 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="estoque" className="demo-section">
-          <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div></div>
-          <div className="table-wrap"><table>
-            <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque mínimo</th></tr></thead>
-            <tbody>{shop.products.map((product) => (
-              <tr key={product.id}><td>{product.sku ?? "—"}</td><td><strong>{product.name}</strong></td><td>{brl(Number(product.costPrice))}</td><td>{brl(Number(product.salePrice))}</td><td>{Number(product.stockMin)}</td></tr>
-            ))}</tbody>
-          </table></div>
-        </section>
-
-        <section id="financeiro" className="demo-section">
-          <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div></div>
-          <div className="table-wrap"><table>
-            <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status</th></tr></thead>
-            <tbody>{shop.financialEntries.map((entry) => (
-              <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{entry.type}</td><td>{entry.category}</td><td>{brl(Number(entry.amount))}</td><td>{entry.status}</td></tr>
-            ))}</tbody>
-          </table></div>
-        </section>
-
         <section id="unidades" className="demo-section">
-          <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div></div>
+          <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="demo-unit-grid">
             {shop.units.map((unit) => (
               <article className="card demo-unit-card" key={unit.id}>
@@ -217,6 +364,90 @@ export default async function TenantERP({
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section id="relatorios" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Clientes" description={`${shop.customers.length} clientes carregados para análise de base e relacionamento.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Profissionais" description={`${shop.users.length} usuários ativos para acompanhamento de produtividade.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Financeiro" description={`${shop.financialEntries.length} lançamentos recentes disponíveis para consolidação.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Assinaturas" description="Relatórios de planos e assinantes serão liberados junto ao módulo de clube." status="Pendente" tone="pending" />
+          </div>
+        </section>
+
+        <section id="gerencial" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Gerencial</div><h2>Indicadores para decisão</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Agendamentos" description={`${shop.appointments.length} agendamentos carregados no painel atual.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Perfil do cliente" description="Histórico de relacionamento, serviços e consumo por cliente." status="Em evolução" tone="neutral" />
+            <ModuleCard title="Financeiro" description={`Saldo consolidado atual: ${brl(cashBalance)}.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Ranking" description="Ranking de profissionais e serviços será conectado às métricas de produção." status="Backend pendente" tone="pending" />
+          </div>
+        </section>
+
+        <section id="documentos" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Documentos</div><h2>Central documental</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Documentos de clientes" description="Área prevista para anexos e documentos associados ao prontuário." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Documentos de profissionais" description="Área prevista para arquivos e documentos da equipe." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Comodidades do local" description="Cadastro de recursos e comodidades oferecidos em cada unidade." status="Estrutura pronta" tone="ready" />
+          </div>
+        </section>
+
+        <section id="avaliacoes" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Experiência</div><h2>Avaliações</h2></div><StatusPill tone="pending">Modelo de dados pendente</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Avaliação do atendimento" description="Coleta de nota e comentário após o atendimento." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Indicadores de satisfação" description="Consolidação por unidade, profissional e período." status="Backend pendente" tone="pending" />
+          </div>
+        </section>
+
+        <section id="alertas" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Alertas</div><h2>Central de atenção</h2></div><StatusPill tone="ready">Ativo</StatusPill></div>
+          <div className="erp-alert-grid">
+            <article className="card"><BellRing size={18} /><div><strong>{pendingFinance} pendência(s) financeira(s)</strong><span>Revisar contas com status pendente.</span></div></article>
+            <article className="card"><ReceiptText size={18} /><div><strong>{openCommands} comanda(s) aberta(s)</strong><span>Acompanhar atendimentos em andamento.</span></div></article>
+            <article className="card"><PackageSearch size={18} /><div><strong>{shop.products.length} produto(s) cadastrado(s)</strong><span>Reposição e estoque mínimo ficam concentrados no módulo de estoque.</span></div></article>
+          </div>
+        </section>
+
+        <section id="treinamentos" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Treinamentos</div><h2>Vídeos, cursos e materiais</h2></div><StatusPill tone="pending">Conteúdo pendente</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Vídeos tutoriais" description="Área preparada para tutoriais operacionais do sistema e da rotina." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Cursos" description="Trilhas de desenvolvimento para equipe, gestão e atendimento." status="Conteúdo pendente" tone="pending" />
+            <ModuleCard title="Imagens de divulgação" description="Biblioteca para materiais de campanhas e comunicação da barbearia." status="Conteúdo pendente" tone="pending" />
+          </div>
+        </section>
+
+        <section id="totem" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Totem / Tablet</div><h2>Check-in e autoatendimento</h2></div><StatusPill tone={isPro ? "pro" : "pending"}>{isPro ? "Plano Pro" : "Bloqueado no Essencial"}</StatusPill></div>
+          <div className="card erp-totem-preview">
+            <div>
+              <Store size={28} />
+              <div>
+                <strong>{isPro ? "Experiência de Totem disponível" : "Recurso exclusivo do Pro"}</strong>
+                <p>
+                  Fluxos preparados para identificação, agendamento, check-in e validação do status de assinatura.
+                </p>
+              </div>
+            </div>
+            {isPro ? (
+              <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/totem`}>Abrir Totem</Link>
+            ) : (
+              <a className="btn secondary" href="#plano">Ver plano</a>
+            )}
+          </div>
+        </section>
+
+        <section id="configuracoes" className="demo-section">
+          <div className="section-head"><div><div className="eyebrow">Configurações</div><h2>Ajustes do sistema</h2></div><StatusPill tone="pending">Em evolução</StatusPill></div>
+          <div className="erp-module-grid">
+            <ModuleCard title="Ajustes da operação" description="Preferências da agenda, atendimento, caixa e módulos da barbearia." status="Estrutura pronta" tone="ready" />
+            <ModuleCard title="Rodízio de profissionais" description="Regras de distribuição e organização da equipe por atendimento." status="Backend pendente" tone="pending" />
+            <ModuleCard title="Nota fiscal" description="Emissão fiscal depende de integração com emissor compatível." status="Integração externa" tone="pending" />
           </div>
         </section>
 
@@ -236,6 +467,11 @@ export default async function TenantERP({
             </div>
           </div>
         </section>
+
+        <a className="erp-floating-cash" href="#caixa" aria-label="Abrir caixa">
+          <WalletCards size={19} />
+          <span>Caixa</span>
+        </a>
       </section>
     </main>
   );
