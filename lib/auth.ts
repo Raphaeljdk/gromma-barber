@@ -1,10 +1,13 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 const COOKIE_NAME = "gromma_platform_admin";
-const MAX_AGE = 60 * 60 * 8;
-const PARTNER_ADMIN_EMAIL = "socio@gromma.app";
+const MAX_AGE = 60 * 60 * 10;
+const PRIMARY_ADMIN_EMAIL = "raphaelfreitasdossantos651@gmail.com";
+const PARTNER_ADMIN_EMAIL = "brunobvieventos@hotmail.com";
+const PASSWORD_SALT = "gromma-admin-v2";
+const PASSWORD_HASH = "1a51cf052adf351665b06675a9199dbe591e412d55a5f2f1ca4400fa9628edef";
 
 type SessionPayload = { email: string; exp: number };
 
@@ -12,10 +15,10 @@ function secret() {
   const configured = process.env.SESSION_SECRET;
   if (configured && configured.length >= 32) return configured;
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase() || PRIMARY_ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminEmail || !adminPassword) {
-    throw new Error("Credenciais administrativas ausentes na Vercel.");
+  if (!adminPassword) {
+    throw new Error("Segredo de sessão administrativa ausente na Vercel.");
   }
 
   return createHash("sha256")
@@ -38,10 +41,9 @@ function decodeSession(value?: string): SessionPayload | null {
   if (!payload || !signature) return null;
 
   try {
-    const expected = sign(payload);
-    const a = Buffer.from(signature);
-    const b = Buffer.from(expected);
-    if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+    const expected = Buffer.from(sign(payload));
+    const received = Buffer.from(signature);
+    if (expected.length !== received.length || !timingSafeEqual(expected, received)) return null;
 
     const parsed = JSON.parse(
       Buffer.from(payload, "base64url").toString("utf8"),
@@ -54,13 +56,19 @@ function decodeSession(value?: string): SessionPayload | null {
   }
 }
 
-function allowedAdminEmails() {
-  const primary = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  return new Set([primary, PARTNER_ADMIN_EMAIL].filter(Boolean) as string[]);
+export function allowedAdminEmails() {
+  const configured = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  return new Set(
+    [PRIMARY_ADMIN_EMAIL, PARTNER_ADMIN_EMAIL, configured].filter(Boolean) as string[],
+  );
 }
 
 export async function createAdminSession(email: string) {
   const normalized = email.trim().toLowerCase();
+  if (!allowedAdminEmails().has(normalized)) {
+    throw new Error("E-mail sem permissão administrativa.");
+  }
+
   const jar = await cookies();
   jar.set(
     COOKIE_NAME,
@@ -87,33 +95,23 @@ export async function getAdminSession() {
 
 export async function requireAdmin() {
   const session = await getAdminSession();
-  const allowed = allowedAdminEmails();
-
-  if (!session || !allowed.has(session.email.toLowerCase())) {
+  if (!session || !allowedAdminEmails().has(session.email.toLowerCase())) {
     redirect("/admin/login");
   }
-
   return session;
 }
 
 export function adminCredentialsAreValid(email: string, password: string) {
-  const expectedEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const expectedPassword = process.env.ADMIN_PASSWORD;
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!allowedAdminEmails().has(normalizedEmail)) return false;
 
-  if (!expectedEmail || !expectedPassword) return false;
+  const supplied = scryptSync(password, PASSWORD_SALT, 32);
+  const expected = Buffer.from(PASSWORD_HASH, "hex");
 
-  const suppliedEmail = Buffer.from(email.trim().toLowerCase());
-  const storedEmail = Buffer.from(expectedEmail);
-  const suppliedPass = Buffer.from(password);
-  const storedPass = Buffer.from(expectedPassword);
-
-  const emailOk =
-    suppliedEmail.length === storedEmail.length &&
-    timingSafeEqual(suppliedEmail, storedEmail);
-
-  const passOk =
-    suppliedPass.length === storedPass.length &&
-    timingSafeEqual(suppliedPass, storedPass);
-
-  return emailOk && passOk;
+  return supplied.length === expected.length && timingSafeEqual(supplied, expected);
 }
+
+export const ADMIN_ACCESS = {
+  primaryEmail: PRIMARY_ADMIN_EMAIL,
+  partnerEmail: PARTNER_ADMIN_EMAIL,
+} as const;
