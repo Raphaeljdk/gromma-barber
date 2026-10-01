@@ -469,7 +469,7 @@ async function seedPilotClients() {
     plan: "ESSENTIAL",
     monthlyAmount: 319.90,
     setupAmount: 5000,
-    passwordHash: "f3f9fd50cd57dbc7913c86a2388a8b75ddfbbb050ba63709715cf92b5a333a47",
+    passwordHash: "c6978c94059321fda57c60b0b201dbbbe90dfbcf561f34153296ad48f858c594",
     features: essentialFeatures,
     commercial: { setupFee: 5000, monthlyFee: 319.90, maxUnits: 2, personalizedBrand: false },
     units: [{ code: "MATRIZ", name: "Barbearia Horizonte - Matriz", address: "Rua das Acácias, 245" }],
@@ -514,7 +514,7 @@ async function seedPilotClients() {
     plan: "PRO",
     monthlyAmount: 400,
     setupAmount: 30000,
-    passwordHash: "17980ba5c3b514f66f4fa95ed51edaaa05651f0b3ab737a40c1aca7048b94ea5",
+    passwordHash: "9244027bb7c8dd82569f8bdbc411e0a167fd0b0fc6d332b798ce838327cf8428",
     features: proFeatures,
     commercial: { setupFee: 30000, monthlyFee: 400, maxUnits: null, personalizedBrand: true },
     units: [
