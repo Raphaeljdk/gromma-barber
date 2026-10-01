@@ -66,22 +66,34 @@ export default async function BarberiasPage({ searchParams }: { searchParams: Pr
   const demos = shops.filter((shop) => shop.isDemo).length;
   const essential = shops.filter((shop) => (shop.activePlan ?? shop.requestedPlan) === "ESSENTIAL").length;
   const pro = shops.filter((shop) => (shop.activePlan ?? shop.requestedPlan) === "PRO").length;
+  const activeSubscriptions = shops.filter((shop) => Boolean(shop.subscriptions[0])).length;
+  const mrr = shops.reduce((total, shop) => {
+    const subscription = shop.subscriptions[0];
+    return total + (subscription ? Number(subscription.monthlyAmount) : 0);
+  }, 0);
+  const approved = counts.APPROVED ?? 0;
+  const totalTenants = Object.values(counts).reduce((a, b) => a + b, 0);
 
   return (
     <section>
       <div className="page-head">
         <div>
-          <div className="eyebrow">Plataforma SaaS · Multiempresa</div>
-          <h2>Cadastros de barbearias</h2>
-          <p className="small">Cada cadastro é um tenant isolado. O administrador controla onboarding, plano, unidades e liberação.</p>
+          <div className="eyebrow">Control Plane · Multiempresa</div>
+          <h2>Operação da plataforma</h2>
+          <p className="small">Visão central de tenants, onboarding, planos, assinaturas e liberação operacional.</p>
         </div>
-        <span className="badge approved">Banco conectado</span>
+        <div className="enterprise-admin-health">
+          <span className="badge approved">Banco conectado</span>
+          <span className="badge">Multi-tenant ativo</span>
+        </div>
       </div>
 
-      <div className="platform-strip">
-        <div><span>Essencial</span><strong>{essential}</strong></div>
-        <div><span>Pro</span><strong>{pro}</strong></div>
-        <div><span>Ambientes DEMO</span><strong>{demos}</strong></div>
+      <div className="platform-strip enterprise-platform-strip">
+        <div><span>Tenants ativos</span><strong>{approved}</strong><small>de {totalTenants} cadastrados</small></div>
+        <div><span>Assinaturas ativas</span><strong>{activeSubscriptions}</strong><small>recorrência monitorada</small></div>
+        <div><span>MRR</span><strong>{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(mrr)}</strong><small>receita mensal recorrente</small></div>
+        <div><span>Mix de planos</span><strong>{essential} / {pro}</strong><small>Essencial / Pro</small></div>
+        <div><span>Ambientes de validação</span><strong>{demos}</strong><small>fora da operação comercial</small></div>
       </div>
 
       <form className="card admin-search" action="/admin/barbearias" method="get">

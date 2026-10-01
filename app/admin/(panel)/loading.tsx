@@ -1,16 +1,13 @@
-export default function AdminLoading() {
+export default function LoadingAdmin() {
   return (
-    <section>
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">Controle central</div>
-          <h2>Carregando painel...</h2>
-        </div>
+    <section className="admin-loading-state">
+      <div className="loading-shimmer loading-title" />
+      <div className="loading-grid">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div className="loading-shimmer loading-card" key={index} />
+        ))}
       </div>
-      <div className="grid grid-2">
-        <div className="card loading-block" />
-        <div className="card loading-block" />
-      </div>
+      <div className="loading-shimmer loading-table" />
     </section>
   );
 }

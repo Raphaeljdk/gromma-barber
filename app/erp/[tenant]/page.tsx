@@ -19,6 +19,7 @@ import { logoutTenant } from "@/app/cliente/actions";
 import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
 import { BackButton } from "@/components/back-button";
 import { ErpSidebar } from "@/components/erp-sidebar";
+import { ErpCommandPalette } from "@/components/erp-command-palette";
 
 function StatusPill({
   children,
@@ -143,10 +144,28 @@ export default async function TenantERP({
             <span>/</span>
             <strong>{shop.tradeName}</strong>
           </div>
+          <div className="erp-top-center">
+            <ErpCommandPalette tenantCode={tenantCode} planKey={planKey} supportHref={supportHref} />
+          </div>
           <div className="erp-top-actions">
             <BackButton fallback="/login" label="Voltar" />
-            <Link href="/" className="nav-quiet-link">Início</Link>
             <a href={supportHref} className="nav-quiet-link">Suporte</a>
+          </div>
+        </div>
+
+        <div className="erp-enterprise-context">
+          <div>
+            <span className="erp-context-dot" />
+            <div><small>Ambiente</small><strong>{process.env.VERCEL_ENV === "production" ? "Produção" : "Preview"}</strong></div>
+          </div>
+          <div>
+            <div><small>Tenant</small><strong>{tenantCode}</strong></div>
+          </div>
+          <div>
+            <div><small>Sessão</small><strong>{viewer.type === "ADMIN" ? "Administrativa" : "Cliente autenticado"}</strong></div>
+          </div>
+          <div>
+            <div><small>Plano</small><strong>{plan.name}</strong></div>
           </div>
         </div>
 
