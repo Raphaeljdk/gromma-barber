@@ -9,9 +9,7 @@ export function PublicHeader() {
       </Link>
 
       <nav className="desktop-nav" aria-label="Navegação principal">
-        <Link href="/recursos">Recursos</Link>
-        <Link href="/planos">Planos</Link>
-        <Link href="/cadastro">Cadastrar</Link>
+        <Link href="/#contato">Contato</Link>
         <Link className="btn login-button" href="/#acessos">Entrar</Link>
       </nav>
 
@@ -22,9 +20,7 @@ export function PublicHeader() {
         </summary>
         <div className="mobile-nav-panel">
           <Link href="/">Início</Link>
-          <Link href="/recursos">Recursos</Link>
-          <Link href="/planos">Planos</Link>
-          <Link href="/cadastro">Cadastrar barbearia</Link>
+          <Link href="/#contato">Falar com nossa equipe</Link>
           <div className="mobile-nav-divider" />
           <Link className="mobile-login-link" href="/#acessos">Entrar no GROMMA</Link>
         </div>
