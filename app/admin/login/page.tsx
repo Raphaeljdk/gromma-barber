@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { BackButton } from "@/components/back-button";
-import { getAdminSession } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { loginAdmin } from "./actions";
 
 export default async function AdminLogin({
@@ -9,7 +7,6 @@ export default async function AdminLogin({
 }: {
   searchParams: Promise<Record<string,string|undefined>>;
 }) {
-  if (await getAdminSession()) redirect("/admin/barbearias");
   const qs = await searchParams;
 
   return (
@@ -28,9 +25,7 @@ export default async function AdminLogin({
         <div className="admin-login-copy">
           <div className="eyebrow">Gestão da plataforma</div>
           <h1>Administração GROMMA</h1>
-          <p>
-            Acesso único para administrador principal e sócio, com as mesmas permissões administrativas.
-          </p>
+          <p>Acesso único para administrador principal e sócio, com as mesmas permissões.</p>
         </div>
 
         {qs.erro && <div className="notice error-notice">E-mail ou senha inválidos.</div>}
@@ -47,12 +42,12 @@ export default async function AdminLogin({
         <button className="btn full admin-login-submit" type="submit">Entrar como administrador</button>
 
         <div className="admin-login-meta">
-          <span>Administrador e sócio: acesso completo</span>
-          <span>Ambientes e tenants centralizados</span>
+          <span>Acesso completo à plataforma</span>
+          <span>Administrador e sócio no mesmo painel</span>
         </div>
 
         <div className="login-footer-nav">
-          <Link href="/login">Outros acessos</Link>
+          <Link href="/login">Central de login</Link>
           <Link href="/cliente/login">Portal do cliente</Link>
         </div>
       </form>

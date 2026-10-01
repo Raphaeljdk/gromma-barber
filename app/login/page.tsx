@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
+import { loginAdmin } from "@/app/admin/login/actions";
+import { loginTenant } from "@/app/cliente/actions";
 
 export default function LoginPage() {
   return (
@@ -8,33 +10,68 @@ export default function LoginPage() {
 
       <section className="login-hub-hero">
         <div className="eyebrow">Acesso ao GROMMA</div>
-        <h1>Escolha seu ambiente.</h1>
+        <h1>Entre no seu ambiente.</h1>
         <p>
-          Os acessos são separados entre a operação da barbearia e a administração da plataforma.
+          O login agora fica concentrado nesta página para evitar redirecionamentos confusos
+          e garantir que os campos estejam sempre visíveis.
         </p>
       </section>
 
-      <section className="login-choice-grid login-choice-grid-two">
-        <article className="card login-choice-card featured">
+      <section className="login-choice-grid login-choice-grid-two login-forms-grid">
+        <article className="card login-choice-card login-form-card featured">
           <div className="login-choice-icon">B</div>
           <div>
             <div className="eyebrow">Área do cliente</div>
             <h2>Minha barbearia</h2>
-            <p>Acesse o ERP exclusivo da sua operação, de acordo com o ambiente liberado para sua empresa.</p>
+            <p>Use os dados da empresa para acessar o ERP exclusivo da sua operação.</p>
           </div>
-          <Link className="btn full" href="/cliente/login">Entrar como cliente</Link>
+
+          <form action={loginTenant} className="grid embedded-login-form">
+            <label>
+              <span className="label">Código da empresa</span>
+              <input className="input" name="tenantCode" placeholder="GROMMA-CLI-..." required />
+            </label>
+            <label>
+              <span className="label">E-mail</span>
+              <input className="input" name="email" type="email" autoComplete="username" required />
+            </label>
+            <label>
+              <span className="label">Senha</span>
+              <input className="input" name="password" type="password" autoComplete="current-password" required />
+            </label>
+            <button className="btn full" type="submit">Entrar como cliente</button>
+          </form>
+
+          <Link className="login-secondary-link" href="/cliente/login">
+            Abrir login do cliente em página separada
+          </Link>
         </article>
 
-        <article className="card login-choice-card admin-choice-card">
+        <article className="card login-choice-card login-form-card admin-choice-card">
           <div className="login-choice-icon">G</div>
           <div>
             <div className="eyebrow">Gestão da plataforma</div>
             <h2>Administração GROMMA</h2>
-            <p>
-              Administrador principal e sócio utilizam o mesmo painel e possuem o mesmo nível de acesso.
-            </p>
+            <p>Administrador principal e sócio entram aqui com as mesmas permissões.</p>
           </div>
-          <Link className="btn secondary full" href="/admin/login">Entrar como administrador</Link>
+
+          <form action={loginAdmin} className="grid embedded-login-form">
+            <label>
+              <span className="label">E-mail administrativo</span>
+              <input className="input" name="email" type="email" autoComplete="username" required />
+            </label>
+            <label>
+              <span className="label">Senha</span>
+              <input className="input" name="password" type="password" autoComplete="current-password" required />
+            </label>
+            <button className="btn secondary full admin-hub-submit" type="submit">
+              Entrar como administrador
+            </button>
+          </form>
+
+          <Link className="login-secondary-link" href="/admin/login">
+            Abrir login administrativo em página separada
+          </Link>
         </article>
       </section>
 

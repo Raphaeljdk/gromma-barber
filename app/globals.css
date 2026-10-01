@@ -1514,3 +1514,63 @@ table th {
     transform: none;
   }
 }
+
+
+/* Login visibility hotfix */
+.login-forms-grid {
+  align-items: stretch;
+}
+.login-form-card {
+  min-height: 610px;
+}
+.embedded-login-form {
+  gap: 13px;
+  padding-top: 4px;
+}
+.embedded-login-form label {
+  display: grid;
+  gap: 7px;
+}
+.embedded-login-form .input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  opacity: 1;
+  visibility: visible;
+}
+.embedded-login-form .btn {
+  margin-top: 4px;
+}
+.admin-hub-submit {
+  border-color: #5a4828;
+}
+.login-secondary-link {
+  display: inline-flex;
+  justify-content: center;
+  color: #8f897e;
+  font-size: .72rem;
+  font-weight: 750;
+  text-align: center;
+}
+.login-secondary-link:hover {
+  color: var(--gold-2);
+}
+.admin-login-page .admin-access-card,
+.review-login .review-login-card {
+  display: grid;
+  opacity: 1;
+  visibility: visible;
+}
+.admin-login-page .input,
+.review-login .input,
+.admin-login-page label,
+.review-login label {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (max-width: 900px) {
+  .login-form-card {
+    min-height: auto;
+  }
+}
