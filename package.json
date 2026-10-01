@@ -1,18 +1,16 @@
 {
   "name": "gromma-barber",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && prisma db seed && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
     "db:deploy": "prisma migrate deploy",
-    "db:generate": "prisma generate",
-    "db:seed": "prisma db seed"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.js"
+    "db:seed": "prisma db seed",
+    "db:release": "prisma migrate deploy && prisma db seed",
+    "db:generate": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "6.16.2",
