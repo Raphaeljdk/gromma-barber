@@ -17,7 +17,7 @@ export default function HomePage() {
             </p>
             <div className="actions">
               <Link className="btn" href="/cadastro">Falar com nossa equipe</Link>
-              <Link className="btn secondary" href="/#acessos">Já sou cliente</Link>
+              <Link className="btn secondary" href="/login">Já sou cliente</Link>
             </div>
           </div>
 
@@ -46,37 +46,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="acessos" className="section-block access-section reveal-up reveal-delay-4">
-          <div className="section-head access-section-head">
-            <div>
-              <div className="eyebrow">Acesso restrito</div>
-              <h2>Já faz parte do GROMMA?</h2>
-              <p>Entre no ambiente correspondente ao seu perfil.</p>
-            </div>
-          </div>
-
-          <div className="access-grid">
-            <article className="card access-card featured">
-              <div>
-                <div className="eyebrow">Área do cliente</div>
-                <h2>Minha barbearia</h2>
-                <p>Acesse o ambiente exclusivo da sua operação.</p>
-              </div>
-              <Link className="btn full" href="/cliente/login">Entrar como cliente</Link>
-            </article>
-
-            <article className="card access-card">
-              <div>
-                <div className="eyebrow">Gestão da plataforma</div>
-                <h2>Administração GROMMA</h2>
-                <p>Acesso restrito à equipe responsável pela plataforma.</p>
-              </div>
-              <div className="access-admin-actions">
-                <Link className="btn secondary full" href="/admin/login">Entrar como administrador</Link>
-              </div>
-            </article>
-          </div>
-        </section>
       </div>
     </main>
   );

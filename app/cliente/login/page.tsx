@@ -13,7 +13,7 @@ export default async function ClientLogin({
     <main className="review-login">
       <section className="card review-login-card professional-login-card">
         <div className="login-topbar">
-          <BackButton fallback="/#acessos" label="Voltar" />
+          <BackButton fallback="/login" label="Voltar" />
           <Link href="/" className="login-home-link">Início</Link>
         </div>
 
@@ -49,7 +49,7 @@ export default async function ClientLogin({
         </div>
 
         <div className="login-footer-nav">
-          <Link href="/#acessos">Outros acessos</Link>
+          <Link href="/login">Outros acessos</Link>
           <Link href="/cadastro">Cadastrar barbearia</Link>
         </div>
       </section>
