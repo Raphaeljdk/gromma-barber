@@ -9,6 +9,7 @@ import {
   PLAN_FEATURES,
 } from "@/lib/plans";
 import { StatusBadge } from "@/components/status-badge";
+import { SectionPagination } from "@/components/section-pagination";
 import { reviewBarberShop } from "../../actions";
 
 const essentialSet = new Set<string>(PLAN_FEATURES.ESSENTIAL);
@@ -18,32 +19,44 @@ export default async function BarberShopDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
   const qs = await searchParams;
+  const auditPageValue = Array.isArray(qs.auditPage) ? qs.auditPage[0] : qs.auditPage;
+  const parsedAuditPage = Number.parseInt(auditPageValue ?? "1", 10);
+  const auditPage = Number.isFinite(parsedAuditPage) && parsedAuditPage > 0 ? parsedAuditPage : 1;
+  const auditPageSize = 8;
 
   let shop;
+  let auditTotal = 0;
 
   try {
-    shop = await prisma.barberShop.findUnique({
-      where: { id },
-      include: {
-        auditLogs: { orderBy: { createdAt: "desc" }, take: 12 },
-        units: { orderBy: { createdAt: "asc" } },
-        subscriptions: { orderBy: { createdAt: "desc" }, take: 3 },
-        _count: {
-          select: {
-            users: true,
-            customers: true,
-            services: true,
-            appointments: true,
-            commands: true,
-            products: true,
+    [shop, auditTotal] = await Promise.all([
+      prisma.barberShop.findUnique({
+        where: { id },
+        include: {
+          auditLogs: {
+            orderBy: { createdAt: "desc" },
+            skip: (auditPage - 1) * auditPageSize,
+            take: auditPageSize,
+          },
+          units: { orderBy: { createdAt: "asc" } },
+          subscriptions: { orderBy: { createdAt: "desc" }, take: 3 },
+          _count: {
+            select: {
+              users: true,
+              customers: true,
+              services: true,
+              appointments: true,
+              commands: true,
+              products: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.adminAuditLog.count({ where: { barberShopId: id } }),
+    ]);
   } catch (error) {
     console.error("Failed to load tenant detail", error);
     return (
@@ -199,7 +212,7 @@ export default async function BarberShopDetail({
             </form>
           )}
 
-          <div className="card">
+          <div className="card" id="auditoria">
             <div className="eyebrow">Auditoria</div>
             <div className="grid audit-list">
               {shop.auditLogs.length === 0 ? <span className="muted small">Nenhuma ação administrativa ainda.</span> : shop.auditLogs.map((log) => (
@@ -209,6 +222,16 @@ export default async function BarberShopDetail({
                 </div>
               ))}
             </div>
+            <SectionPagination
+              basePath={`/admin/barbearias/${id}`}
+              searchParams={qs}
+              param="auditPage"
+              page={auditPage}
+              total={auditTotal}
+              pageSize={auditPageSize}
+              hash="auditoria"
+              label="eventos"
+            />
           </div>
         </div>
       </div>
