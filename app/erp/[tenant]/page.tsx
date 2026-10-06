@@ -24,7 +24,7 @@ import { ErpSidebar } from "@/components/erp-sidebar";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
-import { createAppointment, createCustomer, createFinancialEntry, createProduct, createService } from "./actions";
+import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, markFinancialPaid, updateAppointmentStatus } from "./actions";
 
 function StatusPill({
   children,
@@ -106,6 +106,13 @@ const ROLE_LABELS: Record<string, string> = {
   RECEPTIONIST: "Recepção",
   BARBER: "Barbeiro",
   ACCOUNTANT: "Financeiro",
+};
+
+const APPOINTMENT_NEXT_ACTION: Record<string, { action: string; label: string }> = {
+  SCHEDULED: { action: "confirm", label: "Confirmar" },
+  CONFIRMED: { action: "checkin", label: "Check-in" },
+  CHECKED_IN: { action: "start", label: "Iniciar" },
+  IN_SERVICE: { action: "complete", label: "Concluir" },
 };
 
 function operationalBadge(value: string) {
@@ -489,6 +496,8 @@ export default async function TenantERP({
           {actionOk === "agenda" && <div className="notice erp-inline-notice success">Agendamento criado com sucesso.</div>}
           {actionError === "agenda" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o agendamento. Revise os dados informados.</div>}
           {actionError === "agenda-conflito" && <div className="notice erp-inline-notice error-notice">O profissional já possui um atendimento nesse intervalo.</div>}
+          {actionOk === "agenda-status" && <div className="notice erp-inline-notice success">Status do atendimento atualizado.</div>}
+          {actionError === "agenda-status" && <div className="notice erp-inline-notice error-notice">A transição solicitada não é válida para este atendimento.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo agendamento <small>Agenda rápida</small></summary>
@@ -539,13 +548,33 @@ export default async function TenantERP({
             selects={[{ param: "agendaStatus", value: agendaStatus, label: "Status", options: APPOINTMENT_STATUS_OPTIONS }]}
           />
           <div className="table-wrap"><table>
-            <thead><tr><th>Data</th><th>Cliente</th><th>Profissional</th><th>Serviço</th><th>Unidade</th><th>Status</th></tr></thead>
+            <thead><tr><th>Data</th><th>Cliente</th><th>Profissional</th><th>Serviço</th><th>Unidade</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>{appointments.length ? appointments.map((item) => (
               <tr key={item.id}>
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(item.startsAt)}</td>
                 <td>{item.customer?.name ?? "—"}</td><td>{item.barber?.name ?? "—"}</td><td>{item.service?.name ?? "—"}</td><td>{item.unit.name}</td><td>{operationalBadge(item.status)}</td>
+                <td>
+                  <div className="erp-row-actions">
+                    {APPOINTMENT_NEXT_ACTION[item.status] && (
+                      <form action={updateAppointmentStatus}>
+                        <input type="hidden" name="tenantCode" value={tenantCode} />
+                        <input type="hidden" name="appointmentId" value={item.id} />
+                        <button className="btn secondary" type="submit" name="action" value={APPOINTMENT_NEXT_ACTION[item.status].action}>
+                          {APPOINTMENT_NEXT_ACTION[item.status].label}
+                        </button>
+                      </form>
+                    )}
+                    {["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(item.status) && (
+                      <form action={updateAppointmentStatus}>
+                        <input type="hidden" name="tenantCode" value={tenantCode} />
+                        <input type="hidden" name="appointmentId" value={item.id} />
+                        <button className="erp-table-quiet-action" type="submit" name="action" value="cancel">Cancelar</button>
+                      </form>
+                    )}
+                  </div>
+                </td>
               </tr>
-            )) : <tr><td colSpan={6} className="muted">Agenda pronta para receber os primeiros atendimentos.</td></tr>}</tbody>
+            )) : <tr><td colSpan={7} className="muted">Agenda pronta para receber os primeiros atendimentos.</td></tr>}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="agendaPage" page={agendaPage} total={appointmentsTotal} pageSize={pageSize} hash="agenda" label="agendamentos" />
         </section>
@@ -622,6 +651,9 @@ export default async function TenantERP({
 
         <section id="comandas" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {actionOk === "comanda" && <div className="notice erp-inline-notice success">Comanda fechada e financeiro atualizado.</div>}
+          {actionError === "comanda" && <div className="notice erp-inline-notice error-notice">Não foi possível fechar a comanda.</div>}
+          {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
@@ -630,10 +662,22 @@ export default async function TenantERP({
             selects={[{ param: "comandaStatus", value: comandaStatus, label: "Status", options: COMMAND_STATUS_OPTIONS }]}
           />
           <div className="table-wrap"><table>
-            <thead><tr><th>Abertura</th><th>Cliente</th><th>Unidade</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
+            <thead><tr><th>Abertura</th><th>Cliente</th><th>Unidade</th><th>Itens</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>{commands.length ? commands.map((command) => (
-              <tr key={command.id}><td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td><td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{operationalBadge(command.status)}</td></tr>
-            )) : <tr><td colSpan={6} className="muted">Nenhuma comanda aberta.</td></tr>}</tbody>
+              <tr key={command.id}>
+                <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td>
+                <td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{operationalBadge(command.status)}</td>
+                <td>
+                  {command.status === "OPEN" ? (
+                    <form action={closeCommand}>
+                      <input type="hidden" name="tenantCode" value={tenantCode} />
+                      <input type="hidden" name="commandId" value={command.id} />
+                      <button className="btn secondary" type="submit">Fechar comanda</button>
+                    </form>
+                  ) : <span className="muted small">Finalizada</span>}
+                </td>
+              </tr>
+            )) : <tr><td colSpan={7} className="muted">Nenhuma comanda encontrada.</td></tr>}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
@@ -669,6 +713,8 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "financeiro" && <div className="notice erp-inline-notice success">Lançamento financeiro criado com sucesso.</div>}
           {actionError === "financeiro" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o lançamento. Revise descrição e valor.</div>}
+          {actionOk === "financeiro-pago" && <div className="notice erp-inline-notice success">Lançamento marcado como pago.</div>}
+          {actionError === "financeiro-status" && <div className="notice erp-inline-notice error-notice">Não foi possível atualizar o lançamento financeiro.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo lançamento <small>Receber ou pagar</small></summary>
@@ -699,10 +745,21 @@ export default async function TenantERP({
             ]}
           />
           <div className="table-wrap"><table>
-            <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Vencimento</th><th>Unidade</th><th>Valor</th><th>Status</th></tr></thead>
-            <tbody>{financialEntries.map((entry) => (
-              <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{entry.dueDate ? new Intl.DateTimeFormat("pt-BR").format(entry.dueDate) : "—"}</td><td>{entry.unit?.name ?? "Geral"}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td></tr>
-            ))}</tbody>
+            <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Vencimento</th><th>Unidade</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody>{financialEntries.length ? financialEntries.map((entry) => (
+              <tr key={entry.id}>
+                <td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{entry.dueDate ? new Intl.DateTimeFormat("pt-BR").format(entry.dueDate) : "—"}</td><td>{entry.unit?.name ?? "Geral"}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td>
+                <td>
+                  {entry.status === "PENDING" ? (
+                    <form action={markFinancialPaid}>
+                      <input type="hidden" name="tenantCode" value={tenantCode} />
+                      <input type="hidden" name="entryId" value={entry.id} />
+                      <button className="btn secondary" type="submit">Marcar pago</button>
+                    </form>
+                  ) : <span className="muted small">—</span>}
+                </td>
+              </tr>
+            )) : <tr><td colSpan={8} className="muted">Nenhum lançamento encontrado.</td></tr>}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
         </section>
