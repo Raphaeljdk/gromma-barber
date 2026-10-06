@@ -1215,12 +1215,64 @@ export async function TenantERPView({
         </section>
 
         <section id="comissoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comissoes")}>
-          <div className="section-head"><div><div className="eyebrow">Remuneração</div><h2>Comissões e contas profissionais</h2></div><StatusPill tone="pending">Modelo de dados pendente</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Comissões" description="Regras de remuneração por profissional, serviço e produto." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Conta do profissional" description="Extrato individual de produção, comissão, deduções e metas." status="Backend pendente" tone="pending" />
-            <ModuleCard title="Deduções" description="Controle de descontos, adiantamentos e ajustes de remuneração." status="Backend pendente" tone="pending" />
+          <div className="section-head">
+            <div><div className="eyebrow">Remuneração</div><h2>Comissões, produção e deduções</h2></div>
+            <StatusPill tone="ready">Operacional</StatusPill>
           </div>
+
+          <div className="erp-kpi-row">
+            <article><span>Produção fechada</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.production, 0))}</strong><small>comandas concluídas</small></article>
+            <article><span>Comissão bruta</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.grossCommission, 0))}</strong><small>pelas regras atuais</small></article>
+            <article><span>Deduções</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.deductions, 0))}</strong><small>ajustes registrados</small></article>
+            <article><span>Comissão líquida</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.netCommission, 0))}</strong><small>estimativa operacional</small></article>
+          </div>
+
+          {actionOk === "comissao" && <div className="notice erp-inline-notice success">Regra de comissão atualizada.</div>}
+          {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
+          {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
+
+          {canManage && (
+            <div className="erp-two-column-workspace">
+              <article className="card erp-workspace-card">
+                <div className="erp-card-title"><div><span>Regra individual</span><strong>Percentual por profissional</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+                <form action={saveCommissionRule} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <label><span className="label">Profissional</span><select className="select" name="userId" required defaultValue=""><option value="" disabled>Selecione</option>{commissionRows.map((row) => <option key={row.user.id} value={row.user.id}>{row.user.name}</option>)}</select></label>
+                  <label><span className="label">Comissão (%)</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" required defaultValue={workspace.settings.defaultCommissionPercent} /></label>
+                  <button className="btn" type="submit">Salvar regra</button>
+                </form>
+              </article>
+              <article className="card erp-workspace-card">
+                <div className="erp-card-title"><div><span>Deduções</span><strong>Adiantamentos e ajustes</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+                <form action={addDeduction} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <label><span className="label">Profissional</span><select className="select" name="userId" required defaultValue=""><option value="" disabled>Selecione</option>{commissionRows.map((row) => <option key={row.user.id} value={row.user.id}>{row.user.name}</option>)}</select></label>
+                  <div className="grid grid-2">
+                    <label><span className="label">Motivo</span><input className="input" name="description" required placeholder="Ex.: Adiantamento" /></label>
+                    <label><span className="label">Valor</span><input className="input" name="amount" type="number" min="0.01" step="0.01" required /></label>
+                  </div>
+                  <button className="btn secondary" type="submit">Registrar dedução</button>
+                </form>
+              </article>
+            </div>
+          )}
+
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Profissional</th><th>Produção</th><th>Regra</th><th>Comissão bruta</th><th>Deduções</th><th>Líquido</th></tr></thead>
+              <tbody>{commissionRows.length ? commissionRows.map((row) => (
+                <tr key={row.user.id}>
+                  <td><strong>{row.user.name}</strong><div className="small muted">{ROLE_LABELS[row.user.role] ?? row.user.role}</div></td>
+                  <td>{brl(row.production)}</td>
+                  <td>{row.percent.toFixed(2)}%</td>
+                  <td>{brl(row.grossCommission)}</td>
+                  <td>{brl(row.deductions)}</td>
+                  <td><strong>{brl(row.netCommission)}</strong></td>
+                </tr>
+              )) : <tr><td colSpan={6} className="muted">Nenhum profissional disponível.</td></tr>}</tbody>
+            </table>
+          </div>
+          <p className="erp-integration-note">A conta do profissional agora é calculada a partir das comandas fechadas associadas aos atendimentos. Produtos sem vínculo de profissional ainda não entram no rateio individual.</p>
         </section>
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
@@ -1270,86 +1322,269 @@ export async function TenantERPView({
         </section>
 
         <section id="relatorios" className="demo-section" hidden={Boolean(moduleId && moduleId !== "relatorios")}>
-          <div className="section-head"><div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Clientes" description={`${customersAllTotal} clientes carregados para análise de base e relacionamento.`} status="Disponível" tone="ready" />
-            <ModuleCard title="Profissionais" description={`${shop.users.length} usuários ativos para acompanhamento de produtividade.`} status="Disponível" tone="ready" />
-            <ModuleCard title="Financeiro" description={`${financialAllTotal} lançamentos recentes disponíveis para consolidação.`} status="Disponível" tone="ready" />
-            <ModuleCard title="Assinaturas" description="Relatórios de planos e assinantes serão liberados junto ao módulo de clube." status="Pendente" tone="pending" />
+          <div className="section-head">
+            <div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div>
+            <StatusPill tone="ready">Dados reais</StatusPill>
+          </div>
+
+          <div className="erp-kpi-row">
+            <article><span>Clientes ativos</span><strong>{customersAllTotal}</strong><small>base de relacionamento</small></article>
+            <article><span>Atendimentos</span><strong>{appointmentsAllTotal}</strong><small>agenda registrada</small></article>
+            <article><span>Receita fechada</span><strong>{brl(closedRevenue)}</strong><small>comandas concluídas</small></article>
+            <article><span>Ticket médio</span><strong>{brl(averageTicket)}</strong><small>por comanda fechada</small></article>
+          </div>
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Serviços</span><strong>Ranking por receita</strong></div><StatusPill tone="ready">Atual</StatusPill></div>
+              <div className="erp-ranking-list">
+                {topServices.length ? topServices.map((item, index) => (
+                  <div key={item.name}><span>{index + 1}</span><div><strong>{item.name}</strong><small>{item.count} atendimento(s)</small></div><strong>{brl(item.revenue)}</strong></div>
+                )) : <small className="muted">Feche comandas vinculadas a serviços para formar o ranking.</small>}
+              </div>
+            </article>
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Profissionais</span><strong>Produção por receita</strong></div><StatusPill tone="ready">Atual</StatusPill></div>
+              <div className="erp-ranking-list">
+                {topProfessionals.length ? topProfessionals.map((item, index) => (
+                  <div key={item.user.id}><span>{index + 1}</span><div><strong>{item.user.name}</strong><small>{item.percent.toFixed(1)}% comissão</small></div><strong>{brl(item.production)}</strong></div>
+                )) : <small className="muted">Ainda não há produção fechada vinculada aos profissionais.</small>}
+              </div>
+            </article>
+          </div>
+
+          <div className="erp-report-grid">
+            <article className="card"><span>Financeiro</span><strong>{financialAllTotal}</strong><small>lançamentos cadastrados</small><Link href={`/erp/${encodeURIComponent(tenantCode)}/financeiro`}>Abrir financeiro →</Link></article>
+            <article className="card"><span>Clube</span><strong>{clubMemberRows.length}</strong><small>assinantes cadastrados</small><Link href={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`}>Abrir clube →</Link></article>
+            <article className="card"><span>Avaliação média</span><strong>{reviewAverage ? reviewAverage.toFixed(1) : "—"}</strong><small>{workspace.reviews.length} avaliação(ões)</small><Link href={`/erp/${encodeURIComponent(tenantCode)}/avaliacoes`}>Abrir avaliações →</Link></article>
           </div>
         </section>
 
         <section id="gerencial" className="demo-section" hidden={Boolean(moduleId && moduleId !== "gerencial")}>
-          <div className="section-head"><div><div className="eyebrow">Gerencial</div><h2>Indicadores para decisão</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Agendamentos" description={`${appointmentsAllTotal} agendamentos carregados no painel atual.`} status="Disponível" tone="ready" />
-            <ModuleCard title="Perfil do cliente" description="Histórico de relacionamento, serviços e consumo por cliente." status="Em evolução" tone="neutral" />
-            <ModuleCard title="Financeiro" description={`Saldo consolidado atual: ${brl(cashBalance)}.`} status="Disponível" tone="ready" />
-            <ModuleCard title="Ranking" description="Ranking de profissionais e serviços será conectado às métricas de produção." status="Backend pendente" tone="pending" />
+          <div className="section-head">
+            <div><div className="eyebrow">Gerencial</div><h2>Indicadores para decisão</h2></div>
+            <StatusPill tone="ready">Consolidado</StatusPill>
+          </div>
+
+          <div className="erp-executive-grid">
+            <article className="card erp-executive-main">
+              <span>Resultado operacional</span>
+              <strong>{brl(cashBalance)}</strong>
+              <small>Recebíveis menos pagáveis registrados</small>
+              <div className="erp-executive-breakdown"><span>Receber <strong>{brl(receivables)}</strong></span><span>Pagar <strong>{brl(payables)}</strong></span></div>
+            </article>
+            <article className="card"><span>Receita fechada</span><strong>{brl(closedRevenue)}</strong><small>comandas concluídas</small></article>
+            <article className="card"><span>Ticket médio</span><strong>{brl(averageTicket)}</strong><small>comandas fechadas</small></article>
+            <article className="card"><span>Conversão operacional</span><strong>{appointmentsAllTotal ? `${Math.round((commissionCommands.length / appointmentsAllTotal) * 100)}%` : "—"}</strong><small>comandas fechadas / agenda</small></article>
+          </div>
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Ranking da equipe</span><strong>Produção fechada</strong></div><StatusPill tone="ready">Atual</StatusPill></div>
+              <div className="erp-ranking-list">
+                {topProfessionals.map((item, index) => <div key={item.user.id}><span>{index + 1}</span><div><strong>{item.user.name}</strong><small>{ROLE_LABELS[item.user.role] ?? item.user.role}</small></div><strong>{brl(item.production)}</strong></div>)}
+                {!topProfessionals.length && <small className="muted">Sem dados suficientes para ranking.</small>}
+              </div>
+            </article>
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Saúde da operação</span><strong>Pontos de atenção</strong></div><StatusPill tone={pendingFinance + openCommands + overdueClubMembers.length ? "pending" : "ready"}>{pendingFinance + openCommands + overdueClubMembers.length ? "Atenção" : "Saudável"}</StatusPill></div>
+              <div className="erp-health-list">
+                <div><span>Pendências financeiras</span><strong>{pendingFinance}</strong></div>
+                <div><span>Comandas abertas</span><strong>{openCommands}</strong></div>
+                <div><span>Assinaturas vencidas</span><strong>{overdueClubMembers.length}</strong></div>
+                <div><span>Lista de espera</span><strong>{waitlist.length}</strong></div>
+              </div>
+            </article>
           </div>
         </section>
 
         <section id="documentos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "documentos")}>
-          <div className="section-head"><div><div className="eyebrow">Documentos</div><h2>Central documental</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Documentos de clientes" description="Área prevista para anexos e documentos associados ao prontuário." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Documentos de profissionais" description="Área prevista para arquivos e documentos da equipe." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Comodidades do local" description="Cadastro de recursos e comodidades oferecidos em cada unidade." status="Estrutura pronta" tone="ready" />
+          <div className="section-head">
+            <div><div className="eyebrow">Documentos</div><h2>Central documental</h2></div>
+            <StatusPill tone="ready">Catálogo ativo</StatusPill>
+          </div>
+
+          {actionOk === "documento" && <div className="notice erp-inline-notice success">Documento adicionado à central.</div>}
+          {actionError === "documento" && <div className="notice erp-inline-notice error-notice">Informe um título e um link válido.</div>}
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Novo documento</span><strong>Link ou arquivo externo</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+              {canManage && (
+                <form action={saveDocument} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <label><span className="label">Título</span><input className="input" name="title" required placeholder="Ex.: Termo de uso de imagem" /></label>
+                  <div className="grid grid-2">
+                    <label><span className="label">Categoria</span><select className="select" name="category"><option value="CUSTOMER">Cliente</option><option value="PROFESSIONAL">Profissional</option><option value="UNIT">Unidade / comodidade</option><option value="GENERAL">Geral</option></select></label>
+                    <label><span className="label">Referência</span><input className="input" name="reference" placeholder="Nome do cliente, profissional ou unidade" /></label>
+                  </div>
+                  <label><span className="label">Link</span><input className="input" name="url" type="url" required placeholder="https://..." /></label>
+                  <button className="btn" type="submit">Adicionar documento</button>
+                </form>
+              )}
+              <p className="erp-integration-note">A central já organiza links e documentos hospedados externamente. Upload binário próprio exige storage dedicado e não é simulado.</p>
+            </article>
+
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Biblioteca</span><strong>{workspace.documents.length} documento(s)</strong></div><StatusPill tone="ready">Organizada</StatusPill></div>
+              <div className="erp-document-list">
+                {workspace.documents.map((document) => (
+                  <a href={document.url} target="_blank" rel="noreferrer" key={document.id}>
+                    <FileText size={17} />
+                    <div><strong>{document.title}</strong><span>{document.category} · {document.reference ?? "Sem referência"}</span></div>
+                    <span>↗</span>
+                  </a>
+                ))}
+                {!workspace.documents.length && <small className="muted">Nenhum documento cadastrado.</small>}
+              </div>
+            </article>
           </div>
         </section>
 
         <section id="avaliacoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "avaliacoes")}>
-          <div className="section-head"><div><div className="eyebrow">Experiência</div><h2>Avaliações</h2></div><StatusPill tone="pending">Modelo de dados pendente</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Avaliação do atendimento" description="Coleta de nota e comentário após o atendimento." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Indicadores de satisfação" description="Consolidação por unidade, profissional e período." status="Backend pendente" tone="pending" />
+          <div className="section-head">
+            <div><div className="eyebrow">Experiência</div><h2>Avaliações e satisfação</h2></div>
+            <StatusPill tone="ready">Coleta ativa</StatusPill>
+          </div>
+
+          <div className="erp-kpi-row">
+            <article><span>Nota média</span><strong>{reviewAverage ? reviewAverage.toFixed(1) : "—"}</strong><small>escala de 1 a 5</small></article>
+            <article><span>Avaliações</span><strong>{workspace.reviews.length}</strong><small>registros recebidos</small></article>
+            <article><span>Promotores</span><strong>{workspace.reviews.filter((review) => review.score >= 4).length}</strong><small>notas 4 ou 5</small></article>
+            <article><span>Críticas</span><strong>{workspace.reviews.filter((review) => review.score <= 2).length}</strong><small>pedem retorno</small></article>
+          </div>
+
+          {actionOk === "avaliacao" && <div className="notice erp-inline-notice success">Avaliação registrada.</div>}
+          {actionError === "avaliacao" && <div className="notice erp-inline-notice error-notice">A nota precisa estar entre 1 e 5.</div>}
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Registrar avaliação</span><strong>Pós-atendimento</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+              {canOperate && (
+                <form action={saveReview} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <div className="grid grid-2">
+                    <label><span className="label">Cliente</span><input className="input" name="customerName" placeholder="Nome do cliente" /></label>
+                    <label><span className="label">Profissional</span><select className="select" name="professionalName"><option value="">Não informado</option>{shop.users.filter((user) => ["OWNER","MANAGER","BARBER"].includes(user.role)).map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}</select></label>
+                  </div>
+                  <label><span className="label">Nota</span><select className="select" name="score" defaultValue="5"><option value="5">5 · Excelente</option><option value="4">4 · Muito bom</option><option value="3">3 · Bom</option><option value="2">2 · Regular</option><option value="1">1 · Ruim</option></select></label>
+                  <label><span className="label">Comentário</span><textarea className="textarea" name="comment" placeholder="Comentário opcional" /></label>
+                  <button className="btn" type="submit">Salvar avaliação</button>
+                </form>
+              )}
+            </article>
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Últimas avaliações</span><strong>Feedback do cliente</strong></div><StatusPill tone="ready">Histórico</StatusPill></div>
+              <div className="erp-review-list">
+                {workspace.reviews.slice(0, 10).map((review) => (
+                  <div key={review.id}>
+                    <span className="erp-review-score">{review.score.toFixed(0)}★</span>
+                    <div><strong>{review.customerName}</strong><span>{review.professionalName || "Profissional não informado"}</span><small>{review.comment || "Sem comentário"}</small></div>
+                  </div>
+                ))}
+                {!workspace.reviews.length && <small className="muted">Nenhuma avaliação registrada ainda.</small>}
+              </div>
+            </article>
           </div>
         </section>
 
         <section id="alertas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "alertas")}>
-          <div className="section-head"><div><div className="eyebrow">Alertas</div><h2>Central de atenção</h2></div><StatusPill tone="ready">Ativo</StatusPill></div>
+          <div className="section-head">
+            <div><div className="eyebrow">Alertas</div><h2>Central de atenção</h2></div>
+            <StatusPill tone="ready">Atualização automática</StatusPill>
+          </div>
           <div className="erp-alert-grid">
-            <article className="card"><BellRing size={18} /><div><strong>{pendingFinance} pendência(s) financeira(s)</strong><span>Revisar contas com status pendente.</span></div></article>
-            <article className="card"><ReceiptText size={18} /><div><strong>{openCommands} comanda(s) aberta(s)</strong><span>Acompanhar atendimentos em andamento.</span></div></article>
-            <article className="card"><PackageSearch size={18} /><div><strong>{productsAllTotal} produto(s) cadastrado(s)</strong><span>Reposição e estoque mínimo ficam concentrados no módulo de estoque.</span></div></article>
+            <article className="card"><BellRing size={18} /><div><strong>{pendingFinance} pendência(s) financeira(s)</strong><span>Revisar contas com status pendente.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/financeiro?financeiroStatus=PENDING`}>Abrir financeiro →</Link></div></article>
+            <article className="card"><ReceiptText size={18} /><div><strong>{openCommands} comanda(s) aberta(s)</strong><span>Acompanhar atendimentos em andamento.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/comandas?comandaStatus=OPEN`}>Abrir comandas →</Link></div></article>
+            <article className="card"><PackageSearch size={18} /><div><strong>{productsAllTotal} produto(s) cadastrado(s)</strong><span>Reposição e estoque mínimo ficam concentrados no módulo de estoque.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/estoque`}>Abrir estoque →</Link></div></article>
+            <article className="card"><WalletCards size={18} /><div><strong>{overdueClubMembers.length} assinatura(s) vencida(s)</strong><span>Gerar cobrança ou regularizar clientes do clube.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`}>Abrir clube →</Link></div></article>
+            <article className="card"><CalendarDays size={18} /><div><strong>{waitlist.length} cliente(s) na espera</strong><span>Buscar encaixes na agenda e horários livres.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/agenda`}>Abrir agenda →</Link></div></article>
+            <article className="card"><Star size={18} /><div><strong>{workspace.reviews.filter((review) => review.score <= 2).length} avaliação(ões) crítica(s)</strong><span>Priorizar retorno ao cliente e plano de recuperação.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/avaliacoes`}>Abrir avaliações →</Link></div></article>
           </div>
         </section>
 
         <section id="treinamentos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "treinamentos")}>
-          <div className="section-head"><div><div className="eyebrow">Treinamentos</div><h2>Vídeos, cursos e materiais</h2></div><StatusPill tone="pending">Conteúdo pendente</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Vídeos tutoriais" description="Área preparada para tutoriais operacionais do sistema e da rotina." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Cursos" description="Trilhas de desenvolvimento para equipe, gestão e atendimento." status="Conteúdo pendente" tone="pending" />
-            <ModuleCard title="Imagens de divulgação" description="Biblioteca para materiais de campanhas e comunicação da barbearia." status="Conteúdo pendente" tone="pending" />
+          <div className="section-head">
+            <div><div className="eyebrow">Treinamentos</div><h2>Vídeos, cursos e materiais</h2></div>
+            <StatusPill tone="ready">Biblioteca ativa</StatusPill>
           </div>
-        </section>
 
-        <section id="totem" className="demo-section" hidden={Boolean(moduleId && moduleId !== "totem")}>
-          <div className="section-head"><div><div className="eyebrow">Totem / Tablet</div><h2>Check-in e autoatendimento</h2></div><StatusPill tone={isPro ? "pro" : "pending"}>{isPro ? "Plano Pro" : "Bloqueado no Essencial"}</StatusPill></div>
-          <div className="card erp-totem-preview">
-            <div>
-              <Store size={28} />
-              <div>
-                <strong>{isPro ? "Experiência de Totem disponível" : "Recurso exclusivo do Pro"}</strong>
-                <p>
-                  Fluxos preparados para identificação, agendamento, check-in e validação do status de assinatura.
-                </p>
+          {actionOk === "conteudo" && <div className="notice erp-inline-notice success">Conteúdo adicionado à biblioteca.</div>}
+          {actionError === "conteudo" && <div className="notice erp-inline-notice error-notice">Informe título e link válido.</div>}
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Novo conteúdo</span><strong>Desenvolvimento da equipe</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+              {canManage && (
+                <form action={saveTrainingItem} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <label><span className="label">Título</span><input className="input" name="title" required placeholder="Ex.: Padrão de atendimento" /></label>
+                  <label><span className="label">Tipo</span><select className="select" name="kind"><option value="VIDEO">Vídeo tutorial</option><option value="COURSE">Curso / trilha</option><option value="MEDIA">Material de divulgação</option></select></label>
+                  <label><span className="label">Link</span><input className="input" name="url" type="url" required placeholder="https://..." /></label>
+                  <label><span className="label">Descrição</span><textarea className="textarea" name="description" placeholder="Objetivo, público e instruções." /></label>
+                  <button className="btn" type="submit">Adicionar conteúdo</button>
+                </form>
+              )}
+            </article>
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Biblioteca</span><strong>{workspace.training.length} item(ns)</strong></div><StatusPill tone="ready">Organizada</StatusPill></div>
+              <div className="erp-training-grid">
+                {workspace.training.map((item) => (
+                  <a href={item.url} target="_blank" rel="noreferrer" key={item.id}>
+                    <span>{item.kind === "VIDEO" ? "▶" : item.kind === "COURSE" ? "✓" : "▣"}</span>
+                    <div><strong>{item.title}</strong><small>{item.description || item.kind}</small></div>
+                  </a>
+                ))}
+                {!workspace.training.length && <small className="muted">Adicione tutoriais, cursos ou materiais da barbearia.</small>}
               </div>
-            </div>
-            {isPro ? (
-              <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/totem`}>Abrir Totem</Link>
-            ) : (
-              <a className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/plano`}>Ver plano</a>
-            )}
+            </article>
           </div>
         </section>
 
         <section id="configuracoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "configuracoes")}>
-          <div className="section-head"><div><div className="eyebrow">Configurações</div><h2>Ajustes do sistema</h2></div><StatusPill tone="pending">Em evolução</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Ajustes da operação" description="Preferências da agenda, atendimento, caixa e módulos da barbearia." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Rodízio de profissionais" description="Regras de distribuição e organização da equipe por atendimento." status="Backend pendente" tone="pending" />
-            <ModuleCard title="Nota fiscal" description="Emissão fiscal depende de integração com emissor compatível." status="Integração externa" tone="pending" />
+          <div className="section-head">
+            <div><div className="eyebrow">Configurações</div><h2>Ajustes da operação</h2></div>
+            <StatusPill tone="ready">Persistente</StatusPill>
+          </div>
+
+          {actionOk === "configuracoes" && <div className="notice erp-inline-notice success">Configurações atualizadas.</div>}
+          {actionError === "banco" && <div className="notice erp-inline-notice error-notice">Não foi possível salvar as configurações.</div>}
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Agenda e atendimento</span><strong>Preferências operacionais</strong></div><StatusPill tone="ready">Aplicado</StatusPill></div>
+              {canManage ? (
+                <form action={saveOperationalSettings} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <div className="grid grid-3">
+                    <label><span className="label">Abertura</span><input className="input" name="openHour" type="number" min="0" max="23" defaultValue={workspace.settings.openHour} /></label>
+                    <label><span className="label">Fechamento</span><input className="input" name="closeHour" type="number" min="1" max="24" defaultValue={workspace.settings.closeHour} /></label>
+                    <label><span className="label">Intervalo da agenda</span><select className="select" name="slotMinutes" defaultValue={workspace.settings.slotMinutes}><option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></label>
+                  </div>
+                  <div className="grid grid-2">
+                    <label><span className="label">Comissão padrão (%)</span><input className="input" name="defaultCommissionPercent" type="number" min="0" max="100" step="0.01" defaultValue={workspace.settings.defaultCommissionPercent} /></label>
+                    <label><span className="label">WhatsApp da operação</span><input className="input" name="whatsappNumber" defaultValue={workspace.settings.whatsappNumber} placeholder="5511999999999" /></label>
+                  </div>
+                  <label><span className="label">Emissor fiscal / referência</span><input className="input" name="invoiceProvider" defaultValue={workspace.settings.invoiceProvider} placeholder="Nome do emissor ou integração planejada" /></label>
+                  <div className="erp-switch-grid">
+                    <label><input type="checkbox" name="rotationEnabled" defaultChecked={workspace.settings.rotationEnabled} /><span><strong>Rodízio de profissionais</strong><small>Ativa regra operacional de distribuição.</small></span></label>
+                    <label><input type="checkbox" name="autoConfirm" defaultChecked={workspace.settings.autoConfirm} /><span><strong>Confirmação automática</strong><small>Preferência pronta para automação de mensagens.</small></span></label>
+                  </div>
+                  <button className="btn" type="submit">Salvar configurações</button>
+                </form>
+              ) : <p className="muted small">Somente proprietário ou gerente pode alterar estas configurações.</p>}
+            </article>
+
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Integrações</span><strong>Status técnico</strong></div><StatusPill tone="pending">Conexões externas</StatusPill></div>
+              <div className="erp-health-list">
+                <div><span>WhatsApp</span><strong>{workspace.settings.whatsappNumber ? "Número configurado" : "Configuração pendente"}</strong></div>
+                <div><span>Nota fiscal</span><strong>{workspace.settings.invoiceProvider || "Emissor não conectado"}</strong></div>
+                <div><span>Rodízio</span><strong>{workspace.settings.rotationEnabled ? "Ativo" : "Desativado"}</strong></div>
+                <div><span>Confirmação automática</span><strong>{workspace.settings.autoConfirm ? "Preferência ativa" : "Manual"}</strong></div>
+              </div>
+              <p className="erp-integration-note">WhatsApp automático, gateway de pagamento e emissão fiscal dependem de credenciais/provedores externos. O ERP mantém a configuração e os fluxos internos prontos sem fingir uma integração que ainda não existe.</p>
+            </article>
           </div>
         </section>
 
