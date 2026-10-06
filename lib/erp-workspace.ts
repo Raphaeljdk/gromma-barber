@@ -21,6 +21,7 @@ export type ClubMemberConfig = {
 
 export type CampaignConfig = {
   id: string;
+  kind?: "MESSAGE" | "PROMOTION";
   title: string;
   audience: "ALL" | "INACTIVE_30" | "INACTIVE_60" | "INACTIVE_90" | "BIRTHDAY";
   message: string;
