@@ -68,6 +68,8 @@ export default async function BarberiasPage({
   const statusValue = Array.isArray(qs.status) ? qs.status[0] : qs.status;
   const queryValue = Array.isArray(qs.q) ? qs.q[0] : qs.q;
   const pageValue = Array.isArray(qs.page) ? qs.page[0] : qs.page;
+  const scopeValue = Array.isArray(qs.scope) ? qs.scope[0] : qs.scope;
+  const scope = scopeValue === "validation" ? "validation" : "commercial";
   const status =
     statusValue && allowedStatuses.includes(statusValue as (typeof allowedStatuses)[number])
       ? (statusValue as (typeof allowedStatuses)[number])
@@ -78,6 +80,7 @@ export default async function BarberiasPage({
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
   const pageSize = 12;
   const filterWhere = {
+    isDemo: scope === "validation",
     ...(status ? { status } : {}),
     ...(search
       ? {
@@ -354,6 +357,7 @@ export default async function BarberiasPage({
 
       <form className="card admin-search executive-search" action="/admin/barbearias" method="get">
         {status && <input type="hidden" name="status" value={status} />}
+        {scope === "validation" && <input type="hidden" name="scope" value="validation" />}
         <label>
           <Search size={16} />
           <span className="sr-only">Buscar tenant</span>
@@ -363,12 +367,17 @@ export default async function BarberiasPage({
         {(search || status) && <Link className="btn secondary" href="/admin/barbearias">Limpar</Link>}
       </form>
 
+      <div className="executive-scope-row" aria-label="Ambiente dos tenants">
+        <Link className={scope === "commercial" ? "active" : ""} href="/admin/barbearias">Base comercial <strong>{totalCommercial}</strong></Link>
+        <Link className={scope === "validation" ? "active" : ""} href="/admin/barbearias?scope=validation">Validação <strong>{demos}</strong></Link>
+      </div>
+
       <div className="executive-filter-row">
-        <Link className={!status ? "active" : ""} href="/admin/barbearias">Todos <strong>{totalCommercial}</strong></Link>
-        <Link className={status === "PENDING" ? "active" : ""} href="/admin/barbearias?status=PENDING">Pendentes <strong>{pending}</strong></Link>
-        <Link className={status === "APPROVED" ? "active" : ""} href="/admin/barbearias?status=APPROVED">Liberados <strong>{approved}</strong></Link>
-        <Link className={status === "BLOCKED" ? "active" : ""} href="/admin/barbearias?status=BLOCKED">Bloqueados <strong>{blocked}</strong></Link>
-        <Link className={status === "REJECTED" ? "active" : ""} href="/admin/barbearias?status=REJECTED">Rejeitados <strong>{rejected}</strong></Link>
+        <Link className={!status ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation" : "/admin/barbearias"}>Todos <strong>{scope === "validation" ? demos : totalCommercial}</strong></Link>
+        <Link className={status === "PENDING" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=PENDING" : "/admin/barbearias?status=PENDING"}>Pendentes <strong>{pending}</strong></Link>
+        <Link className={status === "APPROVED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=APPROVED" : "/admin/barbearias?status=APPROVED"}>Liberados <strong>{approved}</strong></Link>
+        <Link className={status === "BLOCKED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=BLOCKED" : "/admin/barbearias?status=BLOCKED"}>Bloqueados <strong>{blocked}</strong></Link>
+        <Link className={status === "REJECTED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=REJECTED" : "/admin/barbearias?status=REJECTED"}>Rejeitados <strong>{rejected}</strong></Link>
       </div>
 
       <div className="table-wrap executive-tenant-table-wrap">
