@@ -173,7 +173,6 @@ export async function reviewBarberShop(formData: FormData) {
             status: "REJECTED",
             accessReleased: false,
             activePlan: null,
-            enabledFeatures: [],
             onboardingStage: "REJECTED",
             adminNotes: notes,
             reviewedAt: new Date(),
