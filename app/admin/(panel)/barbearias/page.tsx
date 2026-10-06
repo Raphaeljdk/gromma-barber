@@ -45,16 +45,6 @@ function DatabaseUnavailable() {
           </div>
         </div>
       </div>
-
-      <SectionPagination
-        basePath="/admin/barbearias"
-        searchParams={qs}
-        param="page"
-        page={page}
-        total={filteredTotal}
-        pageSize={pageSize}
-        label="tenants"
-      />
     </section>
   );
 }
@@ -444,6 +434,16 @@ export default async function BarberiasPage({
           </tbody>
         </table>
       </div>
+
+      <SectionPagination
+        basePath="/admin/barbearias"
+        searchParams={qs}
+        param="page"
+        page={page}
+        total={filteredTotal}
+        pageSize={pageSize}
+        label="tenants"
+      />
     </section>
   );
 }
