@@ -523,6 +523,7 @@ export async function saveOperationalSettings(formData: FormData) {
   );
   const whatsappNumber = value(formData, "whatsappNumber", 40).replace(/\D/g, "");
   const invoiceProvider = value(formData, "invoiceProvider", 120);
+  const amenities = value(formData, "amenities", 600);
 
   try {
     await persistWorkspace(shop, (workspace) => {
@@ -535,6 +536,7 @@ export async function saveOperationalSettings(formData: FormData) {
         defaultCommissionPercent,
         whatsappNumber,
         invoiceProvider,
+        amenities,
       };
     });
   } catch (error) {
