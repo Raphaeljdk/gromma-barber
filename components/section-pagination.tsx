@@ -37,7 +37,7 @@ export function SectionPagination({
     const params = new URLSearchParams();
 
     Object.entries(searchParams).forEach(([key, value]) => {
-      if (key === param) return;
+      if (key === param || key === "ok" || key === "erro") return;
       const resolved = firstValue(value);
       if (resolved) params.set(key, resolved);
     });
