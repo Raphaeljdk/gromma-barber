@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { clearAdminSession, requireAdmin } from "@/lib/auth";
 import { PLAN_CONFIG, PlanKey } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +35,13 @@ export async function reviewBarberShop(formData: FormData) {
   const current = await prisma.barberShop.findUnique({ where: { id } });
   if (!current) redirect("/admin/barbearias");
 
+  const currentFeatureObject =
+    current.enabledFeatures &&
+    typeof current.enabledFeatures === "object" &&
+    !Array.isArray(current.enabledFeatures)
+      ? (current.enabledFeatures as Prisma.JsonObject)
+      : {};
+
   if (current.isDemo) {
     redirect(`/admin/barbearias/${id}?erro=demo`);
   }
@@ -55,7 +63,8 @@ export async function reviewBarberShop(formData: FormData) {
             activePlan: selectedPlan,
             onboardingStage: "ACTIVE",
             enabledFeatures: {
-              version: 3,
+              ...currentFeatureObject,
+              version: 4,
               plan: selectedPlan,
               features: [...plan.features],
               commercial: {
