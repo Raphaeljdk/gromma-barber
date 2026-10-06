@@ -25,7 +25,10 @@ import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ErpAgendaBoard } from "@/components/erp-agenda-board";
+import { readWorkspace } from "@/lib/erp-workspace";
 import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, markFinancialPaid, updateAppointmentStatus } from "./actions";
+import { addClubMember, addDeduction, addWaitlist, generateClubCharge, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem } from "./module-actions";
 
 function StatusPill({
   children,
@@ -187,6 +190,15 @@ export async function TenantERPView({
   const comandaStatus = allowedValue(valueOf("comandaStatus"), COMMAND_STATUSES);
   const financeiroTipo = allowedValue(valueOf("financeiroTipo"), FINANCIAL_TYPES);
   const financeiroStatus = allowedValue(valueOf("financeiroStatus"), FINANCIAL_STATUSES);
+  const agendaDateRaw = valueOf("agendaDate");
+  const agendaView = valueOf("agendaView") === "week" ? "week" as const : "day" as const;
+  const todayDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const agendaDate = /^\d{4}-\d{2}-\d{2}$/.test(agendaDateRaw) ? agendaDateRaw : todayDate;
   const actionOk = valueOf("ok");
   const actionError = valueOf("erro");
 
@@ -211,6 +223,16 @@ export async function TenantERPView({
   });
 
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
+
+  const workspace = readWorkspace(shop.enabledFeatures);
+  const agendaAnchorDate = new Date(`${agendaDate}T00:00:00-03:00`);
+  const agendaRangeStart = new Date(agendaAnchorDate);
+  if (agendaView === "week") {
+    const weekDay = agendaRangeStart.getUTCDay();
+    agendaRangeStart.setUTCDate(agendaRangeStart.getUTCDate() + (weekDay === 0 ? -6 : 1 - weekDay));
+  }
+  const agendaRangeEnd = new Date(agendaRangeStart);
+  agendaRangeEnd.setUTCDate(agendaRangeEnd.getUTCDate() + (agendaView === "week" ? 7 : 1));
 
   const customerWhere: Prisma.CustomerWhereInput = {
     barberShopId: shop.id,
@@ -280,6 +302,9 @@ export async function TenantERPView({
     pendingFinance,
     receivableAggregate,
     payableAggregate,
+    agendaBoardAppointments,
+    relationshipAppointments,
+    commissionCommands,
   ] = await Promise.all([
     prisma.customer.findMany({
       where: customerWhere,
@@ -339,6 +364,31 @@ export async function TenantERPView({
       where: { barberShopId: shop.id, type: "PAYABLE" },
       _sum: { amount: true },
     }),
+    prisma.appointment.findMany({
+      where: {
+        barberShopId: shop.id,
+        startsAt: { gte: agendaRangeStart, lt: agendaRangeEnd },
+      },
+      orderBy: { startsAt: "asc" },
+      include: { customer: true, barber: true, service: true, unit: true },
+      take: 500,
+    }),
+    prisma.appointment.findMany({
+      where: { barberShopId: shop.id, customerId: { not: null } },
+      orderBy: { startsAt: "desc" },
+      select: { customerId: true, startsAt: true, status: true },
+      take: 1000,
+    }),
+    prisma.serviceCommand.findMany({
+      where: { barberShopId: shop.id, status: "CLOSED" },
+      orderBy: { closedAt: "desc" },
+      include: {
+        appointment: { include: { barber: true, service: true } },
+        customer: true,
+        items: true,
+      },
+      take: 500,
+    }),
   ]);
 
   const servicePool = servicosQ
@@ -381,6 +431,24 @@ export async function TenantERPView({
   const receivables = Number(receivableAggregate._sum.amount ?? 0);
   const payables = Number(payableAggregate._sum.amount ?? 0);
   const cashBalance = receivables - payables;
+
+  const serviceNameById = new Map(shop.services.map((service) => [service.id, service.name]));
+  const waitlist = workspace.waitlist.map((item) => ({
+    ...item,
+    serviceName: item.serviceId ? serviceNameById.get(item.serviceId) ?? "Serviço" : "Qualquer serviço",
+  }));
+
+  const lastAppointmentByCustomer = new Map<string, Date>();
+  relationshipAppointments.forEach((item) => {
+    if (item.customerId && !lastAppointmentByCustomer.has(item.customerId)) {
+      lastAppointmentByCustomer.set(item.customerId, item.startsAt);
+    }
+  });
+
+  const customersForRelationship = appointmentCustomers.map((customer) => ({
+    ...customer,
+    lastAppointmentAt: lastAppointmentByCustomer.get(customer.id) ?? null,
+  }));
 
   const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
   const supportSubject = encodeURIComponent(`Suporte GROMMA - ${shop.tradeName} - ${tenantCode}`);
