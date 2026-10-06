@@ -900,7 +900,7 @@ export async function TenantERPView({
                     </label>
                     <label>
                       <span className="label">Unidade</span>
-                      <select className="select" name="unitId" required defaultValue="">
+                      <select className="select" name="unitId" required defaultValue={agendaUnit}>
                         <option value="" disabled>Selecione</option>
                         {shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
                       </select>
