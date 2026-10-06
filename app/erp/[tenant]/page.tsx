@@ -228,6 +228,13 @@ export async function TenantERPView({
   const estoquePage = pageOf("estoquePage");
   const equipePage = pageOf("equipePage");
   const unidadesPage = pageOf("unidadesPage");
+  const assinaturasPage = pageOf("assinaturasPage");
+  const mensagensPage = pageOf("mensagensPage");
+  const promocoesPage = pageOf("promocoesPage");
+  const comissoesPage = pageOf("comissoesPage");
+  const documentosPage = pageOf("documentosPage");
+  const avaliacoesPage = pageOf("avaliacoesPage");
+  const treinamentosPage = pageOf("treinamentosPage");
 
   const shop = await prisma.barberShop.findUnique({
     where: { tenantCode },
@@ -553,6 +560,40 @@ export async function TenantERPView({
   const reviewAverage = workspace.reviews.length
     ? workspace.reviews.reduce((sum, review) => sum + review.score, 0) / workspace.reviews.length
     : 0;
+
+  const clubMemberPageRows = clubMemberRows.slice(
+    (assinaturasPage - 1) * pageSize,
+    assinaturasPage * pageSize,
+  );
+  const messageContacts = customersForRelationship.slice(
+    (mensagensPage - 1) * pageSize,
+    mensagensPage * pageSize,
+  );
+  const promotionCampaigns = workspace.campaigns.filter((item) => item.kind === "PROMOTION");
+  const promotionCampaignPageRows = promotionCampaigns.slice(
+    (promocoesPage - 1) * pageSize,
+    promocoesPage * pageSize,
+  );
+  const couponPageRows = workspace.coupons.slice(
+    (promocoesPage - 1) * pageSize,
+    promocoesPage * pageSize,
+  );
+  const commissionPageRows = commissionRows.slice(
+    (comissoesPage - 1) * pageSize,
+    comissoesPage * pageSize,
+  );
+  const documentPageRows = workspace.documents.slice(
+    (documentosPage - 1) * pageSize,
+    documentosPage * pageSize,
+  );
+  const reviewPageRows = workspace.reviews.slice(
+    (avaliacoesPage - 1) * pageSize,
+    avaliacoesPage * pageSize,
+  );
+  const trainingPageRows = workspace.training.slice(
+    (treinamentosPage - 1) * pageSize,
+    treinamentosPage * pageSize,
+  );
 
   const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
   const supportSubject = encodeURIComponent(`Suporte GROMMA - ${shop.tradeName} - ${tenantCode}`);
@@ -1008,7 +1049,7 @@ export async function TenantERPView({
               )}
               <div className="table-wrap erp-inner-table"><table>
                 <thead><tr><th>Cliente</th><th>Plano</th><th>Próxima cobrança</th><th>Status</th><th>Ação</th></tr></thead>
-                <tbody>{clubMemberRows.length ? clubMemberRows.map((member) => {
+                <tbody>{clubMemberRows.length ? clubMemberPageRows.map((member) => {
                   const overdue = member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime();
                   return (
                     <tr key={member.id}>
@@ -1024,6 +1065,7 @@ export async function TenantERPView({
               <p className="erp-integration-note">Cobrança recorrente e baixa automática ficam prontas para conectar a um gateway de pagamento; enquanto isso, a geração de recebíveis já funciona dentro do Financeiro.</p>
             </article>
           </div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} searchParams={qs} param="assinaturasPage" page={assinaturasPage} total={clubMemberRows.length} pageSize={pageSize} label="assinantes" />
         </section>
 
         <section id="mensagens" className="demo-section" hidden={Boolean(moduleId && moduleId !== "mensagens")}>
@@ -1069,7 +1111,7 @@ export async function TenantERPView({
               <div className="erp-card-title"><div><span>WhatsApp Business</span><strong>Contato operacional</strong></div><StatusPill tone={workspace.settings.whatsappNumber ? "ready" : "pending"}>{workspace.settings.whatsappNumber ? "Número configurado" : "Configurar número"}</StatusPill></div>
               <p className="small muted">Sem provedor/API conectado, o sistema abre a conversa no WhatsApp para envio assistido. Automação em lote continua dependente da API oficial.</p>
               <div className="erp-contact-list">
-                {customersForRelationship.slice(0, 12).map((customer) => {
+                {messageContacts.map((customer) => {
                   const phone = (customer.whatsapp || customer.phone || "").replace(/\D/g, "");
                   const message = workspace.campaigns.find((item) => item.kind !== "PROMOTION")?.message ?? `Olá, ${customer.name}! Tudo bem?`;
                   const waPhone = phone.startsWith("55") ? phone : phone ? `55${phone}` : "";
@@ -1083,6 +1125,7 @@ export async function TenantERPView({
               </div>
             </article>
           </div>
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/mensagens`} searchParams={qs} param="mensagensPage" page={mensagensPage} total={customersForRelationship.length} pageSize={pageSize} label="clientes" />
         </section>
 
         <section id="promocoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "promocoes")}>
@@ -1115,7 +1158,7 @@ export async function TenantERPView({
                 </form>
               )}
               <div className="erp-stacked-list">
-                {workspace.campaigns.filter((item) => item.kind === "PROMOTION").slice(0, 8).map((campaign) => (
+                {promotionCampaignPageRows.map((campaign) => (
                   <div key={campaign.id}><div><strong>{campaign.title}</strong><span>{campaign.audience.replaceAll("_", " ")}</span></div><span className="badge approved">Ativa</span></div>
                 ))}
                 {!workspace.campaigns.some((item) => item.kind === "PROMOTION") && <small className="muted">Nenhuma promoção cadastrada.</small>}
@@ -1137,13 +1180,14 @@ export async function TenantERPView({
                 </form>
               )}
               <div className="erp-coupon-grid">
-                {workspace.coupons.map((coupon) => (
+                {couponPageRows.map((coupon) => (
                   <div key={coupon.id}><span>{coupon.code}</span><strong>{coupon.kind === "PERCENT" ? `${coupon.value}%` : brl(coupon.value)}</strong><small>{coupon.expiresAt ? `até ${new Intl.DateTimeFormat("pt-BR").format(new Date(`${coupon.expiresAt}T12:00:00`))}` : "sem validade"}</small></div>
                 ))}
                 {!workspace.coupons.length && <small className="muted">Nenhum cupom criado.</small>}
               </div>
             </article>
           </div>
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/promocoes`} searchParams={qs} param="promocoesPage" page={promocoesPage} total={Math.max(promotionCampaigns.length, workspace.coupons.length)} pageSize={pageSize} label="itens comerciais" />
         </section>
 
         <section id="financeiro" className="demo-section" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
@@ -1299,7 +1343,7 @@ export async function TenantERPView({
           <div className="table-wrap">
             <table>
               <thead><tr><th>Profissional</th><th>Produção</th><th>Regra</th><th>Comissão bruta</th><th>Deduções</th><th>Líquido</th></tr></thead>
-              <tbody>{commissionRows.length ? commissionRows.map((row) => (
+              <tbody>{commissionRows.length ? commissionPageRows.map((row) => (
                 <tr key={row.user.id}>
                   <td><strong>{row.user.name}</strong><div className="small muted">{ROLE_LABELS[row.user.role] ?? row.user.role}</div></td>
                   <td>{brl(row.production)}</td>
@@ -1312,6 +1356,7 @@ export async function TenantERPView({
             </table>
           </div>
           <p className="erp-integration-note">A conta do profissional agora é calculada a partir das comandas fechadas associadas aos atendimentos. Produtos sem vínculo de profissional ainda não entram no rateio individual.</p>
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} searchParams={qs} param="comissoesPage" page={comissoesPage} total={commissionRows.length} pageSize={pageSize} label="profissionais" />
         </section>
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
@@ -1467,7 +1512,7 @@ export async function TenantERPView({
             <article className="card erp-workspace-card">
               <div className="erp-card-title"><div><span>Biblioteca</span><strong>{workspace.documents.length} documento(s)</strong></div><StatusPill tone="ready">Organizada</StatusPill></div>
               <div className="erp-document-list">
-                {workspace.documents.map((document) => (
+                {documentPageRows.map((document) => (
                   <a href={document.url} target="_blank" rel="noreferrer" key={document.id}>
                     <FileText size={17} />
                     <div><strong>{document.title}</strong><span>{document.category} · {document.reference ?? "Sem referência"}</span></div>
@@ -1478,6 +1523,7 @@ export async function TenantERPView({
               </div>
             </article>
           </div>
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/documentos`} searchParams={qs} param="documentosPage" page={documentosPage} total={workspace.documents.length} pageSize={pageSize} label="documentos" />
         </section>
 
         <section id="avaliacoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "avaliacoes")}>
@@ -1515,7 +1561,7 @@ export async function TenantERPView({
             <article className="card erp-workspace-card">
               <div className="erp-card-title"><div><span>Últimas avaliações</span><strong>Feedback do cliente</strong></div><StatusPill tone="ready">Histórico</StatusPill></div>
               <div className="erp-review-list">
-                {workspace.reviews.slice(0, 10).map((review) => (
+                {reviewPageRows.map((review) => (
                   <div key={review.id}>
                     <span className="erp-review-score">{review.score.toFixed(0)}★</span>
                     <div><strong>{review.customerName}</strong><span>{review.professionalName || "Profissional não informado"}</span><small>{review.comment || "Sem comentário"}</small></div>
@@ -1525,6 +1571,7 @@ export async function TenantERPView({
               </div>
             </article>
           </div>
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/avaliacoes`} searchParams={qs} param="avaliacoesPage" page={avaliacoesPage} total={workspace.reviews.length} pageSize={pageSize} label="avaliações" />
         </section>
 
         <section id="alertas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "alertas")}>
@@ -1568,7 +1615,7 @@ export async function TenantERPView({
             <article className="card erp-workspace-card">
               <div className="erp-card-title"><div><span>Biblioteca</span><strong>{workspace.training.length} item(ns)</strong></div><StatusPill tone="ready">Organizada</StatusPill></div>
               <div className="erp-training-grid">
-                {workspace.training.map((item) => (
+                {trainingPageRows.map((item) => (
                   <a href={item.url} target="_blank" rel="noreferrer" key={item.id}>
                     <span>{item.kind === "VIDEO" ? "▶" : item.kind === "COURSE" ? "✓" : "▣"}</span>
                     <div><strong>{item.title}</strong><small>{item.description || item.kind}</small></div>
@@ -1578,6 +1625,7 @@ export async function TenantERPView({
               </div>
             </article>
           </div>
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/treinamentos`} searchParams={qs} param="treinamentosPage" page={treinamentosPage} total={workspace.training.length} pageSize={pageSize} label="conteúdos" />
         </section>
 
         <section id="configuracoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "configuracoes")}>
