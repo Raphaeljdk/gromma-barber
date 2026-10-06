@@ -343,6 +343,7 @@ export async function TenantERPView({
     relationshipAppointments,
     commissionCommands,
     stockAggregates,
+    stockHealthProducts,
   ] = await Promise.all([
     needsCustomerList
       ? prisma.customer.findMany({
@@ -454,6 +455,12 @@ export async function TenantERPView({
           by: ["productId", "type"],
           where: { barberShopId: shop.id },
           _sum: { quantity: true },
+        })
+      : Promise.resolve([]),
+    needsStockHealth
+      ? prisma.product.findMany({
+          where: { barberShopId: shop.id, active: true },
+          select: { id: true, stockMin: true },
         })
       : Promise.resolve([]),
   ]);
@@ -592,7 +599,7 @@ export async function TenantERPView({
     ...product,
     currentStock: stockByProduct.get(product.id) ?? 0,
   }));
-  const lowStockProducts = products.filter(
+  const lowStockProducts = stockHealthProducts.filter(
     (product) => (stockByProduct.get(product.id) ?? 0) <= Number(product.stockMin),
   );
 
