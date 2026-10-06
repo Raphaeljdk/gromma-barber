@@ -302,12 +302,37 @@ export async function saveCoupon(formData: FormData) {
 }
 
 export async function savePromotion(formData: FormData) {
-  const copy = new FormData();
-  copy.set("tenantCode", value(formData, "tenantCode", 80));
-  copy.set("title", value(formData, "title", 100));
-  copy.set("message", value(formData, "message", 1200));
-  copy.set("audience", value(formData, "audience", 30));
-  return saveCampaign(copy);
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "promocoes");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+
+  const title = value(formData, "title", 100);
+  const message = value(formData, "message", 1200);
+  const rawAudience = value(formData, "audience", 30);
+  const audience = ["ALL", "INACTIVE_30", "INACTIVE_60", "INACTIVE_90", "BIRTHDAY"].includes(rawAudience)
+    ? rawAudience as "ALL" | "INACTIVE_30" | "INACTIVE_60" | "INACTIVE_90" | "BIRTHDAY"
+    : "ALL";
+
+  if (title.length < 2 || message.length < 2) redirect(`${path}?erro=promocao`);
+
+  try {
+    await persistWorkspace(shop, (workspace) => {
+      workspace.campaigns.unshift({
+        id: workspaceId("promotion"),
+        title,
+        audience,
+        message,
+        active: true,
+        createdAt: new Date().toISOString(),
+      });
+    });
+  } catch (error) {
+    console.error("Failed to save promotion", error);
+    redirect(`${path}?erro=banco`);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?ok=promocao`);
 }
 
 export async function saveDocument(formData: FormData) {
