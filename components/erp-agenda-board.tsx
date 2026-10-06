@@ -13,10 +13,16 @@ type AppointmentCard = {
   barberId: string | null;
   barberName: string;
   serviceName: string;
+  unitId: string;
   unitName: string;
 };
 
 type Professional = {
+  id: string;
+  name: string;
+};
+
+type Unit = {
   id: string;
   name: string;
 };
@@ -27,6 +33,9 @@ type Props = {
   view: "day" | "week" | "month";
   appointments: AppointmentCard[];
   professionals: Professional[];
+  units: Unit[];
+  selectedProfessionalId?: string;
+  selectedUnitId?: string;
   settings: OperationalSettings;
   waitlist: Array<WaitlistConfig & { serviceName: string }>;
 };
@@ -125,6 +134,9 @@ export function ErpAgendaBoard({
   view,
   appointments,
   professionals,
+  units,
+  selectedProfessionalId,
+  selectedUnitId,
   settings,
   waitlist,
 }: Props) {
@@ -135,7 +147,15 @@ export function ErpAgendaBoard({
     ? settings.slotMinutes
     : 30;
   const totalSlots = Math.ceil(((safeClose - safeOpen) * 60) / slotMinutes);
-  const selectedAppointments = appointments.filter(
+  const visibleProfessionals = selectedProfessionalId
+    ? professionals.filter((professional) => professional.id === selectedProfessionalId)
+    : professionals;
+  const filteredAppointments = filteredAppointments.filter(
+    (appointment) =>
+      (!selectedProfessionalId || appointment.barberId === selectedProfessionalId) &&
+      (!selectedUnitId || appointment.unitId === selectedUnitId),
+  );
+  const selectedAppointments = filteredAppointments.filter(
     (appointment) => dateKey(appointment.startsAt) === selectedDate,
   );
 
@@ -147,7 +167,7 @@ export function ErpAgendaBoard({
   ).length;
   const completed = selectedAppointments.filter((item) => item.status === "COMPLETED").length;
 
-  const availableSlots = professionals.flatMap((professional) => {
+  const availableSlots = visibleProfessionals.flatMap((professional) => {
     const busy = selectedAppointments.filter(
       (appointment) =>
         appointment.barberId === professional.id &&
@@ -170,7 +190,7 @@ export function ErpAgendaBoard({
       if (occupied) return null;
       const hour = Math.floor(startMinutes / 60).toString().padStart(2, "0");
       const minute = (startMinutes % 60).toString().padStart(2, "0");
-      return { professional: professional.name, time: `${hour}:${minute}` };
+      return { professionalId: professional.id, professional: professional.name, time: `${hour}:${minute}` };
     }).filter(Boolean);
   }).filter(Boolean) as Array<{ professional: string; time: string }>;
 
@@ -202,6 +222,33 @@ export function ErpAgendaBoard({
         </div>
       </div>
 
+      <form className="agenda-filter-bar" action={base} method="get">
+        <input type="hidden" name="agendaDate" value={selectedDate} />
+        <input type="hidden" name="agendaView" value={view} />
+        <label>
+          <span>Profissional</span>
+          <select name="agendaProfessional" defaultValue={selectedProfessionalId ?? ""}>
+            <option value="">Todos</option>
+            {professionals.map((professional) => (
+              <option key={professional.id} value={professional.id}>{professional.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Unidade</span>
+          <select name="agendaUnit" defaultValue={selectedUnitId ?? ""}>
+            <option value="">Todas</option>
+            {units.map((unit) => (
+              <option key={unit.id} value={unit.id}>{unit.name}</option>
+            ))}
+          </select>
+        </label>
+        <button type="submit">Aplicar filtros</button>
+        {(selectedProfessionalId || selectedUnitId) && (
+          <Link href={`${base}?agendaDate=${selectedDate}&agendaView=${view}`}>Limpar</Link>
+        )}
+      </form>
+
       <div className="agenda-summary-grid">
         <article><CalendarDays size={17} /><div><span>Agendados no dia</span><strong>{scheduled}</strong></div></article>
         <article><Clock3 size={17} /><div><span>Em atendimento</span><strong>{inService}</strong></div></article>
@@ -214,10 +261,10 @@ export function ErpAgendaBoard({
           <div className="agenda-calendar-shell">
             <div
               className="agenda-professional-grid"
-              style={{ "--agenda-columns": Math.max(1, professionals.length) } as CSSProperties}
+              style={{ "--agenda-columns": Math.max(1, visibleProfessionals.length) } as CSSProperties}
             >
               <div className="agenda-time-header">Horário</div>
-              {professionals.length ? professionals.map((professional) => (
+              {visibleProfessionals.length ? visibleProfessionals.map((professional) => (
                 <div className="agenda-professional-head" key={professional.id}>
                   <span>{professional.name.slice(0, 1).toUpperCase()}</span>
                   <div><strong>{professional.name}</strong><small>Agenda do dia</small></div>
@@ -239,7 +286,7 @@ export function ErpAgendaBoard({
                 );
               })}
 
-              {professionals.map((professional, professionalIndex) =>
+              {visibleProfessionals.map((professional, professionalIndex) =>
                 selectedAppointments
                   .filter((appointment) => appointment.barberId === professional.id)
                   .map((appointment) => {
@@ -280,9 +327,13 @@ export function ErpAgendaBoard({
               <div className="agenda-side-head"><span>Próximos horários livres</span><strong>{availableSlots.length}</strong></div>
               <div className="agenda-free-slots">
                 {availableSlots.slice(0, 12).map((slot, index) => (
-                  <div key={`${slot.professional}-${slot.time}-${index}`}>
-                    <strong>{slot.time}</strong><span>{slot.professional}</span>
-                  </div>
+                  <Link
+                    className="agenda-free-slot"
+                    href={`${base}?agendaDate=${selectedDate}&agendaView=day&novo=1&startsAt=${encodeURIComponent(`${selectedDate}T${slot.time}`)}&barberId=${encodeURIComponent(slot.professionalId)}`}
+                    key={`${slot.professional}-${slot.time}-${index}`}
+                  >
+                    <strong>{slot.time}</strong><span>{slot.professional}</span><small>Agendar</small>
+                  </Link>
                 ))}
                 {!availableSlots.length && <small>Sem horários livres no período configurado.</small>}
               </div>
@@ -312,7 +363,7 @@ export function ErpAgendaBoard({
       ) : view === "week" ? (
         <div className="agenda-week-grid">
           {weekDays.map((day) => {
-            const dayAppointments = appointments.filter(
+            const dayAppointments = filteredAppointments.filter(
               (appointment) => dateKey(appointment.startsAt) === day,
             );
             return (
@@ -346,7 +397,7 @@ export function ErpAgendaBoard({
           </div>
           <div className="agenda-month-grid">
             {monthDays.map((day) => {
-              const dayAppointments = appointments.filter(
+              const dayAppointments = filteredAppointments.filter(
                 (appointment) => dateKey(appointment.startsAt) === day,
               );
               const outside = day.slice(0, 7) !== activeMonth;
