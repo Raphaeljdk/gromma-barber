@@ -58,6 +58,94 @@ async function unitForShop(barberShopId: string, unitId: string) {
   });
 }
 
+export async function createAppointment(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+
+  if (!allowed(viewer, OPERATION_ROLES)) {
+    redirect(`${path}?erro=permissao#agenda`);
+  }
+
+  const unitId = text(formData, "unitId", 80);
+  const serviceId = text(formData, "serviceId", 80);
+  const customerId = text(formData, "customerId", 80);
+  const barberId = text(formData, "barberId", 80);
+  const startsAtRaw = text(formData, "startsAt", 40);
+  const notes = text(formData, "notes", 300);
+  const startsAt = new Date(startsAtRaw);
+
+  if (!unitId || !serviceId || Number.isNaN(startsAt.getTime())) {
+    redirect(`${path}?erro=agenda#agenda`);
+  }
+
+  const [unit, service, customer, barber] = await Promise.all([
+    prisma.barberShopUnit.findFirst({
+      where: { id: unitId, barberShopId: shop.id, active: true },
+      select: { id: true },
+    }),
+    prisma.service.findFirst({
+      where: { id: serviceId, barberShopId: shop.id, active: true },
+      select: { id: true, durationMinutes: true },
+    }),
+    customerId
+      ? prisma.customer.findFirst({
+          where: { id: customerId, barberShopId: shop.id, active: true },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+    barberId
+      ? prisma.shopUser.findFirst({
+          where: { id: barberId, barberShopId: shop.id, active: true },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+  ]);
+
+  if (!unit || !service || (customerId && !customer) || (barberId && !barber)) {
+    redirect(`${path}?erro=agenda#agenda`);
+  }
+
+  const endsAt = new Date(startsAt.getTime() + service.durationMinutes * 60_000);
+
+  if (barber) {
+    const conflict = await prisma.appointment.findFirst({
+      where: {
+        barberShopId: shop.id,
+        barberId: barber.id,
+        status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] },
+        startsAt: { lt: endsAt },
+        OR: [{ endsAt: { gt: startsAt } }, { endsAt: null }],
+      },
+      select: { id: true },
+    });
+
+    if (conflict) redirect(`${path}?erro=agenda-conflito#agenda`);
+  }
+
+  try {
+    await prisma.appointment.create({
+      data: {
+        barberShopId: shop.id,
+        unitId: unit.id,
+        customerId: customer?.id ?? null,
+        barberId: barber?.id ?? null,
+        serviceId: service.id,
+        startsAt,
+        endsAt,
+        status: "SCHEDULED",
+        source: "ERP",
+        notes: notes || null,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to create appointment", error);
+    redirect(`${path}?erro=agenda#agenda`);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?ok=agenda#agenda`);
+}
+
 export async function createCustomer(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}`;
