@@ -484,6 +484,57 @@ export async function createFinancialEntry(formData: FormData) {
   redirect(`${path}?ok=financeiro#financeiro`);
 }
 
+export async function createStockMovement(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  const path = `/erp/${encodeURIComponent(tenantCode)}/estoque`;
+
+  if (!allowed(viewer, MANAGEMENT_ROLES)) {
+    redirect(`${path}?erro=permissao#estoque`);
+  }
+
+  const productId = text(formData, "productId", 80);
+  const unitId = text(formData, "unitId", 80);
+  const rawType = text(formData, "type", 20);
+  const type = rawType === "OUT" ? "OUT" : rawType === "ADJUSTMENT" ? "ADJUSTMENT" : "IN";
+  const quantity = decimal(formData, "quantity");
+  const reason = text(formData, "reason", 180) || "Movimentação manual";
+
+  const [product, unit] = await Promise.all([
+    prisma.product.findFirst({
+      where: { id: productId, barberShopId: shop.id, active: true },
+      select: { id: true },
+    }),
+    prisma.barberShopUnit.findFirst({
+      where: { id: unitId, barberShopId: shop.id, active: true },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!product || !unit || !Number.isFinite(quantity) || quantity <= 0) {
+    redirect(`${path}?erro=movimento#estoque`);
+  }
+
+  try {
+    await prisma.stockMovement.create({
+      data: {
+        barberShopId: shop.id,
+        unitId: unit.id,
+        productId: product.id,
+        type,
+        quantity,
+        reason,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to create stock movement", error);
+    redirect(`${path}?erro=movimento#estoque`);
+  }
+
+  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/alertas`);
+  redirect(`${path}?ok=movimento#estoque`);
+}
+
 export async function createProduct(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}/estoque`;
