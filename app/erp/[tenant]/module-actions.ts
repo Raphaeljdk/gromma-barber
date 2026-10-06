@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -58,11 +59,15 @@ function cloneWorkspace(workspace: ErpWorkspace): ErpWorkspace {
   return JSON.parse(JSON.stringify(workspace)) as ErpWorkspace;
 }
 
+type WorkspaceShop = {
+  id: string;
+  enabledFeatures: Prisma.JsonValue | null;
+};
+
 async function persistWorkspace(
-  shop: Awaited<ReturnType<typeof prisma.barberShop.findUnique>>,
+  shop: WorkspaceShop,
   mutate: (workspace: ErpWorkspace) => void,
 ) {
-  if (!shop) throw new Error("Tenant not found");
   const workspace = cloneWorkspace(readWorkspace(shop.enabledFeatures));
   mutate(workspace);
   await prisma.barberShop.update({
