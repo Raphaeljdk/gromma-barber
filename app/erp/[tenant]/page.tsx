@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -171,7 +172,7 @@ export default async function TenantERP({
 
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
 
-  const customerWhere = {
+  const customerWhere: Prisma.CustomerWhereInput = {
     barberShopId: shop.id,
     active: true,
     ...(clientesQ
@@ -184,15 +185,15 @@ export default async function TenantERP({
         }
       : {}),
   };
-  const appointmentWhere = {
+  const appointmentWhere: Prisma.AppointmentWhereInput = {
     barberShopId: shop.id,
     ...(agendaStatus ? { status: agendaStatus } : {}),
   };
-  const commandWhere = {
+  const commandWhere: Prisma.ServiceCommandWhereInput = {
     barberShopId: shop.id,
     ...(comandaStatus ? { status: comandaStatus } : {}),
   };
-  const productWhere = {
+  const productWhere: Prisma.ProductWhereInput = {
     barberShopId: shop.id,
     active: true,
     ...(estoqueQ
@@ -205,7 +206,7 @@ export default async function TenantERP({
         }
       : {}),
   };
-  const financialWhere = {
+  const financialWhere: Prisma.FinancialEntryWhereInput = {
     barberShopId: shop.id,
     ...(financeiroTipo ? { type: financeiroTipo } : {}),
     ...(financeiroStatus ? { status: financeiroStatus } : {}),
