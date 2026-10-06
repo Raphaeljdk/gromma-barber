@@ -201,6 +201,23 @@ export async function TenantERPView({
   const agendaDate = /^\d{4}-\d{2}-\d{2}$/.test(agendaDateRaw) ? agendaDateRaw : todayDate;
   const actionOk = valueOf("ok");
   const actionError = valueOf("erro");
+  const activeModule = moduleId ?? "dashboard";
+  const needsCustomerList = activeModule === "clientes";
+  const needsCustomerDirectory = ["agenda", "assinaturas", "mensagens", "promocoes"].includes(activeModule);
+  const needsCustomerCount = ["dashboard", "clientes", "promocoes", "relatorios"].includes(activeModule);
+  const needsAgendaList = activeModule === "agenda";
+  const needsAgendaCount = ["dashboard", "agenda", "relatorios", "gerencial"].includes(activeModule);
+  const needsCommandList = activeModule === "comandas";
+  const needsOpenCommands = ["dashboard", "caixa", "gerencial", "alertas"].includes(activeModule);
+  const needsProductList = activeModule === "estoque";
+  const needsProductCount = ["dashboard", "estoque", "alertas"].includes(activeModule);
+  const needsFinanceList = activeModule === "financeiro";
+  const needsFinanceCount = ["financeiro", "relatorios"].includes(activeModule);
+  const needsFinancialHealth = ["dashboard", "financeiro", "gerencial", "alertas"].includes(activeModule);
+  const needsCashAggregates = ["dashboard", "caixa", "gerencial"].includes(activeModule);
+  const needsAgendaBoard = activeModule === "agenda";
+  const needsRelationship = ["mensagens", "promocoes"].includes(activeModule);
+  const needsProduction = ["comissoes", "relatorios", "gerencial"].includes(activeModule);
 
   const pageSize = 10;
   const agendaPage = pageOf("agendaPage");
@@ -306,89 +323,111 @@ export async function TenantERPView({
     relationshipAppointments,
     commissionCommands,
   ] = await Promise.all([
-    prisma.customer.findMany({
-      where: customerWhere,
-      orderBy: { createdAt: "desc" },
-      skip: (clientesPage - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.customer.count({ where: customerWhere }),
-    prisma.customer.count({ where: { barberShopId: shop.id, active: true } }),
-    prisma.customer.findMany({
-      where: { barberShopId: shop.id, active: true },
-      orderBy: { name: "asc" },
-      take: 200,
-      select: { id: true, name: true, phone: true, whatsapp: true, email: true, birthDate: true },
-    }),
-    prisma.appointment.findMany({
-      where: appointmentWhere,
-      orderBy: { startsAt: "desc" },
-      skip: (agendaPage - 1) * pageSize,
-      take: pageSize,
-      include: { customer: true, barber: true, service: true, unit: true },
-    }),
-    prisma.appointment.count({ where: appointmentWhere }),
-    prisma.appointment.count({ where: { barberShopId: shop.id } }),
-    prisma.serviceCommand.findMany({
-      where: commandWhere,
-      orderBy: { openedAt: "desc" },
-      skip: (comandasPage - 1) * pageSize,
-      take: pageSize,
-      include: { customer: true, unit: true, items: true },
-    }),
-    prisma.serviceCommand.count({ where: commandWhere }),
-    prisma.serviceCommand.count({ where: { barberShopId: shop.id, status: "OPEN" } }),
-    prisma.product.findMany({
-      where: productWhere,
-      orderBy: { name: "asc" },
-      skip: (estoquePage - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.product.count({ where: productWhere }),
-    prisma.product.count({ where: { barberShopId: shop.id, active: true } }),
-    prisma.financialEntry.findMany({
-      where: financialWhere,
-      orderBy: { createdAt: "desc" },
-      skip: (financeiroPage - 1) * pageSize,
-      take: pageSize,
-      include: { unit: true },
-    }),
-    prisma.financialEntry.count({ where: financialWhere }),
-    prisma.financialEntry.count({ where: { barberShopId: shop.id } }),
-    prisma.financialEntry.count({ where: { barberShopId: shop.id, status: "PENDING" } }),
-    prisma.financialEntry.aggregate({
-      where: { barberShopId: shop.id, type: "RECEIVABLE" },
-      _sum: { amount: true },
-    }),
-    prisma.financialEntry.aggregate({
-      where: { barberShopId: shop.id, type: "PAYABLE" },
-      _sum: { amount: true },
-    }),
-    prisma.appointment.findMany({
-      where: {
-        barberShopId: shop.id,
-        startsAt: { gte: agendaRangeStart, lt: agendaRangeEnd },
-      },
-      orderBy: { startsAt: "asc" },
-      include: { customer: true, barber: true, service: true, unit: true },
-      take: 500,
-    }),
-    prisma.appointment.findMany({
-      where: { barberShopId: shop.id, customerId: { not: null } },
-      orderBy: { startsAt: "desc" },
-      select: { customerId: true, startsAt: true, status: true },
-      take: 1000,
-    }),
-    prisma.serviceCommand.findMany({
-      where: { barberShopId: shop.id, status: "CLOSED" },
-      orderBy: { closedAt: "desc" },
-      include: {
-        appointment: { include: { barber: true, service: true } },
-        customer: true,
-        items: true,
-      },
-      take: 500,
-    }),
+    needsCustomerList
+      ? prisma.customer.findMany({
+          where: customerWhere,
+          orderBy: { createdAt: "desc" },
+          skip: (clientesPage - 1) * pageSize,
+          take: pageSize,
+        })
+      : Promise.resolve([]),
+    needsCustomerList ? prisma.customer.count({ where: customerWhere }) : Promise.resolve(0),
+    needsCustomerCount ? prisma.customer.count({ where: { barberShopId: shop.id, active: true } }) : Promise.resolve(0),
+    needsCustomerDirectory
+      ? prisma.customer.findMany({
+          where: { barberShopId: shop.id, active: true },
+          orderBy: { name: "asc" },
+          take: 1000,
+          select: { id: true, name: true, phone: true, whatsapp: true, email: true, birthDate: true },
+        })
+      : Promise.resolve([]),
+    needsAgendaList
+      ? prisma.appointment.findMany({
+          where: appointmentWhere,
+          orderBy: { startsAt: "desc" },
+          skip: (agendaPage - 1) * pageSize,
+          take: pageSize,
+          include: { customer: true, barber: true, service: true, unit: true },
+        })
+      : Promise.resolve([]),
+    needsAgendaList ? prisma.appointment.count({ where: appointmentWhere }) : Promise.resolve(0),
+    needsAgendaCount ? prisma.appointment.count({ where: { barberShopId: shop.id } }) : Promise.resolve(0),
+    needsCommandList
+      ? prisma.serviceCommand.findMany({
+          where: commandWhere,
+          orderBy: { openedAt: "desc" },
+          skip: (comandasPage - 1) * pageSize,
+          take: pageSize,
+          include: { customer: true, unit: true, items: true },
+        })
+      : Promise.resolve([]),
+    needsCommandList ? prisma.serviceCommand.count({ where: commandWhere }) : Promise.resolve(0),
+    needsOpenCommands ? prisma.serviceCommand.count({ where: { barberShopId: shop.id, status: "OPEN" } }) : Promise.resolve(0),
+    needsProductList
+      ? prisma.product.findMany({
+          where: productWhere,
+          orderBy: { name: "asc" },
+          skip: (estoquePage - 1) * pageSize,
+          take: pageSize,
+        })
+      : Promise.resolve([]),
+    needsProductList ? prisma.product.count({ where: productWhere }) : Promise.resolve(0),
+    needsProductCount ? prisma.product.count({ where: { barberShopId: shop.id, active: true } }) : Promise.resolve(0),
+    needsFinanceList
+      ? prisma.financialEntry.findMany({
+          where: financialWhere,
+          orderBy: { createdAt: "desc" },
+          skip: (financeiroPage - 1) * pageSize,
+          take: pageSize,
+          include: { unit: true },
+        })
+      : Promise.resolve([]),
+    needsFinanceList ? prisma.financialEntry.count({ where: financialWhere }) : Promise.resolve(0),
+    needsFinanceCount ? prisma.financialEntry.count({ where: { barberShopId: shop.id } }) : Promise.resolve(0),
+    needsFinancialHealth ? prisma.financialEntry.count({ where: { barberShopId: shop.id, status: "PENDING" } }) : Promise.resolve(0),
+    needsCashAggregates
+      ? prisma.financialEntry.aggregate({
+          where: { barberShopId: shop.id, type: "RECEIVABLE" },
+          _sum: { amount: true },
+        })
+      : Promise.resolve({ _sum: { amount: null } }),
+    needsCashAggregates
+      ? prisma.financialEntry.aggregate({
+          where: { barberShopId: shop.id, type: "PAYABLE" },
+          _sum: { amount: true },
+        })
+      : Promise.resolve({ _sum: { amount: null } }),
+    needsAgendaBoard
+      ? prisma.appointment.findMany({
+          where: {
+            barberShopId: shop.id,
+            startsAt: { gte: agendaRangeStart, lt: agendaRangeEnd },
+          },
+          orderBy: { startsAt: "asc" },
+          include: { customer: true, barber: true, service: true, unit: true },
+          take: 500,
+        })
+      : Promise.resolve([]),
+    needsRelationship
+      ? prisma.appointment.findMany({
+          where: { barberShopId: shop.id, customerId: { not: null } },
+          orderBy: { startsAt: "desc" },
+          select: { customerId: true, startsAt: true, status: true },
+          take: 3000,
+        })
+      : Promise.resolve([]),
+    needsProduction
+      ? prisma.serviceCommand.findMany({
+          where: { barberShopId: shop.id, status: "CLOSED" },
+          orderBy: { closedAt: "desc" },
+          include: {
+            appointment: { include: { barber: true, service: true } },
+            customer: true,
+            items: true,
+          },
+          take: 1000,
+        })
+      : Promise.resolve([]),
   ]);
 
   const servicePool = servicosQ
