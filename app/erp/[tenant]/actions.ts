@@ -209,17 +209,19 @@ export async function markFinancialPaid(formData: FormData) {
 
   const entryId = text(formData, "entryId", 80);
 
+  let updated;
+
   try {
-    const updated = await prisma.financialEntry.updateMany({
+    updated = await prisma.financialEntry.updateMany({
       where: { id: entryId, barberShopId: shop.id, status: "PENDING" },
       data: { status: "PAID", paidAt: new Date() },
     });
-
-    if (updated.count !== 1) redirect(`${path}?erro=financeiro-status#financeiro`);
   } catch (error) {
     console.error("Failed to mark financial entry as paid", error);
     redirect(`${path}?erro=financeiro-status#financeiro`);
   }
+
+  if (updated.count !== 1) redirect(`${path}?erro=financeiro-status#financeiro`);
 
   revalidatePath(path);
   redirect(`${path}?ok=financeiro-pago#financeiro`);
