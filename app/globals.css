@@ -5646,3 +5646,182 @@ html[data-theme="light"] .erp-integration-note {
   }
 }
 
+/* ===== Agenda monthly view ===== */
+.agenda-waitlist-item {
+  grid-template-columns:minmax(0,1fr) auto !important;
+  align-items:center;
+  gap:8px !important;
+}
+.agenda-waitlist-item > div {
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+.agenda-waitlist-item form {
+  margin:0;
+}
+.agenda-waitlist-item button {
+  min-height:29px;
+  border:1px solid var(--erp-border);
+  border-radius:8px;
+  background:var(--erp-panel-2);
+  color:var(--erp-muted);
+  padding:5px 7px;
+  font-size:.56rem;
+  font-weight:850;
+}
+.agenda-waitlist-item button:hover {
+  border-color:var(--erp-border-strong);
+  color:var(--erp-gold);
+}
+.agenda-month {
+  min-width:0;
+  overflow:auto;
+  border:1px solid var(--erp-border);
+  border-radius:14px;
+  background:var(--erp-panel);
+}
+.agenda-month-weekdays {
+  min-width:980px;
+  display:grid;
+  grid-template-columns:repeat(7,minmax(140px,1fr));
+  border-bottom:1px solid var(--erp-border);
+  background:var(--erp-panel-2);
+}
+.agenda-month-weekdays span {
+  padding:10px;
+  border-right:1px solid var(--erp-border);
+  color:var(--erp-muted);
+  font-size:.58rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-align:center;
+  text-transform:uppercase;
+}
+.agenda-month-weekdays span:last-child {
+  border-right:0;
+}
+.agenda-month-grid {
+  min-width:980px;
+  display:grid;
+  grid-template-columns:repeat(7,minmax(140px,1fr));
+}
+.agenda-month-grid > article {
+  min-height:142px;
+  border-right:1px solid var(--erp-border);
+  border-bottom:1px solid var(--erp-border);
+  background:var(--erp-panel);
+  padding:6px;
+}
+.agenda-month-grid > article:nth-child(7n) {
+  border-right:0;
+}
+.agenda-month-grid > article.outside {
+  opacity:.42;
+  background:var(--erp-panel-3);
+}
+.agenda-month-grid > article.active {
+  background:linear-gradient(180deg,rgba(215,168,77,.055),transparent),var(--erp-panel);
+  box-shadow:inset 0 0 0 1px var(--erp-border-strong);
+}
+.agenda-month-day {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:5px;
+  padding:2px 3px 6px;
+}
+.agenda-month-day > span {
+  width:27px;
+  height:27px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  color:var(--erp-text);
+  font-size:.68rem;
+  font-weight:950;
+}
+.agenda-month-grid > article.active .agenda-month-day > span {
+  background:var(--erp-gold);
+  color:#171107;
+}
+.agenda-month-day small {
+  color:var(--erp-muted);
+  font-size:.52rem;
+}
+.agenda-month-grid article > div {
+  display:grid;
+  gap:4px;
+}
+.agenda-month-item {
+  min-width:0;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:5px;
+  align-items:center;
+  border-left:2px solid #a77b32;
+  border-radius:5px;
+  background:var(--erp-panel-3);
+  padding:5px 6px;
+}
+.agenda-month-item > span {
+  color:var(--erp-gold);
+  font-size:.5rem;
+  font-weight:900;
+}
+.agenda-month-item > strong {
+  overflow:hidden;
+  color:var(--erp-text);
+  font-size:.55rem;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.agenda-month-item.confirmed { border-left-color:#4c9667; }
+.agenda-month-item.service { border-left-color:#4e83a8; }
+.agenda-month-item.completed { border-left-color:#777; opacity:.7; }
+.agenda-month-item.canceled { border-left-color:#a95757; opacity:.55; }
+.agenda-month-more {
+  color:var(--erp-muted);
+  padding:3px 5px;
+  font-size:.52rem;
+}
+html[data-theme="light"] .agenda-appointment {
+  border-color:#d2b16d;
+  background:#fff6df;
+  box-shadow:none;
+}
+html[data-theme="light"] .agenda-appointment strong {
+  color:#332b20;
+}
+html[data-theme="light"] .agenda-appointment small,
+html[data-theme="light"] .agenda-appointment i {
+  color:#746a5d;
+}
+html[data-theme="light"] .agenda-appointment.confirmed {
+  border-color:#9ac6a8;
+  background:#eff9f1;
+}
+html[data-theme="light"] .agenda-appointment.service {
+  border-color:#9ebbd1;
+  background:#eef6fb;
+}
+html[data-theme="light"] .agenda-appointment.completed {
+  border-color:#d1ccc2;
+  background:#f4f2ed;
+}
+html[data-theme="light"] .agenda-appointment.canceled {
+  border-color:#d9acac;
+  background:#fff1f1;
+}
+@media (max-width:620px) {
+  .agenda-month-weekdays,
+  .agenda-month-grid {
+    min-width:840px;
+    grid-template-columns:repeat(7,minmax(120px,1fr));
+  }
+  .agenda-month-grid > article {
+    min-height:125px;
+  }
+}
+
