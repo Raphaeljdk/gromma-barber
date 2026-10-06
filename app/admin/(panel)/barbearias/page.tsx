@@ -19,6 +19,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { SectionPagination } from "@/components/section-pagination";
 
 const allowedStatuses = ["PENDING", "APPROVED", "BLOCKED", "REJECTED"] as const;
+const allowedPlans = ["ESSENTIAL", "PRO"] as const;
 
 const currency = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -58,11 +59,16 @@ export default async function BarberiasPage({
   const statusValue = Array.isArray(qs.status) ? qs.status[0] : qs.status;
   const queryValue = Array.isArray(qs.q) ? qs.q[0] : qs.q;
   const pageValue = Array.isArray(qs.page) ? qs.page[0] : qs.page;
+  const planValue = Array.isArray(qs.plan) ? qs.plan[0] : qs.plan;
   const scopeValue = Array.isArray(qs.scope) ? qs.scope[0] : qs.scope;
   const scope = scopeValue === "validation" ? "validation" : "commercial";
   const status =
     statusValue && allowedStatuses.includes(statusValue as (typeof allowedStatuses)[number])
       ? (statusValue as (typeof allowedStatuses)[number])
+      : undefined;
+  const plan =
+    planValue && allowedPlans.includes(planValue as (typeof allowedPlans)[number])
+      ? (planValue as (typeof allowedPlans)[number])
       : undefined;
   const search = (queryValue ?? "").trim();
   const digits = search.replace(/\D/g, "");
@@ -72,14 +78,23 @@ export default async function BarberiasPage({
   const filterWhere = {
     isDemo: scope === "validation",
     ...(status ? { status } : {}),
-    ...(search
+    ...(plan || search
       ? {
-          OR: [
-            { tradeName: { contains: search, mode: "insensitive" as const } },
-            { ownerName: { contains: search, mode: "insensitive" as const } },
-            { email: { contains: search, mode: "insensitive" as const } },
-            { tenantCode: { contains: search, mode: "insensitive" as const } },
-            ...(digits ? [{ document: { contains: digits } }] : []),
+          AND: [
+            ...(plan
+              ? [{ OR: [{ activePlan: plan }, { activePlan: null, requestedPlan: plan }] }]
+              : []),
+            ...(search
+              ? [{
+                  OR: [
+                    { tradeName: { contains: search, mode: "insensitive" as const } },
+                    { ownerName: { contains: search, mode: "insensitive" as const } },
+                    { email: { contains: search, mode: "insensitive" as const } },
+                    { tenantCode: { contains: search, mode: "insensitive" as const } },
+                    ...(digits ? [{ document: { contains: digits } }] : []),
+                  ],
+                }]
+              : []),
           ],
         }
       : {}),
@@ -160,6 +175,12 @@ export default async function BarberiasPage({
   const scopedApproved = scopedRows.filter((shop) => shop.status === "APPROVED").length;
   const scopedBlocked = scopedRows.filter((shop) => shop.status === "BLOCKED").length;
   const scopedRejected = scopedRows.filter((shop) => shop.status === "REJECTED").length;
+  const scopedEssential = scopedRows.filter(
+    (shop) => (shop.activePlan ?? shop.requestedPlan) === "ESSENTIAL",
+  ).length;
+  const scopedPro = scopedRows.filter(
+    (shop) => (shop.activePlan ?? shop.requestedPlan) === "PRO",
+  ).length;
   const proShare = totalCommercial > 0 ? Math.round((pro / totalCommercial) * 100) : 0;
   const essentialShare = totalCommercial > 0 ? Math.round((essential / totalCommercial) * 100) : 0;
   const operationalRate =
@@ -352,6 +373,7 @@ export default async function BarberiasPage({
 
       <form className="card admin-search executive-search" action="/admin/barbearias" method="get">
         {status && <input type="hidden" name="status" value={status} />}
+        {plan && <input type="hidden" name="plan" value={plan} />}
         {scope === "validation" && <input type="hidden" name="scope" value="validation" />}
         <label>
           <Search size={16} />
@@ -373,6 +395,12 @@ export default async function BarberiasPage({
         <Link className={status === "APPROVED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=APPROVED" : "/admin/barbearias?status=APPROVED"}>Liberados <strong>{scopedApproved}</strong></Link>
         <Link className={status === "BLOCKED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=BLOCKED" : "/admin/barbearias?status=BLOCKED"}>Bloqueados <strong>{scopedBlocked}</strong></Link>
         <Link className={status === "REJECTED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=REJECTED" : "/admin/barbearias?status=REJECTED"}>Rejeitados <strong>{scopedRejected}</strong></Link>
+      </div>
+
+      <div className="executive-filter-row" aria-label="Filtro por plano">
+        <Link className={!plan ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation" : "/admin/barbearias"}>Todos os planos <strong>{scope === "validation" ? demos : totalCommercial}</strong></Link>
+        <Link className={plan === "ESSENTIAL" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&plan=ESSENTIAL" : "/admin/barbearias?plan=ESSENTIAL"}>Essencial <strong>{scopedEssential}</strong></Link>
+        <Link className={plan === "PRO" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&plan=PRO" : "/admin/barbearias?plan=PRO"}>Pro <strong>{scopedPro}</strong></Link>
       </div>
 
       <div className="table-wrap executive-tenant-table-wrap">
