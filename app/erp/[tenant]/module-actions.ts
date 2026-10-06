@@ -189,6 +189,71 @@ export async function addClubMember(formData: FormData) {
   redirect(`${path}?ok=assinante`);
 }
 
+export async function processClubBilling(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "assinaturas");
+  if (!allowed(viewer, FINANCE_ROLES)) redirect(`${path}?erro=permissao`);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const fresh = await tx.barberShop.findUnique({ where: { id: shop.id } });
+      if (!fresh) throw new Error("Tenant not found");
+
+      const workspace = cloneWorkspace(readWorkspace(fresh.enabledFeatures));
+      const now = new Date();
+      const dueMembers = workspace.clubMembers.filter(
+        (member) =>
+          member.status === "ACTIVE" &&
+          new Date(member.nextBillingAt).getTime() <= now.getTime(),
+      );
+
+      if (!dueMembers.length) return;
+
+      const customerIds = Array.from(new Set(dueMembers.map((member) => member.customerId)));
+      const customers = await tx.customer.findMany({
+        where: { barberShopId: shop.id, id: { in: customerIds } },
+        select: { id: true, name: true },
+      });
+      const customerById = new Map(customers.map((customer) => [customer.id, customer.name]));
+
+      for (const member of dueMembers) {
+        const plan = workspace.clubPlans.find((item) => item.id === member.planId && item.active);
+        if (!plan || plan.monthlyAmount <= 0) continue;
+
+        await tx.financialEntry.create({
+          data: {
+            barberShopId: shop.id,
+            type: "RECEIVABLE",
+            status: "PENDING",
+            category: "Clube de assinaturas",
+            description: `${plan.name} · ${customerById.get(member.customerId) ?? "Cliente"}`,
+            amount: plan.monthlyAmount,
+            dueDate: now,
+          },
+        });
+
+        const currentDue = new Date(member.nextBillingAt);
+        const nextDue = new Date(
+          Math.max(currentDue.getTime(), now.getTime()) + 30 * 24 * 60 * 60 * 1000,
+        );
+        member.nextBillingAt = nextDue.toISOString();
+      }
+
+      await tx.barberShop.update({
+        where: { id: shop.id },
+        data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) },
+      });
+    });
+  } catch (error) {
+    console.error("Failed to process club billing", error);
+    redirect(`${path}?erro=recorrencia`);
+  }
+
+  revalidatePath(path);
+  revalidatePath(modulePath(tenantCode, "financeiro"));
+  redirect(`${path}?ok=recorrencia`);
+}
+
 export async function generateClubCharge(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
