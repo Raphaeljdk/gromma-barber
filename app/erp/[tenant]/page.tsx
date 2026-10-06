@@ -598,58 +598,110 @@ export async function TenantERPView({
         </section>
 
         <section id="agenda" className="demo-section" hidden={Boolean(moduleId && moduleId !== "agenda")}>
-          <div className="section-head"><div><div className="eyebrow">Agenda</div><h2>Agendamentos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head">
+            <div><div className="eyebrow">Agenda operacional</div><h2>Agenda, disponibilidade e fila de espera</h2></div>
+            <StatusPill tone="ready">Operacional</StatusPill>
+          </div>
+
+          <ErpAgendaBoard
+            tenantCode={tenantCode}
+            selectedDate={agendaDate}
+            view={agendaView}
+            appointments={agendaBoardAppointments.map((item) => ({
+              id: item.id,
+              startsAt: item.startsAt,
+              endsAt: item.endsAt,
+              status: item.status,
+              customerName: item.customer?.name ?? "Cliente avulso",
+              barberId: item.barberId,
+              barberName: item.barber?.name ?? "Sem profissional",
+              serviceName: item.service?.name ?? "Atendimento",
+              unitName: item.unit.name,
+            }))}
+            professionals={shop.users
+              .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
+              .map((user) => ({ id: user.id, name: user.name }))}
+            settings={workspace.settings}
+            waitlist={waitlist}
+          />
+
           {actionOk === "agenda" && <div className="notice erp-inline-notice success">Agendamento criado com sucesso.</div>}
+          {actionOk === "fila" && <div className="notice erp-inline-notice success">Cliente adicionado à lista de espera.</div>}
           {actionError === "agenda" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o agendamento. Revise os dados informados.</div>}
           {actionError === "agenda-conflito" && <div className="notice erp-inline-notice error-notice">O profissional já possui um atendimento nesse intervalo.</div>}
+          {actionError === "fila" && <div className="notice erp-inline-notice error-notice">Revise os dados da lista de espera.</div>}
           {actionOk === "agenda-status" && <div className="notice erp-inline-notice success">Status do atendimento atualizado.</div>}
           {actionError === "agenda-status" && <div className="notice erp-inline-notice error-notice">A transição solicitada não é válida para este atendimento.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+
           {canOperate && (
-          <details className="erp-quick-create">
-            <summary><Plus size={15} /> Novo agendamento <small>Agenda rápida</small></summary>
-            <form action={createAppointment} className="erp-quick-form">
-              <input type="hidden" name="tenantCode" value={tenantCode} />
-              <div className="grid grid-2">
-                <label>
-                  <span className="label">Cliente</span>
-                  <select className="select" name="customerId">
-                    <option value="">Cliente avulso</option>
-                    {appointmentCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span className="label">Serviço</span>
-                  <select className="select" name="serviceId" required defaultValue="">
-                    <option value="" disabled>Selecione</option>
-                    {shop.services.map((service) => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} min · {brl(Number(service.price))}</option>)}
-                  </select>
-                </label>
-              </div>
-              <div className="grid grid-3">
-                <label>
-                  <span className="label">Profissional</span>
-                  <select className="select" name="barberId">
-                    <option value="">Sem profissional definido</option>
-                    {shop.users.filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role)).map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span className="label">Unidade</span>
-                  <select className="select" name="unitId" required defaultValue="">
-                    <option value="" disabled>Selecione</option>
-                    {shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
-                  </select>
-                </label>
-                <label><span className="label">Data e hora</span><input className="input" name="startsAt" type="datetime-local" required /></label>
-              </div>
-              <label><span className="label">Observações</span><input className="input" name="notes" maxLength={300} placeholder="Opcional" /></label>
-              <button className="btn" type="submit">Salvar agendamento</button>
-            </form>
-          </details>
+            <div className="agenda-create-grid">
+              <details className="erp-quick-create">
+                <summary><Plus size={15} /> Novo agendamento <small>Agenda rápida</small></summary>
+                <form action={createAppointment} className="erp-quick-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <div className="grid grid-2">
+                    <label>
+                      <span className="label">Cliente</span>
+                      <select className="select" name="customerId">
+                        <option value="">Cliente avulso</option>
+                        {appointmentCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      <span className="label">Serviço</span>
+                      <select className="select" name="serviceId" required defaultValue="">
+                        <option value="" disabled>Selecione</option>
+                        {shop.services.map((service) => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} min · {brl(Number(service.price))}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="grid grid-3">
+                    <label>
+                      <span className="label">Profissional</span>
+                      <select className="select" name="barberId">
+                        <option value="">Sem profissional definido</option>
+                        {shop.users.filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role)).map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      <span className="label">Unidade</span>
+                      <select className="select" name="unitId" required defaultValue="">
+                        <option value="" disabled>Selecione</option>
+                        {shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
+                      </select>
+                    </label>
+                    <label><span className="label">Data e hora</span><input className="input" name="startsAt" type="datetime-local" required /></label>
+                  </div>
+                  <label><span className="label">Observações</span><input className="input" name="notes" maxLength={300} placeholder="Opcional" /></label>
+                  <button className="btn" type="submit">Salvar agendamento</button>
+                </form>
+              </details>
+
+              <details className="erp-quick-create">
+                <summary><Plus size={15} /> Lista de espera <small>Encaixes e indisponibilidade</small></summary>
+                <form action={addWaitlist} className="erp-quick-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <div className="grid grid-2">
+                    <label><span className="label">Cliente</span><input className="input" name="customerName" required maxLength={120} placeholder="Nome do cliente" /></label>
+                    <label><span className="label">Telefone</span><input className="input" name="phone" maxLength={40} placeholder="(00) 00000-0000" /></label>
+                  </div>
+                  <div className="grid grid-2">
+                    <label><span className="label">Data desejada</span><input className="input" name="requestedDate" type="date" required defaultValue={agendaDate} /></label>
+                    <label><span className="label">Serviço</span><select className="select" name="serviceId"><option value="">Qualquer serviço</option>{shop.services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}</select></label>
+                  </div>
+                  <label><span className="label">Observações</span><input className="input" name="notes" maxLength={300} placeholder="Preferência de horário ou profissional" /></label>
+                  <button className="btn secondary" type="submit">Adicionar à espera</button>
+                </form>
+              </details>
+            </div>
           )}
+
+          <div className="erp-subsection-head">
+            <div><span>Histórico e operação</span><strong>Agendamentos registrados</strong></div>
+          </div>
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/agenda`}
             searchParams={qs}
             pageParam="agendaPage"
             hash="agenda"
@@ -659,7 +711,7 @@ export async function TenantERPView({
             <thead><tr><th>Data</th><th>Cliente</th><th>Profissional</th><th>Serviço</th><th>Unidade</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>{appointments.length ? appointments.map((item) => (
               <tr key={item.id}>
-                <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(item.startsAt)}</td>
+                <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short",timeZone:"America/Sao_Paulo"}).format(item.startsAt)}</td>
                 <td>{item.customer?.name ?? "—"}</td><td>{item.barber?.name ?? "—"}</td><td>{item.service?.name ?? "—"}</td><td>{item.unit.name}</td><td>{operationalBadge(item.status)}</td>
                 <td>
                   <div className="erp-row-actions">
@@ -682,9 +734,9 @@ export async function TenantERPView({
                   </div>
                 </td>
               </tr>
-            )) : <tr><td colSpan={7} className="muted">Agenda pronta para receber os primeiros atendimentos.</td></tr>}</tbody>
+            )) : <tr><td colSpan={7} className="muted">Nenhum agendamento encontrado.</td></tr>}</tbody>
           </table></div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="agendaPage" page={agendaPage} total={appointmentsTotal} pageSize={pageSize} hash="agenda" label="agendamentos" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/agenda`} searchParams={qs} param="agendaPage" page={agendaPage} total={appointmentsTotal} pageSize={pageSize} hash="agenda" label="agendamentos" />
         </section>
 
         <section id="clientes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "clientes")}>
