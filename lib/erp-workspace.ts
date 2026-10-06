@@ -99,6 +99,7 @@ export type OperationalSettings = {
   defaultCommissionPercent: number;
   whatsappNumber: string;
   invoiceProvider: string;
+  amenities: string;
 };
 
 export type ErpWorkspace = {
@@ -135,6 +136,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
     defaultCommissionPercent: 40,
     whatsappNumber: "",
     invoiceProvider: "",
+    amenities: "",
   },
 };
 
@@ -175,6 +177,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
       ),
       whatsappNumber: String(settings.whatsappNumber ?? ""),
       invoiceProvider: String(settings.invoiceProvider ?? ""),
+      amenities: String(settings.amenities ?? ""),
     },
   };
 }
