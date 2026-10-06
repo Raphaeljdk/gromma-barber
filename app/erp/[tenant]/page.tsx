@@ -80,6 +80,23 @@ const STATUS_LABELS: Record<string, string> = {
   PAYABLE: "Pagar",
 };
 
+const APPOINTMENT_STATUS_OPTIONS = APPOINTMENT_STATUSES.map((value) => ({
+  value,
+  label: STATUS_LABELS[value] ?? value,
+}));
+const COMMAND_STATUS_OPTIONS = COMMAND_STATUSES.map((value) => ({
+  value,
+  label: STATUS_LABELS[value] ?? value,
+}));
+const FINANCIAL_TYPE_OPTIONS = FINANCIAL_TYPES.map((value) => ({
+  value,
+  label: STATUS_LABELS[value] ?? value,
+}));
+const FINANCIAL_STATUS_OPTIONS = FINANCIAL_STATUSES.map((value) => ({
+  value,
+  label: STATUS_LABELS[value] ?? value,
+}));
+
 function operationalBadge(value: string) {
   const positive = ["CONFIRMED", "CHECKED_IN", "IN_SERVICE", "COMPLETED", "CLOSED", "PAID"];
   const negative = ["CANCELED", "NO_SHOW"];
@@ -449,6 +466,13 @@ export default async function TenantERP({
 
         <section id="agenda" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Agenda</div><h2>Agendamentos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <ErpListToolbar
+            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            searchParams={qs}
+            pageParam="agendaPage"
+            hash="agenda"
+            selects={[{ param: "agendaStatus", value: agendaStatus, label: "Status", options: APPOINTMENT_STATUS_OPTIONS }]}
+          />
           <div className="table-wrap"><table>
             <thead><tr><th>Data</th><th>Cliente</th><th>Profissional</th><th>Serviço</th><th>Unidade</th><th>Status</th></tr></thead>
             <tbody>{appointments.length ? appointments.map((item) => (
@@ -463,6 +487,13 @@ export default async function TenantERP({
 
         <section id="clientes" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Clientes</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <ErpListToolbar
+            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            searchParams={qs}
+            pageParam="clientesPage"
+            hash="clientes"
+            search={{ param: "clientesQ", value: clientesQ, placeholder: "Buscar por nome, e-mail ou telefone" }}
+          />
           <div className="table-wrap"><table>
             <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th></tr></thead>
             <tbody>{customers.length ? customers.map((customer) => (
@@ -474,6 +505,13 @@ export default async function TenantERP({
 
         <section id="servicos" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <ErpListToolbar
+            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            searchParams={qs}
+            pageParam="servicosPage"
+            hash="servicos"
+            search={{ param: "servicosQ", value: servicosQ, placeholder: "Buscar serviço" }}
+          />
           <div className="table-wrap"><table>
             <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
             <tbody>{servicesTotal ? services.map((service) => (
@@ -485,6 +523,13 @@ export default async function TenantERP({
 
         <section id="comandas" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <ErpListToolbar
+            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            searchParams={qs}
+            pageParam="comandasPage"
+            hash="comandas"
+            selects={[{ param: "comandaStatus", value: comandaStatus, label: "Status", options: COMMAND_STATUS_OPTIONS }]}
+          />
           <div className="table-wrap"><table>
             <thead><tr><th>Abertura</th><th>Cliente</th><th>Unidade</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
             <tbody>{commands.length ? commands.map((command) => (
@@ -523,6 +568,17 @@ export default async function TenantERP({
 
         <section id="financeiro" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <ErpListToolbar
+            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            searchParams={qs}
+            pageParam="financeiroPage"
+            hash="financeiro"
+            search={{ param: "financeiroQ", value: financeiroQ, placeholder: "Buscar descrição ou categoria" }}
+            selects={[
+              { param: "financeiroTipo", value: financeiroTipo, label: "Tipo", options: FINANCIAL_TYPE_OPTIONS },
+              { param: "financeiroStatus", value: financeiroStatus, label: "Status", options: FINANCIAL_STATUS_OPTIONS },
+            ]}
+          />
           <div className="table-wrap"><table>
             <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status</th></tr></thead>
             <tbody>{financialEntries.map((entry) => (
@@ -544,6 +600,13 @@ export default async function TenantERP({
 
         <section id="estoque" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <ErpListToolbar
+            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            searchParams={qs}
+            pageParam="estoquePage"
+            hash="estoque"
+            search={{ param: "estoqueQ", value: estoqueQ, placeholder: "Buscar produto, SKU ou código" }}
+          />
           <div className="table-wrap"><table>
             <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque mínimo</th></tr></thead>
             <tbody>{products.map((product) => (
@@ -564,6 +627,13 @@ export default async function TenantERP({
 
         <section id="equipe" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <ErpListToolbar
+            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            searchParams={qs}
+            pageParam="equipePage"
+            hash="equipe"
+            search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
+          />
           <div className="demo-team-grid">
             {professionals.map((user) => (
               <article className="card demo-team-card" key={user.id}>
@@ -579,6 +649,13 @@ export default async function TenantERP({
 
         <section id="unidades" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <ErpListToolbar
+            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            searchParams={qs}
+            pageParam="unidadesPage"
+            hash="unidades"
+            search={{ param: "unidadesQ", value: unidadesQ, placeholder: "Buscar unidade, código ou cidade" }}
+          />
           <div className="demo-unit-grid">
             {unitsPageItems.map((unit) => (
               <article className="card demo-unit-card" key={unit.id}>
