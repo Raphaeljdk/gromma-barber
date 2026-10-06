@@ -70,7 +70,7 @@ const APPOINTMENT_TRANSITIONS = {
 
 export async function updateAppointmentStatus(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+  const path = `/erp/${encodeURIComponent(tenantCode)}/agenda`;
 
   if (!allowed(viewer, OPERATION_ROLES)) {
     redirect(`${path}?erro=permissao#agenda`);
@@ -154,7 +154,7 @@ export async function updateAppointmentStatus(formData: FormData) {
 
 export async function closeCommand(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+  const path = `/erp/${encodeURIComponent(tenantCode)}/comandas`;
 
   if (!allowed(viewer, OPERATION_ROLES)) {
     redirect(`${path}?erro=permissao#comandas`);
@@ -202,7 +202,7 @@ export async function closeCommand(formData: FormData) {
 
 export async function markFinancialPaid(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+  const path = `/erp/${encodeURIComponent(tenantCode)}/financeiro`;
 
   if (!allowed(viewer, FINANCE_ROLES)) {
     redirect(`${path}?erro=permissao#financeiro`);
@@ -230,7 +230,7 @@ export async function markFinancialPaid(formData: FormData) {
 
 export async function createAppointment(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+  const path = `/erp/${encodeURIComponent(tenantCode)}/agenda`;
 
   if (!allowed(viewer, OPERATION_ROLES)) {
     redirect(`${path}?erro=permissao#agenda`);
@@ -363,7 +363,7 @@ export async function createAppointment(formData: FormData) {
 
 export async function createCustomer(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+  const path = `/erp/${encodeURIComponent(tenantCode)}/clientes`;
 
   if (!allowed(viewer, OPERATION_ROLES)) {
     redirect(`${path}?erro=permissao#clientes`);
@@ -402,7 +402,7 @@ export async function createCustomer(formData: FormData) {
 
 export async function createService(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+  const path = `/erp/${encodeURIComponent(tenantCode)}/servicos`;
 
   if (!allowed(viewer, MANAGEMENT_ROLES)) {
     redirect(`${path}?erro=permissao#servicos`);
@@ -444,7 +444,7 @@ export async function createService(formData: FormData) {
 
 export async function createFinancialEntry(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+  const path = `/erp/${encodeURIComponent(tenantCode)}/financeiro`;
 
   if (!allowed(viewer, FINANCE_ROLES)) {
     redirect(`${path}?erro=permissao#financeiro`);
@@ -486,7 +486,7 @@ export async function createFinancialEntry(formData: FormData) {
 
 export async function createProduct(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+  const path = `/erp/${encodeURIComponent(tenantCode)}/estoque`;
 
   if (!allowed(viewer, MANAGEMENT_ROLES)) {
     redirect(`${path}?erro=permissao#estoque`);
