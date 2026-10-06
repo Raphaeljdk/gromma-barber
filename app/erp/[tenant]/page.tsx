@@ -28,7 +28,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, addWaitlist, generateClubCharge, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
+import { addClubMember, addDeduction, addWaitlist, generateClubCharge, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
   children,
@@ -110,6 +110,15 @@ const ROLE_LABELS: Record<string, string> = {
   RECEPTIONIST: "Recepção",
   BARBER: "Barbeiro",
   ACCOUNTANT: "Financeiro",
+};
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  ALL: "Todos os clientes",
+  INACTIVE_30: "Inativos há 30 dias",
+  INACTIVE_60: "Inativos há 60 dias",
+  INACTIVE_90: "Inativos há 90 dias",
+  BIRTHDAY: "Aniversariantes do mês",
+  CLUB: "Assinantes do clube",
 };
 
 const MODULE_TITLES: Record<string, string> = {
@@ -209,7 +218,7 @@ export async function TenantERPView({
   const activeModule = moduleId ?? "dashboard";
   const needsCustomerList = activeModule === "clientes";
   const needsCustomerDirectory = ["agenda", "assinaturas", "mensagens", "promocoes"].includes(activeModule);
-  const needsCustomerCount = ["dashboard", "clientes", "promocoes", "relatorios"].includes(activeModule);
+  const needsCustomerCount = ["dashboard", "clientes", "mensagens", "promocoes", "relatorios"].includes(activeModule);
   const needsAgendaList = activeModule === "agenda";
   const needsAgendaCount = ["dashboard", "agenda", "relatorios", "gerencial"].includes(activeModule);
   const needsCommandList = activeModule === "comandas";
@@ -553,6 +562,14 @@ export async function TenantERPView({
   const overdueClubMembers = clubMemberRows.filter(
     (member) => member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime(),
   );
+  const segmentCounts: Record<string, number> = {
+    ALL: customersAllTotal,
+    INACTIVE_30: inactive30.length,
+    INACTIVE_60: inactive60.length,
+    INACTIVE_90: inactive90.length,
+    BIRTHDAY: birthdayCustomers.length,
+    CLUB: clubMemberRows.filter((item) => item.status === "ACTIVE").length,
+  };
 
   const productionByUser = new Map<string, number>();
   const serviceRanking = new Map<string, { name: string; count: number; revenue: number }>();
@@ -1169,7 +1186,8 @@ export async function TenantERPView({
                 <form action={saveCampaign} className="erp-compact-form">
                   <input type="hidden" name="tenantCode" value={tenantCode} />
                   <label><span className="label">Título</span><input className="input" name="title" required placeholder="Ex.: Sentimos sua falta" /></label>
-                  <label><span className="label">Público</span><select className="select" name="audience"><option value="ALL">Todos os clientes</option><option value="INACTIVE_30">Inativos há 30 dias</option><option value="INACTIVE_60">Inativos há 60 dias</option><option value="INACTIVE_90">Inativos há 90 dias</option><option value="BIRTHDAY">Aniversariantes do mês</option></select></label>
+                  <label><span className="label">Público rápido</span><select className="select" name="audience"><option value="ALL">Todos os clientes</option><option value="INACTIVE_30">Inativos há 30 dias</option><option value="INACTIVE_60">Inativos há 60 dias</option><option value="INACTIVE_90">Inativos há 90 dias</option><option value="BIRTHDAY">Aniversariantes do mês</option><option value="CLUB">Assinantes do clube</option></select></label>
+                  {workspace.customerGroups.length > 0 && <label><span className="label">Ou usar grupo salvo</span><select className="select" name="groupId"><option value="">Nenhum</option>{workspace.customerGroups.filter((group) => group.active).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>}
                   <label><span className="label">Mensagem</span><textarea className="textarea" name="message" required placeholder="Escreva a mensagem para o cliente." /></label>
                   <button className="btn" type="submit">Salvar campanha</button>
                 </form>
@@ -1177,7 +1195,7 @@ export async function TenantERPView({
               <div className="erp-stacked-list">
                 {workspace.campaigns.filter((item) => item.kind !== "PROMOTION").slice(0, 8).map((campaign) => (
                   <div key={campaign.id}>
-                    <div><strong>{campaign.title}</strong><span>{campaign.audience.replaceAll("_", " ")}</span></div>
+                    <div><strong>{campaign.title}</strong><span>{workspace.customerGroups.find((group) => group.id === campaign.groupId)?.name ?? AUDIENCE_LABELS[campaign.audience] ?? campaign.audience}</span></div>
                     <span className="badge approved">Ativa</span>
                   </div>
                 ))}
@@ -1230,14 +1248,15 @@ export async function TenantERPView({
                 <form action={savePromotion} className="erp-compact-form">
                   <input type="hidden" name="tenantCode" value={tenantCode} />
                   <label><span className="label">Campanha</span><input className="input" name="title" required placeholder="Ex.: Semana do cliente" /></label>
-                  <label><span className="label">Grupo</span><select className="select" name="audience"><option value="ALL">Todos</option><option value="INACTIVE_30">Inativos 30+</option><option value="INACTIVE_60">Inativos 60+</option><option value="INACTIVE_90">Inativos 90+</option><option value="BIRTHDAY">Aniversariantes</option></select></label>
+                  <label><span className="label">Segmento rápido</span><select className="select" name="audience"><option value="ALL">Todos</option><option value="INACTIVE_30">Inativos 30+</option><option value="INACTIVE_60">Inativos 60+</option><option value="INACTIVE_90">Inativos 90+</option><option value="BIRTHDAY">Aniversariantes</option><option value="CLUB">Assinantes do clube</option></select></label>
+                  {workspace.customerGroups.length > 0 && <label><span className="label">Ou usar grupo salvo</span><select className="select" name="groupId"><option value="">Nenhum</option>{workspace.customerGroups.filter((group) => group.active).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>}
                   <label><span className="label">Oferta / mensagem</span><textarea className="textarea" name="message" required placeholder="Descreva a oferta, validade e chamada para ação." /></label>
                   <button className="btn" type="submit">Salvar promoção</button>
                 </form>
               )}
               <div className="erp-stacked-list">
                 {promotionCampaignPageRows.map((campaign) => (
-                  <div key={campaign.id}><div><strong>{campaign.title}</strong><span>{campaign.audience.replaceAll("_", " ")}</span></div><span className="badge approved">Ativa</span></div>
+                  <div key={campaign.id}><div><strong>{campaign.title}</strong><span>{workspace.customerGroups.find((group) => group.id === campaign.groupId)?.name ?? AUDIENCE_LABELS[campaign.audience] ?? campaign.audience}</span></div><span className="badge approved">Ativa</span></div>
                 ))}
                 {!workspace.campaigns.some((item) => item.kind === "PROMOTION") && <small className="muted">Nenhuma promoção cadastrada.</small>}
               </div>
@@ -1262,6 +1281,31 @@ export async function TenantERPView({
                   <div key={coupon.id}><span>{coupon.code}</span><strong>{coupon.kind === "PERCENT" ? `${coupon.value}%` : brl(coupon.value)}</strong><small>{coupon.expiresAt ? `até ${new Intl.DateTimeFormat("pt-BR").format(new Date(`${coupon.expiresAt}T12:00:00`))}` : "sem validade"}</small></div>
                 ))}
                 {!workspace.coupons.length && <small className="muted">Nenhum cupom criado.</small>}
+              </div>
+            </article>
+
+            <article className="card erp-workspace-card wide">
+              <div className="erp-card-title"><div><span>Grupos de clientes</span><strong>Segmentos inteligentes reutilizáveis</strong></div><StatusPill tone="ready">Ativo</StatusPill></div>
+              {actionOk === "grupo" && <div className="notice erp-inline-notice success">Grupo salvo.</div>}
+              {actionError === "grupo" && <div className="notice erp-inline-notice error-notice">Informe um nome válido para o grupo.</div>}
+              <div className="erp-group-layout">
+                {canManage && (
+                  <form action={saveCustomerGroup} className="erp-compact-form">
+                    <input type="hidden" name="tenantCode" value={tenantCode} />
+                    <label><span className="label">Nome do grupo</span><input className="input" name="name" required placeholder="Ex.: Clientes VIP para recuperação" /></label>
+                    <label><span className="label">Regra automática</span><select className="select" name="rule"><option value="ALL">Todos os clientes</option><option value="INACTIVE_30">Inativos 30+</option><option value="INACTIVE_60">Inativos 60+</option><option value="INACTIVE_90">Inativos 90+</option><option value="BIRTHDAY">Aniversariantes do mês</option><option value="CLUB">Assinantes do clube</option></select></label>
+                    <button className="btn secondary" type="submit">Criar grupo</button>
+                  </form>
+                )}
+                <div className="erp-group-list">
+                  {workspace.customerGroups.map((group) => (
+                    <div key={group.id}>
+                      <div><strong>{group.name}</strong><span>{AUDIENCE_LABELS[group.rule] ?? group.rule}</span></div>
+                      <strong>{segmentCounts[group.rule] ?? 0}</strong>
+                    </div>
+                  ))}
+                  {!workspace.customerGroups.length && <small className="muted">Crie grupos para reutilizar a mesma segmentação em promoções e mensagens.</small>}
+                </div>
               </div>
             </article>
           </div>
