@@ -912,29 +912,198 @@ export async function TenantERPView({
         </section>
 
         <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
-          <div className="section-head"><div><div className="eyebrow">Clube de assinaturas</div><h2>Planos e assinantes</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Planos do clube" description="Cadastro de planos recorrentes da barbearia, benefícios e regras de uso." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Assinantes" description="Base de clientes assinantes, situação do plano e histórico de cobranças." status="Modelo de dados pendente" tone="pending" />
-            <ModuleCard title="Cobrança automática" description="Regularização de mensalidades, atrasos e avisos de cobrança." status="Integração pendente" tone="pending" />
+          <div className="section-head">
+            <div><div className="eyebrow">Clube de assinaturas</div><h2>Planos, assinantes e cobranças</h2></div>
+            <StatusPill tone="ready">Operacional interno</StatusPill>
+          </div>
+
+          <div className="erp-kpi-row">
+            <article><span>Planos ativos</span><strong>{workspace.clubPlans.filter((item) => item.active).length}</strong><small>configurados pela barbearia</small></article>
+            <article><span>Assinantes ativos</span><strong>{clubMemberRows.filter((item) => item.status === "ACTIVE").length}</strong><small>clientes vinculados</small></article>
+            <article><span>Cobranças vencidas</span><strong>{overdueClubMembers.length}</strong><small>pedem regularização</small></article>
+            <article><span>MRR do clube</span><strong>{brl(clubMemberRows.filter((item) => item.status === "ACTIVE").reduce((sum, item) => sum + (item.plan?.monthlyAmount ?? 0), 0))}</strong><small>recorrência configurada</small></article>
+          </div>
+
+          {actionOk === "plano" && <div className="notice erp-inline-notice success">Plano do clube criado.</div>}
+          {actionOk === "assinante" && <div className="notice erp-inline-notice success">Assinante incluído no clube.</div>}
+          {actionOk === "cobranca" && <div className="notice erp-inline-notice success">Cobrança gerada no Financeiro.</div>}
+          {["plano","assinante","cobranca","banco"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Não foi possível concluir a operação do clube.</div>}
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Planos do clube</span><strong>Benefícios e recorrência</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+              {canManage && (
+                <form action={saveClubPlan} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <div className="grid grid-2">
+                    <label><span className="label">Nome do plano</span><input className="input" name="name" required placeholder="Ex.: Clube Corte Mensal" /></label>
+                    <label><span className="label">Mensalidade</span><input className="input" name="monthlyAmount" type="number" min="0" step="0.01" required /></label>
+                  </div>
+                  <div className="grid grid-2">
+                    <label><span className="label">Usos por mês</span><input className="input" name="visitsPerMonth" type="number" min="0" step="1" placeholder="0 = ilimitado" /></label>
+                    <label><span className="label">Benefícios</span><input className="input" name="benefits" placeholder="Corte, barba, desconto em produtos..." /></label>
+                  </div>
+                  <button className="btn" type="submit">Criar plano</button>
+                </form>
+              )}
+              <div className="erp-stacked-list">
+                {workspace.clubPlans.length ? workspace.clubPlans.map((clubPlan) => (
+                  <div key={clubPlan.id}>
+                    <div><strong>{clubPlan.name}</strong><span>{clubPlan.visitsPerMonth ? `${clubPlan.visitsPerMonth} usos/mês` : "Uso ilimitado"}</span></div>
+                    <div><strong>{brl(clubPlan.monthlyAmount)}</strong><span>{clubPlan.active ? "Ativo" : "Inativo"}</span></div>
+                  </div>
+                )) : <small className="muted">Crie o primeiro plano recorrente da barbearia.</small>}
+              </div>
+            </article>
+
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Assinantes</span><strong>Vínculo e cobrança</strong></div><StatusPill tone="ready">Financeiro conectado</StatusPill></div>
+              {canOperate && workspace.clubPlans.some((item) => item.active) && (
+                <form action={addClubMember} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <label><span className="label">Cliente</span><select className="select" name="customerId" required defaultValue=""><option value="" disabled>Selecione</option>{appointmentCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label>
+                  <label><span className="label">Plano</span><select className="select" name="planId" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.filter((item) => item.active).map((clubPlan) => <option key={clubPlan.id} value={clubPlan.id}>{clubPlan.name} · {brl(clubPlan.monthlyAmount)}</option>)}</select></label>
+                  <label className="erp-check-row"><input type="checkbox" name="chargeNow" defaultChecked /><span>Gerar primeira cobrança no Financeiro</span></label>
+                  <button className="btn" type="submit">Adicionar assinante</button>
+                </form>
+              )}
+              <div className="table-wrap erp-inner-table"><table>
+                <thead><tr><th>Cliente</th><th>Plano</th><th>Próxima cobrança</th><th>Status</th><th>Ação</th></tr></thead>
+                <tbody>{clubMemberRows.length ? clubMemberRows.map((member) => {
+                  const overdue = member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime();
+                  return (
+                    <tr key={member.id}>
+                      <td><strong>{member.customer?.name ?? "Cliente"}</strong></td>
+                      <td>{member.plan?.name ?? "Plano removido"}</td>
+                      <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(member.nextBillingAt))}</td>
+                      <td><span className={`badge ${overdue ? "rejected" : "approved"}`}>{overdue ? "Vencido" : member.status === "ACTIVE" ? "Ativo" : member.status}</span></td>
+                      <td>{canFinance && member.plan ? <form action={generateClubCharge}><input type="hidden" name="tenantCode" value={tenantCode} /><input type="hidden" name="memberId" value={member.id} /><button className="btn secondary" type="submit">Gerar cobrança</button></form> : <span className="muted">—</span>}</td>
+                    </tr>
+                  );
+                }) : <tr><td colSpan={5} className="muted">Nenhum assinante cadastrado.</td></tr>}</tbody>
+              </table></div>
+              <p className="erp-integration-note">Cobrança recorrente e baixa automática ficam prontas para conectar a um gateway de pagamento; enquanto isso, a geração de recebíveis já funciona dentro do Financeiro.</p>
+            </article>
           </div>
         </section>
 
         <section id="mensagens" className="demo-section" hidden={Boolean(moduleId && moduleId !== "mensagens")}>
-          <div className="section-head"><div><div className="eyebrow">Relacionamento</div><h2>Mensagens para clientes</h2></div><StatusPill tone="pending">Integração externa</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="WhatsApp Business" description="Canal para respostas, agenda, confirmações e atendimento automatizado." status="Configuração pendente" tone="pending" />
-            <ModuleCard title="Follow-up" description="Campanhas para clientes inativos em 30, 60 ou 90 dias." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Aniversariantes" description="Segmentação para mensagens e ações comerciais de aniversário." status="Estrutura pronta" tone="ready" />
+          <div className="section-head">
+            <div><div className="eyebrow">Relacionamento</div><h2>Mensagens, follow-up e aniversariantes</h2></div>
+            <StatusPill tone="ready">Segmentação ativa</StatusPill>
+          </div>
+
+          <div className="erp-kpi-row">
+            <article><span>Inativos 30+ dias</span><strong>{inactive30.length}</strong><small>oportunidades de retorno</small></article>
+            <article><span>Inativos 60+ dias</span><strong>{inactive60.length}</strong><small>recuperação de clientes</small></article>
+            <article><span>Inativos 90+ dias</span><strong>{inactive90.length}</strong><small>base crítica</small></article>
+            <article><span>Aniversariantes</span><strong>{birthdayCustomers.length}</strong><small>no mês atual</small></article>
+          </div>
+
+          {actionOk === "campanha" && <div className="notice erp-inline-notice success">Mensagem salva na central de relacionamento.</div>}
+          {actionError === "campanha" && <div className="notice erp-inline-notice error-notice">Revise o título e a mensagem.</div>}
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Nova mensagem</span><strong>Campanha segmentada</strong></div><StatusPill tone="ready">Salva no tenant</StatusPill></div>
+              {canManage && (
+                <form action={saveCampaign} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <label><span className="label">Título</span><input className="input" name="title" required placeholder="Ex.: Sentimos sua falta" /></label>
+                  <label><span className="label">Público</span><select className="select" name="audience"><option value="ALL">Todos os clientes</option><option value="INACTIVE_30">Inativos há 30 dias</option><option value="INACTIVE_60">Inativos há 60 dias</option><option value="INACTIVE_90">Inativos há 90 dias</option><option value="BIRTHDAY">Aniversariantes do mês</option></select></label>
+                  <label><span className="label">Mensagem</span><textarea className="textarea" name="message" required placeholder="Escreva a mensagem para o cliente." /></label>
+                  <button className="btn" type="submit">Salvar campanha</button>
+                </form>
+              )}
+              <div className="erp-stacked-list">
+                {workspace.campaigns.filter((item) => item.kind !== "PROMOTION").slice(0, 8).map((campaign) => (
+                  <div key={campaign.id}>
+                    <div><strong>{campaign.title}</strong><span>{campaign.audience.replaceAll("_", " ")}</span></div>
+                    <span className="badge approved">Ativa</span>
+                  </div>
+                ))}
+                {!workspace.campaigns.some((item) => item.kind !== "PROMOTION") && <small className="muted">Nenhuma campanha salva ainda.</small>}
+              </div>
+            </article>
+
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>WhatsApp Business</span><strong>Contato operacional</strong></div><StatusPill tone={workspace.settings.whatsappNumber ? "ready" : "pending"}>{workspace.settings.whatsappNumber ? "Número configurado" : "Configurar número"}</StatusPill></div>
+              <p className="small muted">Sem provedor/API conectado, o sistema abre a conversa no WhatsApp para envio assistido. Automação em lote continua dependente da API oficial.</p>
+              <div className="erp-contact-list">
+                {customersForRelationship.slice(0, 12).map((customer) => {
+                  const phone = (customer.whatsapp || customer.phone || "").replace(/\D/g, "");
+                  const message = workspace.campaigns.find((item) => item.kind !== "PROMOTION")?.message ?? `Olá, ${customer.name}! Tudo bem?`;
+                  const waPhone = phone.startsWith("55") ? phone : phone ? `55${phone}` : "";
+                  return (
+                    <div key={customer.id}>
+                      <div><strong>{customer.name}</strong><span>{customer.lastAppointmentAt ? `Último atendimento há ${daysSince(customer.lastAppointmentAt)} dias` : "Sem atendimento registrado"}</span></div>
+                      {waPhone ? <a className="btn secondary" href={`https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">Abrir WhatsApp</a> : <span className="badge pending">Sem telefone</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
           </div>
         </section>
 
         <section id="promocoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "promocoes")}>
-          <div className="section-head"><div><div className="eyebrow">Comercial</div><h2>Promoções, grupos e cupons</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
-          <div className="erp-module-grid">
-            <ModuleCard title="Anúncios / Promoções" description="Campanhas direcionadas para clientes e períodos específicos." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Grupos de clientes" description="Segmentação por comportamento, frequência e relacionamento." status="Estrutura pronta" tone="ready" />
-            <ModuleCard title="Cupons de desconto" description="Regras de cupom, validade e rastreamento de uso." status="Modelo de dados pendente" tone="pending" />
+          <div className="section-head">
+            <div><div className="eyebrow">Comercial</div><h2>Promoções, grupos e cupons</h2></div>
+            <StatusPill tone="ready">Operacional</StatusPill>
+          </div>
+
+          <div className="erp-segment-grid">
+            <article><strong>{customersAllTotal}</strong><span>Todos os clientes</span><small>base completa</small></article>
+            <article><strong>{inactive30.length}</strong><span>Inativos 30+</span><small>recuperação</small></article>
+            <article><strong>{birthdayCustomers.length}</strong><span>Aniversariantes</span><small>campanhas de relacionamento</small></article>
+            <article><strong>{clubMemberRows.length}</strong><span>Assinantes</span><small>clientes do clube</small></article>
+          </div>
+
+          {actionOk === "promocao" && <div className="notice erp-inline-notice success">Promoção salva.</div>}
+          {actionOk === "cupom" && <div className="notice erp-inline-notice success">Cupom criado.</div>}
+          {["promocao","cupom"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados comerciais informados.</div>}
+
+          <div className="erp-two-column-workspace">
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Anúncios / Promoções</span><strong>Campanha comercial</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+              {canManage && (
+                <form action={savePromotion} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <label><span className="label">Campanha</span><input className="input" name="title" required placeholder="Ex.: Semana do cliente" /></label>
+                  <label><span className="label">Grupo</span><select className="select" name="audience"><option value="ALL">Todos</option><option value="INACTIVE_30">Inativos 30+</option><option value="INACTIVE_60">Inativos 60+</option><option value="INACTIVE_90">Inativos 90+</option><option value="BIRTHDAY">Aniversariantes</option></select></label>
+                  <label><span className="label">Oferta / mensagem</span><textarea className="textarea" name="message" required placeholder="Descreva a oferta, validade e chamada para ação." /></label>
+                  <button className="btn" type="submit">Salvar promoção</button>
+                </form>
+              )}
+              <div className="erp-stacked-list">
+                {workspace.campaigns.filter((item) => item.kind === "PROMOTION").slice(0, 8).map((campaign) => (
+                  <div key={campaign.id}><div><strong>{campaign.title}</strong><span>{campaign.audience.replaceAll("_", " ")}</span></div><span className="badge approved">Ativa</span></div>
+                ))}
+                {!workspace.campaigns.some((item) => item.kind === "PROMOTION") && <small className="muted">Nenhuma promoção cadastrada.</small>}
+              </div>
+            </article>
+
+            <article className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Cupons de desconto</span><strong>Regras e validade</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+              {canManage && (
+                <form action={saveCoupon} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <label><span className="label">Código</span><input className="input" name="code" required placeholder="VOLTE10" /></label>
+                  <div className="grid grid-2">
+                    <label><span className="label">Tipo</span><select className="select" name="kind"><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>
+                    <label><span className="label">Valor</span><input className="input" name="value" type="number" min="0.01" step="0.01" required /></label>
+                  </div>
+                  <label><span className="label">Validade</span><input className="input" name="expiresAt" type="date" /></label>
+                  <button className="btn" type="submit">Criar cupom</button>
+                </form>
+              )}
+              <div className="erp-coupon-grid">
+                {workspace.coupons.map((coupon) => (
+                  <div key={coupon.id}><span>{coupon.code}</span><strong>{coupon.kind === "PERCENT" ? `${coupon.value}%` : brl(coupon.value)}</strong><small>{coupon.expiresAt ? `até ${new Intl.DateTimeFormat("pt-BR").format(new Date(`${coupon.expiresAt}T12:00:00`))}` : "sem validade"}</small></div>
+                ))}
+                {!workspace.coupons.length && <small className="muted">Nenhum cupom criado.</small>}
+              </div>
+            </article>
           </div>
         </section>
 
