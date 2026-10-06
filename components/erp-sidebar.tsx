@@ -28,7 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type Props = {
   business: string;
@@ -102,6 +102,12 @@ const NAV_GROUPS = [
   },
 ] as const;
 
+function routeFor(tenantCode: string, id: string) {
+  const base = `/erp/${encodeURIComponent(tenantCode)}`;
+  if (id === "dashboard") return base;
+  return `${base}/${id}`;
+}
+
 export function ErpSidebar({
   business,
   tenantCode,
@@ -118,39 +124,16 @@ export function ErpSidebar({
   logoutAction,
 }: Props) {
   const router = useRouter();
-  const [active, setActive] = useState("dashboard");
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const ids = useMemo(
-    () => NAV_GROUPS.flatMap((group) => group.items.map((item) => item.id)),
-    [],
-  );
-
-  useEffect(() => {
-    const sections = ids
-      .map((id) => document.getElementById(id))
-      .filter((section): section is HTMLElement => Boolean(section));
-
-    if (!sections.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        if (visible?.target?.id) setActive(visible.target.id);
-      },
-      {
-        rootMargin: "-18% 0px -68% 0px",
-        threshold: [0, 0.05, 0.2, 0.4],
-      },
-    );
-
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, [ids]);
+  const active = useMemo(() => {
+    const base = `/erp/${encodeURIComponent(tenantCode)}`;
+    if (pathname === base || pathname === `${base}/`) return "dashboard";
+    const segment = pathname.slice(base.length).split("/").filter(Boolean)[0];
+    return segment || "dashboard";
+  }, [pathname, tenantCode]);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -158,26 +141,6 @@ export function ErpSidebar({
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
-
-  function goTo(id: string, proOnly?: boolean) {
-    setMobileOpen(false);
-
-    if (id === "totem") {
-      if (proOnly && planKey !== "PRO") {
-        setActive("plano");
-        document.getElementById("plano")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      router.push(`/erp/${encodeURIComponent(tenantCode)}/totem`);
-      return;
-    }
-
-    setActive(id);
-    document.getElementById(id)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }
 
   function goBack() {
     if (window.history.length > 1) router.back();
@@ -270,17 +233,20 @@ export function ErpSidebar({
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const isLocked = "proOnly" in item && item.proOnly && planKey !== "PRO";
+                const href = isLocked
+                  ? routeFor(tenantCode, "plano")
+                  : routeFor(tenantCode, item.id);
 
                 return (
-                  <button
+                  <Link
                     key={item.id}
-                    type="button"
+                    href={href}
                     className={[
                       "erp-nav-item",
                       isActive ? "active" : "",
                       isLocked ? "locked" : "",
                     ].join(" ")}
-                    onClick={() => goTo(item.id, "proOnly" in item ? item.proOnly : false)}
+                    onClick={() => setMobileOpen(false)}
                     aria-current={isActive ? "page" : undefined}
                     title={collapsed ? item.label : undefined}
                   >
@@ -293,7 +259,7 @@ export function ErpSidebar({
                     ) : isActive ? (
                       <span className="erp-nav-active-dot" />
                     ) : null}
-                  </button>
+                  </Link>
                 );
               })}
             </div>
