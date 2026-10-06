@@ -242,7 +242,11 @@ export async function createAppointment(formData: FormData) {
   const barberId = text(formData, "barberId", 80);
   const startsAtRaw = text(formData, "startsAt", 40);
   const notes = text(formData, "notes", 300);
-  const startsAt = new Date(startsAtRaw);
+  const startsAt = new Date(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(startsAtRaw)
+      ? `${startsAtRaw}:00-03:00`
+      : startsAtRaw,
+  );
 
   if (!unitId || !serviceId || Number.isNaN(startsAt.getTime())) {
     redirect(`${path}?erro=agenda#agenda`);
