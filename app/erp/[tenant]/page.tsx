@@ -400,7 +400,7 @@ export default async function TenantERP({
           </a>
           <a className="erp-command-card" href="#servicos">
             <Store size={19} />
-            <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {productsTotal} produtos</strong></div>
+            <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {productsAllTotal} produtos</strong></div>
           </a>
           {isPro ? (
             <Link className="erp-command-card pro" href={`/erp/${encodeURIComponent(tenantCode)}/totem`}>
@@ -422,7 +422,7 @@ export default async function TenantERP({
           </div>
 
           <div className="demo-metrics">
-            <article className="card demo-metric"><span className="small muted">Clientes</span><strong>{customersTotal}</strong><small>base ativa carregada</small></article>
+            <article className="card demo-metric"><span className="small muted">Clientes</span><strong>{customersAllTotal}</strong><small>base ativa carregada</small></article>
             <article className="card demo-metric"><span className="small muted">Equipe ativa</span><strong>{shop.users.length}</strong><small>usuários e profissionais</small></article>
             <article className="card demo-metric"><span className="small muted">Comandas abertas</span><strong>{openCommands}</strong><small>atendimentos em andamento</small></article>
             <article className="card demo-metric"><span className="small muted">Saldo operacional</span><strong>{brl(cashBalance)}</strong><small>recebíveis menos pagáveis</small></article>
@@ -441,7 +441,7 @@ export default async function TenantERP({
             </article>
             <article className="card">
               <span className="small muted">Agenda</span>
-              <strong>{appointmentsTotal}</strong>
+              <strong>{appointmentsAllTotal}</strong>
               <small>agendamentos carregados</small>
             </article>
           </div>
@@ -476,11 +476,11 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
-            <tbody>{shop.services.length ? services.map((service) => (
+            <tbody>{servicesTotal ? services.map((service) => (
               <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="servicosPage" page={servicosPage} total={shop.services.length} pageSize={pageSize} hash="servicos" label="serviços" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="servicosPage" page={servicosPage} total={servicesTotal} pageSize={pageSize} hash="servicos" label="serviços" />
         </section>
 
         <section id="comandas" className="demo-section">
@@ -574,7 +574,7 @@ export default async function TenantERP({
               </article>
             ))}
           </div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="equipePage" page={equipePage} total={shop.users.length} pageSize={pageSize} hash="equipe" label="profissionais" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="equipePage" page={equipePage} total={professionalsTotal} pageSize={pageSize} hash="equipe" label="profissionais" />
         </section>
 
         <section id="unidades" className="demo-section">
@@ -591,15 +591,15 @@ export default async function TenantERP({
               </article>
             ))}
           </div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={shop.units.length} pageSize={pageSize} hash="unidades" label="unidades" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal} pageSize={pageSize} hash="unidades" label="unidades" />
         </section>
 
         <section id="relatorios" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
           <div className="erp-module-grid">
-            <ModuleCard title="Clientes" description={`${customersTotal} clientes carregados para análise de base e relacionamento.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Clientes" description={`${customersAllTotal} clientes carregados para análise de base e relacionamento.`} status="Disponível" tone="ready" />
             <ModuleCard title="Profissionais" description={`${shop.users.length} usuários ativos para acompanhamento de produtividade.`} status="Disponível" tone="ready" />
-            <ModuleCard title="Financeiro" description={`${financialTotal} lançamentos recentes disponíveis para consolidação.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Financeiro" description={`${financialAllTotal} lançamentos recentes disponíveis para consolidação.`} status="Disponível" tone="ready" />
             <ModuleCard title="Assinaturas" description="Relatórios de planos e assinantes serão liberados junto ao módulo de clube." status="Pendente" tone="pending" />
           </div>
         </section>
@@ -607,7 +607,7 @@ export default async function TenantERP({
         <section id="gerencial" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Gerencial</div><h2>Indicadores para decisão</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
           <div className="erp-module-grid">
-            <ModuleCard title="Agendamentos" description={`${appointmentsTotal} agendamentos carregados no painel atual.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Agendamentos" description={`${appointmentsAllTotal} agendamentos carregados no painel atual.`} status="Disponível" tone="ready" />
             <ModuleCard title="Perfil do cliente" description="Histórico de relacionamento, serviços e consumo por cliente." status="Em evolução" tone="neutral" />
             <ModuleCard title="Financeiro" description={`Saldo consolidado atual: ${brl(cashBalance)}.`} status="Disponível" tone="ready" />
             <ModuleCard title="Ranking" description="Ranking de profissionais e serviços será conectado às métricas de produção." status="Backend pendente" tone="pending" />
@@ -636,7 +636,7 @@ export default async function TenantERP({
           <div className="erp-alert-grid">
             <article className="card"><BellRing size={18} /><div><strong>{pendingFinance} pendência(s) financeira(s)</strong><span>Revisar contas com status pendente.</span></div></article>
             <article className="card"><ReceiptText size={18} /><div><strong>{openCommands} comanda(s) aberta(s)</strong><span>Acompanhar atendimentos em andamento.</span></div></article>
-            <article className="card"><PackageSearch size={18} /><div><strong>{productsTotal} produto(s) cadastrado(s)</strong><span>Reposição e estoque mínimo ficam concentrados no módulo de estoque.</span></div></article>
+            <article className="card"><PackageSearch size={18} /><div><strong>{productsAllTotal} produto(s) cadastrado(s)</strong><span>Reposição e estoque mínimo ficam concentrados no módulo de estoque.</span></div></article>
           </div>
         </section>
 
