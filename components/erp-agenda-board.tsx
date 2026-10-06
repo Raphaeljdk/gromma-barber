@@ -72,17 +72,9 @@ function addDays(value: string, days: number) {
 
 function mondayOf(value: string) {
   const date = new Date(`${value}T12:00:00-03:00`);
-  const day = Number(
-    new Intl.DateTimeFormat("en-US", { timeZone: TIME_ZONE, weekday: "short" })
-      .formatToParts(date)
-      .find((part) => part.type === "weekday")
-      ?.value === "Sun"
-      ? 0
-      : date.getDay(),
-  );
-  const jsDay = date.getDay();
-  const distance = jsDay === 0 ? -6 : 1 - jsDay;
-  date.setDate(date.getDate() + distance);
+  const weekDay = date.getUTCDay();
+  const distance = weekDay === 0 ? -6 : 1 - weekDay;
+  date.setUTCDate(date.getUTCDate() + distance);
   return dateKey(date);
 }
 
