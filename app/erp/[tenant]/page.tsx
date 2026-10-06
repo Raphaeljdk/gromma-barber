@@ -24,6 +24,7 @@ import { ErpSidebar } from "@/components/erp-sidebar";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, markFinancialPaid, updateAppointmentStatus } from "./actions";
 
 function StatusPill({
@@ -127,12 +128,14 @@ function operationalBadge(value: string) {
   return <span className={`badge ${tone}`}>{STATUS_LABELS[value] ?? value}</span>;
 }
 
-export default async function TenantERP({
+export async function TenantERPView({
   params,
   searchParams,
+  moduleId,
 }: {
   params: Promise<{ tenant: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+  moduleId?: string;
 }) {
   const { tenant } = await params;
   const tenantCode = decodeURIComponent(tenant).toUpperCase();
@@ -398,6 +401,7 @@ export default async function TenantERP({
           <div className="erp-top-actions">
             <BackButton fallback="/login" label="Voltar" />
             <a href={supportHref} className="nav-quiet-link">Suporte</a>
+            <ThemeToggle />
           </div>
         </div>
 
@@ -433,7 +437,7 @@ export default async function TenantERP({
           </div>
         </header>
 
-        <div className="erp-command-center">
+        <div className="erp-command-center" hidden={Boolean(moduleId && moduleId !== "dashboard")}>
           <article className="erp-command-card">
             <CalendarDays size={19} />
             <div><span>Hoje</span><strong>{today}</strong></div>
@@ -442,11 +446,11 @@ export default async function TenantERP({
             <ClipboardList size={19} />
             <div><span>Lista de espera</span><strong>Estrutura pronta</strong></div>
           </article>
-          <a className="erp-command-card" href="#agenda">
+          <a className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/agenda`}>
             <CalendarDays size={19} />
             <div><span>Horários</span><strong>Consultar agenda</strong></div>
           </a>
-          <a className="erp-command-card" href="#servicos">
+          <a className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/servicos`}>
             <Store size={19} />
             <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {productsAllTotal} produtos</strong></div>
           </a>
@@ -456,14 +460,14 @@ export default async function TenantERP({
               <div><span>Totem / Tablet</span><strong>Abrir experiência</strong></div>
             </Link>
           ) : (
-            <a className="erp-command-card" href="#plano">
+            <a className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/plano`}>
               <Store size={19} />
               <div><span>Totem / Tablet</span><strong>Disponível no Pro</strong></div>
             </a>
           )}
         </div>
 
-        <section id="dashboard" className="demo-section">
+        <section id="dashboard" className="demo-section" hidden={Boolean(moduleId && moduleId !== "dashboard")}>
           <div className="section-head">
             <div><div className="eyebrow">Dashboard</div><h2>Visão geral da operação</h2></div>
             <StatusPill tone="ready">Atualizado</StatusPill>
@@ -495,7 +499,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="agenda" className="demo-section">
+        <section id="agenda" className="demo-section" hidden={Boolean(moduleId && moduleId !== "agenda")}>
           <div className="section-head"><div><div className="eyebrow">Agenda</div><h2>Agendamentos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "agenda" && <div className="notice erp-inline-notice success">Agendamento criado com sucesso.</div>}
           {actionError === "agenda" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o agendamento. Revise os dados informados.</div>}
@@ -585,7 +589,7 @@ export default async function TenantERP({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="agendaPage" page={agendaPage} total={appointmentsTotal} pageSize={pageSize} hash="agenda" label="agendamentos" />
         </section>
 
-        <section id="clientes" className="demo-section">
+        <section id="clientes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "clientes")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Clientes</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "cliente" && <div className="notice erp-inline-notice success">Cliente cadastrado com sucesso.</div>}
           {actionError === "cliente" && <div className="notice erp-inline-notice error-notice">Revise os dados do cliente e tente novamente.</div>}
@@ -624,7 +628,7 @@ export default async function TenantERP({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="clientesPage" page={clientesPage} total={customersTotal} pageSize={pageSize} hash="clientes" label="clientes" />
         </section>
 
-        <section id="servicos" className="demo-section">
+        <section id="servicos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "servicos")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
           {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
@@ -659,7 +663,7 @@ export default async function TenantERP({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="servicosPage" page={servicosPage} total={servicesTotal} pageSize={pageSize} hash="servicos" label="serviços" />
         </section>
 
-        <section id="comandas" className="demo-section">
+        <section id="comandas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comandas")}>
           <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "comanda" && <div className="notice erp-inline-notice success">Comanda fechada e financeiro atualizado.</div>}
           {actionError === "comanda" && <div className="notice erp-inline-notice error-notice">Não foi possível fechar a comanda.</div>}
@@ -692,7 +696,7 @@ export default async function TenantERP({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
-        <section id="assinaturas" className="demo-section">
+        <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
           <div className="section-head"><div><div className="eyebrow">Clube de assinaturas</div><h2>Planos e assinantes</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Planos do clube" description="Cadastro de planos recorrentes da barbearia, benefícios e regras de uso." status="Estrutura pronta" tone="ready" />
@@ -701,7 +705,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="mensagens" className="demo-section">
+        <section id="mensagens" className="demo-section" hidden={Boolean(moduleId && moduleId !== "mensagens")}>
           <div className="section-head"><div><div className="eyebrow">Relacionamento</div><h2>Mensagens para clientes</h2></div><StatusPill tone="pending">Integração externa</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="WhatsApp Business" description="Canal para respostas, agenda, confirmações e atendimento automatizado." status="Configuração pendente" tone="pending" />
@@ -710,7 +714,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="promocoes" className="demo-section">
+        <section id="promocoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "promocoes")}>
           <div className="section-head"><div><div className="eyebrow">Comercial</div><h2>Promoções, grupos e cupons</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Anúncios / Promoções" description="Campanhas direcionadas para clientes e períodos específicos." status="Estrutura pronta" tone="ready" />
@@ -719,7 +723,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="financeiro" className="demo-section">
+        <section id="financeiro" className="demo-section" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
           <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "financeiro" && <div className="notice erp-inline-notice success">Lançamento financeiro criado com sucesso.</div>}
           {actionError === "financeiro" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o lançamento. Revise descrição e valor.</div>}
@@ -776,7 +780,7 @@ export default async function TenantERP({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
         </section>
 
-        <section id="caixa" className="demo-section">
+        <section id="caixa" className="demo-section" hidden={Boolean(moduleId && moduleId !== "caixa")}>
           <div className="section-head"><div><div className="eyebrow">Caixa</div><h2>Resumo de caixa</h2></div><StatusPill tone="ready">Dados do financeiro</StatusPill></div>
           <div className="demo-metrics">
             <article className="card demo-metric"><span className="small muted">Receitas / recebíveis</span><strong>{brl(receivables)}</strong><small>lançamentos carregados</small></article>
@@ -786,7 +790,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="estoque" className="demo-section">
+        <section id="estoque" className="demo-section" hidden={Boolean(moduleId && moduleId !== "estoque")}>
           <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
           {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}
@@ -826,7 +830,7 @@ export default async function TenantERP({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
         </section>
 
-        <section id="comissoes" className="demo-section">
+        <section id="comissoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comissoes")}>
           <div className="section-head"><div><div className="eyebrow">Remuneração</div><h2>Comissões e contas profissionais</h2></div><StatusPill tone="pending">Modelo de dados pendente</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Comissões" description="Regras de remuneração por profissional, serviço e produto." status="Estrutura pronta" tone="ready" />
@@ -835,7 +839,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="equipe" className="demo-section">
+        <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
@@ -857,7 +861,7 @@ export default async function TenantERP({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="equipePage" page={equipePage} total={professionalsTotal} pageSize={pageSize} hash="equipe" label="profissionais" />
         </section>
 
-        <section id="unidades" className="demo-section">
+        <section id="unidades" className="demo-section" hidden={Boolean(moduleId && moduleId !== "unidades")}>
           <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
@@ -881,7 +885,7 @@ export default async function TenantERP({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal} pageSize={pageSize} hash="unidades" label="unidades" />
         </section>
 
-        <section id="relatorios" className="demo-section">
+        <section id="relatorios" className="demo-section" hidden={Boolean(moduleId && moduleId !== "relatorios")}>
           <div className="section-head"><div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Clientes" description={`${customersAllTotal} clientes carregados para análise de base e relacionamento.`} status="Disponível" tone="ready" />
@@ -891,7 +895,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="gerencial" className="demo-section">
+        <section id="gerencial" className="demo-section" hidden={Boolean(moduleId && moduleId !== "gerencial")}>
           <div className="section-head"><div><div className="eyebrow">Gerencial</div><h2>Indicadores para decisão</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Agendamentos" description={`${appointmentsAllTotal} agendamentos carregados no painel atual.`} status="Disponível" tone="ready" />
@@ -901,7 +905,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="documentos" className="demo-section">
+        <section id="documentos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "documentos")}>
           <div className="section-head"><div><div className="eyebrow">Documentos</div><h2>Central documental</h2></div><StatusPill tone="pending">Backend pendente</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Documentos de clientes" description="Área prevista para anexos e documentos associados ao prontuário." status="Estrutura pronta" tone="ready" />
@@ -910,7 +914,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="avaliacoes" className="demo-section">
+        <section id="avaliacoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "avaliacoes")}>
           <div className="section-head"><div><div className="eyebrow">Experiência</div><h2>Avaliações</h2></div><StatusPill tone="pending">Modelo de dados pendente</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Avaliação do atendimento" description="Coleta de nota e comentário após o atendimento." status="Estrutura pronta" tone="ready" />
@@ -918,7 +922,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="alertas" className="demo-section">
+        <section id="alertas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "alertas")}>
           <div className="section-head"><div><div className="eyebrow">Alertas</div><h2>Central de atenção</h2></div><StatusPill tone="ready">Ativo</StatusPill></div>
           <div className="erp-alert-grid">
             <article className="card"><BellRing size={18} /><div><strong>{pendingFinance} pendência(s) financeira(s)</strong><span>Revisar contas com status pendente.</span></div></article>
@@ -927,7 +931,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="treinamentos" className="demo-section">
+        <section id="treinamentos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "treinamentos")}>
           <div className="section-head"><div><div className="eyebrow">Treinamentos</div><h2>Vídeos, cursos e materiais</h2></div><StatusPill tone="pending">Conteúdo pendente</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Vídeos tutoriais" description="Área preparada para tutoriais operacionais do sistema e da rotina." status="Estrutura pronta" tone="ready" />
@@ -936,7 +940,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="totem" className="demo-section">
+        <section id="totem" className="demo-section" hidden={Boolean(moduleId && moduleId !== "totem")}>
           <div className="section-head"><div><div className="eyebrow">Totem / Tablet</div><h2>Check-in e autoatendimento</h2></div><StatusPill tone={isPro ? "pro" : "pending"}>{isPro ? "Plano Pro" : "Bloqueado no Essencial"}</StatusPill></div>
           <div className="card erp-totem-preview">
             <div>
@@ -951,12 +955,12 @@ export default async function TenantERP({
             {isPro ? (
               <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/totem`}>Abrir Totem</Link>
             ) : (
-              <a className="btn secondary" href="#plano">Ver plano</a>
+              <a className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/plano`}>Ver plano</a>
             )}
           </div>
         </section>
 
-        <section id="configuracoes" className="demo-section">
+        <section id="configuracoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "configuracoes")}>
           <div className="section-head"><div><div className="eyebrow">Configurações</div><h2>Ajustes do sistema</h2></div><StatusPill tone="pending">Em evolução</StatusPill></div>
           <div className="erp-module-grid">
             <ModuleCard title="Ajustes da operação" description="Preferências da agenda, atendimento, caixa e módulos da barbearia." status="Estrutura pronta" tone="ready" />
@@ -965,7 +969,7 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <section id="plano" className="demo-section">
+        <section id="plano" className="demo-section" hidden={Boolean(moduleId && moduleId !== "plano")}>
           <div className="section-head"><div><div className="eyebrow">Contrato</div><h2>Plano e recursos liberados</h2></div><strong>{features.length} recursos</strong></div>
           <div className="grid grid-2">
             <div className="card">
@@ -982,11 +986,19 @@ export default async function TenantERP({
           </div>
         </section>
 
-        <a className="erp-floating-cash" href="#caixa" aria-label="Abrir caixa">
+        <Link className="erp-floating-cash" href={`/erp/${encodeURIComponent(tenantCode)}/caixa`} aria-label="Abrir caixa">
           <WalletCards size={19} />
           <span>Caixa</span>
-        </a>
+        </Link>
       </section>
     </main>
   );
+}
+
+
+export default async function TenantERPPage(props: {
+  params: Promise<{ tenant: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return <TenantERPView {...props} moduleId="dashboard" />;
 }
