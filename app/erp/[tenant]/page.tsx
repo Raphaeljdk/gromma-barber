@@ -20,6 +20,7 @@ import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
 import { BackButton } from "@/components/back-button";
 import { ErpSidebar } from "@/components/erp-sidebar";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
+import { SectionPagination } from "@/components/section-pagination";
 
 function StatusPill({
   children,
@@ -55,12 +56,32 @@ function ModuleCard({
 
 export default async function TenantERP({
   params,
+  searchParams,
 }: {
   params: Promise<{ tenant: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { tenant } = await params;
   const tenantCode = decodeURIComponent(tenant).toUpperCase();
   const viewer = await requireTenantAccess(tenantCode);
+  const qs = await searchParams;
+
+  const pageOf = (key: string) => {
+    const value = qs[key];
+    const raw = Array.isArray(value) ? value[0] : value;
+    const parsed = Number.parseInt(raw ?? "1", 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  };
+
+  const pageSize = 10;
+  const agendaPage = pageOf("agendaPage");
+  const clientesPage = pageOf("clientesPage");
+  const servicosPage = pageOf("servicosPage");
+  const comandasPage = pageOf("comandasPage");
+  const financeiroPage = pageOf("financeiroPage");
+  const estoquePage = pageOf("estoquePage");
+  const equipePage = pageOf("equipePage");
+  const unidadesPage = pageOf("unidadesPage");
 
   const shop = await prisma.barberShop.findUnique({
     where: { tenantCode },
