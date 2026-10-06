@@ -19,11 +19,22 @@ export type ClubMemberConfig = {
   nextBillingAt: string;
 };
 
+export type AudienceRule = "ALL" | "INACTIVE_30" | "INACTIVE_60" | "INACTIVE_90" | "BIRTHDAY" | "CLUB";
+
+export type CustomerGroupConfig = {
+  id: string;
+  name: string;
+  rule: AudienceRule;
+  active: boolean;
+  createdAt: string;
+};
+
 export type CampaignConfig = {
   id: string;
   kind?: "MESSAGE" | "PROMOTION";
   title: string;
-  audience: "ALL" | "INACTIVE_30" | "INACTIVE_60" | "INACTIVE_90" | "BIRTHDAY";
+  audience: AudienceRule;
+  groupId?: string;
   message: string;
   active: boolean;
   createdAt: string;
@@ -106,6 +117,7 @@ export type ErpWorkspace = {
   clubPlans: ClubPlanConfig[];
   clubMembers: ClubMemberConfig[];
   campaigns: CampaignConfig[];
+  customerGroups: CustomerGroupConfig[];
   coupons: CouponConfig[];
   documents: DocumentConfig[];
   reviews: ReviewConfig[];
@@ -120,6 +132,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   clubPlans: [],
   clubMembers: [],
   campaigns: [],
+  customerGroups: [],
   coupons: [],
   documents: [],
   reviews: [],
@@ -159,6 +172,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     clubPlans: array<ClubPlanConfig>(operations.clubPlans),
     clubMembers: array<ClubMemberConfig>(operations.clubMembers),
     campaigns: array<CampaignConfig>(operations.campaigns),
+    customerGroups: array<CustomerGroupConfig>(operations.customerGroups),
     coupons: array<CouponConfig>(operations.coupons),
     documents: array<DocumentConfig>(operations.documents),
     reviews: array<ReviewConfig>(operations.reviews),
