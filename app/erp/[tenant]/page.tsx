@@ -343,6 +343,10 @@ export default async function TenantERP({
   const isPro = planKey === "PRO";
   const subscription = shop.subscriptions[0];
   const features = planKey === "PRO" ? PLAN_FEATURES.PRO : PLAN_FEATURES.ESSENTIAL;
+  const viewerRole = viewer.type === "TENANT" ? viewer.role : "ADMIN";
+  const canOperate = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "RECEPTIONIST", "BARBER"].includes(viewerRole);
+  const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
+  const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
 
   const receivables = Number(receivableAggregate._sum.amount ?? 0);
   const payables = Number(payableAggregate._sum.amount ?? 0);
@@ -499,6 +503,7 @@ export default async function TenantERP({
           {actionOk === "agenda-status" && <div className="notice erp-inline-notice success">Status do atendimento atualizado.</div>}
           {actionError === "agenda-status" && <div className="notice erp-inline-notice error-notice">A transição solicitada não é válida para este atendimento.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+          {canOperate && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo agendamento <small>Agenda rápida</small></summary>
             <form action={createAppointment} className="erp-quick-form">
@@ -540,6 +545,7 @@ export default async function TenantERP({
               <button className="btn" type="submit">Salvar agendamento</button>
             </form>
           </details>
+          )}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
@@ -555,7 +561,7 @@ export default async function TenantERP({
                 <td>{item.customer?.name ?? "—"}</td><td>{item.barber?.name ?? "—"}</td><td>{item.service?.name ?? "—"}</td><td>{item.unit.name}</td><td>{operationalBadge(item.status)}</td>
                 <td>
                   <div className="erp-row-actions">
-                    {APPOINTMENT_NEXT_ACTION[item.status] && (
+                    {canOperate && APPOINTMENT_NEXT_ACTION[item.status] && (
                       <form action={updateAppointmentStatus}>
                         <input type="hidden" name="tenantCode" value={tenantCode} />
                         <input type="hidden" name="appointmentId" value={item.id} />
@@ -564,7 +570,7 @@ export default async function TenantERP({
                         </button>
                       </form>
                     )}
-                    {["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(item.status) && (
+                    {canOperate && ["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(item.status) && (
                       <form action={updateAppointmentStatus}>
                         <input type="hidden" name="tenantCode" value={tenantCode} />
                         <input type="hidden" name="appointmentId" value={item.id} />
@@ -584,6 +590,7 @@ export default async function TenantERP({
           {actionOk === "cliente" && <div className="notice erp-inline-notice success">Cliente cadastrado com sucesso.</div>}
           {actionError === "cliente" && <div className="notice erp-inline-notice error-notice">Revise os dados do cliente e tente novamente.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+          {canOperate && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo cliente <small>Cadastro rápido</small></summary>
             <form action={createCustomer} className="erp-quick-form">
@@ -600,6 +607,7 @@ export default async function TenantERP({
               <button className="btn" type="submit">Salvar cliente</button>
             </form>
           </details>
+          )}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
@@ -621,6 +629,7 @@ export default async function TenantERP({
           {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
           {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+          {canManage && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo serviço <small>Cadastro operacional</small></summary>
             <form action={createService} className="erp-quick-form">
@@ -633,6 +642,7 @@ export default async function TenantERP({
               <button className="btn" type="submit">Salvar serviço</button>
             </form>
           </details>
+          )}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
@@ -668,7 +678,7 @@ export default async function TenantERP({
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td>
                 <td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{operationalBadge(command.status)}</td>
                 <td>
-                  {command.status === "OPEN" ? (
+                  {command.status === "OPEN" && canOperate ? (
                     <form action={closeCommand}>
                       <input type="hidden" name="tenantCode" value={tenantCode} />
                       <input type="hidden" name="commandId" value={command.id} />
@@ -716,6 +726,7 @@ export default async function TenantERP({
           {actionOk === "financeiro-pago" && <div className="notice erp-inline-notice success">Lançamento marcado como pago.</div>}
           {actionError === "financeiro-status" && <div className="notice erp-inline-notice error-notice">Não foi possível atualizar o lançamento financeiro.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+          {canFinance && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo lançamento <small>Receber ou pagar</small></summary>
             <form action={createFinancialEntry} className="erp-quick-form">
@@ -733,6 +744,7 @@ export default async function TenantERP({
               <button className="btn" type="submit">Salvar lançamento</button>
             </form>
           </details>
+          )}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
@@ -750,7 +762,7 @@ export default async function TenantERP({
               <tr key={entry.id}>
                 <td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{entry.dueDate ? new Intl.DateTimeFormat("pt-BR").format(entry.dueDate) : "—"}</td><td>{entry.unit?.name ?? "Geral"}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td>
                 <td>
-                  {entry.status === "PENDING" ? (
+                  {entry.status === "PENDING" && canFinance ? (
                     <form action={markFinancialPaid}>
                       <input type="hidden" name="tenantCode" value={tenantCode} />
                       <input type="hidden" name="entryId" value={entry.id} />
@@ -779,6 +791,7 @@ export default async function TenantERP({
           {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
           {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+          {canManage && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo produto <small>Cadastro de estoque</small></summary>
             <form action={createProduct} className="erp-quick-form">
@@ -796,6 +809,7 @@ export default async function TenantERP({
               <button className="btn" type="submit">Salvar produto</button>
             </form>
           </details>
+          )}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
