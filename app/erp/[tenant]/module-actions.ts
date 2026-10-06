@@ -250,6 +250,7 @@ export async function saveCampaign(formData: FormData) {
     await persistWorkspace(shop, (workspace) => {
       workspace.campaigns.unshift({
         id: workspaceId("campaign"),
+        kind: "MESSAGE",
         title,
         audience,
         message,
@@ -319,6 +320,7 @@ export async function savePromotion(formData: FormData) {
     await persistWorkspace(shop, (workspace) => {
       workspace.campaigns.unshift({
         id: workspaceId("promotion"),
+        kind: "PROMOTION",
         title,
         audience,
         message,
