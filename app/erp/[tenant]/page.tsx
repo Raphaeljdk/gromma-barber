@@ -479,7 +479,7 @@ export async function TenantERPView({
           <Link className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/agenda`}>
             <CalendarDays size={19} />
             <div><span>Horários</span><strong>Consultar agenda</strong></div>
-          </a>
+          </Link>
           <Link className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/servicos`}>
             <Store size={19} />
             <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {productsAllTotal} produtos</strong></div>
