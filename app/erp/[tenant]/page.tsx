@@ -24,7 +24,7 @@ import { ErpSidebar } from "@/components/erp-sidebar";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
-import { createCustomer, createFinancialEntry, createProduct, createService } from "./actions";
+import { createAppointment, createCustomer, createFinancialEntry, createProduct, createService } from "./actions";
 
 function StatusPill({
   children,
@@ -228,6 +228,7 @@ export default async function TenantERP({
     customers,
     customersTotal,
     customersAllTotal,
+    appointmentCustomers,
     appointments,
     appointmentsTotal,
     appointmentsAllTotal,
@@ -252,6 +253,12 @@ export default async function TenantERP({
     }),
     prisma.customer.count({ where: customerWhere }),
     prisma.customer.count({ where: { barberShopId: shop.id, active: true } }),
+    prisma.customer.findMany({
+      where: { barberShopId: shop.id, active: true },
+      orderBy: { name: "asc" },
+      take: 200,
+      select: { id: true, name: true, phone: true },
+    }),
     prisma.appointment.findMany({
       where: appointmentWhere,
       orderBy: { startsAt: "desc" },
@@ -479,6 +486,51 @@ export default async function TenantERP({
 
         <section id="agenda" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Agenda</div><h2>Agendamentos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {actionOk === "agenda" && <div className="notice erp-inline-notice success">Agendamento criado com sucesso.</div>}
+          {actionError === "agenda" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o agendamento. Revise os dados informados.</div>}
+          {actionError === "agenda-conflito" && <div className="notice erp-inline-notice error-notice">O profissional já possui um atendimento nesse intervalo.</div>}
+          {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+          <details className="erp-quick-create">
+            <summary><Plus size={15} /> Novo agendamento <small>Agenda rápida</small></summary>
+            <form action={createAppointment} className="erp-quick-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <div className="grid grid-2">
+                <label>
+                  <span className="label">Cliente</span>
+                  <select className="select" name="customerId">
+                    <option value="">Cliente avulso</option>
+                    {appointmentCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span className="label">Serviço</span>
+                  <select className="select" name="serviceId" required defaultValue="">
+                    <option value="" disabled>Selecione</option>
+                    {shop.services.map((service) => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} min · {brl(Number(service.price))}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="grid grid-3">
+                <label>
+                  <span className="label">Profissional</span>
+                  <select className="select" name="barberId">
+                    <option value="">Sem profissional definido</option>
+                    {shop.users.filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role)).map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span className="label">Unidade</span>
+                  <select className="select" name="unitId" required defaultValue="">
+                    <option value="" disabled>Selecione</option>
+                    {shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
+                  </select>
+                </label>
+                <label><span className="label">Data e hora</span><input className="input" name="startsAt" type="datetime-local" required /></label>
+              </div>
+              <label><span className="label">Observações</span><input className="input" name="notes" maxLength={300} placeholder="Opcional" /></label>
+              <button className="btn" type="submit">Salvar agendamento</button>
+            </form>
+          </details>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
