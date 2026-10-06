@@ -109,6 +109,32 @@ const ROLE_LABELS: Record<string, string> = {
   ACCOUNTANT: "Financeiro",
 };
 
+const MODULE_TITLES: Record<string, string> = {
+  dashboard: "Dashboard",
+  agenda: "Agenda",
+  clientes: "Clientes",
+  servicos: "Serviços",
+  comandas: "Comandas",
+  assinaturas: "Clube / Assinaturas",
+  mensagens: "Mensagens",
+  promocoes: "Promoções / Cupons",
+  financeiro: "Financeiro",
+  caixa: "Caixa",
+  estoque: "Estoque",
+  comissoes: "Comissões",
+  equipe: "Profissionais",
+  unidades: "Unidades",
+  relatorios: "Relatórios",
+  gerencial: "Gerencial",
+  documentos: "Documentos",
+  avaliacoes: "Avaliações",
+  alertas: "Alertas",
+  treinamentos: "Tutoriais / Cursos",
+  totem: "Totem / Check-in",
+  configuracoes: "Configurações",
+  plano: "Plano",
+};
+
 const APPOINTMENT_NEXT_ACTION: Record<string, { action: string; label: string }> = {
   SCHEDULED: { action: "confirm", label: "Confirmar" },
   CONFIRMED: { action: "checkin", label: "Check-in" },
@@ -343,6 +369,7 @@ export async function TenantERPView({
 
   const planKey = shop.activePlan ?? shop.requestedPlan;
   const plan = PLAN_CONFIG[planKey];
+  const activeModuleTitle = MODULE_TITLES[moduleId ?? "dashboard"] ?? "Dashboard";
   const isPro = planKey === "PRO";
   const subscription = shop.subscriptions[0];
   const features = planKey === "PRO" ? PLAN_FEATURES.PRO : PLAN_FEATURES.ESSENTIAL;
@@ -394,6 +421,8 @@ export async function TenantERPView({
             <span>{plan.name}</span>
             <span>/</span>
             <strong>{shop.tradeName}</strong>
+            <span>/</span>
+            <strong>{activeModuleTitle}</strong>
           </div>
           <div className="erp-top-center">
             <ErpCommandPalette tenantCode={tenantCode} planKey={planKey} supportHref={supportHref} />
@@ -424,10 +453,11 @@ export async function TenantERPView({
         <header className="demo-header erp-hero-header">
           <div>
             <div className="eyebrow">ERP · {plan.name}</div>
-            <h1>{shop.tradeName}</h1>
+            <h1>{moduleId === "dashboard" ? shop.tradeName : activeModuleTitle}</h1>
             <p>
-              Gestão operacional centralizada por tenant, com módulos organizados para rotina,
-              atendimento, financeiro e expansão da barbearia.
+              {moduleId === "dashboard"
+                ? "Gestão operacional centralizada por tenant, com módulos organizados para rotina, atendimento, financeiro e expansão da barbearia."
+                : `${shop.tradeName} · ${tenantCode} · módulo ${activeModuleTitle}.`}
             </p>
           </div>
           <div className="demo-header-actions">
@@ -446,24 +476,24 @@ export async function TenantERPView({
             <ClipboardList size={19} />
             <div><span>Lista de espera</span><strong>Estrutura pronta</strong></div>
           </article>
-          <a className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/agenda`}>
+          <Link className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/agenda`}>
             <CalendarDays size={19} />
             <div><span>Horários</span><strong>Consultar agenda</strong></div>
           </a>
-          <a className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/servicos`}>
+          <Link className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/servicos`}>
             <Store size={19} />
             <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {productsAllTotal} produtos</strong></div>
-          </a>
+          </Link>
           {isPro ? (
             <Link className="erp-command-card pro" href={`/erp/${encodeURIComponent(tenantCode)}/totem`}>
               <Store size={19} />
               <div><span>Totem / Tablet</span><strong>Abrir experiência</strong></div>
             </Link>
           ) : (
-            <a className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/plano`}>
+            <Link className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/plano`}>
               <Store size={19} />
               <div><span>Totem / Tablet</span><strong>Disponível no Pro</strong></div>
-            </a>
+            </Link>
           )}
         </div>
 
