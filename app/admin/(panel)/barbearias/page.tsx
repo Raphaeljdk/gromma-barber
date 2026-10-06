@@ -165,6 +165,11 @@ export default async function BarberiasPage({
     (shop) => shop.status === "APPROVED" && !shop.accessReleased,
   ).length;
   const totalCommercial = commercialRows.length;
+  const scopedRows = scope === "validation" ? platformRows.filter((shop) => shop.isDemo) : commercialRows;
+  const scopedPending = scopedRows.filter((shop) => shop.status === "PENDING").length;
+  const scopedApproved = scopedRows.filter((shop) => shop.status === "APPROVED").length;
+  const scopedBlocked = scopedRows.filter((shop) => shop.status === "BLOCKED").length;
+  const scopedRejected = scopedRows.filter((shop) => shop.status === "REJECTED").length;
   const proShare = totalCommercial > 0 ? Math.round((pro / totalCommercial) * 100) : 0;
   const essentialShare = totalCommercial > 0 ? Math.round((essential / totalCommercial) * 100) : 0;
   const operationalRate =
@@ -364,7 +369,7 @@ export default async function BarberiasPage({
           <input className="input" name="q" defaultValue={search} placeholder="Buscar barbearia, responsável, tenant, e-mail ou CPF/CNPJ" />
         </label>
         <button className="btn secondary" type="submit">Buscar</button>
-        {(search || status) && <Link className="btn secondary" href="/admin/barbearias">Limpar</Link>}
+        {(search || status) && <Link className="btn secondary" href={scope === "validation" ? "/admin/barbearias?scope=validation" : "/admin/barbearias"}>Limpar</Link>}
       </form>
 
       <div className="executive-scope-row" aria-label="Ambiente dos tenants">
@@ -374,10 +379,10 @@ export default async function BarberiasPage({
 
       <div className="executive-filter-row">
         <Link className={!status ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation" : "/admin/barbearias"}>Todos <strong>{scope === "validation" ? demos : totalCommercial}</strong></Link>
-        <Link className={status === "PENDING" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=PENDING" : "/admin/barbearias?status=PENDING"}>Pendentes <strong>{pending}</strong></Link>
-        <Link className={status === "APPROVED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=APPROVED" : "/admin/barbearias?status=APPROVED"}>Liberados <strong>{approved}</strong></Link>
-        <Link className={status === "BLOCKED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=BLOCKED" : "/admin/barbearias?status=BLOCKED"}>Bloqueados <strong>{blocked}</strong></Link>
-        <Link className={status === "REJECTED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=REJECTED" : "/admin/barbearias?status=REJECTED"}>Rejeitados <strong>{rejected}</strong></Link>
+        <Link className={status === "PENDING" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=PENDING" : "/admin/barbearias?status=PENDING"}>Pendentes <strong>{scopedPending}</strong></Link>
+        <Link className={status === "APPROVED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=APPROVED" : "/admin/barbearias?status=APPROVED"}>Liberados <strong>{scopedApproved}</strong></Link>
+        <Link className={status === "BLOCKED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=BLOCKED" : "/admin/barbearias?status=BLOCKED"}>Bloqueados <strong>{scopedBlocked}</strong></Link>
+        <Link className={status === "REJECTED" ? "active" : ""} href={scope === "validation" ? "/admin/barbearias?scope=validation&status=REJECTED" : "/admin/barbearias?status=REJECTED"}>Rejeitados <strong>{scopedRejected}</strong></Link>
       </div>
 
       <div className="table-wrap executive-tenant-table-wrap">
