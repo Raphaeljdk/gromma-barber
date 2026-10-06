@@ -27,7 +27,7 @@ import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { readWorkspace } from "@/lib/erp-workspace";
-import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, markFinancialPaid, updateAppointmentStatus } from "./actions";
+import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
 import { addClubMember, addDeduction, addWaitlist, generateClubCharge, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
@@ -1329,7 +1329,9 @@ export async function TenantERPView({
         <section id="estoque" className="demo-section" hidden={Boolean(moduleId && moduleId !== "estoque")}>
           <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
+          {actionOk === "movimento" && <div className="notice erp-inline-notice success">Movimentação de estoque registrada.</div>}
           {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}
+          {actionError === "movimento" && <div className="notice erp-inline-notice error-notice">Revise produto, unidade e quantidade da movimentação.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {canManage && (
           <details className="erp-quick-create">
@@ -1349,6 +1351,24 @@ export async function TenantERPView({
               <button className="btn" type="submit">Salvar produto</button>
             </form>
           </details>
+          )}
+          {canManage && productsAllTotal > 0 && (
+            <details className="erp-quick-create">
+              <summary><Plus size={15} /> Movimentar estoque <small>Entrada, saída ou ajuste</small></summary>
+              <form action={createStockMovement} className="erp-quick-form">
+                <input type="hidden" name="tenantCode" value={tenantCode} />
+                <div className="grid grid-2">
+                  <label><span className="label">Produto</span><select className="select" name="productId" required defaultValue=""><option value="" disabled>Selecione</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ""}</option>)}</select></label>
+                  <label><span className="label">Unidade</span><select className="select" name="unitId" required defaultValue=""><option value="" disabled>Selecione</option>{shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
+                </div>
+                <div className="grid grid-3">
+                  <label><span className="label">Movimento</span><select className="select" name="type"><option value="IN">Entrada</option><option value="OUT">Saída</option><option value="ADJUSTMENT">Ajuste (+)</option></select></label>
+                  <label><span className="label">Quantidade</span><input className="input" name="quantity" type="number" min="0.001" step="0.001" required /></label>
+                  <label><span className="label">Motivo</span><input className="input" name="reason" maxLength={180} placeholder="Compra, consumo, inventário..." /></label>
+                </div>
+                <button className="btn secondary" type="submit">Registrar movimento</button>
+              </form>
+            </details>
           )}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`}
