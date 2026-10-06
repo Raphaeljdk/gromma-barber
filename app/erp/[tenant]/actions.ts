@@ -289,7 +289,7 @@ export async function createAppointment(formData: FormData) {
       select: { id: true },
     });
 
-    const available = [];
+    const available: Array<{ id: string; load: number }> = [];
     for (const candidate of candidates) {
       const conflict = await prisma.appointment.findFirst({
         where: {
