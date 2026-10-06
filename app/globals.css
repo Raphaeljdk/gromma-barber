@@ -3693,3 +3693,183 @@ table th {
     grid-template-columns:1fr;
   }
 }
+
+/* ===== Operational tables & pagination ===== */
+.demo-section {
+  position:relative;
+  scroll-margin-top:86px;
+}
+.demo-section > .section-head {
+  min-height:58px;
+  align-items:center;
+  margin-bottom:12px;
+  padding:0 2px;
+}
+.demo-section > .section-head h2 {
+  margin-top:5px;
+  font-size:1.2rem;
+}
+.tenant-erp .table-wrap {
+  border-color:#2b2a26;
+  border-radius:14px;
+  box-shadow:none;
+  background:#0d0d0c;
+}
+.tenant-erp table {
+  min-width:920px;
+  background:#0d0d0c;
+}
+.tenant-erp table thead th {
+  position:sticky;
+  top:0;
+  z-index:2;
+  height:42px;
+  padding-top:10px;
+  padding-bottom:10px;
+  border-bottom-color:#34322c;
+  background:#11110f;
+  color:#9c9589;
+  font-size:.66rem;
+  letter-spacing:.085em;
+}
+.tenant-erp table tbody td {
+  height:52px;
+  color:#d8d2c7;
+  font-size:.76rem;
+}
+.tenant-erp table tbody tr {
+  transition:background .16s ease;
+}
+.tenant-erp table tbody tr:hover td {
+  background:#14130f;
+}
+.tenant-erp table tbody td strong {
+  color:#eee9df;
+}
+.section-pagination {
+  min-height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-top:8px;
+  padding:8px 2px 0;
+  border-top:1px solid #24231f;
+}
+.section-pagination-summary {
+  color:#726d65;
+  font-size:.66rem;
+  font-weight:750;
+}
+.section-pagination-controls {
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.section-pagination-controls > a,
+.section-pagination-controls > .disabled {
+  min-height:32px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  border:1px solid #2d2c28;
+  border-radius:9px;
+  background:#0f0f0e;
+  color:#a29b90;
+  padding:6px 9px;
+  font-size:.64rem;
+  font-weight:800;
+}
+.section-pagination-controls > a:hover {
+  border-color:#5b4826;
+  background:#17130c;
+  color:#e2c581;
+}
+.section-pagination-controls > .disabled {
+  opacity:.38;
+  cursor:not-allowed;
+}
+.section-pagination-pages {
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.section-pagination-page-slot {
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.section-pagination-page-slot i {
+  color:#5f5b54;
+  font-style:normal;
+  font-size:.7rem;
+}
+.section-pagination-page-slot a {
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border:1px solid #2d2c28;
+  border-radius:9px;
+  background:#0f0f0e;
+  color:#8f897f;
+  font-size:.65rem;
+  font-weight:900;
+}
+.section-pagination-page-slot a:hover,
+.section-pagination-page-slot a.active {
+  border-color:#654f28;
+  background:linear-gradient(180deg,#1c160c,#14110b);
+  color:#efce84;
+}
+.executive-tenant-table-wrap + .section-pagination {
+  margin-top:-12px;
+  padding:12px 4px 0;
+}
+.erp-module-card,
+.demo-team-card,
+.demo-unit-card {
+  border-color:#2b2924;
+  box-shadow:none;
+}
+.erp-module-card:hover,
+.demo-team-card:hover,
+.demo-unit-card:hover {
+  border-color:#443a27;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)),#11100e;
+}
+.erp-command-card {
+  box-shadow:none;
+}
+.erp-dashboard-strip .card {
+  min-height:108px;
+}
+.erp-dashboard-strip .card > strong {
+  margin-top:3px;
+  font-size:1.35rem;
+  letter-spacing:-.035em;
+}
+@media (max-width:700px) {
+  .section-pagination {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .section-pagination-controls {
+    width:100%;
+    justify-content:space-between;
+  }
+  .section-pagination-pages {
+    overflow-x:auto;
+  }
+  .section-pagination-controls > a > span,
+  .section-pagination-controls > .disabled > span {
+    display:none;
+  }
+  .section-pagination-controls > a,
+  .section-pagination-controls > .disabled {
+    width:34px;
+    padding:6px;
+  }
+}
+
