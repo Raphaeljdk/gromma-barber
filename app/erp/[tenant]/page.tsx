@@ -88,26 +88,82 @@ export default async function TenantERP({
     include: {
       units: { orderBy: { createdAt: "asc" } },
       users: { where: { active: true }, orderBy: [{ role: "asc" }, { name: "asc" }] },
-      customers: { where: { active: true }, orderBy: { createdAt: "desc" }, take: 20 },
       services: { where: { active: true }, orderBy: { name: "asc" } },
-      products: { where: { active: true }, orderBy: { name: "asc" }, take: 20 },
-      appointments: {
-        orderBy: { startsAt: "desc" },
-        take: 16,
-        include: { customer: true, barber: true, service: true, unit: true },
-      },
-      commands: {
-        orderBy: { openedAt: "desc" },
-        take: 16,
-        include: { customer: true, unit: true, items: true },
-      },
-      financialEntries: { orderBy: { createdAt: "desc" }, take: 20, include: { unit: true } },
       subscriptions: { where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" }, take: 1 },
-      stockMovements: { orderBy: { createdAt: "desc" }, take: 40, include: { product: true, unit: true } },
     },
   });
 
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
+
+  const [
+    customers,
+    customersTotal,
+    appointments,
+    appointmentsTotal,
+    commands,
+    commandsTotal,
+    openCommands,
+    products,
+    productsTotal,
+    financialEntries,
+    financialTotal,
+    pendingFinance,
+    receivableAggregate,
+    payableAggregate,
+  ] = await Promise.all([
+    prisma.customer.findMany({
+      where: { barberShopId: shop.id, active: true },
+      orderBy: { createdAt: "desc" },
+      skip: (clientesPage - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.customer.count({ where: { barberShopId: shop.id, active: true } }),
+    prisma.appointment.findMany({
+      where: { barberShopId: shop.id },
+      orderBy: { startsAt: "desc" },
+      skip: (agendaPage - 1) * pageSize,
+      take: pageSize,
+      include: { customer: true, barber: true, service: true, unit: true },
+    }),
+    prisma.appointment.count({ where: { barberShopId: shop.id } }),
+    prisma.serviceCommand.findMany({
+      where: { barberShopId: shop.id },
+      orderBy: { openedAt: "desc" },
+      skip: (comandasPage - 1) * pageSize,
+      take: pageSize,
+      include: { customer: true, unit: true, items: true },
+    }),
+    prisma.serviceCommand.count({ where: { barberShopId: shop.id } }),
+    prisma.serviceCommand.count({ where: { barberShopId: shop.id, status: "OPEN" } }),
+    prisma.product.findMany({
+      where: { barberShopId: shop.id, active: true },
+      orderBy: { name: "asc" },
+      skip: (estoquePage - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.product.count({ where: { barberShopId: shop.id, active: true } }),
+    prisma.financialEntry.findMany({
+      where: { barberShopId: shop.id },
+      orderBy: { createdAt: "desc" },
+      skip: (financeiroPage - 1) * pageSize,
+      take: pageSize,
+      include: { unit: true },
+    }),
+    prisma.financialEntry.count({ where: { barberShopId: shop.id } }),
+    prisma.financialEntry.count({ where: { barberShopId: shop.id, status: "PENDING" } }),
+    prisma.financialEntry.aggregate({
+      where: { barberShopId: shop.id, type: "RECEIVABLE" },
+      _sum: { amount: true },
+    }),
+    prisma.financialEntry.aggregate({
+      where: { barberShopId: shop.id, type: "PAYABLE" },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const services = shop.services.slice((servicosPage - 1) * pageSize, servicosPage * pageSize);
+  const professionals = shop.users.slice((equipePage - 1) * pageSize, equipePage * pageSize);
+  const unitsPageItems = shop.units.slice((unidadesPage - 1) * pageSize, unidadesPage * pageSize);
 
   const planKey = shop.activePlan ?? shop.requestedPlan;
   const plan = PLAN_CONFIG[planKey];
@@ -115,15 +171,9 @@ export default async function TenantERP({
   const subscription = shop.subscriptions[0];
   const features = planKey === "PRO" ? PLAN_FEATURES.PRO : PLAN_FEATURES.ESSENTIAL;
 
-  const receivables = shop.financialEntries
-    .filter((entry) => entry.type === "RECEIVABLE")
-    .reduce((sum, entry) => sum + Number(entry.amount), 0);
-  const payables = shop.financialEntries
-    .filter((entry) => entry.type === "PAYABLE")
-    .reduce((sum, entry) => sum + Number(entry.amount), 0);
+  const receivables = Number(receivableAggregate._sum.amount ?? 0);
+  const payables = Number(payableAggregate._sum.amount ?? 0);
   const cashBalance = receivables - payables;
-  const openCommands = shop.commands.filter((command) => command.status === "OPEN").length;
-  const pendingFinance = shop.financialEntries.filter((entry) => entry.status === "PENDING").length;
 
   const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
   const supportSubject = encodeURIComponent(`Suporte GROMMA - ${shop.tradeName} - ${tenantCode}`);
