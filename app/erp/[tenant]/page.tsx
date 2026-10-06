@@ -97,6 +97,14 @@ const FINANCIAL_STATUS_OPTIONS = FINANCIAL_STATUSES.map((value) => ({
   label: STATUS_LABELS[value] ?? value,
 }));
 
+const ROLE_LABELS: Record<string, string> = {
+  OWNER: "Proprietário",
+  MANAGER: "Gerente",
+  RECEPTIONIST: "Recepção",
+  BARBER: "Barbeiro",
+  ACCOUNTANT: "Financeiro",
+};
+
 function operationalBadge(value: string) {
   const positive = ["CONFIRMED", "CHECKED_IN", "IN_SERVICE", "COMPLETED", "CLOSED", "PAID"];
   const negative = ["CANCELED", "NO_SHOW"];
@@ -580,9 +588,9 @@ export default async function TenantERP({
             ]}
           />
           <div className="table-wrap"><table>
-            <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status</th></tr></thead>
+            <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Vencimento</th><th>Unidade</th><th>Valor</th><th>Status</th></tr></thead>
             <tbody>{financialEntries.map((entry) => (
-              <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td></tr>
+              <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{entry.dueDate ? new Intl.DateTimeFormat("pt-BR").format(entry.dueDate) : "—"}</td><td>{entry.unit?.name ?? "Geral"}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td></tr>
             ))}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
@@ -610,7 +618,7 @@ export default async function TenantERP({
           <div className="table-wrap"><table>
             <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque mínimo</th></tr></thead>
             <tbody>{products.map((product) => (
-              <tr key={product.id}><td>{product.sku ?? "—"}</td><td><strong>{product.name}</strong></td><td>{brl(Number(product.costPrice))}</td><td>{brl(Number(product.salePrice))}</td><td>{Number(product.stockMin)}</td></tr>
+              <tr key={product.id}><td><strong>{product.sku ?? "—"}</strong><div className="small muted">{product.barcode ?? "Sem código de barras"}</div></td><td><strong>{product.name}</strong></td><td>{brl(Number(product.costPrice))}</td><td>{brl(Number(product.salePrice))}</td><td>{Number(product.stockMin)}</td></tr>
             ))}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
@@ -639,7 +647,7 @@ export default async function TenantERP({
               <article className="card demo-team-card" key={user.id}>
                 <div className="demo-avatar">{user.name.slice(0,1)}</div>
                 <div><strong>{user.name}</strong><span>{user.email}</span></div>
-                <strong className="demo-revenue">{user.role}</strong>
+                <strong className="demo-revenue">{ROLE_LABELS[user.role] ?? user.role}</strong>
                 <small>{user.active ? "Acesso ativo" : "Acesso bloqueado"}</small>
               </article>
             ))}
