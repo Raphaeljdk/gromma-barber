@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TotemFlow } from "@/components/totem-flow";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { PLAN_CONFIG } from "@/lib/plans";
@@ -49,7 +50,7 @@ export default async function TotemPage({
             check-in/checkout e operação por tablet faz parte da experiência {pro.name}.
           </p>
           <div className="actions">
-            <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}#plano`}>Voltar ao plano</Link>
+            <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/plano`}>Voltar ao plano</Link>
             <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}`}>Voltar ao ERP</Link>
           </div>
         </section>
@@ -62,6 +63,7 @@ export default async function TotemPage({
       <div className="totem-page-tools">
         <Link href={`/erp/${encodeURIComponent(tenantCode)}`}>← Voltar ao ERP</Link>
         <span>Modo de validação · nenhuma ação deste Totem grava dados ainda</span>
+        <ThemeToggle />
       </div>
 
       <TotemFlow
