@@ -8,6 +8,7 @@ import {
   FileText,
   MessageCircle,
   PackageSearch,
+  Plus,
   ReceiptText,
   Star,
   Store,
@@ -23,6 +24,7 @@ import { ErpSidebar } from "@/components/erp-sidebar";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
+import { createCustomer, createFinancialEntry, createProduct, createService } from "./actions";
 
 function StatusPill({
   children,
@@ -149,6 +151,8 @@ export default async function TenantERP({
   const comandaStatus = allowedValue(valueOf("comandaStatus"), COMMAND_STATUSES);
   const financeiroTipo = allowedValue(valueOf("financeiroTipo"), FINANCIAL_TYPES);
   const financeiroStatus = allowedValue(valueOf("financeiroStatus"), FINANCIAL_STATUSES);
+  const actionOk = valueOf("ok");
+  const actionError = valueOf("erro");
 
   const pageSize = 10;
   const agendaPage = pageOf("agendaPage");
@@ -496,6 +500,25 @@ export default async function TenantERP({
 
         <section id="clientes" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Clientes</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {actionOk === "cliente" && <div className="notice erp-inline-notice success">Cliente cadastrado com sucesso.</div>}
+          {actionError === "cliente" && <div className="notice erp-inline-notice error-notice">Revise os dados do cliente e tente novamente.</div>}
+          {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+          <details className="erp-quick-create">
+            <summary><Plus size={15} /> Novo cliente <small>Cadastro rápido</small></summary>
+            <form action={createCustomer} className="erp-quick-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <label><span className="label">Nome</span><input className="input" name="name" required maxLength={120} placeholder="Nome completo" /></label>
+              <div className="grid grid-2">
+                <label><span className="label">Telefone</span><input className="input" name="phone" maxLength={40} placeholder="(00) 00000-0000" /></label>
+                <label><span className="label">E-mail</span><input className="input" name="email" type="email" maxLength={180} placeholder="cliente@email.com" /></label>
+              </div>
+              <div className="grid grid-2">
+                <label><span className="label">Nascimento</span><input className="input" name="birthDate" type="date" /></label>
+                <label><span className="label">Unidade</span><select className="select" name="unitId"><option value="">Sem unidade específica</option>{shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
+              </div>
+              <button className="btn" type="submit">Salvar cliente</button>
+            </form>
+          </details>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
@@ -514,6 +537,20 @@ export default async function TenantERP({
 
         <section id="servicos" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
+          {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
+          <details className="erp-quick-create">
+            <summary><Plus size={15} /> Novo serviço <small>Cadastro operacional</small></summary>
+            <form action={createService} className="erp-quick-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <label><span className="label">Serviço</span><input className="input" name="name" required maxLength={120} placeholder="Ex.: Corte masculino" /></label>
+              <div className="grid grid-2">
+                <label><span className="label">Duração (min)</span><input className="input" name="durationMinutes" type="number" min="5" max="600" step="5" required /></label>
+                <label><span className="label">Valor</span><input className="input" name="price" type="number" min="0" step="0.01" required /></label>
+              </div>
+              <button className="btn" type="submit">Salvar serviço</button>
+            </form>
+          </details>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
@@ -577,6 +614,25 @@ export default async function TenantERP({
 
         <section id="financeiro" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {actionOk === "financeiro" && <div className="notice erp-inline-notice success">Lançamento financeiro criado com sucesso.</div>}
+          {actionError === "financeiro" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o lançamento. Revise descrição e valor.</div>}
+          <details className="erp-quick-create">
+            <summary><Plus size={15} /> Novo lançamento <small>Receber ou pagar</small></summary>
+            <form action={createFinancialEntry} className="erp-quick-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <label><span className="label">Descrição</span><input className="input" name="description" required maxLength={180} placeholder="Descrição do lançamento" /></label>
+              <div className="grid grid-3">
+                <label><span className="label">Tipo</span><select className="select" name="type"><option value="RECEIVABLE">A receber</option><option value="PAYABLE">A pagar</option></select></label>
+                <label><span className="label">Categoria</span><input className="input" name="category" maxLength={80} placeholder="Ex.: Serviços" /></label>
+                <label><span className="label">Valor</span><input className="input" name="amount" type="number" min="0.01" step="0.01" required /></label>
+              </div>
+              <div className="grid grid-2">
+                <label><span className="label">Vencimento</span><input className="input" name="dueDate" type="date" /></label>
+                <label><span className="label">Unidade</span><select className="select" name="unitId"><option value="">Geral</option>{shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
+              </div>
+              <button className="btn" type="submit">Salvar lançamento</button>
+            </form>
+          </details>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
@@ -609,6 +665,25 @@ export default async function TenantERP({
 
         <section id="estoque" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
+          {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}
+          <details className="erp-quick-create">
+            <summary><Plus size={15} /> Novo produto <small>Cadastro de estoque</small></summary>
+            <form action={createProduct} className="erp-quick-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <label><span className="label">Produto</span><input className="input" name="name" required maxLength={140} placeholder="Nome do produto" /></label>
+              <div className="grid grid-2">
+                <label><span className="label">SKU</span><input className="input" name="sku" maxLength={80} placeholder="Código interno" /></label>
+                <label><span className="label">Código de barras</span><input className="input" name="barcode" maxLength={80} placeholder="Opcional" /></label>
+              </div>
+              <div className="grid grid-3">
+                <label><span className="label">Custo</span><input className="input" name="costPrice" type="number" min="0" step="0.01" defaultValue="0" /></label>
+                <label><span className="label">Venda</span><input className="input" name="salePrice" type="number" min="0" step="0.01" defaultValue="0" /></label>
+                <label><span className="label">Estoque mínimo</span><input className="input" name="stockMin" type="number" min="0" step="0.001" defaultValue="0" /></label>
+              </div>
+              <button className="btn" type="submit">Salvar produto</button>
+            </form>
+          </details>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}`}
             searchParams={qs}
