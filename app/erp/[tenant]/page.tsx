@@ -229,7 +229,7 @@ export async function TenantERPView({
   const needsFinanceList = activeModule === "financeiro";
   const needsFinanceCount = ["financeiro", "relatorios"].includes(activeModule);
   const needsFinancialHealth = ["dashboard", "financeiro", "gerencial", "alertas"].includes(activeModule);
-  const needsCashAggregates = ["dashboard", "caixa", "gerencial"].includes(activeModule);
+  const needsCashAggregates = ["dashboard", "caixa", "relatorios", "gerencial"].includes(activeModule);
   const needsAgendaBoard = activeModule === "agenda";
   const needsRelationship = ["mensagens", "promocoes"].includes(activeModule);
   const needsProduction = ["comissoes", "relatorios", "gerencial"].includes(activeModule);
@@ -573,6 +573,7 @@ export async function TenantERPView({
 
   const productionByUser = new Map<string, number>();
   const serviceRanking = new Map<string, { name: string; count: number; revenue: number }>();
+  const customerRanking = new Map<string, { name: string; visits: number; spend: number }>();
   commissionCommands.forEach((command) => {
     const barber = command.appointment?.barber;
     if (barber) {
@@ -584,6 +585,16 @@ export async function TenantERPView({
       current.count += 1;
       current.revenue += Number(command.total);
       serviceRanking.set(service.id, current);
+    }
+    if (command.customer) {
+      const customer = customerRanking.get(command.customer.id) ?? {
+        name: command.customer.name,
+        visits: 0,
+        spend: 0,
+      };
+      customer.visits += 1;
+      customer.spend += Number(command.total);
+      customerRanking.set(command.customer.id, customer);
     }
   });
 
@@ -611,6 +622,7 @@ export async function TenantERPView({
   const averageTicket = commissionCommands.length ? closedRevenue / commissionCommands.length : 0;
   const topServices = Array.from(serviceRanking.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   const topProfessionals = [...commissionRows].sort((a, b) => b.production - a.production).slice(0, 5);
+  const topCustomers = Array.from(customerRanking.values()).sort((a, b) => b.spend - a.spend).slice(0, 8);
   const reviewAverage = workspace.reviews.length
     ? workspace.reviews.reduce((sum, review) => sum + review.score, 0) / workspace.reviews.length
     : 0;
@@ -1600,10 +1612,19 @@ export async function TenantERPView({
           </div>
 
           <div className="erp-report-grid">
-            <article className="card"><span>Financeiro</span><strong>{financialAllTotal}</strong><small>lançamentos cadastrados</small><Link href={`/erp/${encodeURIComponent(tenantCode)}/financeiro`}>Abrir financeiro →</Link></article>
-            <article className="card"><span>Clube</span><strong>{clubMemberRows.length}</strong><small>assinantes cadastrados</small><Link href={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`}>Abrir clube →</Link></article>
+            <article className="card"><span>Financeiro</span><strong>{brl(cashBalance)}</strong><small>{financialAllTotal} lançamentos · saldo entre recebíveis e pagáveis</small><Link href={`/erp/${encodeURIComponent(tenantCode)}/financeiro`}>Abrir financeiro →</Link></article>
+            <article className="card"><span>Clube</span><strong>{clubMemberRows.filter((item) => item.status === "ACTIVE").length}</strong><small>{overdueClubMembers.length} vencido(s) · {brl(clubMemberRows.filter((item) => item.status === "ACTIVE").reduce((sum, item) => sum + (item.plan?.monthlyAmount ?? 0), 0))} MRR</small><Link href={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`}>Abrir clube →</Link></article>
             <article className="card"><span>Avaliação média</span><strong>{reviewAverage ? reviewAverage.toFixed(1) : "—"}</strong><small>{workspace.reviews.length} avaliação(ões)</small><Link href={`/erp/${encodeURIComponent(tenantCode)}/avaliacoes`}>Abrir avaliações →</Link></article>
           </div>
+
+          <article className="card erp-workspace-card" style={{ marginTop: 12 }}>
+            <div className="erp-card-title"><div><span>Clientes</span><strong>Relacionamento e valor</strong></div><StatusPill tone="ready">Perfil consolidado</StatusPill></div>
+            <div className="erp-ranking-list">
+              {topCustomers.length ? topCustomers.map((customer, index) => (
+                <div key={customer.name}><span>{index + 1}</span><div><strong>{customer.name}</strong><small>{customer.visits} comanda(s) fechada(s)</small></div><strong>{brl(customer.spend)}</strong></div>
+              )) : <small className="muted">Feche comandas vinculadas aos clientes para consolidar valor e frequência.</small>}
+            </div>
+          </article>
         </section>
 
         <section id="gerencial" className="demo-section" hidden={Boolean(moduleId && moduleId !== "gerencial")}>
@@ -1639,6 +1660,14 @@ export async function TenantERPView({
                 <div><span>Comandas abertas</span><strong>{openCommands}</strong></div>
                 <div><span>Assinaturas vencidas</span><strong>{overdueClubMembers.length}</strong></div>
                 <div><span>Lista de espera</span><strong>{waitlist.length}</strong></div>
+              </div>
+            </article>
+            <article className="card erp-workspace-card wide">
+              <div className="erp-card-title"><div><span>Perfil do cliente</span><strong>Frequência e consumo</strong></div><StatusPill tone="ready">Consolidado</StatusPill></div>
+              <div className="erp-ranking-list">
+                {topCustomers.length ? topCustomers.map((customer, index) => (
+                  <div key={customer.name}><span>{index + 1}</span><div><strong>{customer.name}</strong><small>{customer.visits} visita(s) convertida(s)</small></div><strong>{brl(customer.spend)}</strong></div>
+                )) : <small className="muted">O perfil evolui automaticamente conforme atendimentos e comandas são concluídos.</small>}
               </div>
             </article>
           </div>
