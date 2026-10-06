@@ -1,6 +1,8 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Users } from "lucide-react";
 import type { OperationalSettings, WaitlistConfig } from "@/lib/erp-workspace";
+import { resolveWaitlist } from "@/app/erp/[tenant]/module-actions";
 
 type AppointmentCard = {
   id: string;
@@ -22,7 +24,7 @@ type Professional = {
 type Props = {
   tenantCode: string;
   selectedDate: string;
-  view: "day" | "week";
+  view: "day" | "week" | "month";
   appointments: AppointmentCard[];
   professionals: Professional[];
   settings: OperationalSettings;
@@ -54,19 +56,25 @@ function timeParts(date: Date) {
   return { hour: Number(map.hour), minute: Number(map.minute) };
 }
 
-function readableDate(value: string) {
+function readableDate(value: string, view: Props["view"]) {
   const date = new Date(`${value}T12:00:00-03:00`);
   return new Intl.DateTimeFormat("pt-BR", {
     timeZone: TIME_ZONE,
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
+    ...(view === "month"
+      ? { month: "long", year: "numeric" }
+      : { weekday: "long", day: "2-digit", month: "long" }),
   }).format(date);
 }
 
 function addDays(value: string, days: number) {
   const date = new Date(`${value}T12:00:00-03:00`);
-  date.setDate(date.getDate() + days);
+  date.setUTCDate(date.getUTCDate() + days);
+  return dateKey(date);
+}
+
+function addMonths(value: string, months: number) {
+  const date = new Date(`${value.slice(0, 7)}-01T12:00:00-03:00`);
+  date.setUTCMonth(date.getUTCMonth() + months);
   return dateKey(date);
 }
 
@@ -76,6 +84,19 @@ function mondayOf(value: string) {
   const distance = weekDay === 0 ? -6 : 1 - weekDay;
   date.setUTCDate(date.getUTCDate() + distance);
   return dateKey(date);
+}
+
+function monthCalendarDays(value: string) {
+  const monthStart = new Date(`${value.slice(0, 7)}-01T12:00:00-03:00`);
+  const calendarStart = new Date(monthStart);
+  const startDay = monthStart.getUTCDay();
+  calendarStart.setUTCDate(calendarStart.getUTCDate() - (startDay === 0 ? 6 : startDay - 1));
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(calendarStart);
+    date.setUTCDate(date.getUTCDate() + index);
+    return dateKey(date);
+  });
 }
 
 function statusClass(status: string) {
@@ -156,28 +177,34 @@ export function ErpAgendaBoard({
 
   const weekStart = mondayOf(selectedDate);
   const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  const monthDays = monthCalendarDays(selectedDate);
+  const activeMonth = selectedDate.slice(0, 7);
+  const periodStep = view === "month" ? 0 : view === "week" ? 7 : 1;
+  const previousDate = view === "month" ? addMonths(selectedDate, -1) : addDays(selectedDate, -periodStep);
+  const nextDate = view === "month" ? addMonths(selectedDate, 1) : addDays(selectedDate, periodStep);
 
   return (
     <div className="agenda-workspace">
       <div className="agenda-toolbar">
         <div className="agenda-period-controls">
-          <Link href={`${base}?agendaDate=${addDays(selectedDate, view === "week" ? -7 : -1)}&agendaView=${view}`} aria-label="Período anterior">
+          <Link href={`${base}?agendaDate=${previousDate}&agendaView=${view}`} aria-label="Período anterior">
             <ChevronLeft size={16} />
           </Link>
           <Link className="agenda-today" href={`${base}?agendaDate=${dateKey(new Date())}&agendaView=${view}`}>Hoje</Link>
-          <Link href={`${base}?agendaDate=${addDays(selectedDate, view === "week" ? 7 : 1)}&agendaView=${view}`} aria-label="Próximo período">
+          <Link href={`${base}?agendaDate=${nextDate}&agendaView=${view}`} aria-label="Próximo período">
             <ChevronRight size={16} />
           </Link>
-          <strong>{readableDate(selectedDate)}</strong>
+          <strong>{readableDate(selectedDate, view)}</strong>
         </div>
         <div className="agenda-view-switch">
           <Link className={view === "day" ? "active" : ""} href={`${base}?agendaDate=${selectedDate}&agendaView=day`}>Dia</Link>
           <Link className={view === "week" ? "active" : ""} href={`${base}?agendaDate=${selectedDate}&agendaView=week`}>Semana</Link>
+          <Link className={view === "month" ? "active" : ""} href={`${base}?agendaDate=${selectedDate}&agendaView=month`}>Mês</Link>
         </div>
       </div>
 
       <div className="agenda-summary-grid">
-        <article><CalendarDays size={17} /><div><span>Agendados</span><strong>{scheduled}</strong></div></article>
+        <article><CalendarDays size={17} /><div><span>Agendados no dia</span><strong>{scheduled}</strong></div></article>
         <article><Clock3 size={17} /><div><span>Em atendimento</span><strong>{inService}</strong></div></article>
         <article><Users size={17} /><div><span>Concluídos</span><strong>{completed}</strong></div></article>
         <article><Clock3 size={17} /><div><span>Horários livres</span><strong>{availableSlots.length}</strong></div></article>
@@ -188,7 +215,7 @@ export function ErpAgendaBoard({
           <div className="agenda-calendar-shell">
             <div
               className="agenda-professional-grid"
-              style={{ "--agenda-columns": Math.max(1, professionals.length) } as React.CSSProperties}
+              style={{ "--agenda-columns": Math.max(1, professionals.length) } as CSSProperties}
             >
               <div className="agenda-time-header">Horário</div>
               {professionals.length ? professionals.map((professional) => (
@@ -265,10 +292,17 @@ export function ErpAgendaBoard({
               <div className="agenda-side-head"><span>Lista de espera</span><strong>{waitlist.length}</strong></div>
               <div className="agenda-waitlist">
                 {waitlist.slice(0, 8).map((item) => (
-                  <div key={item.id}>
-                    <strong>{item.customerName}</strong>
-                    <span>{item.requestedDate} · {item.serviceName}</span>
-                    {item.phone && <small>{item.phone}</small>}
+                  <div className="agenda-waitlist-item" key={item.id}>
+                    <div>
+                      <strong>{item.customerName}</strong>
+                      <span>{item.requestedDate} · {item.serviceName}</span>
+                      {item.phone && <small>{item.phone}</small>}
+                    </div>
+                    <form action={resolveWaitlist}>
+                      <input type="hidden" name="tenantCode" value={tenantCode} />
+                      <input type="hidden" name="waitlistId" value={item.id} />
+                      <button type="submit">Concluir</button>
+                    </form>
                   </div>
                 ))}
                 {!waitlist.length && <small>Ninguém aguardando encaixe.</small>}
@@ -276,7 +310,7 @@ export function ErpAgendaBoard({
             </div>
           </aside>
         </div>
-      ) : (
+      ) : view === "week" ? (
         <div className="agenda-week-grid">
           {weekDays.map((day) => {
             const dayAppointments = appointments.filter(
@@ -305,6 +339,41 @@ export function ErpAgendaBoard({
               </article>
             );
           })}
+        </div>
+      ) : (
+        <div className="agenda-month">
+          <div className="agenda-month-weekdays">
+            {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((day) => <span key={day}>{day}</span>)}
+          </div>
+          <div className="agenda-month-grid">
+            {monthDays.map((day) => {
+              const dayAppointments = appointments.filter(
+                (appointment) => dateKey(appointment.startsAt) === day,
+              );
+              const outside = day.slice(0, 7) !== activeMonth;
+              return (
+                <article className={[outside ? "outside" : "", day === selectedDate ? "active" : ""].join(" ")} key={day}>
+                  <Link className="agenda-month-day" href={`${base}?agendaDate=${day}&agendaView=day`}>
+                    <span>{day.slice(-2)}</span>
+                    <small>{dayAppointments.length} agenda{dayAppointments.length === 1 ? "" : "s"}</small>
+                  </Link>
+                  <div>
+                    {dayAppointments.slice(0, 4).map((appointment) => (
+                      <Link
+                        className={`agenda-month-item ${statusClass(appointment.status)}`}
+                        href={`${base}?agendaDate=${day}&agendaView=day`}
+                        key={appointment.id}
+                      >
+                        <span>{new Intl.DateTimeFormat("pt-BR", { timeZone: TIME_ZONE, hour: "2-digit", minute: "2-digit" }).format(appointment.startsAt)}</span>
+                        <strong>{appointment.customerName}</strong>
+                      </Link>
+                    ))}
+                    {dayAppointments.length > 4 && <small className="agenda-month-more">+ {dayAppointments.length - 4} atendimento(s)</small>}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
