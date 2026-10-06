@@ -9,6 +9,7 @@ import {
   readWorkspace,
   workspaceId,
   writeWorkspace,
+  type AudienceRule,
   type ErpWorkspace,
 } from "@/lib/erp-workspace";
 
@@ -78,6 +79,12 @@ async function persistWorkspace(
 
 function modulePath(tenantCode: string, module: string) {
   return `/erp/${encodeURIComponent(tenantCode)}/${module}`;
+}
+
+const AUDIENCE_RULES = ["ALL", "INACTIVE_30", "INACTIVE_60", "INACTIVE_90", "BIRTHDAY", "CLUB"] as const;
+
+function audienceRule(raw: string): AudienceRule {
+  return AUDIENCE_RULES.includes(raw as AudienceRule) ? raw as AudienceRule : "ALL";
 }
 
 export async function saveClubPlan(formData: FormData) {
@@ -244,20 +251,22 @@ export async function saveCampaign(formData: FormData) {
 
   const title = value(formData, "title", 100);
   const message = value(formData, "message", 1200);
-  const rawAudience = value(formData, "audience", 30);
-  const audience = ["ALL", "INACTIVE_30", "INACTIVE_60", "INACTIVE_90", "BIRTHDAY"].includes(rawAudience)
-    ? rawAudience as "ALL" | "INACTIVE_30" | "INACTIVE_60" | "INACTIVE_90" | "BIRTHDAY"
-    : "ALL";
+  const requestedAudience = audienceRule(value(formData, "audience", 30));
+  const groupId = value(formData, "groupId", 100);
 
   if (title.length < 2 || message.length < 2) redirect(`${path}?erro=campanha`);
 
   try {
     await persistWorkspace(shop, (workspace) => {
+      const group = groupId
+        ? workspace.customerGroups.find((item) => item.id === groupId && item.active)
+        : null;
       workspace.campaigns.unshift({
         id: workspaceId("campaign"),
         kind: "MESSAGE",
         title,
-        audience,
+        audience: group?.rule ?? requestedAudience,
+        groupId: group?.id,
         message,
         active: true,
         createdAt: new Date().toISOString(),
@@ -270,6 +279,34 @@ export async function saveCampaign(formData: FormData) {
 
   revalidatePath(path);
   redirect(`${path}?ok=campanha`);
+}
+
+export async function saveCustomerGroup(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "promocoes");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+
+  const name = value(formData, "name", 100);
+  const rule = audienceRule(value(formData, "rule", 30));
+  if (name.length < 2) redirect(`${path}?erro=grupo`);
+
+  try {
+    await persistWorkspace(shop, (workspace) => {
+      workspace.customerGroups.unshift({
+        id: workspaceId("group"),
+        name,
+        rule,
+        active: true,
+        createdAt: new Date().toISOString(),
+      });
+    });
+  } catch (error) {
+    console.error("Failed to save customer group", error);
+    redirect(`${path}?erro=banco`);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?ok=grupo`);
 }
 
 export async function saveCoupon(formData: FormData) {
@@ -314,20 +351,22 @@ export async function savePromotion(formData: FormData) {
 
   const title = value(formData, "title", 100);
   const message = value(formData, "message", 1200);
-  const rawAudience = value(formData, "audience", 30);
-  const audience = ["ALL", "INACTIVE_30", "INACTIVE_60", "INACTIVE_90", "BIRTHDAY"].includes(rawAudience)
-    ? rawAudience as "ALL" | "INACTIVE_30" | "INACTIVE_60" | "INACTIVE_90" | "BIRTHDAY"
-    : "ALL";
+  const requestedAudience = audienceRule(value(formData, "audience", 30));
+  const groupId = value(formData, "groupId", 100);
 
   if (title.length < 2 || message.length < 2) redirect(`${path}?erro=promocao`);
 
   try {
     await persistWorkspace(shop, (workspace) => {
+      const group = groupId
+        ? workspace.customerGroups.find((item) => item.id === groupId && item.active)
+        : null;
       workspace.campaigns.unshift({
         id: workspaceId("promotion"),
         kind: "PROMOTION",
         title,
-        audience,
+        audience: group?.rule ?? requestedAudience,
+        groupId: group?.id,
         message,
         active: true,
         createdAt: new Date().toISOString(),
