@@ -150,7 +150,7 @@ export function ErpAgendaBoard({
   const visibleProfessionals = selectedProfessionalId
     ? professionals.filter((professional) => professional.id === selectedProfessionalId)
     : professionals;
-  const filteredAppointments = filteredAppointments.filter(
+  const filteredAppointments = appointments.filter(
     (appointment) =>
       (!selectedProfessionalId || appointment.barberId === selectedProfessionalId) &&
       (!selectedUnitId || appointment.unitId === selectedUnitId),
@@ -192,7 +192,18 @@ export function ErpAgendaBoard({
       const minute = (startMinutes % 60).toString().padStart(2, "0");
       return { professionalId: professional.id, professional: professional.name, time: `${hour}:${minute}` };
     }).filter(Boolean);
-  }).filter(Boolean) as Array<{ professional: string; time: string }>;
+  }).filter(Boolean) as Array<{ professionalId: string; professional: string; time: string }>;
+
+  const totalCapacity = visibleProfessionals.length * totalSlots;
+  const occupancyRate = totalCapacity > 0
+    ? Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(((totalCapacity - availableSlots.length) / totalCapacity) * 100),
+        ),
+      )
+    : 0;
 
   const weekStart = mondayOf(selectedDate);
   const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
@@ -254,6 +265,15 @@ export function ErpAgendaBoard({
         <article><Clock3 size={17} /><div><span>Em atendimento</span><strong>{inService}</strong></div></article>
         <article><Users size={17} /><div><span>Concluídos</span><strong>{completed}</strong></div></article>
         <article><Clock3 size={17} /><div><span>Horários livres</span><strong>{availableSlots.length}</strong></div></article>
+        <article><Users size={17} /><div><span>Ocupação</span><strong>{occupancyRate}%</strong></div></article>
+      </div>
+
+      <div className="agenda-status-legend" aria-label="Legenda da agenda">
+        <span><i className="scheduled" /> Agendado</span>
+        <span><i className="confirmed" /> Confirmado</span>
+        <span><i className="service" /> Em atendimento</span>
+        <span><i className="completed" /> Concluído</span>
+        <span><i className="canceled" /> Cancelado</span>
       </div>
 
       {view === "day" ? (
