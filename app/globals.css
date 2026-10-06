@@ -4097,3 +4097,45 @@ table th {
   }
 }
 
+/* ===== ERP row actions ===== */
+.erp-row-actions {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+  min-width:150px;
+}
+.erp-row-actions form {
+  margin:0;
+}
+.tenant-erp table td > form {
+  margin:0;
+}
+.tenant-erp table td .btn,
+.erp-row-actions .btn {
+  min-height:32px;
+  padding:6px 9px;
+  border-radius:8px;
+  font-size:.62rem;
+}
+.erp-table-quiet-action {
+  min-height:32px;
+  border:1px solid #3a2929;
+  border-radius:8px;
+  background:#140e0e;
+  color:#bf8d8d;
+  padding:6px 9px;
+  font-size:.62rem;
+  font-weight:800;
+}
+.erp-table-quiet-action:hover {
+  border-color:#5a3434;
+  background:#1d1010;
+  color:#e9a8a8;
+}
+@media (max-width:700px) {
+  .erp-row-actions {
+    min-width:130px;
+  }
+}
+
