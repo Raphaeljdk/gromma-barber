@@ -539,6 +539,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
           {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
+          {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo serviço <small>Cadastro operacional</small></summary>
             <form action={createService} className="erp-quick-form">
@@ -616,6 +617,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "financeiro" && <div className="notice erp-inline-notice success">Lançamento financeiro criado com sucesso.</div>}
           {actionError === "financeiro" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o lançamento. Revise descrição e valor.</div>}
+          {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo lançamento <small>Receber ou pagar</small></summary>
             <form action={createFinancialEntry} className="erp-quick-form">
@@ -667,6 +669,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
           {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}
+          {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo produto <small>Cadastro de estoque</small></summary>
             <form action={createProduct} className="erp-quick-form">
