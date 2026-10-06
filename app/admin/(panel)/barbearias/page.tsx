@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import {
   Activity,
@@ -75,7 +76,7 @@ export default async function BarberiasPage({
   const parsedPage = Number.parseInt(pageValue ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
   const pageSize = 12;
-  const filterWhere = {
+  const filterWhere: Prisma.BarberShopWhereInput = {
     isDemo: scope === "validation",
     ...(status ? { status } : {}),
     ...(plan || search
