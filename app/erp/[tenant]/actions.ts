@@ -58,6 +58,173 @@ async function unitForShop(barberShopId: string, unitId: string) {
   });
 }
 
+const APPOINTMENT_TRANSITIONS = {
+  confirm: { from: ["SCHEDULED"], to: "CONFIRMED" },
+  checkin: { from: ["SCHEDULED", "CONFIRMED"], to: "CHECKED_IN" },
+  start: { from: ["CHECKED_IN"], to: "IN_SERVICE" },
+  complete: { from: ["IN_SERVICE"], to: "COMPLETED" },
+  cancel: { from: ["SCHEDULED", "CONFIRMED", "CHECKED_IN"], to: "CANCELED" },
+  no_show: { from: ["SCHEDULED", "CONFIRMED"], to: "NO_SHOW" },
+} as const;
+
+export async function updateAppointmentStatus(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+
+  if (!allowed(viewer, OPERATION_ROLES)) {
+    redirect(`${path}?erro=permissao#agenda`);
+  }
+
+  const appointmentId = text(formData, "appointmentId", 80);
+  const action = text(formData, "action", 20) as keyof typeof APPOINTMENT_TRANSITIONS;
+  const transition = APPOINTMENT_TRANSITIONS[action];
+
+  if (!appointmentId || !transition) redirect(`${path}?erro=agenda-status#agenda`);
+
+  const appointment = await prisma.appointment.findFirst({
+    where: { id: appointmentId, barberShopId: shop.id },
+    include: { service: true },
+  });
+
+  if (
+    !appointment ||
+    !(transition.from as readonly string[]).includes(appointment.status)
+  ) {
+    redirect(`${path}?erro=agenda-status#agenda`);
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.appointment.updateMany({
+        where: {
+          id: appointment.id,
+          barberShopId: shop.id,
+          status: appointment.status,
+        },
+        data: { status: transition.to },
+      });
+
+      if (updated.count !== 1) throw new Error("Appointment state changed concurrently");
+
+      if (transition.to === "IN_SERVICE") {
+        const existingCommand = await tx.serviceCommand.findUnique({
+          where: { appointmentId: appointment.id },
+          select: { id: true },
+        });
+
+        if (!existingCommand) {
+          const serviceAmount = appointment.service?.price ?? 0;
+          const command = await tx.serviceCommand.create({
+            data: {
+              barberShopId: shop.id,
+              unitId: appointment.unitId,
+              customerId: appointment.customerId,
+              appointmentId: appointment.id,
+              status: "OPEN",
+              subtotal: serviceAmount,
+              discount: 0,
+              total: serviceAmount,
+            },
+          });
+
+          if (appointment.service) {
+            await tx.commandItem.create({
+              data: {
+                commandId: command.id,
+                kind: "SERVICE",
+                description: appointment.service.name,
+                quantity: 1,
+                unitPrice: appointment.service.price,
+                total: appointment.service.price,
+              },
+            });
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Failed to update appointment status", error);
+    redirect(`${path}?erro=agenda-status#agenda`);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?ok=agenda-status#agenda`);
+}
+
+export async function closeCommand(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+
+  if (!allowed(viewer, OPERATION_ROLES)) {
+    redirect(`${path}?erro=permissao#comandas`);
+  }
+
+  const commandId = text(formData, "commandId", 80);
+  const command = await prisma.serviceCommand.findFirst({
+    where: { id: commandId, barberShopId: shop.id, status: "OPEN" },
+  });
+
+  if (!command) redirect(`${path}?erro=comanda#comandas`);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.serviceCommand.updateMany({
+        where: { id: command.id, barberShopId: shop.id, status: "OPEN" },
+        data: { status: "CLOSED", closedAt: new Date() },
+      });
+
+      if (updated.count !== 1) throw new Error("Command state changed concurrently");
+
+      if (Number(command.total) > 0) {
+        await tx.financialEntry.create({
+          data: {
+            barberShopId: shop.id,
+            unitId: command.unitId,
+            type: "RECEIVABLE",
+            status: "PENDING",
+            category: "Comandas",
+            description: `Comanda ${command.id.slice(-6).toUpperCase()}`,
+            amount: command.total,
+            dueDate: new Date(),
+          },
+        });
+      }
+    });
+  } catch (error) {
+    console.error("Failed to close command", error);
+    redirect(`${path}?erro=comanda#comandas`);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?ok=comanda#comandas`);
+}
+
+export async function markFinancialPaid(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  const path = `/erp/${encodeURIComponent(tenantCode)}`;
+
+  if (!allowed(viewer, FINANCE_ROLES)) {
+    redirect(`${path}?erro=permissao#financeiro`);
+  }
+
+  const entryId = text(formData, "entryId", 80);
+
+  try {
+    const updated = await prisma.financialEntry.updateMany({
+      where: { id: entryId, barberShopId: shop.id, status: "PENDING" },
+      data: { status: "PAID", paidAt: new Date() },
+    });
+
+    if (updated.count !== 1) redirect(`${path}?erro=financeiro-status#financeiro`);
+  } catch (error) {
+    console.error("Failed to mark financial entry as paid", error);
+    redirect(`${path}?erro=financeiro-status#financeiro`);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?ok=financeiro-pago#financeiro`);
+}
+
 export async function createAppointment(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}`;
