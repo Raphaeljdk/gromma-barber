@@ -28,7 +28,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, addWaitlist, generateClubCharge, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
+import { addClubMember, addDeduction, addWaitlist, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
   children,
@@ -1062,7 +1062,15 @@ export async function TenantERPView({
         <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
           <div className="section-head">
             <div><div className="eyebrow">Clube de assinaturas</div><h2>Planos, assinantes e cobranças</h2></div>
-            <StatusPill tone="ready">Operacional interno</StatusPill>
+            <div className="erp-section-actions">
+              <StatusPill tone="ready">Operacional interno</StatusPill>
+              {canFinance && overdueClubMembers.length > 0 && (
+                <form action={processClubBilling}>
+                  <input type="hidden" name="tenantCode" value={tenantCode} />
+                  <button className="btn secondary" type="submit">Processar recorrência ({overdueClubMembers.length})</button>
+                </form>
+              )}
+            </div>
           </div>
 
           <div className="erp-kpi-row">
@@ -1075,8 +1083,9 @@ export async function TenantERPView({
           {actionOk === "plano" && <div className="notice erp-inline-notice success">Plano do clube criado.</div>}
           {actionOk === "assinante" && <div className="notice erp-inline-notice success">Assinante incluído no clube.</div>}
           {actionOk === "cobranca" && <div className="notice erp-inline-notice success">Cobrança gerada no Financeiro.</div>}
+          {actionOk === "recorrencia" && <div className="notice erp-inline-notice success">Recorrência vencida processada e enviada ao Financeiro.</div>}
           {actionOk === "assinante-status" && <div className="notice erp-inline-notice success">Situação do assinante atualizada.</div>}
-          {["plano","assinante","assinante-status","cobranca","banco"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Não foi possível concluir a operação do clube.</div>}
+          {["plano","assinante","assinante-status","cobranca","recorrencia","banco"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Não foi possível concluir a operação do clube.</div>}
 
           <div className="erp-two-column-workspace">
             <article className="card erp-workspace-card">
