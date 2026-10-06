@@ -271,7 +271,7 @@ export default async function TenantERP({
           </a>
           <a className="erp-command-card" href="#servicos">
             <Store size={19} />
-            <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {shop.products.length} produtos</strong></div>
+            <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {productsTotal} produtos</strong></div>
           </a>
           {isPro ? (
             <Link className="erp-command-card pro" href={`/erp/${encodeURIComponent(tenantCode)}/totem`}>
@@ -293,7 +293,7 @@ export default async function TenantERP({
           </div>
 
           <div className="demo-metrics">
-            <article className="card demo-metric"><span className="small muted">Clientes</span><strong>{shop.customers.length}</strong><small>base ativa carregada</small></article>
+            <article className="card demo-metric"><span className="small muted">Clientes</span><strong>{customersTotal}</strong><small>base ativa carregada</small></article>
             <article className="card demo-metric"><span className="small muted">Equipe ativa</span><strong>{shop.users.length}</strong><small>usuários e profissionais</small></article>
             <article className="card demo-metric"><span className="small muted">Comandas abertas</span><strong>{openCommands}</strong><small>atendimentos em andamento</small></article>
             <article className="card demo-metric"><span className="small muted">Saldo operacional</span><strong>{brl(cashBalance)}</strong><small>recebíveis menos pagáveis</small></article>
@@ -312,7 +312,7 @@ export default async function TenantERP({
             </article>
             <article className="card">
               <span className="small muted">Agenda</span>
-              <strong>{shop.appointments.length}</strong>
+              <strong>{appointmentsTotal}</strong>
               <small>agendamentos carregados</small>
             </article>
           </div>
@@ -322,7 +322,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Agenda</div><h2>Agendamentos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Data</th><th>Cliente</th><th>Profissional</th><th>Serviço</th><th>Unidade</th><th>Status</th></tr></thead>
-            <tbody>{shop.appointments.length ? shop.appointments.map((item) => (
+            <tbody>{appointmentsTotal ? shop.appointments.map((item) => (
               <tr key={item.id}>
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(item.startsAt)}</td>
                 <td>{item.customer?.name ?? "—"}</td><td>{item.barber?.name ?? "—"}</td><td>{item.service?.name ?? "—"}</td><td>{item.unit.name}</td><td>{item.status}</td>
@@ -335,7 +335,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Clientes</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th></tr></thead>
-            <tbody>{shop.customers.length ? shop.customers.map((customer) => (
+            <tbody>{customersTotal ? shop.customers.map((customer) => (
               <tr key={customer.id}><td><strong>{customer.name}</strong></td><td>{customer.email ?? "—"}</td><td>{customer.phone ?? "—"}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum cliente cadastrado.</td></tr>}</tbody>
           </table></div>
@@ -345,7 +345,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
-            <tbody>{shop.services.length ? shop.services.map((service) => (
+            <tbody>{shop.services.length ? services.map((service) => (
               <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
@@ -355,7 +355,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Abertura</th><th>Cliente</th><th>Unidade</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody>{shop.commands.length ? shop.commands.map((command) => (
+            <tbody>{commandsTotal ? shop.commands.map((command) => (
               <tr key={command.id}><td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td><td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{command.status}</td></tr>
             )) : <tr><td colSpan={6} className="muted">Nenhuma comanda aberta.</td></tr>}</tbody>
           </table></div>
@@ -392,7 +392,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status</th></tr></thead>
-            <tbody>{shop.financialEntries.map((entry) => (
+            <tbody>{financialEntries.map((entry) => (
               <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{entry.type}</td><td>{entry.category}</td><td>{brl(Number(entry.amount))}</td><td>{entry.status}</td></tr>
             ))}</tbody>
           </table></div>
@@ -412,7 +412,7 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque mínimo</th></tr></thead>
-            <tbody>{shop.products.map((product) => (
+            <tbody>{products.map((product) => (
               <tr key={product.id}><td>{product.sku ?? "—"}</td><td><strong>{product.name}</strong></td><td>{brl(Number(product.costPrice))}</td><td>{brl(Number(product.salePrice))}</td><td>{Number(product.stockMin)}</td></tr>
             ))}</tbody>
           </table></div>
@@ -430,7 +430,7 @@ export default async function TenantERP({
         <section id="equipe" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="demo-team-grid">
-            {shop.users.map((user) => (
+            {professionals.map((user) => (
               <article className="card demo-team-card" key={user.id}>
                 <div className="demo-avatar">{user.name.slice(0,1)}</div>
                 <div><strong>{user.name}</strong><span>{user.email}</span></div>
@@ -444,7 +444,7 @@ export default async function TenantERP({
         <section id="unidades" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="demo-unit-grid">
-            {shop.units.map((unit) => (
+            {unitsPageItems.map((unit) => (
               <article className="card demo-unit-card" key={unit.id}>
                 <div className="tenant-name"><strong>{unit.name}</strong><span className="badge approved">{unit.active ? "Ativa" : "Inativa"}</span></div>
                 <div className="demo-financial">
@@ -460,9 +460,9 @@ export default async function TenantERP({
         <section id="relatorios" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
           <div className="erp-module-grid">
-            <ModuleCard title="Clientes" description={`${shop.customers.length} clientes carregados para análise de base e relacionamento.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Clientes" description={`${customersTotal} clientes carregados para análise de base e relacionamento.`} status="Disponível" tone="ready" />
             <ModuleCard title="Profissionais" description={`${shop.users.length} usuários ativos para acompanhamento de produtividade.`} status="Disponível" tone="ready" />
-            <ModuleCard title="Financeiro" description={`${shop.financialEntries.length} lançamentos recentes disponíveis para consolidação.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Financeiro" description={`${financialTotal} lançamentos recentes disponíveis para consolidação.`} status="Disponível" tone="ready" />
             <ModuleCard title="Assinaturas" description="Relatórios de planos e assinantes serão liberados junto ao módulo de clube." status="Pendente" tone="pending" />
           </div>
         </section>
@@ -470,7 +470,7 @@ export default async function TenantERP({
         <section id="gerencial" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Gerencial</div><h2>Indicadores para decisão</h2></div><StatusPill tone="ready">Estrutura pronta</StatusPill></div>
           <div className="erp-module-grid">
-            <ModuleCard title="Agendamentos" description={`${shop.appointments.length} agendamentos carregados no painel atual.`} status="Disponível" tone="ready" />
+            <ModuleCard title="Agendamentos" description={`${appointmentsTotal} agendamentos carregados no painel atual.`} status="Disponível" tone="ready" />
             <ModuleCard title="Perfil do cliente" description="Histórico de relacionamento, serviços e consumo por cliente." status="Em evolução" tone="neutral" />
             <ModuleCard title="Financeiro" description={`Saldo consolidado atual: ${brl(cashBalance)}.`} status="Disponível" tone="ready" />
             <ModuleCard title="Ranking" description="Ranking de profissionais e serviços será conectado às métricas de produção." status="Backend pendente" tone="pending" />
@@ -499,7 +499,7 @@ export default async function TenantERP({
           <div className="erp-alert-grid">
             <article className="card"><BellRing size={18} /><div><strong>{pendingFinance} pendência(s) financeira(s)</strong><span>Revisar contas com status pendente.</span></div></article>
             <article className="card"><ReceiptText size={18} /><div><strong>{openCommands} comanda(s) aberta(s)</strong><span>Acompanhar atendimentos em andamento.</span></div></article>
-            <article className="card"><PackageSearch size={18} /><div><strong>{shop.products.length} produto(s) cadastrado(s)</strong><span>Reposição e estoque mínimo ficam concentrados no módulo de estoque.</span></div></article>
+            <article className="card"><PackageSearch size={18} /><div><strong>{productsTotal} produto(s) cadastrado(s)</strong><span>Reposição e estoque mínimo ficam concentrados no módulo de estoque.</span></div></article>
           </div>
         </section>
 
