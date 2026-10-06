@@ -344,6 +344,7 @@ export async function TenantERPView({
     commissionCommands,
     stockAggregates,
     stockHealthProducts,
+    stockProductDirectory,
   ] = await Promise.all([
     needsCustomerList
       ? prisma.customer.findMany({
@@ -461,6 +462,14 @@ export async function TenantERPView({
       ? prisma.product.findMany({
           where: { barberShopId: shop.id, active: true },
           select: { id: true, stockMin: true },
+        })
+      : Promise.resolve([]),
+    activeModule === "estoque"
+      ? prisma.product.findMany({
+          where: { barberShopId: shop.id, active: true },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true, sku: true },
+          take: 2000,
         })
       : Promise.resolve([]),
   ]);
@@ -1358,7 +1367,7 @@ export async function TenantERPView({
               <form action={createStockMovement} className="erp-quick-form">
                 <input type="hidden" name="tenantCode" value={tenantCode} />
                 <div className="grid grid-2">
-                  <label><span className="label">Produto</span><select className="select" name="productId" required defaultValue=""><option value="" disabled>Selecione</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ""}</option>)}</select></label>
+                  <label><span className="label">Produto</span><select className="select" name="productId" required defaultValue=""><option value="" disabled>Selecione</option>{stockProductDirectory.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ""}</option>)}</select></label>
                   <label><span className="label">Unidade</span><select className="select" name="unitId" required defaultValue=""><option value="" disabled>Selecione</option>{shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
                 </div>
                 <div className="grid grid-3">
