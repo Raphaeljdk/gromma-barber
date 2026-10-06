@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
+import { readWorkspace } from "@/lib/erp-workspace";
 
 const OPERATION_ROLES = ["OWNER", "MANAGER", "RECEPTIONIST", "BARBER"];
 const MANAGEMENT_ROLES = ["OWNER", "MANAGER"];
@@ -247,7 +248,7 @@ export async function createAppointment(formData: FormData) {
     redirect(`${path}?erro=agenda#agenda`);
   }
 
-  const [unit, service, customer, barber] = await Promise.all([
+  const [unit, service, customer, selectedBarber] = await Promise.all([
     prisma.barberShopUnit.findFirst({
       where: { id: unitId, barberShopId: shop.id, active: true },
       select: { id: true },
@@ -270,11 +271,56 @@ export async function createAppointment(formData: FormData) {
       : Promise.resolve(null),
   ]);
 
-  if (!unit || !service || (customerId && !customer) || (barberId && !barber)) {
+  if (!unit || !service || (customerId && !customer) || (barberId && !selectedBarber)) {
     redirect(`${path}?erro=agenda#agenda`);
   }
 
+  const workspace = readWorkspace(shop.enabledFeatures);
   const endsAt = new Date(startsAt.getTime() + service.durationMinutes * 60_000);
+  let barber = selectedBarber;
+
+  if (!barber && workspace.settings.rotationEnabled) {
+    const candidates = await prisma.shopUser.findMany({
+      where: {
+        barberShopId: shop.id,
+        active: true,
+        role: { in: ["OWNER", "MANAGER", "BARBER"] },
+      },
+      select: { id: true },
+    });
+
+    const available = [];
+    for (const candidate of candidates) {
+      const conflict = await prisma.appointment.findFirst({
+        where: {
+          barberShopId: shop.id,
+          barberId: candidate.id,
+          status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] },
+          startsAt: { lt: endsAt },
+          OR: [{ endsAt: { gt: startsAt } }, { endsAt: null }],
+        },
+        select: { id: true },
+      });
+      if (conflict) continue;
+
+      const dayStart = new Date(startsAt);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      const load = await prisma.appointment.count({
+        where: {
+          barberShopId: shop.id,
+          barberId: candidate.id,
+          startsAt: { gte: dayStart, lt: dayEnd },
+          status: { notIn: ["CANCELED", "NO_SHOW"] },
+        },
+      });
+      available.push({ id: candidate.id, load });
+    }
+
+    available.sort((a, b) => a.load - b.load);
+    barber = available[0] ? { id: available[0].id } : null;
+  }
 
   if (barber) {
     const conflict = await prisma.appointment.findFirst({
@@ -301,8 +347,8 @@ export async function createAppointment(formData: FormData) {
         serviceId: service.id,
         startsAt,
         endsAt,
-        status: "SCHEDULED",
-        source: "ERP",
+        status: workspace.settings.autoConfirm ? "CONFIRMED" : "SCHEDULED",
+        source: workspace.settings.rotationEnabled && !barberId ? "ERP_ROTATION" : "ERP",
         notes: notes || null,
       },
     });
