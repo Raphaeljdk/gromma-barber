@@ -549,6 +549,60 @@ export async function saveOperationalSettings(formData: FormData) {
   redirect(`${path}?ok=configuracoes`);
 }
 
+export async function updateClubMemberStatus(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "assinaturas");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+
+  const memberId = value(formData, "memberId", 80);
+  const action = value(formData, "action", 20);
+  const status =
+    action === "pause" ? "PAUSED" :
+    action === "cancel" ? "CANCELED" :
+    action === "activate" ? "ACTIVE" :
+    null;
+
+  if (!memberId || !status) redirect(`${path}?erro=assinante-status`);
+
+  try {
+    await persistWorkspace(shop, (workspace) => {
+      const member = workspace.clubMembers.find((item) => item.id === memberId);
+      if (!member) throw new Error("Member not found");
+      member.status = status;
+      if (status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < Date.now()) {
+        member.nextBillingAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      }
+    });
+  } catch (error) {
+    console.error("Failed to update club member status", error);
+    redirect(`${path}?erro=assinante-status`);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?ok=assinante-status`);
+}
+
+export async function resolveWaitlist(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "agenda");
+  if (!allowed(viewer, OPERATION_ROLES)) redirect(`${path}?erro=permissao`);
+
+  const waitlistId = value(formData, "waitlistId", 100);
+  if (!waitlistId) redirect(`${path}?erro=fila`);
+
+  try {
+    await persistWorkspace(shop, (workspace) => {
+      workspace.waitlist = workspace.waitlist.filter((item) => item.id !== waitlistId);
+    });
+  } catch (error) {
+    console.error("Failed to resolve waitlist item", error);
+    redirect(`${path}?erro=fila`);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?ok=fila-resolvida`);
+}
+
 export async function addWaitlist(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "agenda");
