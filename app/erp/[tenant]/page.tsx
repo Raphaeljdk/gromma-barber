@@ -54,6 +54,34 @@ function ModuleCard({
   );
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  SCHEDULED: "Agendado",
+  CONFIRMED: "Confirmado",
+  CHECKED_IN: "Check-in",
+  IN_SERVICE: "Em atendimento",
+  COMPLETED: "Concluído",
+  CANCELED: "Cancelado",
+  NO_SHOW: "Não compareceu",
+  OPEN: "Aberta",
+  CLOSED: "Fechada",
+  PENDING: "Pendente",
+  PAID: "Pago",
+  RECEIVABLE: "Receber",
+  PAYABLE: "Pagar",
+};
+
+function operationalBadge(value: string) {
+  const positive = ["CONFIRMED", "CHECKED_IN", "IN_SERVICE", "COMPLETED", "CLOSED", "PAID"];
+  const negative = ["CANCELED", "NO_SHOW"];
+  const tone = positive.includes(value)
+    ? "approved"
+    : negative.includes(value)
+      ? "rejected"
+      : "pending";
+
+  return <span className={`badge ${tone}`}>{STATUS_LABELS[value] ?? value}</span>;
+}
+
 export default async function TenantERP({
   params,
   searchParams,
@@ -325,7 +353,7 @@ export default async function TenantERP({
             <tbody>{appointments.length ? appointments.map((item) => (
               <tr key={item.id}>
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(item.startsAt)}</td>
-                <td>{item.customer?.name ?? "—"}</td><td>{item.barber?.name ?? "—"}</td><td>{item.service?.name ?? "—"}</td><td>{item.unit.name}</td><td>{item.status}</td>
+                <td>{item.customer?.name ?? "—"}</td><td>{item.barber?.name ?? "—"}</td><td>{item.service?.name ?? "—"}</td><td>{item.unit.name}</td><td>{operationalBadge(item.status)}</td>
               </tr>
             )) : <tr><td colSpan={6} className="muted">Agenda pronta para receber os primeiros atendimentos.</td></tr>}</tbody>
           </table></div>
@@ -359,7 +387,7 @@ export default async function TenantERP({
           <div className="table-wrap"><table>
             <thead><tr><th>Abertura</th><th>Cliente</th><th>Unidade</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
             <tbody>{commands.length ? commands.map((command) => (
-              <tr key={command.id}><td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td><td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{command.status}</td></tr>
+              <tr key={command.id}><td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td><td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{operationalBadge(command.status)}</td></tr>
             )) : <tr><td colSpan={6} className="muted">Nenhuma comanda aberta.</td></tr>}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
@@ -397,7 +425,7 @@ export default async function TenantERP({
           <div className="table-wrap"><table>
             <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Status</th></tr></thead>
             <tbody>{financialEntries.map((entry) => (
-              <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{entry.type}</td><td>{entry.category}</td><td>{brl(Number(entry.amount))}</td><td>{entry.status}</td></tr>
+              <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td></tr>
             ))}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
