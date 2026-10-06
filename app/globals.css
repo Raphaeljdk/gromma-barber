@@ -5575,3 +5575,74 @@ html[data-theme="light"] .tenant-erp {
   }
 }
 
+/* ===== ERP v2 final refinements ===== */
+.erp-hero-header.compact {
+  min-height:auto;
+  align-items:center;
+  padding:10px 0 18px;
+}
+.erp-hero-header.compact h1 {
+  margin:.1em 0;
+  font-size:clamp(1.7rem,3vw,2.6rem);
+  line-height:1;
+  letter-spacing:-.035em;
+}
+.erp-hero-header.compact p {
+  max-width:700px;
+  margin-top:7px;
+  font-size:.78rem;
+  line-height:1.5;
+}
+.erp-hero-header.compact .demo-header-actions {
+  align-self:center;
+}
+.erp-amenities-block {
+  display:grid;
+  gap:8px;
+  padding-top:12px;
+  border-top:1px solid var(--erp-border);
+}
+.erp-amenities-block > span {
+  color:var(--erp-muted);
+  font-size:.58rem;
+  font-weight:900;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+.erp-amenities-block > div {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.erp-amenities-block > div > span {
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  border:1px solid var(--erp-border);
+  border-radius:999px;
+  background:var(--erp-panel-2);
+  color:var(--erp-text);
+  padding:5px 8px;
+  font-size:.61rem;
+  font-weight:750;
+}
+.tenant-erp .section-pagination {
+  margin-top:12px;
+}
+.tenant-erp .demo-section > .section-pagination:last-child {
+  padding-bottom:3px;
+}
+html[data-theme="light"] .erp-integration-note {
+  border-left-color:#b68a39;
+  background:#fff9ed;
+}
+@media (max-width:850px) {
+  .erp-hero-header.compact {
+    padding-top:4px;
+  }
+  .erp-hero-header.compact .demo-header-actions {
+    width:100%;
+    justify-content:flex-start;
+  }
+}
+
