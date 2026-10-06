@@ -5825,3 +5825,72 @@ html[data-theme="light"] .agenda-appointment.canceled {
   }
 }
 
+/* ===== ERP commercial groups ===== */
+.erp-section-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.erp-section-actions form {
+  margin:0;
+}
+.erp-section-actions .btn {
+  min-height:34px;
+  padding:7px 10px;
+  font-size:.63rem;
+}
+.erp-workspace-card.wide {
+  grid-column:1 / -1;
+}
+.erp-group-layout {
+  display:grid;
+  grid-template-columns:minmax(220px,.75fr) minmax(0,1.25fr);
+  gap:14px;
+}
+.erp-group-list {
+  display:grid;
+  align-content:start;
+}
+.erp-group-list > div {
+  min-height:48px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid var(--erp-border);
+  padding:8px 0;
+}
+.erp-group-list > div:last-child {
+  border-bottom:0;
+}
+.erp-group-list > div > div {
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+.erp-group-list strong {
+  color:var(--erp-text);
+  font-size:.7rem;
+}
+.erp-group-list > div > strong {
+  min-width:34px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--erp-border-strong);
+  border-radius:8px;
+  background:var(--erp-panel-2);
+  color:var(--erp-gold);
+}
+.erp-group-list span {
+  color:var(--erp-muted);
+  font-size:.6rem;
+}
+@media (max-width:820px) {
+  .erp-group-layout {
+    grid-template-columns:1fr;
+  }
+}
+
