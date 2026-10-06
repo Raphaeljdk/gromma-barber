@@ -318,7 +318,7 @@ export async function TenantERPView({
       where: { barberShopId: shop.id, active: true },
       orderBy: { name: "asc" },
       take: 200,
-      select: { id: true, name: true, phone: true },
+      select: { id: true, name: true, phone: true, whatsapp: true, email: true, birthDate: true },
     }),
     prisma.appointment.findMany({
       where: appointmentWhere,
@@ -449,6 +449,71 @@ export async function TenantERPView({
     ...customer,
     lastAppointmentAt: lastAppointmentByCustomer.get(customer.id) ?? null,
   }));
+
+  const now = new Date();
+  const daysSince = (date: Date | null) =>
+    date ? Math.floor((now.getTime() - date.getTime()) / (24 * 60 * 60 * 1000)) : 9999;
+  const inactive30 = customersForRelationship.filter((customer) => daysSince(customer.lastAppointmentAt) >= 30);
+  const inactive60 = customersForRelationship.filter((customer) => daysSince(customer.lastAppointmentAt) >= 60);
+  const inactive90 = customersForRelationship.filter((customer) => daysSince(customer.lastAppointmentAt) >= 90);
+  const currentMonth = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", month: "numeric" }).format(now));
+  const birthdayCustomers = customersForRelationship.filter((customer) => {
+    if (!customer.birthDate) return false;
+    return Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", month: "numeric" }).format(customer.birthDate)) === currentMonth;
+  });
+
+  const clubMemberRows = workspace.clubMembers.map((member) => ({
+    ...member,
+    customer: appointmentCustomers.find((customer) => customer.id === member.customerId) ?? null,
+    plan: workspace.clubPlans.find((planItem) => planItem.id === member.planId) ?? null,
+  }));
+  const overdueClubMembers = clubMemberRows.filter(
+    (member) => member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime(),
+  );
+
+  const productionByUser = new Map<string, number>();
+  const serviceRanking = new Map<string, { name: string; count: number; revenue: number }>();
+  commissionCommands.forEach((command) => {
+    const barber = command.appointment?.barber;
+    if (barber) {
+      productionByUser.set(barber.id, (productionByUser.get(barber.id) ?? 0) + Number(command.total));
+    }
+    const service = command.appointment?.service;
+    if (service) {
+      const current = serviceRanking.get(service.id) ?? { name: service.name, count: 0, revenue: 0 };
+      current.count += 1;
+      current.revenue += Number(command.total);
+      serviceRanking.set(service.id, current);
+    }
+  });
+
+  const commissionRows = shop.users
+    .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
+    .map((user) => {
+      const production = productionByUser.get(user.id) ?? 0;
+      const rule = workspace.commissionRules.find((item) => item.userId === user.id);
+      const percent = rule?.percent ?? workspace.settings.defaultCommissionPercent;
+      const grossCommission = production * (percent / 100);
+      const deductions = workspace.deductions
+        .filter((item) => item.userId === user.id)
+        .reduce((sum, item) => sum + item.amount, 0);
+      return {
+        user,
+        production,
+        percent,
+        grossCommission,
+        deductions,
+        netCommission: Math.max(0, grossCommission - deductions),
+      };
+    });
+
+  const closedRevenue = commissionCommands.reduce((sum, command) => sum + Number(command.total), 0);
+  const averageTicket = commissionCommands.length ? closedRevenue / commissionCommands.length : 0;
+  const topServices = Array.from(serviceRanking.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  const topProfessionals = [...commissionRows].sort((a, b) => b.production - a.production).slice(0, 5);
+  const reviewAverage = workspace.reviews.length
+    ? workspace.reviews.reduce((sum, review) => sum + review.score, 0) / workspace.reviews.length
+    : 0;
 
   const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
   const supportSubject = encodeURIComponent(`Suporte GROMMA - ${shop.tradeName} - ${tenantCode}`);
