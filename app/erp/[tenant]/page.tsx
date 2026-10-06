@@ -322,23 +322,25 @@ export default async function TenantERP({
           <div className="section-head"><div><div className="eyebrow">Agenda</div><h2>Agendamentos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Data</th><th>Cliente</th><th>Profissional</th><th>Serviço</th><th>Unidade</th><th>Status</th></tr></thead>
-            <tbody>{appointmentsTotal ? shop.appointments.map((item) => (
+            <tbody>{appointments.length ? appointments.map((item) => (
               <tr key={item.id}>
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(item.startsAt)}</td>
                 <td>{item.customer?.name ?? "—"}</td><td>{item.barber?.name ?? "—"}</td><td>{item.service?.name ?? "—"}</td><td>{item.unit.name}</td><td>{item.status}</td>
               </tr>
             )) : <tr><td colSpan={6} className="muted">Agenda pronta para receber os primeiros atendimentos.</td></tr>}</tbody>
           </table></div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="agendaPage" page={agendaPage} total={appointmentsTotal} pageSize={pageSize} hash="agenda" label="agendamentos" />
         </section>
 
         <section id="clientes" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Clientes</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th></tr></thead>
-            <tbody>{customersTotal ? shop.customers.map((customer) => (
+            <tbody>{customers.length ? customers.map((customer) => (
               <tr key={customer.id}><td><strong>{customer.name}</strong></td><td>{customer.email ?? "—"}</td><td>{customer.phone ?? "—"}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum cliente cadastrado.</td></tr>}</tbody>
           </table></div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="clientesPage" page={clientesPage} total={customersTotal} pageSize={pageSize} hash="clientes" label="clientes" />
         </section>
 
         <section id="servicos" className="demo-section">
@@ -349,16 +351,18 @@ export default async function TenantERP({
               <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="servicosPage" page={servicosPage} total={shop.services.length} pageSize={pageSize} hash="servicos" label="serviços" />
         </section>
 
         <section id="comandas" className="demo-section">
           <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Abertura</th><th>Cliente</th><th>Unidade</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody>{commandsTotal ? shop.commands.map((command) => (
+            <tbody>{commands.length ? commands.map((command) => (
               <tr key={command.id}><td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td><td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{command.status}</td></tr>
             )) : <tr><td colSpan={6} className="muted">Nenhuma comanda aberta.</td></tr>}</tbody>
           </table></div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
         <section id="assinaturas" className="demo-section">
@@ -396,6 +400,7 @@ export default async function TenantERP({
               <tr key={entry.id}><td><strong>{entry.description}</strong></td><td>{entry.type}</td><td>{entry.category}</td><td>{brl(Number(entry.amount))}</td><td>{entry.status}</td></tr>
             ))}</tbody>
           </table></div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
         </section>
 
         <section id="caixa" className="demo-section">
@@ -416,6 +421,7 @@ export default async function TenantERP({
               <tr key={product.id}><td>{product.sku ?? "—"}</td><td><strong>{product.name}</strong></td><td>{brl(Number(product.costPrice))}</td><td>{brl(Number(product.salePrice))}</td><td>{Number(product.stockMin)}</td></tr>
             ))}</tbody>
           </table></div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
         </section>
 
         <section id="comissoes" className="demo-section">
@@ -439,6 +445,7 @@ export default async function TenantERP({
               </article>
             ))}
           </div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="equipePage" page={equipePage} total={shop.users.length} pageSize={pageSize} hash="equipe" label="profissionais" />
         </section>
 
         <section id="unidades" className="demo-section">
@@ -455,6 +462,7 @@ export default async function TenantERP({
               </article>
             ))}
           </div>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={shop.units.length} pageSize={pageSize} hash="unidades" label="unidades" />
         </section>
 
         <section id="relatorios" className="demo-section">
