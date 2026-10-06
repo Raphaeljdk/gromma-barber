@@ -201,6 +201,11 @@ export async function TenantERPView({
   const financeiroStatus = allowedValue(valueOf("financeiroStatus"), FINANCIAL_STATUSES);
   const agendaDateRaw = valueOf("agendaDate");
   const agendaViewRaw = valueOf("agendaView");
+  const agendaProfessional = valueOf("agendaProfessional").trim();
+  const agendaUnit = valueOf("agendaUnit").trim();
+  const agendaDraftStart = valueOf("startsAt").trim();
+  const agendaDraftBarberId = valueOf("barberId").trim();
+  const agendaQuickOpen = valueOf("novo") === "1";
   const agendaView = agendaViewRaw === "month"
     ? "month" as const
     : agendaViewRaw === "week"
@@ -841,8 +846,12 @@ export async function TenantERPView({
               barberId: item.barberId,
               barberName: item.barber?.name ?? "Sem profissional",
               serviceName: item.service?.name ?? "Atendimento",
+              unitId: item.unitId,
               unitName: item.unit.name,
             }))}
+            units={shop.units.filter((unit) => unit.active).map((unit) => ({ id: unit.id, name: unit.name }))}
+            selectedProfessionalId={agendaProfessional || undefined}
+            selectedUnitId={agendaUnit || undefined}
             professionals={shop.users
               .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
               .map((user) => ({ id: user.id, name: user.name }))}
@@ -861,7 +870,7 @@ export async function TenantERPView({
 
           {canOperate && (
             <div className="agenda-create-grid">
-              <details className="erp-quick-create">
+              <details className="erp-quick-create" open={agendaQuickOpen}>
                 <summary><Plus size={15} /> Novo agendamento <small>Agenda rápida</small></summary>
                 <form action={createAppointment} className="erp-quick-form">
                   <input type="hidden" name="tenantCode" value={tenantCode} />
@@ -884,7 +893,7 @@ export async function TenantERPView({
                   <div className="grid grid-3">
                     <label>
                       <span className="label">Profissional</span>
-                      <select className="select" name="barberId">
+                      <select className="select" name="barberId" defaultValue={agendaDraftBarberId}>
                         <option value="">Sem profissional definido</option>
                         {shop.users.filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role)).map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
                       </select>
@@ -896,7 +905,7 @@ export async function TenantERPView({
                         {shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
                       </select>
                     </label>
-                    <label><span className="label">Data e hora</span><input className="input" name="startsAt" type="datetime-local" required /></label>
+                    <label><span className="label">Data e hora</span><input className="input" name="startsAt" type="datetime-local" required defaultValue={agendaDraftStart} /></label>
                   </div>
                   <label><span className="label">Observações</span><input className="input" name="notes" maxLength={300} placeholder="Opcional" /></label>
                   <button className="btn" type="submit">Salvar agendamento</button>
