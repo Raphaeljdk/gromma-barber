@@ -21,6 +21,7 @@ import { BackButton } from "@/components/back-button";
 import { ErpSidebar } from "@/components/erp-sidebar";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
+import { ErpListToolbar } from "@/components/erp-list-toolbar";
 
 function StatusPill({
   children,
@@ -52,6 +53,15 @@ function ModuleCard({
       <p>{description}</p>
     </article>
   );
+}
+
+const APPOINTMENT_STATUSES = ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE", "COMPLETED", "CANCELED", "NO_SHOW"] as const;
+const COMMAND_STATUSES = ["OPEN", "CLOSED", "CANCELED"] as const;
+const FINANCIAL_TYPES = ["RECEIVABLE", "PAYABLE"] as const;
+const FINANCIAL_STATUSES = ["PENDING", "PAID", "CANCELED"] as const;
+
+function allowedValue<T extends readonly string[]>(value: string, allowed: T): T[number] | undefined {
+  return value && allowed.includes(value as T[number]) ? value as T[number] : undefined;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -94,12 +104,25 @@ export default async function TenantERP({
   const viewer = await requireTenantAccess(tenantCode);
   const qs = await searchParams;
 
-  const pageOf = (key: string) => {
+  const valueOf = (key: string) => {
     const value = qs[key];
-    const raw = Array.isArray(value) ? value[0] : value;
-    const parsed = Number.parseInt(raw ?? "1", 10);
+    return (Array.isArray(value) ? value[0] : value) ?? "";
+  };
+  const pageOf = (key: string) => {
+    const parsed = Number.parseInt(valueOf(key) || "1", 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
   };
+
+  const clientesQ = valueOf("clientesQ").trim();
+  const servicosQ = valueOf("servicosQ").trim();
+  const estoqueQ = valueOf("estoqueQ").trim();
+  const equipeQ = valueOf("equipeQ").trim();
+  const unidadesQ = valueOf("unidadesQ").trim();
+  const financeiroQ = valueOf("financeiroQ").trim();
+  const agendaStatus = allowedValue(valueOf("agendaStatus"), APPOINTMENT_STATUSES);
+  const comandaStatus = allowedValue(valueOf("comandaStatus"), COMMAND_STATUSES);
+  const financeiroTipo = allowedValue(valueOf("financeiroTipo"), FINANCIAL_TYPES);
+  const financeiroStatus = allowedValue(valueOf("financeiroStatus"), FINANCIAL_STATUSES);
 
   const pageSize = 10;
   const agendaPage = pageOf("agendaPage");
