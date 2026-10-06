@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { StatusBadge } from "@/components/status-badge";
+import { SectionPagination } from "@/components/section-pagination";
 
 const allowedStatuses = ["PENDING", "APPROVED", "BLOCKED", "REJECTED"] as const;
 
@@ -44,6 +45,16 @@ function DatabaseUnavailable() {
           </div>
         </div>
       </div>
+
+      <SectionPagination
+        basePath="/admin/barbearias"
+        searchParams={qs}
+        param="page"
+        page={page}
+        total={filteredTotal}
+        pageSize={pageSize}
+        label="tenants"
+      />
     </section>
   );
 }
@@ -51,36 +62,46 @@ function DatabaseUnavailable() {
 export default async function BarberiasPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const qs = await searchParams;
+  const statusValue = Array.isArray(qs.status) ? qs.status[0] : qs.status;
+  const queryValue = Array.isArray(qs.q) ? qs.q[0] : qs.q;
+  const pageValue = Array.isArray(qs.page) ? qs.page[0] : qs.page;
   const status =
-    qs.status && allowedStatuses.includes(qs.status as (typeof allowedStatuses)[number])
-      ? (qs.status as (typeof allowedStatuses)[number])
+    statusValue && allowedStatuses.includes(statusValue as (typeof allowedStatuses)[number])
+      ? (statusValue as (typeof allowedStatuses)[number])
       : undefined;
-  const search = (qs.q ?? "").trim();
+  const search = (queryValue ?? "").trim();
   const digits = search.replace(/\D/g, "");
+  const parsedPage = Number.parseInt(pageValue ?? "1", 10);
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const pageSize = 12;
+  const filterWhere = {
+    ...(status ? { status } : {}),
+    ...(search
+      ? {
+          OR: [
+            { tradeName: { contains: search, mode: "insensitive" as const } },
+            { ownerName: { contains: search, mode: "insensitive" as const } },
+            { email: { contains: search, mode: "insensitive" as const } },
+            { tenantCode: { contains: search, mode: "insensitive" as const } },
+            ...(digits ? [{ document: { contains: digits } }] : []),
+          ],
+        }
+      : {}),
+  };
 
   let shops;
   let platformRows;
+  let filteredTotal;
 
   try {
-    [shops, platformRows] = await Promise.all([
+    [shops, platformRows, filteredTotal] = await Promise.all([
       prisma.barberShop.findMany({
-        where: {
-          ...(status ? { status } : {}),
-          ...(search
-            ? {
-                OR: [
-                  { tradeName: { contains: search, mode: "insensitive" } },
-                  { ownerName: { contains: search, mode: "insensitive" } },
-                  { email: { contains: search, mode: "insensitive" } },
-                  { tenantCode: { contains: search, mode: "insensitive" } },
-                  ...(digits ? [{ document: { contains: digits } }] : []),
-                ],
-              }
-            : {}),
-        },
+        where: filterWhere,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
         include: {
           _count: { select: { units: true, users: true } },
           subscriptions: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -111,6 +132,7 @@ export default async function BarberiasPage({
         },
         orderBy: { createdAt: "desc" },
       }),
+      prisma.barberShop.count({ where: filterWhere }),
     ]);
   } catch (error) {
     console.error("Failed to load tenants", error);
