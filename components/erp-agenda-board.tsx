@@ -58,12 +58,11 @@ function timeParts(date: Date) {
 
 function readableDate(value: string, view: Props["view"]) {
   const date = new Date(`${value}T12:00:00-03:00`);
-  return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: TIME_ZONE,
-    ...(view === "month"
-      ? { month: "long", year: "numeric" }
-      : { weekday: "long", day: "2-digit", month: "long" }),
-  }).format(date);
+  const options: Intl.DateTimeFormatOptions =
+    view === "month"
+      ? { timeZone: TIME_ZONE, month: "long", year: "numeric" }
+      : { timeZone: TIME_ZONE, weekday: "long", day: "2-digit", month: "long" };
+  return new Intl.DateTimeFormat("pt-BR", options).format(date);
 }
 
 function addDays(value: string, days: number) {
