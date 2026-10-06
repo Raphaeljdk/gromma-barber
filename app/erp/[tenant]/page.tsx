@@ -663,7 +663,7 @@ export async function TenantERPView({
           </div>
         </div>
 
-        <header className="demo-header erp-hero-header">
+        <header className={`demo-header erp-hero-header ${activeModule === "dashboard" ? "" : "compact"}`}>
           <div>
             <div className="eyebrow">ERP · {plan.name}</div>
             <h1>{moduleId === "dashboard" ? shop.tradeName : activeModuleTitle}</h1>
@@ -1507,6 +1507,14 @@ export async function TenantERPView({
                 </form>
               )}
               <p className="erp-integration-note">A central já organiza links e documentos hospedados externamente. Upload binário próprio exige storage dedicado e não é simulado.</p>
+              <div className="erp-amenities-block">
+                <span>Comodidades do local</span>
+                <div>
+                  {workspace.settings.amenities
+                    ? workspace.settings.amenities.split(",").map((item) => item.trim()).filter(Boolean).map((item) => <span key={item}>{item}</span>)
+                    : <small className="muted">Cadastre as comodidades em Configurações.</small>}
+                </div>
+              </div>
             </article>
 
             <article className="card erp-workspace-card">
@@ -1653,6 +1661,7 @@ export async function TenantERPView({
                     <label><span className="label">WhatsApp da operação</span><input className="input" name="whatsappNumber" defaultValue={workspace.settings.whatsappNumber} placeholder="5511999999999" /></label>
                   </div>
                   <label><span className="label">Emissor fiscal / referência</span><input className="input" name="invoiceProvider" defaultValue={workspace.settings.invoiceProvider} placeholder="Nome do emissor ou integração planejada" /></label>
+                  <label><span className="label">Comodidades das unidades</span><input className="input" name="amenities" defaultValue={workspace.settings.amenities} placeholder="Wi-Fi, café, estacionamento, acessibilidade..." /></label>
                   <div className="erp-switch-grid">
                     <label><input type="checkbox" name="rotationEnabled" defaultChecked={workspace.settings.rotationEnabled} /><span><strong>Rodízio de profissionais</strong><small>Ativa regra operacional de distribuição.</small></span></label>
                     <label><input type="checkbox" name="autoConfirm" defaultChecked={workspace.settings.autoConfirm} /><span><strong>Confirmação automática</strong><small>Preferência pronta para automação de mensagens.</small></span></label>
@@ -1669,6 +1678,7 @@ export async function TenantERPView({
                 <div><span>Nota fiscal</span><strong>{workspace.settings.invoiceProvider || "Emissor não conectado"}</strong></div>
                 <div><span>Rodízio</span><strong>{workspace.settings.rotationEnabled ? "Ativo" : "Desativado"}</strong></div>
                 <div><span>Confirmação automática</span><strong>{workspace.settings.autoConfirm ? "Preferência ativa" : "Manual"}</strong></div>
+                <div><span>Comodidades</span><strong>{workspace.settings.amenities || "Não cadastradas"}</strong></div>
               </div>
               <p className="erp-integration-note">WhatsApp automático, gateway de pagamento e emissão fiscal dependem de credenciais/provedores externos. O ERP mantém a configuração e os fluxos internos prontos sem fingir uma integração que ainda não existe.</p>
             </article>
