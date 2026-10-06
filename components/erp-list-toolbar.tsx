@@ -42,6 +42,8 @@ export function ErpListToolbar({
 }: Props) {
   const owned = new Set([
     pageParam,
+    "ok",
+    "erro",
     search?.param ?? "",
     ...selects.map((field) => field.param),
   ]);
