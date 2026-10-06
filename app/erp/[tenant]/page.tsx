@@ -146,60 +146,116 @@ export default async function TenantERP({
 
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
 
+  const customerWhere = {
+    barberShopId: shop.id,
+    active: true,
+    ...(clientesQ
+      ? {
+          OR: [
+            { name: { contains: clientesQ, mode: "insensitive" as const } },
+            { email: { contains: clientesQ, mode: "insensitive" as const } },
+            { phone: { contains: clientesQ } },
+          ],
+        }
+      : {}),
+  };
+  const appointmentWhere = {
+    barberShopId: shop.id,
+    ...(agendaStatus ? { status: agendaStatus } : {}),
+  };
+  const commandWhere = {
+    barberShopId: shop.id,
+    ...(comandaStatus ? { status: comandaStatus } : {}),
+  };
+  const productWhere = {
+    barberShopId: shop.id,
+    active: true,
+    ...(estoqueQ
+      ? {
+          OR: [
+            { name: { contains: estoqueQ, mode: "insensitive" as const } },
+            { sku: { contains: estoqueQ, mode: "insensitive" as const } },
+            { barcode: { contains: estoqueQ } },
+          ],
+        }
+      : {}),
+  };
+  const financialWhere = {
+    barberShopId: shop.id,
+    ...(financeiroTipo ? { type: financeiroTipo } : {}),
+    ...(financeiroStatus ? { status: financeiroStatus } : {}),
+    ...(financeiroQ
+      ? {
+          OR: [
+            { description: { contains: financeiroQ, mode: "insensitive" as const } },
+            { category: { contains: financeiroQ, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
   const [
     customers,
     customersTotal,
+    customersAllTotal,
     appointments,
     appointmentsTotal,
+    appointmentsAllTotal,
     commands,
     commandsTotal,
     openCommands,
     products,
     productsTotal,
+    productsAllTotal,
     financialEntries,
     financialTotal,
+    financialAllTotal,
     pendingFinance,
     receivableAggregate,
     payableAggregate,
   ] = await Promise.all([
     prisma.customer.findMany({
-      where: { barberShopId: shop.id, active: true },
+      where: customerWhere,
       orderBy: { createdAt: "desc" },
       skip: (clientesPage - 1) * pageSize,
       take: pageSize,
     }),
+    prisma.customer.count({ where: customerWhere }),
     prisma.customer.count({ where: { barberShopId: shop.id, active: true } }),
     prisma.appointment.findMany({
-      where: { barberShopId: shop.id },
+      where: appointmentWhere,
       orderBy: { startsAt: "desc" },
       skip: (agendaPage - 1) * pageSize,
       take: pageSize,
       include: { customer: true, barber: true, service: true, unit: true },
     }),
+    prisma.appointment.count({ where: appointmentWhere }),
     prisma.appointment.count({ where: { barberShopId: shop.id } }),
     prisma.serviceCommand.findMany({
-      where: { barberShopId: shop.id },
+      where: commandWhere,
       orderBy: { openedAt: "desc" },
       skip: (comandasPage - 1) * pageSize,
       take: pageSize,
       include: { customer: true, unit: true, items: true },
     }),
-    prisma.serviceCommand.count({ where: { barberShopId: shop.id } }),
+    prisma.serviceCommand.count({ where: commandWhere }),
     prisma.serviceCommand.count({ where: { barberShopId: shop.id, status: "OPEN" } }),
     prisma.product.findMany({
-      where: { barberShopId: shop.id, active: true },
+      where: productWhere,
       orderBy: { name: "asc" },
       skip: (estoquePage - 1) * pageSize,
       take: pageSize,
     }),
+    prisma.product.count({ where: productWhere }),
     prisma.product.count({ where: { barberShopId: shop.id, active: true } }),
     prisma.financialEntry.findMany({
-      where: { barberShopId: shop.id },
+      where: financialWhere,
       orderBy: { createdAt: "desc" },
       skip: (financeiroPage - 1) * pageSize,
       take: pageSize,
       include: { unit: true },
     }),
+    prisma.financialEntry.count({ where: financialWhere }),
     prisma.financialEntry.count({ where: { barberShopId: shop.id } }),
     prisma.financialEntry.count({ where: { barberShopId: shop.id, status: "PENDING" } }),
     prisma.financialEntry.aggregate({
@@ -212,9 +268,31 @@ export default async function TenantERP({
     }),
   ]);
 
-  const services = shop.services.slice((servicosPage - 1) * pageSize, servicosPage * pageSize);
-  const professionals = shop.users.slice((equipePage - 1) * pageSize, equipePage * pageSize);
-  const unitsPageItems = shop.units.slice((unidadesPage - 1) * pageSize, unidadesPage * pageSize);
+  const servicePool = servicosQ
+    ? shop.services.filter((service) => service.name.toLowerCase().includes(servicosQ.toLowerCase()))
+    : shop.services;
+  const servicesTotal = servicePool.length;
+  const services = servicePool.slice((servicosPage - 1) * pageSize, servicosPage * pageSize);
+
+  const professionalPool = equipeQ
+    ? shop.users.filter((user) =>
+        [user.name, user.email, user.role].some((value) =>
+          value.toLowerCase().includes(equipeQ.toLowerCase()),
+        ),
+      )
+    : shop.users;
+  const professionalsTotal = professionalPool.length;
+  const professionals = professionalPool.slice((equipePage - 1) * pageSize, equipePage * pageSize);
+
+  const unitPool = unidadesQ
+    ? shop.units.filter((unit) =>
+        [unit.name, unit.code, unit.city, unit.state].some((value) =>
+          value.toLowerCase().includes(unidadesQ.toLowerCase()),
+        ),
+      )
+    : shop.units;
+  const unitsTotal = unitPool.length;
+  const unitsPageItems = unitPool.slice((unidadesPage - 1) * pageSize, unidadesPage * pageSize);
 
   const planKey = shop.activePlan ?? shop.requestedPlan;
   const plan = PLAN_CONFIG[planKey];
