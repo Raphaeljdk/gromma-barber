@@ -828,7 +828,7 @@ export async function TenantERPView({
           </details>
           )}
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/clientes`}
             searchParams={qs}
             pageParam="clientesPage"
             hash="clientes"
@@ -840,7 +840,7 @@ export async function TenantERPView({
               <tr key={customer.id}><td><strong>{customer.name}</strong></td><td>{customer.email ?? "—"}</td><td>{customer.phone ?? "—"}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum cliente cadastrado.</td></tr>}</tbody>
           </table></div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="clientesPage" page={clientesPage} total={customersTotal} pageSize={pageSize} hash="clientes" label="clientes" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/clientes`} searchParams={qs} param="clientesPage" page={clientesPage} total={customersTotal} pageSize={pageSize} hash="clientes" label="clientes" />
         </section>
 
         <section id="servicos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "servicos")}>
@@ -863,7 +863,7 @@ export async function TenantERPView({
           </details>
           )}
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/servicos`}
             searchParams={qs}
             pageParam="servicosPage"
             hash="servicos"
@@ -875,7 +875,7 @@ export async function TenantERPView({
               <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="servicosPage" page={servicosPage} total={servicesTotal} pageSize={pageSize} hash="servicos" label="serviços" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/servicos`} searchParams={qs} param="servicosPage" page={servicosPage} total={servicesTotal} pageSize={pageSize} hash="servicos" label="serviços" />
         </section>
 
         <section id="comandas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comandas")}>
@@ -884,7 +884,7 @@ export async function TenantERPView({
           {actionError === "comanda" && <div className="notice erp-inline-notice error-notice">Não foi possível fechar a comanda.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`}
             searchParams={qs}
             pageParam="comandasPage"
             hash="comandas"
@@ -908,7 +908,7 @@ export async function TenantERPView({
               </tr>
             )) : <tr><td colSpan={7} className="muted">Nenhuma comanda encontrada.</td></tr>}</tbody>
           </table></div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
         <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
@@ -1134,7 +1134,7 @@ export async function TenantERPView({
           </details>
           )}
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/financeiro`}
             searchParams={qs}
             pageParam="financeiroPage"
             hash="financeiro"
@@ -1161,7 +1161,7 @@ export async function TenantERPView({
               </tr>
             )) : <tr><td colSpan={8} className="muted">Nenhum lançamento encontrado.</td></tr>}</tbody>
           </table></div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/financeiro`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
         </section>
 
         <section id="caixa" className="demo-section" hidden={Boolean(moduleId && moduleId !== "caixa")}>
@@ -1199,7 +1199,7 @@ export async function TenantERPView({
           </details>
           )}
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`}
             searchParams={qs}
             pageParam="estoquePage"
             hash="estoque"
@@ -1211,7 +1211,7 @@ export async function TenantERPView({
               <tr key={product.id}><td><strong>{product.sku ?? "—"}</strong><div className="small muted">{product.barcode ?? "Sem código de barras"}</div></td><td><strong>{product.name}</strong></td><td>{brl(Number(product.costPrice))}</td><td>{brl(Number(product.salePrice))}</td><td>{Number(product.stockMin)}</td></tr>
             ))}</tbody>
           </table></div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
         </section>
 
         <section id="comissoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comissoes")}>
@@ -1278,7 +1278,7 @@ export async function TenantERPView({
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`}
             searchParams={qs}
             pageParam="equipePage"
             hash="equipe"
@@ -1294,13 +1294,13 @@ export async function TenantERPView({
               </article>
             ))}
           </div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="equipePage" page={equipePage} total={professionalsTotal} pageSize={pageSize} hash="equipe" label="profissionais" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`} searchParams={qs} param="equipePage" page={equipePage} total={professionalsTotal} pageSize={pageSize} hash="equipe" label="profissionais" />
         </section>
 
         <section id="unidades" className="demo-section" hidden={Boolean(moduleId && moduleId !== "unidades")}>
           <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`}
             searchParams={qs}
             pageParam="unidadesPage"
             hash="unidades"
@@ -1318,7 +1318,7 @@ export async function TenantERPView({
               </article>
             ))}
           </div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal} pageSize={pageSize} hash="unidades" label="unidades" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal} pageSize={pageSize} hash="unidades" label="unidades" />
         </section>
 
         <section id="relatorios" className="demo-section" hidden={Boolean(moduleId && moduleId !== "relatorios")}>
