@@ -28,7 +28,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, addWaitlist, generateClubCharge, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem } from "./module-actions";
+import { addClubMember, addDeduction, addWaitlist, generateClubCharge, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
   children,
@@ -191,7 +191,12 @@ export async function TenantERPView({
   const financeiroTipo = allowedValue(valueOf("financeiroTipo"), FINANCIAL_TYPES);
   const financeiroStatus = allowedValue(valueOf("financeiroStatus"), FINANCIAL_STATUSES);
   const agendaDateRaw = valueOf("agendaDate");
-  const agendaView = valueOf("agendaView") === "week" ? "week" as const : "day" as const;
+  const agendaViewRaw = valueOf("agendaView");
+  const agendaView = agendaViewRaw === "month"
+    ? "month" as const
+    : agendaViewRaw === "week"
+      ? "week" as const
+      : "day" as const;
   const todayDate = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
@@ -211,6 +216,7 @@ export async function TenantERPView({
   const needsOpenCommands = ["dashboard", "caixa", "gerencial", "alertas"].includes(activeModule);
   const needsProductList = activeModule === "estoque";
   const needsProductCount = ["dashboard", "estoque", "alertas"].includes(activeModule);
+  const needsStockHealth = ["estoque", "alertas"].includes(activeModule);
   const needsFinanceList = activeModule === "financeiro";
   const needsFinanceCount = ["financeiro", "relatorios"].includes(activeModule);
   const needsFinancialHealth = ["dashboard", "financeiro", "gerencial", "alertas"].includes(activeModule);
@@ -255,8 +261,15 @@ export async function TenantERPView({
     const weekDay = agendaRangeStart.getUTCDay();
     agendaRangeStart.setUTCDate(agendaRangeStart.getUTCDate() + (weekDay === 0 ? -6 : 1 - weekDay));
   }
+  if (agendaView === "month") {
+    agendaRangeStart.setUTCDate(1);
+  }
   const agendaRangeEnd = new Date(agendaRangeStart);
-  agendaRangeEnd.setUTCDate(agendaRangeEnd.getUTCDate() + (agendaView === "week" ? 7 : 1));
+  if (agendaView === "month") {
+    agendaRangeEnd.setUTCMonth(agendaRangeEnd.getUTCMonth() + 1);
+  } else {
+    agendaRangeEnd.setUTCDate(agendaRangeEnd.getUTCDate() + (agendaView === "week" ? 7 : 1));
+  }
 
   const customerWhere: Prisma.CustomerWhereInput = {
     barberShopId: shop.id,
@@ -329,6 +342,7 @@ export async function TenantERPView({
     agendaBoardAppointments,
     relationshipAppointments,
     commissionCommands,
+    stockAggregates,
   ] = await Promise.all([
     needsCustomerList
       ? prisma.customer.findMany({
@@ -433,6 +447,13 @@ export async function TenantERPView({
             items: true,
           },
           take: 1000,
+        })
+      : Promise.resolve([]),
+    needsStockHealth
+      ? prisma.stockMovement.groupBy({
+          by: ["productId", "type"],
+          where: { barberShopId: shop.id },
+          _sum: { quantity: true },
         })
       : Promise.resolve([]),
   ]);
@@ -560,6 +581,20 @@ export async function TenantERPView({
   const reviewAverage = workspace.reviews.length
     ? workspace.reviews.reduce((sum, review) => sum + review.score, 0) / workspace.reviews.length
     : 0;
+
+  const stockByProduct = new Map<string, number>();
+  stockAggregates.forEach((row) => {
+    const quantity = Number(row._sum.quantity ?? 0);
+    const delta = row.type === "OUT" ? -quantity : quantity;
+    stockByProduct.set(row.productId, (stockByProduct.get(row.productId) ?? 0) + delta);
+  });
+  const productStockRows = products.map((product) => ({
+    ...product,
+    currentStock: stockByProduct.get(product.id) ?? 0,
+  }));
+  const lowStockProducts = products.filter(
+    (product) => (stockByProduct.get(product.id) ?? 0) <= Number(product.stockMin),
+  );
 
   const clubMemberPageRows = clubMemberRows.slice(
     (assinaturasPage - 1) * pageSize,
@@ -1007,7 +1042,8 @@ export async function TenantERPView({
           {actionOk === "plano" && <div className="notice erp-inline-notice success">Plano do clube criado.</div>}
           {actionOk === "assinante" && <div className="notice erp-inline-notice success">Assinante incluído no clube.</div>}
           {actionOk === "cobranca" && <div className="notice erp-inline-notice success">Cobrança gerada no Financeiro.</div>}
-          {["plano","assinante","cobranca","banco"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Não foi possível concluir a operação do clube.</div>}
+          {actionOk === "assinante-status" && <div className="notice erp-inline-notice success">Situação do assinante atualizada.</div>}
+          {["plano","assinante","assinante-status","cobranca","banco"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Não foi possível concluir a operação do clube.</div>}
 
           <div className="erp-two-column-workspace">
             <article className="card erp-workspace-card">
@@ -1057,7 +1093,33 @@ export async function TenantERPView({
                       <td>{member.plan?.name ?? "Plano removido"}</td>
                       <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(member.nextBillingAt))}</td>
                       <td><span className={`badge ${overdue ? "rejected" : "approved"}`}>{overdue ? "Vencido" : member.status === "ACTIVE" ? "Ativo" : member.status}</span></td>
-                      <td>{canFinance && member.plan ? <form action={generateClubCharge}><input type="hidden" name="tenantCode" value={tenantCode} /><input type="hidden" name="memberId" value={member.id} /><button className="btn secondary" type="submit">Gerar cobrança</button></form> : <span className="muted">—</span>}</td>
+                      <td>
+                        <div className="erp-row-actions">
+                          {canFinance && member.plan && member.status === "ACTIVE" && (
+                            <form action={generateClubCharge}>
+                              <input type="hidden" name="tenantCode" value={tenantCode} />
+                              <input type="hidden" name="memberId" value={member.id} />
+                              <button className="btn secondary" type="submit">Cobrar</button>
+                            </form>
+                          )}
+                          {canManage && member.status !== "CANCELED" && (
+                            <form action={updateClubMemberStatus}>
+                              <input type="hidden" name="tenantCode" value={tenantCode} />
+                              <input type="hidden" name="memberId" value={member.id} />
+                              <button className="erp-table-quiet-action" type="submit" name="action" value={member.status === "PAUSED" ? "activate" : "pause"}>
+                                {member.status === "PAUSED" ? "Ativar" : "Pausar"}
+                              </button>
+                            </form>
+                          )}
+                          {canManage && member.status !== "CANCELED" && (
+                            <form action={updateClubMemberStatus}>
+                              <input type="hidden" name="tenantCode" value={tenantCode} />
+                              <input type="hidden" name="memberId" value={member.id} />
+                              <button className="erp-table-quiet-action" type="submit" name="action" value="cancel">Cancelar</button>
+                            </form>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 }) : <tr><td colSpan={5} className="muted">Nenhum assinante cadastrado.</td></tr>}</tbody>
@@ -1289,10 +1351,21 @@ export async function TenantERPView({
             search={{ param: "estoqueQ", value: estoqueQ, placeholder: "Buscar produto, SKU ou código" }}
           />
           <div className="table-wrap"><table>
-            <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque mínimo</th></tr></thead>
-            <tbody>{products.map((product) => (
-              <tr key={product.id}><td><strong>{product.sku ?? "—"}</strong><div className="small muted">{product.barcode ?? "Sem código de barras"}</div></td><td><strong>{product.name}</strong></td><td>{brl(Number(product.costPrice))}</td><td>{brl(Number(product.salePrice))}</td><td>{Number(product.stockMin)}</td></tr>
-            ))}</tbody>
+            <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Atual</th><th>Mínimo</th><th>Situação</th></tr></thead>
+            <tbody>{productStockRows.length ? productStockRows.map((product) => {
+              const low = product.currentStock <= Number(product.stockMin);
+              return (
+                <tr key={product.id}>
+                  <td><strong>{product.sku ?? "—"}</strong><div className="small muted">{product.barcode ?? "Sem código de barras"}</div></td>
+                  <td><strong>{product.name}</strong></td>
+                  <td>{brl(Number(product.costPrice))}</td>
+                  <td>{brl(Number(product.salePrice))}</td>
+                  <td><strong>{product.currentStock.toFixed(3).replace(/\.000$/, "")}</strong></td>
+                  <td>{Number(product.stockMin)}</td>
+                  <td><span className={`badge ${low ? "rejected" : "approved"}`}>{low ? "Repor" : "Regular"}</span></td>
+                </tr>
+              );
+            }) : <tr><td colSpan={7} className="muted">Nenhum produto encontrado.</td></tr>}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
         </section>
@@ -1590,7 +1663,7 @@ export async function TenantERPView({
           <div className="erp-alert-grid">
             <article className="card"><BellRing size={18} /><div><strong>{pendingFinance} pendência(s) financeira(s)</strong><span>Revisar contas com status pendente.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/financeiro?financeiroStatus=PENDING`}>Abrir financeiro →</Link></div></article>
             <article className="card"><ReceiptText size={18} /><div><strong>{openCommands} comanda(s) aberta(s)</strong><span>Acompanhar atendimentos em andamento.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/comandas?comandaStatus=OPEN`}>Abrir comandas →</Link></div></article>
-            <article className="card"><PackageSearch size={18} /><div><strong>{productsAllTotal} produto(s) cadastrado(s)</strong><span>Reposição e estoque mínimo ficam concentrados no módulo de estoque.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/estoque`}>Abrir estoque →</Link></div></article>
+            <article className="card"><PackageSearch size={18} /><div><strong>{lowStockProducts.length} produto(s) em reposição</strong><span>{lowStockProducts.length ? "Estoque atual está no mínimo ou abaixo do mínimo cadastrado." : "Nenhum produto abaixo do estoque mínimo."}</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/estoque`}>Abrir estoque →</Link></div></article>
             <article className="card"><WalletCards size={18} /><div><strong>{overdueClubMembers.length} assinatura(s) vencida(s)</strong><span>Gerar cobrança ou regularizar clientes do clube.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`}>Abrir clube →</Link></div></article>
             <article className="card"><CalendarDays size={18} /><div><strong>{waitlist.length} cliente(s) na espera</strong><span>Buscar encaixes na agenda e horários livres.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/agenda`}>Abrir agenda →</Link></div></article>
             <article className="card"><Star size={18} /><div><strong>{workspace.reviews.filter((review) => review.score <= 2).length} avaliação(ões) crítica(s)</strong><span>Priorizar retorno ao cliente e plano de recuperação.</span><Link href={`/erp/${encodeURIComponent(tenantCode)}/avaliacoes`}>Abrir avaliações →</Link></div></article>
