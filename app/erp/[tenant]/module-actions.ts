@@ -1,5 +1,7 @@
 "use server";
 
+import { agendaReturnHref, isAgendaDate } from "@/lib/agenda";
+
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -689,10 +691,10 @@ export async function updateClubMemberStatus(formData: FormData) {
 export async function resolveWaitlist(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "agenda");
-  if (!allowed(viewer, OPERATION_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, OPERATION_ROLES)) redirect(agendaReturnHref(tenantCode, formData, { erro: "permissao" }));
 
   const waitlistId = value(formData, "waitlistId", 100);
-  if (!waitlistId) redirect(`${path}?erro=fila`);
+  if (!waitlistId) redirect(agendaReturnHref(tenantCode, formData, { erro: "fila" }));
 
   try {
     await persistWorkspace(shop, (workspace) => {
@@ -700,32 +702,40 @@ export async function resolveWaitlist(formData: FormData) {
     });
   } catch (error) {
     console.error("Failed to resolve waitlist item", error);
-    redirect(`${path}?erro=fila`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "fila" }));
   }
 
   revalidatePath(path);
-  redirect(`${path}?ok=fila-resolvida`);
+  redirect(agendaReturnHref(tenantCode, formData, { ok: "fila-resolvida" }));
 }
 
 export async function addWaitlist(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "agenda");
-  if (!allowed(viewer, OPERATION_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, OPERATION_ROLES)) redirect(agendaReturnHref(tenantCode, formData, { erro: "permissao" }));
 
   const customerName = value(formData, "customerName", 120);
   const phone = value(formData, "phone", 40);
   const serviceId = value(formData, "serviceId", 80) || null;
   const requestedDate = value(formData, "requestedDate", 20);
+  const barberId = value(formData, "barberId", 80) || null;
+  const unitId = value(formData, "unitId", 80) || null;
   const notes = value(formData, "notes", 300);
 
-  if (customerName.length < 2 || !requestedDate) redirect(`${path}?erro=fila`);
+  if (customerName.length < 2 || !isAgendaDate(requestedDate) || !unitId) redirect(agendaReturnHref(tenantCode, formData, { erro: "fila" }));
+
+  const [unit, barber] = await Promise.all([
+    prisma.barberShopUnit.findFirst({ where: { id: unitId!, barberShopId: shop.id, active: true }, select: { id: true } }),
+    barberId ? prisma.shopUser.findFirst({ where: { id: barberId, barberShopId: shop.id, active: true, role: { in: ["OWNER", "MANAGER", "BARBER"] }, OR: [{ unitId: null }, { unitId }] }, select: { id: true } }) : Promise.resolve(null),
+  ]);
+  if (!unit || (barberId && !barber)) redirect(agendaReturnHref(tenantCode, formData, { erro: "fila" }));
 
   if (serviceId) {
     const service = await prisma.service.findFirst({
       where: { id: serviceId, barberShopId: shop.id, active: true },
       select: { id: true },
     });
-    if (!service) redirect(`${path}?erro=fila`);
+    if (!service) redirect(agendaReturnHref(tenantCode, formData, { erro: "fila" }));
   }
 
   try {
@@ -736,15 +746,17 @@ export async function addWaitlist(formData: FormData) {
         phone,
         serviceId,
         requestedDate,
+        barberId,
+        unitId,
         notes,
         createdAt: new Date().toISOString(),
       });
     });
   } catch (error) {
     console.error("Failed to add waitlist", error);
-    redirect(`${path}?erro=banco`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "banco" }));
   }
 
   revalidatePath(path);
-  redirect(`${path}?ok=fila`);
+  redirect(agendaReturnHref(tenantCode, formData, { ok: "fila" }));
 }

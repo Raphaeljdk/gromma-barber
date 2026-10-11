@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { agendaReturnHref, encodeAppointmentNotes } from "@/lib/agenda";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace } from "@/lib/erp-workspace";
@@ -73,14 +75,14 @@ export async function updateAppointmentStatus(formData: FormData) {
   const path = `/erp/${encodeURIComponent(tenantCode)}/agenda`;
 
   if (!allowed(viewer, OPERATION_ROLES)) {
-    redirect(`${path}?erro=permissao#agenda`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "permissao" }));
   }
 
   const appointmentId = text(formData, "appointmentId", 80);
   const action = text(formData, "action", 20) as keyof typeof APPOINTMENT_TRANSITIONS;
   const transition = APPOINTMENT_TRANSITIONS[action];
 
-  if (!appointmentId || !transition) redirect(`${path}?erro=agenda-status#agenda`);
+  if (!appointmentId || !transition) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-status" }));
 
   const appointment = await prisma.appointment.findFirst({
     where: { id: appointmentId, barberShopId: shop.id },
@@ -91,7 +93,7 @@ export async function updateAppointmentStatus(formData: FormData) {
     !appointment ||
     !(transition.from as readonly string[]).includes(appointment.status)
   ) {
-    redirect(`${path}?erro=agenda-status#agenda`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-status" }));
   }
 
   try {
@@ -145,11 +147,30 @@ export async function updateAppointmentStatus(formData: FormData) {
     });
   } catch (error) {
     console.error("Failed to update appointment status", error);
-    redirect(`${path}?erro=agenda-status#agenda`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-status" }));
   }
 
   revalidatePath(path);
-  redirect(`${path}?ok=agenda-status#agenda`);
+  redirect(agendaReturnHref(tenantCode, formData, { ok: "agenda-status" }));
+}
+
+export async function updateAppointmentNotes(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  if (!allowed(viewer, OPERATION_ROLES)) redirect(agendaReturnHref(tenantCode, formData, { erro: "permissao" }));
+  const appointmentId = text(formData, "appointmentId", 80);
+  if (!appointmentId) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-informacoes" }));
+  try {
+    const updated = await prisma.appointment.updateMany({
+      where: { id: appointmentId, barberShopId: shop.id },
+      data: { notes: encodeAppointmentNotes(text(formData, "notes", 300), formData.get("repurchase") === "1") },
+    });
+    if (updated.count !== 1) throw new Error("Appointment not found in tenant");
+  } catch (error) {
+    console.error("Failed to update appointment information", error);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-informacoes" }));
+  }
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
+  redirect(agendaReturnHref(tenantCode, formData, { ok: "agenda-informacoes" }));
 }
 
 export async function closeCommand(formData: FormData) {
@@ -233,7 +254,7 @@ export async function createAppointment(formData: FormData) {
   const path = `/erp/${encodeURIComponent(tenantCode)}/agenda`;
 
   if (!allowed(viewer, OPERATION_ROLES)) {
-    redirect(`${path}?erro=permissao#agenda`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "permissao" }));
   }
 
   const unitId = text(formData, "unitId", 80);
@@ -241,7 +262,9 @@ export async function createAppointment(formData: FormData) {
   const customerId = text(formData, "customerId", 80);
   const barberId = text(formData, "barberId", 80);
   const startsAtRaw = text(formData, "startsAt", 40);
-  const notes = text(formData, "notes", 300);
+  const notes = encodeAppointmentNotes(text(formData, "notes", 300), formData.get("repurchase") === "1");
+  const userAgent = (await headers()).get("user-agent") ?? "";
+  const device = !userAgent ? "" : /mobile|android|iphone|ipad|tablet/i.test(userAgent) ? "_MOBILE" : "_DESKTOP";
   const startsAt = new Date(
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(startsAtRaw)
       ? `${startsAtRaw}:00-03:00`
@@ -249,7 +272,7 @@ export async function createAppointment(formData: FormData) {
   );
 
   if (!unitId || !serviceId || Number.isNaN(startsAt.getTime())) {
-    redirect(`${path}?erro=agenda#agenda`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   }
 
   const [unit, service, customer, selectedBarber] = await Promise.all([
@@ -269,14 +292,14 @@ export async function createAppointment(formData: FormData) {
       : Promise.resolve(null),
     barberId
       ? prisma.shopUser.findFirst({
-          where: { id: barberId, barberShopId: shop.id, active: true },
+          where: { id: barberId, barberShopId: shop.id, active: true, role: { in: ["OWNER", "MANAGER", "BARBER"] }, OR: [{ unitId: null }, { unitId }] },
           select: { id: true },
         })
       : Promise.resolve(null),
   ]);
 
   if (!unit || !service || (customerId && !customer) || (barberId && !selectedBarber)) {
-    redirect(`${path}?erro=agenda#agenda`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   }
 
   const workspace = readWorkspace(shop.enabledFeatures);
@@ -289,6 +312,7 @@ export async function createAppointment(formData: FormData) {
         barberShopId: shop.id,
         active: true,
         role: { in: ["OWNER", "MANAGER", "BARBER"] },
+        OR: [{ unitId: null }, { unitId }],
       },
       select: { id: true },
     });
@@ -338,7 +362,7 @@ export async function createAppointment(formData: FormData) {
       select: { id: true },
     });
 
-    if (conflict) redirect(`${path}?erro=agenda-conflito#agenda`);
+    if (conflict) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-conflito" }));
   }
 
   try {
@@ -352,17 +376,17 @@ export async function createAppointment(formData: FormData) {
         startsAt,
         endsAt,
         status: workspace.settings.autoConfirm ? "CONFIRMED" : "SCHEDULED",
-        source: workspace.settings.rotationEnabled && !barberId ? "ERP_ROTATION" : "ERP",
+        source: `${workspace.settings.rotationEnabled && !barberId ? "ERP_ROTATION" : "ERP"}${device}`,
         notes: notes || null,
       },
     });
   } catch (error) {
     console.error("Failed to create appointment", error);
-    redirect(`${path}?erro=agenda#agenda`);
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   }
 
   revalidatePath(path);
-  redirect(`${path}?ok=agenda#agenda`);
+  redirect(agendaReturnHref(tenantCode, formData, { ok: "agenda", agendaDate: startsAtRaw.slice(0, 10), agendaUnit: unit.id }));
 }
 
 export async function createCustomer(formData: FormData) {
