@@ -27,8 +27,9 @@ import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { readWorkspace } from "@/lib/erp-workspace";
-import { closeCommand, createAppointment, createCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, addWaitlist, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
+import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
+import { closeCommand, createCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
   children,
@@ -206,6 +207,8 @@ export async function TenantERPView({
   const agendaDraftStart = valueOf("startsAt").trim();
   const agendaDraftBarberId = valueOf("barberId").trim();
   const agendaQuickOpen = valueOf("novo") === "1";
+  const agendaClientRaw = valueOf("agendaClient");
+  const agendaClient: AgendaClientFilter = ["with-plan", "without-plan", "on-site"].includes(agendaClientRaw) ? agendaClientRaw as AgendaClientFilter : "";
   const agendaView = agendaViewRaw === "month"
     ? "month" as const
     : agendaViewRaw === "week"
@@ -217,7 +220,7 @@ export async function TenantERPView({
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
-  const agendaDate = /^\d{4}-\d{2}-\d{2}$/.test(agendaDateRaw) ? agendaDateRaw : todayDate;
+  const agendaDate = isAgendaDate(agendaDateRaw) ? agendaDateRaw : todayDate;
   const actionOk = valueOf("ok");
   const actionError = valueOf("erro");
   const activeModule = moduleId ?? "dashboard";
@@ -283,6 +286,12 @@ export async function TenantERPView({
     agendaRangeEnd.setUTCMonth(agendaRangeEnd.getUTCMonth() + 1);
   } else {
     agendaRangeEnd.setUTCDate(agendaRangeEnd.getUTCDate() + (agendaView === "week" ? 7 : 1));
+  }
+
+  if (agendaView === "month") {
+    const days = agendaMonthDays(agendaDate);
+    agendaRangeStart.setTime(new Date(`${days[0]}T00:00:00-03:00`).getTime());
+    agendaRangeEnd.setTime(new Date(`${addAgendaDays(days[41], 1)}T00:00:00-03:00`).getTime());
   }
 
   const customerWhere: Prisma.CustomerWhereInput = {
@@ -441,8 +450,7 @@ export async function TenantERPView({
             startsAt: { gte: agendaRangeStart, lt: agendaRangeEnd },
           },
           orderBy: { startsAt: "asc" },
-          include: { customer: true, barber: true, service: true, unit: true },
-          take: 500,
+          include: { customer: true, barber: true, service: true, unit: true, command: { include: { items: true } } },
         })
       : Promise.resolve([]),
     needsRelationship
@@ -487,6 +495,16 @@ export async function TenantERPView({
         })
       : Promise.resolve([]),
   ]);
+
+  const agendaCustomerIds = [...new Set(agendaBoardAppointments.flatMap((item) => item.customerId ? [item.customerId] : []))];
+  const firstVisits = agendaCustomerIds.length ? await prisma.appointment.groupBy({
+    by: ["customerId"],
+    where: { barberShopId: shop.id, customerId: { in: agendaCustomerIds }, status: "COMPLETED" },
+    _min: { startsAt: true },
+  }) : [];
+  const firstVisitByCustomer = new Map(firstVisits.map((item) => [item.customerId, item._min.startsAt]));
+  const activeClubPlans = new Map(workspace.clubPlans.filter((item) => item.active).map((item) => [item.id, item.name]));
+  const customerPlan = new Map(workspace.clubMembers.filter((item) => item.status === "ACTIVE" && activeClubPlans.has(item.planId)).map((item) => [item.customerId, activeClubPlans.get(item.planId)!]));
 
   const servicePool = servicosQ
     ? shop.services.filter((service) => service.name.toLowerCase().includes(servicosQ.toLowerCase()))
@@ -834,17 +852,28 @@ export async function TenantERPView({
           </div>
 
           <ErpAgendaBoard
+            key={`${agendaDate}:${agendaView}:${actionOk}:${actionError}:${agendaQuickOpen}:${agendaDraftStart}:${agendaDraftBarberId}:${valueOf("appointmentId")}:${agendaBoardAppointments.map((item) => `${item.id}:${item.status}:${item.updatedAt.getTime()}`).join(",")}`}
             tenantCode={tenantCode}
             selectedDate={agendaDate}
             view={agendaView}
             appointments={agendaBoardAppointments.map((item) => ({
               id: item.id,
-              startsAt: item.startsAt,
-              endsAt: item.endsAt,
+              startsAt: item.startsAt.toISOString(),
+              endsAt: item.endsAt?.toISOString() ?? null,
               status: item.status,
+              customerId: item.customerId,
               customerName: item.customer?.name ?? "Cliente avulso",
+              customerPhone: item.customer?.phone ?? item.customer?.whatsapp ?? null,
+              source: item.source,
+              notes: item.notes,
+              price: Number(item.service?.price ?? 0),
+              hasPlan: Boolean(item.customerId && customerPlan.has(item.customerId)),
+              planName: item.customerId ? customerPlan.get(item.customerId) ?? null : null,
+              firstVisit: Boolean(item.customerId && (!firstVisitByCustomer.get(item.customerId) || firstVisitByCustomer.get(item.customerId)! >= item.startsAt)),
+              birthday: Boolean(item.customer?.birthDate && item.customer.birthDate.toISOString().slice(5, 10) === agendaDateKey(item.startsAt).slice(5)),
+              command: item.command ? { id: item.command.id, status: item.command.status, total: Number(item.command.total), items: item.command.items.map((line) => ({ id: line.id, description: line.description, quantity: Number(line.quantity), total: Number(line.total) })) } : null,
               barberId: item.barberId,
-              barberName: item.barber?.name ?? "Sem profissional",
+              barberName: item.barber?.name ?? "Sem preferência",
               serviceName: item.service?.name ?? "Atendimento",
               unitId: item.unitId,
               unitName: item.unit.name,
@@ -852,14 +881,24 @@ export async function TenantERPView({
             units={shop.units.filter((unit) => unit.active).map((unit) => ({ id: unit.id, name: unit.name }))}
             selectedProfessionalId={agendaProfessional || undefined}
             selectedUnitId={agendaUnit || undefined}
+            selectedClientFilter={agendaClient}
+            canOperate={canOperate}
+            customers={appointmentCustomers.map((item) => ({ id: item.id, name: item.name, phone: item.phone }))}
+            services={shop.services.map((item) => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes }))}
+            initialAppointmentId={valueOf("appointmentId") || undefined}
+            initialDraft={agendaQuickOpen ? { startsAt: agendaDraftStart || `${agendaDate}T08:00`, barberId: agendaDraftBarberId || agendaProfessional, unitId: agendaUnit } : undefined}
             professionals={shop.users
               .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
-              .map((user) => ({ id: user.id, name: user.name }))}
+              .map((user) => ({ id: user.id, name: user.name, unitId: user.unitId }))}
             settings={workspace.settings}
             waitlist={waitlist}
           />
 
+          {actionOk === "agenda-informacoes" && <div className="notice erp-inline-notice success">Informações do agendamento atualizadas.</div>}
+          {actionError === "agenda-informacoes" && <div className="notice erp-inline-notice error-notice">Não foi possível atualizar as informações do agendamento.</div>}
+          {actionError === "banco" && <div className="notice erp-inline-notice error-notice">Não foi possível salvar a fila de espera. Tente novamente.</div>}
           {actionOk === "agenda" && <div className="notice erp-inline-notice success">Agendamento criado com sucesso.</div>}
+          {actionOk === "fila-resolvida" && <div className="notice erp-inline-notice success">Cliente removido da fila de espera.</div>}
           {actionOk === "fila" && <div className="notice erp-inline-notice success">Cliente adicionado à lista de espera.</div>}
           {actionError === "agenda" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o agendamento. Revise os dados informados.</div>}
           {actionError === "agenda-conflito" && <div className="notice erp-inline-notice error-notice">O profissional já possui um atendimento nesse intervalo.</div>}
@@ -867,69 +906,6 @@ export async function TenantERPView({
           {actionOk === "agenda-status" && <div className="notice erp-inline-notice success">Status do atendimento atualizado.</div>}
           {actionError === "agenda-status" && <div className="notice erp-inline-notice error-notice">A transição solicitada não é válida para este atendimento.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
-
-          {canOperate && (
-            <div className="agenda-create-grid">
-              <details className="erp-quick-create" open={agendaQuickOpen}>
-                <summary><Plus size={15} /> Novo agendamento <small>Agenda rápida</small></summary>
-                <form action={createAppointment} className="erp-quick-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <div className="grid grid-2">
-                    <label>
-                      <span className="label">Cliente</span>
-                      <select className="select" name="customerId">
-                        <option value="">Cliente avulso</option>
-                        {appointmentCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</option>)}
-                      </select>
-                    </label>
-                    <label>
-                      <span className="label">Serviço</span>
-                      <select className="select" name="serviceId" required defaultValue="">
-                        <option value="" disabled>Selecione</option>
-                        {shop.services.map((service) => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} min · {brl(Number(service.price))}</option>)}
-                      </select>
-                    </label>
-                  </div>
-                  <div className="grid grid-3">
-                    <label>
-                      <span className="label">Profissional</span>
-                      <select className="select" name="barberId" defaultValue={agendaDraftBarberId}>
-                        <option value="">Sem profissional definido</option>
-                        {shop.users.filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role)).map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
-                      </select>
-                    </label>
-                    <label>
-                      <span className="label">Unidade</span>
-                      <select className="select" name="unitId" required defaultValue={agendaUnit}>
-                        <option value="" disabled>Selecione</option>
-                        {shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
-                      </select>
-                    </label>
-                    <label><span className="label">Data e hora</span><input className="input" name="startsAt" type="datetime-local" required defaultValue={agendaDraftStart} /></label>
-                  </div>
-                  <label><span className="label">Observações</span><input className="input" name="notes" maxLength={300} placeholder="Opcional" /></label>
-                  <button className="btn" type="submit">Salvar agendamento</button>
-                </form>
-              </details>
-
-              <details className="erp-quick-create">
-                <summary><Plus size={15} /> Lista de espera <small>Encaixes e indisponibilidade</small></summary>
-                <form action={addWaitlist} className="erp-quick-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <div className="grid grid-2">
-                    <label><span className="label">Cliente</span><input className="input" name="customerName" required maxLength={120} placeholder="Nome do cliente" /></label>
-                    <label><span className="label">Telefone</span><input className="input" name="phone" maxLength={40} placeholder="(00) 00000-0000" /></label>
-                  </div>
-                  <div className="grid grid-2">
-                    <label><span className="label">Data desejada</span><input className="input" name="requestedDate" type="date" required defaultValue={agendaDate} /></label>
-                    <label><span className="label">Serviço</span><select className="select" name="serviceId"><option value="">Qualquer serviço</option>{shop.services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}</select></label>
-                  </div>
-                  <label><span className="label">Observações</span><input className="input" name="notes" maxLength={300} placeholder="Preferência de horário ou profissional" /></label>
-                  <button className="btn secondary" type="submit">Adicionar à espera</button>
-                </form>
-              </details>
-            </div>
-          )}
 
           <div className="erp-subsection-head">
             <div><span>Histórico e operação</span><strong>Agendamentos registrados</strong></div>

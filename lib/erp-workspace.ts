@@ -97,6 +97,8 @@ export type WaitlistConfig = {
   phone: string;
   serviceId: string | null;
   requestedDate: string;
+  barberId?: string | null;
+  unitId?: string | null;
   notes: string;
   createdAt: string;
 };
