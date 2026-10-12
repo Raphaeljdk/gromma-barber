@@ -70,6 +70,7 @@ export async function authenticateTenant(email: string, password: string) {
       barberShop: {
         status: "APPROVED",
         accessReleased: true,
+        tenantCode: { not: null },
       },
     },
     include: {
@@ -94,7 +95,10 @@ export async function authenticateTenant(email: string, password: string) {
   if (matches.length !== 1) return null;
 
   const user = matches[0];
-  const tenantCode = user.barberShop.tenantCode.trim().toUpperCase();
+  const rawTenantCode = user.barberShop.tenantCode;
+  if (!rawTenantCode) return null;
+
+  const tenantCode = rawTenantCode.trim().toUpperCase();
 
   return {
     userId: user.id,
