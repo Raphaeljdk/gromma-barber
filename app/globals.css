@@ -6395,3 +6395,70 @@ html[data-theme="light"] .agenda-interactive .agenda-appointment.no-show { backg
 .agenda-interactive .agenda-appointment.compact .agenda-signals svg { width:11px; height:11px; }
 .agenda-interactive .agenda-month-item { display:grid; grid-template-columns:auto minmax(0,1fr); gap:4px; }
 .agenda-interactive .agenda-month-item > .agenda-signals { grid-column:1 / -1; flex-wrap:wrap; }
+
+/* Explicit foreground/background pairs keep ERP controls readable in both themes. */
+.tenant-erp { --erp-muted:#aaa398; }
+html[data-theme="light"] .tenant-erp { --erp-muted:#625c53; }
+.tenant-erp .btn.secondary {
+  background:var(--erp-panel-2);
+  color:var(--erp-text);
+  border-color:var(--erp-border-strong);
+}
+.tenant-erp .btn.secondary:hover {
+  background:var(--erp-panel-3);
+  color:var(--erp-gold);
+  border-color:var(--erp-gold);
+}
+html[data-theme="light"] .tenant-erp .btn.secondary {
+  background:#fff;
+  color:#30291f;
+  border-color:#c9beac;
+}
+html[data-theme="light"] .tenant-erp .btn.secondary:hover {
+  background:#f5eddd;
+  color:#64450d;
+  border-color:#a47c36;
+}
+.tenant-erp .btn:focus-visible { outline:3px solid var(--erp-gold); outline-offset:3px; }
+.tenant-erp .btn:disabled { opacity:.65; cursor:not-allowed; }
+.tenant-erp :is(.input,.select,.textarea) { color:var(--erp-text); background:var(--erp-panel-3); }
+.tenant-erp :is(input,textarea)::placeholder { color:var(--erp-muted); opacity:1; }
+.tenant-erp select option { background:var(--erp-panel); color:var(--erp-text); }
+.tenant-erp table :is(th,td) { line-height:1.5; }
+.tenant-erp table td .btn { font-size:.75rem; padding:8px 11px; }
+.agenda-interactive .agenda-toolbar { border-radius:14px; gap:14px; }
+.agenda-interactive .agenda-summary-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.agenda-interactive .agenda-summary-grid article { min-height:86px; border-radius:12px; }
+.agenda-interactive .agenda-summary-grid article small,
+.agenda-interactive .agenda-summary-grid article > div > span { font-size:.73rem; }
+.agenda-interactive .agenda-summary-grid article > a { padding:14px; }
+.agenda-interactive .agenda-summary-grid article > a:hover { background:var(--erp-panel-2); }
+.agenda-interactive .agenda-summary-grid strong { font-size:1.4rem; }
+.agenda-interactive .agenda-top-actions p,
+.agenda-interactive .agenda-summary-caption,
+.agenda-order-hint { font-size:.78rem; line-height:1.6; color:var(--erp-muted); }
+.agenda-order-hint { margin:0; }
+.agenda-lane-grid .agenda-professional-head { gap:10px; border-left-width:2px; padding:10px; cursor:grab; transition:background .15s,box-shadow .15s; }
+.agenda-lane-grid .agenda-professional-head > div { min-width:0; flex:1; }
+.agenda-lane-grid .agenda-professional-head strong { font-size:.86rem; white-space:normal; }
+.agenda-lane-grid .agenda-professional-head small { font-size:.7rem; }
+.agenda-lane-grid .agenda-professional-head.is-dragging { opacity:.55; cursor:grabbing; }
+.agenda-lane-grid .agenda-professional-head.is-drop-target { background:var(--erp-panel-2); box-shadow:inset 4px 0 var(--erp-gold); }
+.agenda-drag-handle { display:grid; place-items:center; flex-shrink:0; min-width:30px; min-height:36px; padding:4px; color:var(--erp-muted); background:transparent; border:1px solid var(--erp-border); border-radius:7px; cursor:grab !important; }
+.agenda-drag-handle:hover { color:var(--erp-gold); border-color:var(--erp-gold); }
+.agenda-professional-lane { border-left-width:2px; }
+.agenda-time-column > span { font-size:.75rem; }
+.agenda-interactive .agenda-calendar-shell { border-radius:14px; box-shadow:0 8px 28px #00000012; }
+.agenda-interactive .agenda-side-head strong { font-size:.84rem; }
+.agenda-interactive .agenda-information-legend > span { font-size:.78rem; }
+.agenda-interactive .agenda-card-top time { color:var(--erp-text); font-size:.67rem; }
+.agenda-interactive .agenda-card-status { color:var(--erp-text); font-size:.59rem; }
+html[data-theme="light"] .agenda-interactive .agenda-card-top { color:#30291f; }
+.agenda-interactive .agenda-slot:not(:disabled):hover { background:color-mix(in srgb,var(--erp-gold) 13%,var(--erp-panel)); }
+.agenda-dialog .agenda-modal-form .label { color:var(--erp-text); font-weight:650; }
+@media (max-width:600px) {
+  .agenda-interactive .agenda-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .agenda-interactive .agenda-summary-grid article { min-height:78px; }
+  .agenda-interactive .agenda-summary-grid article > a { padding:10px; }
+  .agenda-order-hint { font-size:.73rem; }
+}

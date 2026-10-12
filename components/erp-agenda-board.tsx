@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useState, type CSSProperties } from "react";
+import { Fragment, useState, useSyncExternalStore, type CSSProperties } from "react";
 import {
   CalendarDays,
+  GripVertical,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -61,6 +62,20 @@ import {
   AgendaContextFields,
   AgendaWaitlistForm,
 } from "./agenda-forms";
+
+const orderFallback = new Map<string, string>();
+function subscribeToOrder(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("gromma-agenda-order", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("gromma-agenda-order", callback);
+  };
+}
+function readOrder(key: string) {
+  try { return orderFallback.get(key) || localStorage.getItem(key) || "[]"; }
+  catch { return orderFallback.get(key) || "[]"; }
+}
 
 type Props = {
   tenantCode: string;
@@ -229,6 +244,11 @@ export function ErpAgendaBoard({
   initialAppointmentId,
 }: Props) {
   const router = useRouter();
+  const orderKey = `gromma:agenda-order:${tenantCode}:${selectedUnitId || "all"}`;
+  const orderSnapshot = useSyncExternalStore(subscribeToOrder, () => readOrder(orderKey), () => "[]");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropId, setDropId] = useState<string | null>(null);
+  const [orderMessage, setOrderMessage] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [draft, setDraft] = useState<AgendaDraft | null>(
     canOperate ? (initialDraft ?? null) : null,
@@ -305,6 +325,35 @@ export function ErpAgendaBoard({
       unitId: null,
       canSchedule: true,
     });
+
+  let orderedIds: string[] = [];
+  try {
+    const value: unknown = JSON.parse(orderSnapshot);
+    if (Array.isArray(value)) orderedIds = value.filter((id): id is string => typeof id === "string");
+  } catch { /* Ignore malformed browser preferences. */ }
+  columns.sort((a, b) => {
+    const indexA = orderedIds.indexOf(a.id);
+    const indexB = orderedIds.indexOf(b.id);
+    return (indexA < 0 ? Number.MAX_SAFE_INTEGER : indexA) - (indexB < 0 ? Number.MAX_SAFE_INTEGER : indexB);
+  });
+  function moveProfessional(from: string, to: string) {
+    if (from === to) return;
+    const ids = columns.map((person) => person.id);
+    const source = ids.indexOf(from);
+    const target = ids.indexOf(to);
+    if (source < 0 || target < 0) return;
+    ids.splice(source, 1);
+    ids.splice(target, 0, from);
+    // Preserve preferences for professionals temporarily hidden by a filter.
+    const next = [...ids, ...orderedIds.filter((id) => !ids.includes(id))];
+    orderFallback.set(orderKey, JSON.stringify(next));
+    try {
+      localStorage.setItem(orderKey, JSON.stringify(next));
+      orderFallback.delete(orderKey);
+      setOrderMessage("Ordem dos profissionais salva neste navegador.");
+    } catch { setOrderMessage("Ordem alterada. O navegador não permitiu salvar a preferência."); }
+    window.dispatchEvent(new Event("gromma-agenda-order"));
+  }
 
   // Keep all booked times visible, even if business hours changed after a booking.
   const openMinutes = Math.min(
@@ -684,6 +733,8 @@ export function ErpAgendaBoard({
           </Link>
         )}
       </div>
+      {view === "day" && <p className="agenda-order-hint">Arraste o cabeçalho para organizar os profissionais. Pelo teclado, foque o ícone e use as setas ← →.</p>}
+      <span className="agenda-sr-only" role="status">{orderMessage}</span>
       <div className={`agenda-main-layout${panelOpen ? " with-panel" : ""}`}>
         <div className="agenda-main-calendar">
           {view === "day" ? (
@@ -704,7 +755,14 @@ export function ErpAgendaBoard({
               >
                 <div className="agenda-time-header">Horário</div>
                 {columns.map((person) => (
-                  <div key={person.id} className="agenda-professional-head">
+                  <div key={person.id}
+                    className={`agenda-professional-head${draggedId === person.id ? " is-dragging" : ""}${dropId === person.id ? " is-drop-target" : ""}`}
+                    draggable={columns.length > 1}
+                    onDragStart={(event) => { setDraggedId(person.id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", person.id); }}
+                    onDragOver={(event) => { if (draggedId) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropId(person.id); } }}
+                    onDrop={(event) => { event.preventDefault(); if (draggedId) moveProfessional(draggedId, person.id); setDraggedId(null); setDropId(null); }}
+                    onDragEnd={() => { setDraggedId(null); setDropId(null); }}
+                  >
                     <span>
                       {person.id === "unassigned" ? (
                         <Users size={16} />
@@ -725,6 +783,14 @@ export function ErpAgendaBoard({
                         {!person.canSchedule ? " · indisponível" : ""}
                       </small>
                     </div>
+                    <button type="button" className="agenda-drag-handle" aria-label={`Mover ${person.name}. Use as setas esquerda e direita.`}
+                      title="Arraste para reorganizar ou use as setas do teclado"
+                      onKeyDown={(event) => {
+                        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                        event.preventDefault();
+                        const target = columns[columns.findIndex((item) => item.id === person.id) + (event.key === "ArrowLeft" ? -1 : 1)];
+                        if (target) moveProfessional(person.id, target.id);
+                      }}><GripVertical size={18} /></button>
                   </div>
                 ))}
                 {!columns.length && (
