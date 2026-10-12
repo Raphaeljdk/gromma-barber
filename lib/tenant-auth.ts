@@ -58,36 +58,48 @@ function decode(value?: string): TenantSession | null {
   }
 }
 
-export async function authenticateTenant(tenantCode: string, email: string, password: string) {
-  const normalizedTenant = tenantCode.trim().toUpperCase();
+export async function authenticateTenant(email: string, password: string) {
   const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail || !password) return null;
 
-  const shop = await prisma.barberShop.findUnique({
-    where: { tenantCode: normalizedTenant },
-  });
-
-  if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) return null;
-
-  const user = await prisma.shopUser.findUnique({
+  const candidates = await prisma.shopUser.findMany({
     where: {
-      barberShopId_email: {
-        barberShopId: shop.id,
-        email: normalizedEmail,
+      email: normalizedEmail,
+      active: true,
+      passwordHash: { not: null },
+      barberShop: {
+        status: "APPROVED",
+        accessReleased: true,
       },
     },
+    include: {
+      barberShop: {
+        select: {
+          id: true,
+          tenantCode: true,
+        },
+      },
+    },
+    take: 5,
   });
 
-  if (!user || !user.active || !user.passwordHash) return null;
-
   const supplied = scryptSync(password, `gromma:${normalizedEmail}`, 32);
-  const expected = Buffer.from(user.passwordHash, "hex");
+  const matches = candidates.filter((user) => {
+    if (!user.passwordHash) return false;
+    const expected = Buffer.from(user.passwordHash, "hex");
+    return supplied.length === expected.length && timingSafeEqual(supplied, expected);
+  });
 
-  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
+  // E-mail/senha precisam identificar uma única operação.
+  if (matches.length !== 1) return null;
+
+  const user = matches[0];
+  const tenantCode = user.barberShop.tenantCode.trim().toUpperCase();
 
   return {
     userId: user.id,
-    barberShopId: shop.id,
-    tenantCode: normalizedTenant,
+    barberShopId: user.barberShop.id,
+    tenantCode,
     email: normalizedEmail,
     role: user.role,
   };
