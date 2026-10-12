@@ -64,7 +64,7 @@ export async function authenticateTenant(email: string, password: string) {
 
   const candidates = await prisma.shopUser.findMany({
     where: {
-      email: normalizedEmail,
+      email: { equals: normalizedEmail, mode: "insensitive" },
       active: true,
       passwordHash: { not: null },
       barberShop: {
@@ -84,10 +84,13 @@ export async function authenticateTenant(email: string, password: string) {
     take: 5,
   });
 
-  const supplied = scryptSync(password, `gromma:${normalizedEmail}`, 32);
   const matches = candidates.filter((user) => {
     if (!user.passwordHash) return false;
+
+    const saltEmail = user.email.trim().toLowerCase();
+    const supplied = scryptSync(password, `gromma:${saltEmail}`, 32);
     const expected = Buffer.from(user.passwordHash, "hex");
+
     return supplied.length === expected.length && timingSafeEqual(supplied, expected);
   });
 
