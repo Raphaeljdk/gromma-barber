@@ -209,7 +209,6 @@ export function ErpSidebar({
               <strong>{business}</strong>
               <span className="erp-online-dot" title="Tenant ativo" />
             </div>
-            <span>{tenantCode}</span>
             <small>{city}/{state} · {units} {units === 1 ? "unidade" : "unidades"} · {users} usuários</small>
           </div>
         </div>
