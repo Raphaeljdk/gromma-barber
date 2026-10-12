@@ -23,14 +23,10 @@ export default function LoginPage() {
           <div>
             <div className="eyebrow">Área do cliente</div>
             <h2>Minha barbearia</h2>
-            <p>Use os dados da empresa para acessar o ERP exclusivo da sua operação.</p>
+            <p>Use seu e-mail e senha para acessar o ERP exclusivo da sua operação.</p>
           </div>
 
           <form action={loginTenant} className="grid embedded-login-form">
-            <label>
-              <span className="label">Código da empresa</span>
-              <input className="input" name="tenantCode" placeholder="GROMMA-CLI-..." required />
-            </label>
             <label>
               <span className="label">E-mail</span>
               <input className="input" name="email" type="email" autoComplete="username" required />
