@@ -11,10 +11,10 @@ export default function HomePage() {
         <section className="hero hero-wide hero-premium enterprise-hero">
           <div className="hero-copy reveal-up reveal-delay-1">
             <div className="eyebrow">Plataforma operacional para barbearias</div>
-            <h1>Gestão com padrão empresarial, experiência própria e visão de crescimento.</h1>
+            <h1>Gestão premium para uma operação mais organizada, eficiente e preparada para crescer.</h1>
             <p>
-              O GROMMA BARBER centraliza a operação em um ambiente privado, multiempresa e preparado
-              para acompanhar a evolução de cada barbearia com mais controle e previsibilidade.
+              Uma plataforma privada para organizar a rotina da barbearia, dar clareza à gestão
+              e elevar a experiência de quem administra, atende e acompanha o negócio.
             </p>
             <div className="actions">
               <Link className="btn" href="/cadastro">Solicitar apresentação <ArrowRight size={16} /></Link>
@@ -23,23 +23,23 @@ export default function HomePage() {
 
             <div className="enterprise-trust-row">
               <span><ShieldCheck size={15} /> Ambiente privado</span>
-              <span><Building2 size={15} /> Arquitetura multiempresa</span>
-              <span><Sparkles size={15} /> Experiência personalizada</span>
+              <span><Building2 size={15} /> Gestão estruturada</span>
+              <span><Sparkles size={15} /> Experiência premium</span>
             </div>
           </div>
 
           <div className="card hero-card enterprise-hero-card reveal-up reveal-delay-2">
             <div className="enterprise-hero-card-mark">G</div>
             <div className="eyebrow">Apresentação executiva</div>
-            <h2>Conheça a plataforma no contexto da sua operação.</h2>
+            <h2>Veja como o GROMMA se encaixa na rotina da sua barbearia.</h2>
             <p>
-              Os detalhes comerciais, módulos internos e configurações são apresentados diretamente
-              pela equipe GROMMA em uma demonstração privada.
+              A apresentação é feita de forma orientada, considerando a estrutura atual da operação,
+              o momento do negócio e os objetivos da equipe.
             </p>
             <div className="enterprise-hero-card-meta">
-              <span>Onboarding orientado</span>
-              <span>Ambiente por tenant</span>
-              <span>Expansão por unidade</span>
+              <span>Apresentação guiada</span>
+              <span>Experiência privada</span>
+              <span>Visão de crescimento</span>
             </div>
             <Link className="btn full" href="/cadastro">Falar com a equipe</Link>
           </div>
