@@ -704,9 +704,9 @@ export async function TenantERPView({
   );
 
   const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
-  const supportSubject = encodeURIComponent(`Suporte GROMMA - ${shop.tradeName} - ${tenantCode}`);
+  const supportSubject = encodeURIComponent(`Suporte GROMMA - ${shop.tradeName}`);
   const supportBody = encodeURIComponent(
-    `Olá, equipe GROMMA. Preciso de suporte no tenant ${tenantCode} (${shop.tradeName}).\n\nDescreva aqui o que aconteceu:\n`,
+    `Olá, equipe GROMMA. Preciso de suporte para ${shop.tradeName}.\n\nDescreva aqui o que aconteceu:\n`,
   );
   const supportHref = `mailto:${supportEmail}?subject=${supportSubject}&body=${supportBody}`;
 
@@ -761,9 +761,6 @@ export async function TenantERPView({
             <div><small>Ambiente</small><strong>{process.env.VERCEL_ENV === "production" ? "Produção" : "Preview"}</strong></div>
           </div>
           <div>
-            <div><small>Tenant</small><strong>{tenantCode}</strong></div>
-          </div>
-          <div>
             <div><small>Sessão</small><strong>{viewer.type === "ADMIN" ? "Administrativa" : "Cliente autenticado"}</strong></div>
           </div>
           <div>
@@ -778,11 +775,11 @@ export async function TenantERPView({
             <p>
               {moduleId === "dashboard"
                 ? "Gestão operacional centralizada por tenant, com módulos organizados para rotina, atendimento, financeiro e expansão da barbearia."
-                : `${shop.tradeName} · ${tenantCode} · módulo ${activeModuleTitle}.`}
+                : `${shop.tradeName} · módulo ${activeModuleTitle}.`}
             </p>
           </div>
           <div className="demo-header-actions">
-            <span className="badge approved">Tenant ativo</span>
+            <span className="badge approved">Operação ativa</span>
             <span className="badge">Assinatura {subscription?.status ?? "—"}</span>
             {isPro && <span className="badge">Experiência Pro</span>}
           </div>
