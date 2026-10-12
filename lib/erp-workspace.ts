@@ -103,6 +103,8 @@ export type WaitlistConfig = {
   createdAt: string;
 };
 
+export type AgendaBlock = { id: string; barberId: string; unitId: string; startsAt: string; endsAt: string; reason: string };
+
 export type OperationalSettings = {
   openHour: number;
   closeHour: number;
@@ -127,6 +129,7 @@ export type ErpWorkspace = {
   commissionRules: CommissionRuleConfig[];
   deductions: DeductionConfig[];
   waitlist: WaitlistConfig[];
+  agendaBlocks: AgendaBlock[];
   settings: OperationalSettings;
 };
 
@@ -142,6 +145,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   commissionRules: [],
   deductions: [],
   waitlist: [],
+  agendaBlocks: [],
   settings: {
     openHour: 8,
     closeHour: 20,
@@ -182,6 +186,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     commissionRules: array<CommissionRuleConfig>(operations.commissionRules),
     deductions: array<DeductionConfig>(operations.deductions),
     waitlist: array<WaitlistConfig>(operations.waitlist),
+    agendaBlocks: array<AgendaBlock>(operations.agendaBlocks),
     settings: {
       openHour: Number(settings.openHour ?? DEFAULT_WORKSPACE.settings.openHour),
       closeHour: Number(settings.closeHour ?? DEFAULT_WORKSPACE.settings.closeHour),

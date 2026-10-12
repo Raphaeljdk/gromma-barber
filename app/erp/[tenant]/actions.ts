@@ -6,7 +6,8 @@ import { headers } from "next/headers";
 import { agendaReturnHref, encodeAppointmentNotes } from "@/lib/agenda";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
-import { readWorkspace } from "@/lib/erp-workspace";
+import { readWorkspace, writeWorkspace } from "@/lib/erp-workspace";
+import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 
 const OPERATION_ROLES = ["OWNER", "MANAGER", "RECEPTIONIST", "BARBER"];
 const MANAGEMENT_ROLES = ["OWNER", "MANAGER"];
@@ -319,6 +320,7 @@ export async function createAppointment(formData: FormData) {
 
     const available: Array<{ id: string; load: number }> = [];
     for (const candidate of candidates) {
+      if (hasAgendaBlock(workspace.agendaBlocks, candidate.id, startsAt, endsAt)) continue;
       const conflict = await prisma.appointment.findFirst({
         where: {
           barberShopId: shop.id,
@@ -366,7 +368,20 @@ export async function createAppointment(formData: FormData) {
   }
 
   try {
-    await prisma.appointment.create({
+    await prisma.$transaction(async (tx) => {
+      const fresh = await tx.barberShop.findUnique({ where: { id: shop.id } });
+      if (!fresh) throw new Error("Shop not found");
+      const latest = readWorkspace(fresh.enabledFeatures);
+      if (!withinAgendaHours(startsAt, endsAt, latest.settings.openHour, latest.settings.closeHour)) throw new Error("Outside business hours");
+      if (barber) {
+        if (hasAgendaBlock(latest.agendaBlocks, barber.id, startsAt, endsAt)) throw new Error("Blocked time");
+        const occupied = await tx.appointment.findFirst({ where: { barberShopId: shop.id, barberId: barber.id, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] }, startsAt: { lt: endsAt }, OR: [{ endsAt: { gt: startsAt } }, { endsAt: null }] } });
+        if (occupied) throw new Error("Schedule conflict");
+      } else if (latest.settings.rotationEnabled) throw new Error("No professional available");
+      const waitlistId = text(formData, "waitlistId", 100);
+      const waiting = waitlistId ? latest.waitlist.find(item => item.id === waitlistId) : null;
+      if (waitlistId && (!waiting || waiting.unitId !== unitId || (waiting.serviceId && waiting.serviceId !== serviceId) || (waiting.barberId && waiting.barberId !== barber?.id) || waiting.requestedDate !== startsAtRaw.slice(0, 10))) throw new Error("Waitlist changed");
+      await tx.appointment.create({
       data: {
         barberShopId: shop.id,
         unitId: unit.id,
@@ -379,7 +394,12 @@ export async function createAppointment(formData: FormData) {
         source: `${workspace.settings.rotationEnabled && !barberId ? "ERP_ROTATION" : "ERP"}${device}`,
         notes: notes || null,
       },
-    });
+      });
+      if (waiting) {
+        latest.waitlist = latest.waitlist.filter(item => item.id !== waiting.id);
+        await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, latest) } });
+      }
+    }, { isolationLevel: "Serializable" });
   } catch (error) {
     console.error("Failed to create appointment", error);
     redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));

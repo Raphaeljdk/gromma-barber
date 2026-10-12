@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { rescheduleAppointment, saveAgendaBlock, removeAgendaBlock } from "@/app/erp/[tenant]/agenda-actions";
+import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
+import type { AgendaBlock } from "@/lib/erp-workspace";
 import {
   CalendarDays,
   GripVertical,
@@ -78,6 +81,7 @@ function readOrder(key: string) {
 }
 
 type Props = {
+  blocks?: AgendaBlock[];
   tenantCode: string;
   selectedDate: string;
   view: AgendaView;
@@ -111,7 +115,11 @@ const NEXT_ACTION: Record<string, { action: string; label: string }> = {
   CHECKED_IN: { action: "start", label: "Iniciar atendimento" },
   IN_SERVICE: { action: "complete", label: "Concluir atendimento" },
 };
-const SLOT_HEIGHT = 84;
+function subscribeClock(callback: () => void) {
+  const timer = window.setInterval(callback, 30000);
+  return () => window.clearInterval(timer);
+}
+const clockSnapshot = () => Math.floor(Date.now() / 30000) * 30000;
 const money = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const dateLabel = (value: string, options: Intl.DateTimeFormatOptions) =>
@@ -242,8 +250,29 @@ export function ErpAgendaBoard({
   canOperate,
   initialDraft,
   initialAppointmentId,
+  blocks = [],
 }: Props) {
   const router = useRouter();
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const now = useSyncExternalStore(subscribeClock, clockSnapshot, () => 0);
+  const preferenceKey = `gromma:agenda-view:${tenantCode}`;
+  const preferenceSnapshot = useSyncExternalStore(subscribeToOrder, () => readOrder(preferenceKey), () => "{}");
+  let preferences: { compact?: boolean; width?: number; hideEmpty?: boolean } = {};
+  try { preferences = JSON.parse(preferenceSnapshot) || {}; } catch { /* use defaults */ }
+  const SLOT_HEIGHT = preferences.compact ? 56 : 84;
+  const columnWidth = [224, 280, 340].includes(preferences.width || 0) ? preferences.width! : 280;
+  function savePreferences(change: typeof preferences) {
+    const value = JSON.stringify({ ...preferences, ...change });
+    orderFallback.set(preferenceKey, value);
+    try { localStorage.setItem(preferenceKey, value); orderFallback.delete(preferenceKey); } catch { /* session fallback */ }
+    window.dispatchEvent(new Event("gromma-agenda-order"));
+  }
+  const [moving, setMoving] = useState<AgendaAppointment | null>(null);
+  const [moveTarget, setMoveTarget] = useState<{ item: AgendaAppointment; startsAt: string; barberId: string } | null>(null);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [selectedBlock, setSelectedBlock] = useState<AgendaBlock | null>(null);
+  const [blockUnit, setBlockUnit] = useState(selectedUnitId || units[0]?.id || "");
+  const [fitSlot, setFitSlot] = useState<{ startsAt: string; barberId: string; unitId: string } | null>(null);
   const orderKey = `gromma:agenda-order:${tenantCode}:${selectedUnitId || "all"}`;
   const orderSnapshot = useSyncExternalStore(subscribeToOrder, () => readOrder(orderKey), () => "[]");
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -305,7 +334,7 @@ export function ErpAgendaBoard({
       (!selectedUnitId || !person.unitId || person.unitId === selectedUnitId) &&
       (!selectedProfessionalId || person.id === selectedProfessionalId),
   );
-  const columns = activeProfessionals.map((person) => ({
+  let columns = activeProfessionals.map((person) => ({
     ...person,
     canSchedule: true,
   }));
@@ -336,6 +365,7 @@ export function ErpAgendaBoard({
     const indexB = orderedIds.indexOf(b.id);
     return (indexA < 0 ? Number.MAX_SAFE_INTEGER : indexA) - (indexB < 0 ? Number.MAX_SAFE_INTEGER : indexB);
   });
+  if (preferences.hideEmpty) columns = columns.filter(person => dayAppointments.some(item => (item.barberId || "unassigned") === person.id) || blocks.some(block => block.barberId === person.id && block.startsAt.slice(0, 10) <= selectedDate && block.endsAt.slice(0, 10) >= selectedDate));
   function moveProfessional(from: string, to: string) {
     if (from === to) return;
     const ids = columns.map((person) => person.id);
@@ -402,7 +432,7 @@ export function ErpAgendaBoard({
                 : new Date(item.startsAt).getTime() + slotMinutes * 60_000) >
                 start,
           );
-          return occupied
+          return occupied || hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000)) || (now > 0 && start < now)
             ? null
             : {
                 professionalId: person.id,
@@ -521,6 +551,22 @@ export function ErpAgendaBoard({
     units.find((unit) => unit.id === selectedUnitId)?.name ??
     "Todas as unidades";
   const detailNotes = detail ? appointmentNotes(detail.notes).text : "";
+  const nowDate = now ? agendaDateKey(new Date(now)) : "";
+  const nowMinutes = now ? agendaMinutes(new Date(now)) : 0;
+  const nowTop = Math.max(0, Math.min(calendarHeight, ((nowMinutes - openMinutes) / slotMinutes) * SLOT_HEIGHT));
+  const scrolledToNow = useRef(false);
+  useEffect(() => {
+    if (!scrolledToNow.current && nowDate === selectedDate && view === "day" && window.location.hash === "#agenda-now") {
+      calendarRef.current?.scrollTo({ top: Math.max(0, nowTop - 100) });
+      scrolledToNow.current = true;
+    }
+  }, [nowDate, selectedDate, view, nowTop]);
+  const fits = fitSlot ? visibleWaitlist.filter(item => {
+    const service = services.find(service => service.id === item.serviceId);
+    if (!service || item.requestedDate !== selectedDate || (item.barberId && item.barberId !== fitSlot.barberId) || (fitSlot.unitId && item.unitId !== fitSlot.unitId)) return false;
+    const start = new Date(`${fitSlot.startsAt}:00-03:00`), end = new Date(start.getTime() + service.durationMinutes * 60000);
+    return Boolean(fitSlot.barberId) && withinAgendaHours(start, end, openHour, closeHour) && !hasAgendaBlock(blocks, fitSlot.barberId, start, end) && !appointments.some(a => a.barberId === fitSlot.barberId && !["CANCELED", "NO_SHOW"].includes(a.status) && new Date(a.startsAt) < end && (a.endsAt ? new Date(a.endsAt) : new Date(new Date(a.startsAt).getTime() + slotMinutes * 60000)) > start);
+  }) : [];
 
   return (
     <div className="agenda-workspace agenda-interactive">
@@ -538,6 +584,7 @@ export function ErpAgendaBoard({
         <div className="agenda-action-buttons">
           {canOperate && (
             <>
+              <button className="btn secondary" type="button" onClick={() => setBlockOpen(true)}>Bloquear horário</button>
               <button
                 className="btn secondary"
                 type="button"
@@ -569,6 +616,10 @@ export function ErpAgendaBoard({
         </div>
       </div>
       <div className="agenda-toolbar">
+        <button type="button" className="btn secondary" onClick={() => {
+          if (selectedDate !== nowDate || view !== "day") router.push(`${href({ agendaDate: nowDate, agendaView: "day" })}#agenda-now`);
+          else calendarRef.current?.scrollTo({ top: Math.max(0, nowTop - 100), behavior: "smooth" });
+        }} disabled={!now}>Agora</button>
         <div className="agenda-period-controls">
           <Link
             prefetch={false}
@@ -734,12 +785,18 @@ export function ErpAgendaBoard({
         )}
       </div>
       {view === "day" && <p className="agenda-order-hint">Arraste o cabeçalho para organizar os profissionais. Pelo teclado, foque o ícone e use as setas ← →.</p>}
+      <div className="agenda-display-settings">
+        <label>Visualização <select value={preferences.compact ? "compact" : "expanded"} onChange={e => savePreferences({ compact: e.target.value === "compact" })}><option value="expanded">Ampliada</option><option value="compact">Compacta</option></select></label>
+        <label>Largura das colunas <select value={columnWidth} onChange={e => savePreferences({ width: Number(e.target.value) })}><option value={224}>Estreita</option><option value={280}>Normal</option><option value={340}>Larga</option></select></label>
+        <label><input type="checkbox" checked={Boolean(preferences.hideEmpty)} onChange={e => savePreferences({ hideEmpty: e.target.checked })} /> Ocultar profissionais sem atendimento no dia</label>
+      </div>
       <span className="agenda-sr-only" role="status">{orderMessage}</span>
       <div className={`agenda-main-layout${panelOpen ? " with-panel" : ""}`}>
         <div className="agenda-main-calendar">
           {view === "day" ? (
             <div
               className="agenda-calendar-shell"
+              ref={calendarRef}
               tabIndex={0}
               role="region"
               aria-label="Agenda diária por profissional"
@@ -750,9 +807,11 @@ export function ErpAgendaBoard({
                   {
                     "--agenda-columns": Math.max(1, columns.length),
                     "--agenda-slot-height": `${SLOT_HEIGHT}px`,
+                    "--agenda-column-width": `${columnWidth}px`,
                   } as CSSProperties
                 }
               >
+                {selectedDate === nowDate && <div id="agenda-now" className="agenda-now-line" style={{ top: 64 + nowTop }}><span>{agendaTime(new Date(now))}</span></div>}
                 <div className="agenda-time-header">Horário</div>
                 {columns.map((person) => (
                   <div key={person.id}
@@ -832,9 +891,11 @@ export function ErpAgendaBoard({
                               : new Date(item.startsAt).getTime() +
                                 slotMinutes * 60_000) > start,
                         );
+                      const blocked = hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000));
                       const disabled =
                         !canOperate ||
                         !person.canSchedule ||
+                        blocked ||
                         occupied ||
                         minutes < openHour * 60 ||
                         minutes >= closeHour * 60;
@@ -843,7 +904,10 @@ export function ErpAgendaBoard({
                           key={index}
                           type="button"
                           className="agenda-slot"
-                          disabled={disabled}
+                          disabled={disabled && !moving}
+                          aria-disabled={disabled}
+                          onDragOver={event => { if (moving && !blocked && person.canSchedule && person.id !== "unassigned") event.preventDefault(); }}
+                          onDrop={event => { event.preventDefault(); if (moving && !blocked && person.canSchedule && person.id !== "unassigned") setMoveTarget({ item: moving, startsAt: `${selectedDate}T${timeLabel(minutes)}`, barberId: person.id }); setMoving(null); }}
                           style={{
                             top: index * SLOT_HEIGHT,
                             height: Math.min(
@@ -852,18 +916,24 @@ export function ErpAgendaBoard({
                             ),
                           }}
                           aria-label={`${occupied ? "Horário ocupado" : "Agendar"} ${timeLabel(minutes)} com ${person.name}`}
-                          onClick={() =>
-                            newAppointment(
+                          onClick={() => { if (!disabled) setFitSlot({
+                              startsAt:
                               `${selectedDate}T${timeLabel(minutes)}`,
-                              person.id,
-                              selectedUnitId || person.unitId || "",
-                            )
-                          }
+                              barberId: person.id === "unassigned" ? "" : person.id,
+                              unitId: selectedUnitId || person.unitId || "",
+                            }); }}
                         >
                           <Plus size={15} />
                           <span>{occupied ? "Ocupado" : "Agendar"}</span>
                         </button>
                       );
+                    })}
+                    {blocks.filter(block => block.barberId === person.id).map(block => {
+                      const dayStart = new Date(`${selectedDate}T00:00:00-03:00`).getTime();
+                      const start = Math.max(openMinutes, (new Date(block.startsAt).getTime() - dayStart) / 60000);
+                      const end = Math.min(closeMinutes, (new Date(block.endsAt).getTime() - dayStart) / 60000);
+                      if (end <= start) return null;
+                      return <button type="button" key={block.id} className="agenda-block" style={{ top: (start - openMinutes) / slotMinutes * SLOT_HEIGHT, height: (end - start) / slotMinutes * SLOT_HEIGHT }} onClick={() => setSelectedBlock(block)} title={`${block.reason} · ${agendaTime(block.startsAt)}–${agendaTime(block.endsAt)}`}><strong>{block.reason}</strong><small>{agendaTime(block.startsAt)}–{agendaTime(block.endsAt)}</small></button>;
                     })}
                     {layoutAgendaAppointments(
                       displayedDayAppointments.filter(
@@ -881,6 +951,9 @@ export function ErpAgendaBoard({
                           type="button"
                           className={`agenda-appointment ${statusClass(item.status)}${height < 65 ? " compact" : ""}`}
                           key={item.id}
+                          draggable={canOperate && ["SCHEDULED", "CONFIRMED"].includes(item.status) && !item.command}
+                          onDragStart={event => { setMoving(item); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", item.id); }}
+                          onDragEnd={() => setMoving(null)}
                           style={{
                             top:
                               ((start - openMinutes) / slotMinutes) *
@@ -1130,11 +1203,7 @@ export function ErpAgendaBoard({
                   className="agenda-free-slot"
                   key={`${slot.professionalId}-${slot.time}`}
                   onClick={() =>
-                    newAppointment(
-                      `${selectedDate}T${slot.time}`,
-                      slot.professionalId,
-                      slot.unitId,
-                    )
+                    setFitSlot({ startsAt: `${selectedDate}T${slot.time}`, barberId: slot.professionalId, unitId: slot.unitId })
                   }
                 >
                   <strong>{slot.time}</strong>
@@ -1226,6 +1295,44 @@ export function ErpAgendaBoard({
           />
         </AgendaDialog>
       )}
+      {fitSlot && <AgendaDialog title="Agendar neste horário" subtitle={`${dateLabel(selectedDate, { dateStyle: "short" })} · ${fitSlot.startsAt.slice(11)}`} onClose={() => setFitSlot(null)}>
+        <div className="agenda-fit-list"><h4>Encaixes compatíveis da fila</h4>
+          {fits.length ? fits.map(item => <button type="button" className="btn secondary" key={item.id} onClick={() => {
+            const matches = customers.filter(c => item.phone && c.phone?.replace(/\D/g, "") === item.phone.replace(/\D/g, ""));
+            setDraft({ ...fitSlot, unitId: fitSlot.unitId || item.unitId || "", serviceId: item.serviceId || "", customerId: matches.length === 1 ? matches[0].id : "", waitlistId: item.id, notes: `Fila: ${item.customerName} · ${item.phone}. ${item.notes}` }); setFitSlot(null);
+          }}>{item.customerName} · {item.serviceName}</button>) : <p className="agenda-form-hint">Nenhum cliente com serviço, duração e preferência compatíveis. A comparação considera o horário completo do serviço.</p>}
+        </div>
+        <AgendaAppointmentForm context={context} professionals={professionals} units={units} services={services} customers={customers} draft={fitSlot} rotationEnabled={settings.rotationEnabled} />
+      </AgendaDialog>}
+      {moveTarget && <AgendaDialog title="Confirmar remarcação" subtitle="O horário original só muda depois da confirmação." onClose={() => setMoveTarget(null)}>
+        <form action={rescheduleAppointment} className="agenda-modal-form">
+          <AgendaContextFields context={context} />
+          <input type="hidden" name="appointmentId" value={moveTarget.item.id} />
+          <input type="hidden" name="originalStartsAt" value={moveTarget.item.startsAt} />
+          <p><strong>{moveTarget.item.customerName}</strong> · {moveTarget.item.serviceName}</p>
+          <p>De: {dateLabel(agendaDateKey(moveTarget.item.startsAt), { dateStyle: "short" })} às {agendaTime(moveTarget.item.startsAt)} · {moveTarget.item.barberName}</p>
+          <label><span className="label">Novo horário</span><input className="input" type="datetime-local" name="startsAt" required defaultValue={moveTarget.startsAt} /></label>
+          <label><span className="label">Profissional na mesma unidade</span><select className="select" name="barberId" required defaultValue={moveTarget.barberId}>{professionals.filter(p => !p.unitId || p.unitId === moveTarget.item.unitId).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+          <p className="agenda-form-hint">A duração será mantida. Horários ocupados, bloqueados e fora do expediente serão recusados.</p>
+          <AgendaSubmit>Confirmar remarcação</AgendaSubmit>
+        </form>
+      </AgendaDialog>}
+      {blockOpen && <AgendaDialog title="Bloquear horário" subtitle="Bloqueios impedem agendamentos e encaixes para este profissional." onClose={() => setBlockOpen(false)}>
+        <form action={saveAgendaBlock} className="agenda-modal-form">
+          <AgendaContextFields context={context} />
+          <label><span className="label">Unidade</span><select className="select" name="unitId" required value={blockUnit} onChange={e => setBlockUnit(e.target.value)}>{units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
+          <label><span className="label">Profissional</span><select className="select" name="barberId" required key={blockUnit}>{professionals.filter(p => !p.unitId || p.unitId === blockUnit).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+          <label><span className="label">Motivo</span><select className="select" name="reason">{["Almoço", "Pausa", "Folga", "Ausência"].map(reason => <option key={reason}>{reason}</option>)}</select></label>
+          <label><span className="label">Início</span><input className="input" type="datetime-local" name="startsAt" required defaultValue={`${selectedDate}T12:00`} /></label>
+          <label><span className="label">Fim</span><input className="input" type="datetime-local" name="endsAt" required defaultValue={`${selectedDate}T13:00`} /></label>
+          <AgendaSubmit>Salvar bloqueio</AgendaSubmit>
+        </form>
+      </AgendaDialog>}
+      {selectedBlock && <AgendaDialog title={selectedBlock.reason} subtitle="Horário indisponível" onClose={() => setSelectedBlock(null)}>
+        <p>{professionals.find(p => p.id === selectedBlock.barberId)?.name}</p>
+        <p>{dateLabel(agendaDateKey(selectedBlock.startsAt), { dateStyle: "short" })} · {agendaTime(selectedBlock.startsAt)} até {dateLabel(agendaDateKey(selectedBlock.endsAt), { dateStyle: "short" })} · {agendaTime(selectedBlock.endsAt)}</p>
+        {canOperate && <form action={removeAgendaBlock}><AgendaContextFields context={context} /><input type="hidden" name="blockId" value={selectedBlock.id} /><AgendaSubmit secondary>Liberar este horário</AgendaSubmit></form>}
+      </AgendaDialog>}
       {waitlistOpen && (
         <AgendaDialog
           title="Fila de espera"
@@ -1262,6 +1369,21 @@ export function ErpAgendaBoard({
               </span>
             </div>
             <AppointmentSignals appointment={detail} expanded />
+            {canOperate && <div className="agenda-quick-actions">
+              <form action={updateAppointmentStatus}><AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
+                {detail.status === "SCHEDULED" && <AgendaSubmit name="action" value="confirm">Confirmar presença</AgendaSubmit>}
+                {["SCHEDULED", "CONFIRMED"].includes(detail.status) && <AgendaSubmit name="action" value="checkin">No local</AgendaSubmit>}
+                {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar atendimento</AgendaSubmit>}
+              </form>
+              {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Remarcar</button>}
+              {detail.command && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Abrir comanda financeira</Link>}
+            </div>}
+            <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
+              <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
+              <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
+              <p><strong>Preferências / observações do cadastro:</strong> {detail.customerNotes || "Não informadas"}</p>
+              <p><strong>Recompra:</strong> {appointmentNotes(detail.notes).repurchase ? detailNotes || "Item marcado; detalhes não informados" : "Nenhum item marcado"}</p>
+            </section>
             <dl className="agenda-detail-grid">
               <div>
                 <dt>Serviço</dt>
