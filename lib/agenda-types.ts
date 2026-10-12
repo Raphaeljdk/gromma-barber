@@ -16,6 +16,8 @@ export type AgendaAppointment = {
   unitName: string;
   source: string;
   notes: string | null;
+  lastVisit?: string | null;
+  customerNotes?: string | null;
   hasPlan: boolean;
   planName: string | null;
   firstVisit: boolean;
@@ -54,6 +56,10 @@ export type AgendaContext = {
   agendaClient: AgendaClientFilter;
 };
 export type AgendaDraft = {
+  serviceId?: string;
+  customerId?: string;
+  waitlistId?: string;
+  notes?: string;
   startsAt: string;
   barberId: string;
   unitId: string;

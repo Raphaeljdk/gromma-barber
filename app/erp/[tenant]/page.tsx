@@ -313,6 +313,7 @@ export async function TenantERPView({
   };
   const commandWhere: Prisma.ServiceCommandWhereInput = {
     barberShopId: shop.id,
+    ...(valueOf("commandId") ? { id: valueOf("commandId").slice(0, 100) } : {}),
     ...(comandaStatus ? { status: comandaStatus } : {}),
   };
   const productWhere: Prisma.ProductWhereInput = {
@@ -503,6 +504,10 @@ export async function TenantERPView({
     _min: { startsAt: true },
   }) : [];
   const firstVisitByCustomer = new Map(firstVisits.map((item) => [item.customerId, item._min.startsAt]));
+  const lastVisits = agendaCustomerIds.length ? await prisma.appointment.groupBy({
+    by: ["customerId"], where: { barberShopId: shop.id, customerId: { in: agendaCustomerIds }, status: "COMPLETED", startsAt: { lt: new Date() } }, _max: { startsAt: true },
+  }) : [];
+  const lastVisitByCustomer = new Map(lastVisits.map(item => [item.customerId, item._max.startsAt?.toISOString() || null]));
   const activeClubPlans = new Map(workspace.clubPlans.filter((item) => item.active).map((item) => [item.id, item.name]));
   const customerPlan = new Map(workspace.clubMembers.filter((item) => item.status === "ACTIVE" && activeClubPlans.has(item.planId)).map((item) => [item.customerId, activeClubPlans.get(item.planId)!]));
 
@@ -852,7 +857,7 @@ export async function TenantERPView({
           </div>
 
           <ErpAgendaBoard
-            key={`${agendaDate}:${agendaView}:${actionOk}:${actionError}:${agendaQuickOpen}:${agendaDraftStart}:${agendaDraftBarberId}:${valueOf("appointmentId")}:${agendaBoardAppointments.map((item) => `${item.id}:${item.status}:${item.updatedAt.getTime()}`).join(",")}`}
+            key={`${agendaDate}:${agendaView}:${agendaUnit}:${actionOk}:${actionError}:${agendaQuickOpen}:${agendaDraftStart}:${agendaDraftBarberId}:${valueOf("appointmentId")}:${workspace.agendaBlocks.map(b => b.id).join(",")}:${waitlist.map(w => w.id).join(",")}:${agendaBoardAppointments.map((item) => `${item.id}:${item.status}:${item.updatedAt.getTime()}`).join(",")}`}
             tenantCode={tenantCode}
             selectedDate={agendaDate}
             view={agendaView}
@@ -866,6 +871,8 @@ export async function TenantERPView({
               customerPhone: item.customer?.phone ?? item.customer?.whatsapp ?? null,
               source: item.source,
               notes: item.notes,
+              lastVisit: item.customerId ? lastVisitByCustomer.get(item.customerId) || null : null,
+              customerNotes: item.customer?.notes || null,
               price: Number(item.service?.price ?? 0),
               hasPlan: Boolean(item.customerId && customerPlan.has(item.customerId)),
               planName: item.customerId ? customerPlan.get(item.customerId) ?? null : null,
@@ -891,10 +898,13 @@ export async function TenantERPView({
               .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
               .map((user) => ({ id: user.id, name: user.name, unitId: user.unitId }))}
             settings={workspace.settings}
+            blocks={workspace.agendaBlocks}
             waitlist={waitlist}
           />
 
           {actionOk === "agenda-informacoes" && <div className="notice erp-inline-notice success">Informações do agendamento atualizadas.</div>}
+          {actionOk === "agenda-operacao" && <div className="notice erp-inline-notice success">Agenda atualizada com sucesso.</div>}
+          {actionError === "agenda-operacao" && <div className="notice erp-inline-notice error-notice">Não foi possível alterar a agenda. Confira conflitos, bloqueios, horário de funcionamento e se o atendimento ainda pode ser remarcado. Atualize a página antes de tentar novamente.</div>}
           {actionError === "agenda-informacoes" && <div className="notice erp-inline-notice error-notice">Não foi possível atualizar as informações do agendamento.</div>}
           {actionError === "banco" && <div className="notice erp-inline-notice error-notice">Não foi possível salvar a fila de espera. Tente novamente.</div>}
           {actionOk === "agenda" && <div className="notice erp-inline-notice success">Agendamento criado com sucesso.</div>}

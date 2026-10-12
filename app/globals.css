@@ -6397,6 +6397,22 @@ html[data-theme="light"] .agenda-interactive .agenda-appointment.no-show { backg
 .agenda-interactive .agenda-month-item > .agenda-signals { grid-column:1 / -1; flex-wrap:wrap; }
 
 /* Explicit foreground/background pairs keep ERP controls readable in both themes. */
+.agenda-lane-grid { grid-template-columns:64px repeat(var(--agenda-columns),minmax(var(--agenda-column-width,280px),1fr)); min-width:calc(64px + var(--agenda-columns) * var(--agenda-column-width,280px)); }
+.agenda-display-settings { display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; padding:12px; border:1px solid var(--erp-border); border-radius:12px; background:var(--erp-panel); }
+.agenda-display-settings label { display:flex; gap:8px; align-items:center; color:var(--erp-muted); font-size:.75rem; }
+.agenda-display-settings select { border:1px solid var(--erp-border-strong); border-radius:7px; color:var(--erp-text); background:var(--erp-panel-2); padding:8px; }
+.agenda-display-settings input { accent-color:var(--erp-gold); }
+.agenda-now-line { position:absolute; left:0; right:0; border-top:2px solid #df5757; z-index:5; pointer-events:none; scroll-margin-top:110px; }
+.agenda-now-line > span { position:absolute; top:-11px; left:3px; background:#ae2929; color:#fff; font-size:.68rem; padding:3px 5px; border-radius:5px; }
+.agenda-interactive .agenda-block { position:absolute; left:4px; right:4px; z-index:2; display:flex; flex-direction:column; justify-content:center; gap:3px; overflow:hidden; border:1px dashed var(--erp-muted); border-radius:7px; background:repeating-linear-gradient(135deg,var(--erp-panel-2) 0,var(--erp-panel-2) 8px,var(--erp-panel-3) 8px,var(--erp-panel-3) 16px); color:var(--erp-text); padding:6px; text-align:left; }
+.agenda-block strong { font-size:.8rem; }
+.agenda-block small { font-size:.69rem; color:var(--erp-muted); }
+.agenda-appointment[draggable="true"] { cursor:grab; }
+.agenda-fit-list { display:grid; gap:8px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--erp-border); }
+.agenda-fit-list h4,.agenda-customer-summary h4 { margin:0 0 8px; font-size:.9rem; }
+.agenda-quick-actions,.agenda-quick-actions form { display:flex; flex-wrap:wrap; gap:8px; }
+.agenda-customer-summary { background:var(--erp-panel-2); border:1px solid var(--erp-border); border-radius:12px; padding:15px; }
+.agenda-customer-summary p { font-size:.79rem; line-height:1.6; margin:7px 0; white-space:pre-wrap; overflow-wrap:anywhere; }
 .tenant-erp { --erp-muted:#aaa398; }
 html[data-theme="light"] .tenant-erp { --erp-muted:#625c53; }
 .tenant-erp .btn.secondary {

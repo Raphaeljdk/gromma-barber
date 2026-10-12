@@ -87,10 +87,12 @@ export function AgendaAppointmentForm({
       className="erp-quick-form agenda-modal-form"
     >
       <AgendaContextFields context={context} />
+      {draft.waitlistId && <input type="hidden" name="waitlistId" value={draft.waitlistId} />}
+      {draft.waitlistId && <p className="agenda-form-hint">Encaixe da fila: confira o cliente e o serviço. A entrada só será retirada da fila após salvar o agendamento.</p>}
       <div className="grid grid-2">
         <label>
           <span className="label">Cliente</span>
-          <select name="customerId" className="select">
+          <select name="customerId" className="select" defaultValue={draft.customerId || ""}>
             <option value="">Cliente avulso</option>
             {customers.map((customer) => (
               <option key={customer.id} value={customer.id}>
@@ -102,7 +104,7 @@ export function AgendaAppointmentForm({
         </label>
         <label>
           <span className="label">Serviço</span>
-          <select className="select" name="serviceId" required defaultValue="">
+          <select className="select" name="serviceId" required defaultValue={draft.serviceId || ""}>
             <option value="" disabled>
               Selecione o serviço
             </option>
@@ -170,6 +172,7 @@ export function AgendaAppointmentForm({
           rows={3}
           maxLength={300}
           placeholder="Detalhes do atendimento ou item para recompra"
+          defaultValue={draft.notes || ""}
         />
       </label>
       <AgendaSubmit>Salvar agendamento</AgendaSubmit>
