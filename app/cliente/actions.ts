@@ -9,11 +9,10 @@ import {
 import { redirect } from "next/navigation";
 
 export async function loginTenant(formData: FormData) {
-  const tenantCode = String(formData.get("tenantCode") ?? "");
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const access = await authenticateTenant(tenantCode, email, password);
+  const access = await authenticateTenant(email, password);
 
   if (!access) {
     redirect("/cliente/login?erro=credenciais");
