@@ -6478,3 +6478,123 @@ html[data-theme="light"] .agenda-interactive .agenda-card-top { color:#30291f; }
   .agenda-interactive .agenda-summary-grid article > a { padding:10px; }
   .agenda-order-hint { font-size:.73rem; }
 }
+
+/* ===== Public home theme isolation fix ===== */
+.enterprise-home {
+  min-height:100vh;
+  color:#f7f4ed;
+  background:
+    radial-gradient(circle at 82% -8%,rgba(215,168,77,.14) 0,transparent 30rem),
+    linear-gradient(180deg,#090909 0%,#0b0a09 100%);
+  --line:#292929;
+  --text:#f7f4ed;
+  --muted:#a9a49a;
+  --gold:#d7a84d;
+  --gold-2:#f1cf80;
+}
+.enterprise-home .public-header {
+  border-bottom-color:#292929;
+  background:transparent;
+}
+.enterprise-home .public-brand {
+  color:#f7f4ed;
+}
+.enterprise-home .desktop-nav > a:not(.btn) {
+  color:#c9c3b7;
+}
+.enterprise-home .desktop-nav > a:not(.btn):hover {
+  color:#f1cf80;
+}
+.enterprise-home .hero-copy h1 {
+  background:linear-gradient(180deg,#fffdf7 0%,#eee8dc 74%,#c9b98f 120%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.enterprise-home .hero-copy p,
+.enterprise-home .enterprise-contact p {
+  color:#a9a49a;
+}
+.enterprise-home .card,
+.enterprise-home .enterprise-hero-card,
+.enterprise-home .enterprise-contact > .card {
+  border-color:#383127;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018)),
+    radial-gradient(circle at 90% 0%,rgba(215,168,77,.09),transparent 38%),
+    #10100f;
+  color:#f7f4ed;
+  box-shadow:0 20px 60px rgba(0,0,0,.28);
+}
+.enterprise-home .enterprise-hero-card h2,
+.enterprise-home .enterprise-contact h2 {
+  color:#f7f4ed;
+}
+.enterprise-home .enterprise-hero-card-meta span {
+  border-color:#34312b;
+  background:#10100e;
+  color:#9d978c;
+}
+.enterprise-home .enterprise-trust-row span {
+  border-color:#2d2c28;
+  background:rgba(255,255,255,.025);
+  color:#aaa398;
+}
+.enterprise-home .btn.secondary {
+  border-color:#353535;
+  background:#161616;
+  color:#f7f4ed;
+}
+.enterprise-home .btn.secondary:hover {
+  border-color:#65502a;
+  background:#1b1710;
+  color:#f1cf80;
+}
+.enterprise-home .mobile-nav summary {
+  border-color:#373737;
+  background:#121212;
+  color:#f4f0e7;
+}
+.enterprise-home .mobile-nav-panel {
+  border-color:#343434;
+  background:rgba(15,15,15,.98);
+}
+.enterprise-home .mobile-nav-panel a {
+  color:#d7d1c6;
+}
+.enterprise-home .mobile-nav-panel a:hover {
+  background:#1b1b1b;
+  color:#fff;
+}
+.enterprise-home .mobile-nav-divider {
+  background:#292929;
+}
+html[data-theme="light"] .enterprise-home {
+  color:#f7f4ed;
+  background:
+    radial-gradient(circle at 82% -8%,rgba(215,168,77,.14) 0,transparent 30rem),
+    linear-gradient(180deg,#090909 0%,#0b0a09 100%);
+}
+html[data-theme="light"] .enterprise-home .public-brand,
+html[data-theme="light"] .enterprise-home .enterprise-hero-card h2,
+html[data-theme="light"] .enterprise-home .enterprise-contact h2 {
+  color:#f7f4ed;
+}
+html[data-theme="light"] .enterprise-home .card,
+html[data-theme="light"] .enterprise-home .enterprise-hero-card,
+html[data-theme="light"] .enterprise-home .enterprise-contact > .card {
+  border-color:#383127;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018)),
+    radial-gradient(circle at 90% 0%,rgba(215,168,77,.09),transparent 38%),
+    #10100f;
+  color:#f7f4ed;
+}
+@media (max-width:900px) {
+  .enterprise-home .public-header {
+    background:rgba(9,9,9,.94);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+  }
+}
+
