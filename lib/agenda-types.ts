@@ -6,6 +6,7 @@ export type AgendaAppointment = {
   endsAt: string | null;
   status: string;
   customerId: string | null;
+  serviceId?: string | null;
   customerName: string;
   customerPhone: string | null;
   barberId: string | null;
