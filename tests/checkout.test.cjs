@@ -109,3 +109,25 @@ test('WhatsApp normaliza telefone e abre mensagem sem envio automático', () => 
   assert.equal(url.hostname, 'wa.me'); assert.equal(url.pathname, '/5511999991234'); assert.match(url.searchParams.get('text'), /João/);
   assert.equal(money.whatsappWaitlist('123', 'João', 'Corte'), null);
 });
+
+
+test('interface da comanda oferece recebimento rápido e últimas compras', () => {
+  const { CommandCheckout } = load('components/command-checkout.tsx', {
+    'next/link': { __esModule: true, default: ({ children, ...props }) => React.createElement('a', props, children) },
+    '@/app/erp/[tenant]/checkout-actions': { addCommandItem() {}, removeCommandItem() {}, checkoutCommand() {} },
+  });
+  const html = renderToStaticMarkup(React.createElement(CommandCheckout, {
+    tenantCode: 'GROMMA', canOperate: true, autoOpen: true,
+    command: { id: 'c1', customerName: 'Cliente Teste', unitName: 'Matriz', status: 'OPEN',
+      total: 100, subtotal: 100, discount: 0, notes: '', plan: '', visits: 3, lastVisit: null,
+      items: [{ id: 'i1', description: 'Corte', kind: 'SERVICE', quantity: 1, total: 100 }],
+      history: [{ id: 'old1', date: '2026-10-10T10:00:00Z', total: 35,
+        items: [{ id: 'p1', kind: 'PRODUCT', description: 'Pomada', quantity: 1, total: 35 }] }],
+    },
+    catalog: [{ id: 'p1', name: 'Pomada', price: 35, kind: 'PRODUCT' }],
+    session: { id: 's1', unitId: 'u1', unitName: 'Matriz', openedAt: '2026-10-13T10:00:00Z', openedBy: 'gerente', openingCents: 0 },
+  }));
+  for (const item of ['Últimos produtos comprados', 'Pomada', 'Receber tudo em', 'Confirmar pagamento e fechar', 'Adicionar novamente'])
+    assert.match(html, new RegExp(item));
+  assert.doesNotMatch(html, /Cliente com item para recompra/);
+});
