@@ -107,7 +107,7 @@ export function AgendaAppointmentForm({
         </label>
         <label>
           <span className="label">Serviço</span>
-          <select className="select" name="serviceId" required value={primaryService} onChange={e => setPrimaryService(e.target.value)}>
+          <select className="select" name="serviceId" required value={primaryService} onChange={e => { setPrimaryService(e.target.value); setExtraServices(old => old.filter(id => id !== e.target.value)); }}>
             <option value="" disabled>
               Selecione o serviço
             </option>
