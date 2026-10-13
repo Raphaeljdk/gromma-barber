@@ -273,7 +273,7 @@ test('grade, símbolos e navegação são renderizados com unidade preservada', 
   const html = markup();
   assert.match(html, /Ir para uma data/);
   assert.match(html, /Novo agendamento/);
-  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, /aria-expanded="true"/);
   assert.match(html, /agendaUnit=u1/);
   assert.match(html, /Primeira visita/);
   assert.match(html, /Aniversariante do dia/);
@@ -313,4 +313,45 @@ test('múltiplos serviços reservam a duração combinada e salvam todos os iten
   assert.equal(created.data.endsAt - created.data.startsAt, 50 * 60000);
   const settings = env.saved.find(q => q.data.enabledFeatures).data.enabledFeatures;
   assert.deepEqual(workspace.readWorkspace(settings).bookedServices[0].services.map(s => s.name), ['Corte', 'Barba']);
+});
+
+
+test('indicadores aparecem dentro do painel de unidades, não acima da agenda', () => {
+  const html = markup();
+  const side = html.indexOf('id="agenda-information-panel"');
+  const metrics = html.indexOf('Indicadores do dia');
+  const calendar = html.indexOf('class="agenda-main-calendar"');
+  assert.ok(side > calendar);
+  assert.ok(metrics > side);
+  assert.match(html, /Agendados/);
+  assert.doesNotMatch(html, /Item para recompra/);
+});
+
+test('ficha exibe produtos comprados anteriormente, sem campo de recompra', () => {
+  const html = markup({ initialAppointmentId: 'a1', appointments: [{
+    ...sample, recentProducts: [{ description: 'Pomada modeladora', quantity: 2, date: at('10:00') }],
+  }] });
+  assert.match(html, /Últimos produtos comprados/);
+  assert.match(html, /Pomada modeladora/);
+  assert.doesNotMatch(html, /Cliente com item para recompra/);
+});
+
+test('formulário novo exibe etapas, busca e total antes de confirmar', () => {
+  const { AgendaAppointmentForm } = load('components/agenda-forms.tsx', {
+    '@/app/erp/[tenant]/actions': { createAppointment() {} },
+    '@/app/erp/[tenant]/module-actions': { addWaitlist() {} },
+  });
+  const html = renderToStaticMarkup(React.createElement(AgendaAppointmentForm, {
+    context, professionals: [{ id: 'p1', name: 'Profissional Um', unitId: 'u1' }],
+    units: [{ id: 'u1', name: 'Centro' }],
+    services: [{ id: 's1', name: 'Corte', durationMinutes: 45, price: 55 }],
+    customers: [{ id: 'c1', name: 'Daniel', phone: '11999999999' }],
+    draft: { startsAt: '2026-10-11T09:00', barberId: 'p1', unitId: 'u1', customerId: 'c1', serviceId: 's1' },
+    rotationEnabled: false,
+  }));
+  assert.match(html, /Quem será atendido/);
+  assert.match(html, /Buscar cliente/);
+  assert.match(html, /Serviços do atendimento/);
+  assert.match(html, /Confirmar agendamento/);
+  assert.doesNotMatch(html, /item para recompra/i);
 });
