@@ -1393,6 +1393,16 @@ export function ErpAgendaBoard({
               </form>
               {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Remarcar</button>}
               {detail.command && <Link className={detail.command.status === "OPEN" ? "btn agenda-checkout-shortcut" : "btn secondary"} href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>{detail.command.status === "OPEN" ? "Receber e fechar comanda →" : "Ver pagamento"}</Link>}
+              {detail.customerId && detail.serviceId && <button type="button" className="btn secondary" onClick={() => {
+                setDraft({
+                  startsAt: `${addAgendaDays(agendaDateKey(new Date()), 7)}T${agendaTime(detail.startsAt)}`,
+                  barberId: detail.barberId || "",
+                  unitId: detail.unitId,
+                  customerId: detail.customerId || "",
+                  serviceId: detail.serviceId || "",
+                });
+                setDetail(null);
+              }}>+ Agendar retorno</button>
             </div>}
             <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
               <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
