@@ -1399,6 +1399,15 @@ export function ErpAgendaBoard({
               <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
               <p><strong>Preferências / observações do cadastro:</strong> {detail.customerNotes || "Não informadas"}</p>
             </section>
+            <section className="agenda-customer-purchases">
+              <h4>Últimos produtos comprados</h4>
+              {detail.recentProducts?.length ? <div>
+                {detail.recentProducts.map((product, index) => <article key={product.description + index}>
+                  <strong>{product.description}</strong>
+                  <small>{product.quantity} un. · {new Date(product.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small>
+                </article>)}
+              </div> : <p className="agenda-form-hint">Nenhuma compra de produto identificada nas últimas comandas.</p>}
+            </section>
             <dl className="agenda-detail-grid">
               <div>
                 <dt>Serviço</dt>
