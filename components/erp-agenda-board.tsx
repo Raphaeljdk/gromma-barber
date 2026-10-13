@@ -1173,11 +1173,7 @@ export function ErpAgendaBoard({
             </small>
           </div>
           <section className="agenda-side-card agenda-side-metrics" aria-label="Indicadores do dia">
-            <div className="agenda-side-head"><span>Indicadores do dia</span><strong>${dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}</strong></div>
-            <div className="agenda-summary-caption">
-              Indicadores de{" "}
-              {dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}
-            </div>
+            <div className="agenda-side-head"><span>Indicadores do dia</span><strong>{dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}</strong></div>
             <div className="agenda-summary-grid">
               {summaries.map(({ icon: Icon, label, value, filter }) => (
                 <article
