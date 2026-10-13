@@ -896,6 +896,7 @@ export async function TenantERPView({
               endsAt: item.endsAt?.toISOString() ?? null,
               status: item.status,
               customerId: item.customerId,
+              serviceId: item.serviceId,
               customerName: item.customer?.name ?? "Cliente avulso",
               customerPhone: item.customer?.phone ?? item.customer?.whatsapp ?? null,
               source: item.source,
