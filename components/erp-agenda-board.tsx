@@ -1482,7 +1482,7 @@ export function ErpAgendaBoard({
                 <dd>{detail.unitName}</dd>
               </div>
             </dl>
-            {canOperate ? (
+            {detailView.notes && (canOperate ? (
               <form
                 action={updateAppointmentNotes}
                 className="agenda-modal-form"
@@ -1510,8 +1510,8 @@ export function ErpAgendaBoard({
                   <p>{detailNotes}</p>
                 </div>
               )
-            )}
-            {detail.command ? (
+            ))}
+            {detailView.command && (detail.command ? (
               <section className="agenda-command-details">
                 <h4>
                   Comanda de atendimento ·{" "}
@@ -1548,20 +1548,12 @@ export function ErpAgendaBoard({
               <p className="agenda-form-hint">
                 A comanda de atendimento é gerada ao iniciar o serviço.
               </p>
-            )}
-            {canOperate && (
+            ))}
+            {canOperate && detailView.management && (
               <div className="agenda-detail-actions">
                 <form action={updateAppointmentStatus}>
                   <AgendaContextFields context={context} />
                   <input type="hidden" name="appointmentId" value={detail.id} />
-                  {NEXT_ACTION[detail.status] && !(detail.status === "IN_SERVICE" && detail.command?.status === "OPEN") && (
-                    <AgendaSubmit
-                      name="action"
-                      value={NEXT_ACTION[detail.status].action}
-                    >
-                      {NEXT_ACTION[detail.status].label}
-                    </AgendaSubmit>
-                  )}
                   {["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(
                     detail.status,
                   ) && (
