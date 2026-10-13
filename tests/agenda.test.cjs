@@ -331,9 +331,9 @@ test('ficha exibe produtos comprados anteriormente, sem campo de recompra', () =
   const html = markup({ initialAppointmentId: 'a1', appointments: [{
     ...sample, recentProducts: [{ description: 'Pomada modeladora', quantity: 2, date: at('10:00') }],
   }] });
-  assert.match(html, /Últimos produtos comprados/);
-  assert.match(html, /Pomada modeladora/);
-  assert.doesNotMatch(html, /Cliente com item para recompra/);
+  assert.match(html, /Personalizar ficha/);
+  assert.match(html, /Opções/);
+  assert.doesNotMatch(html, /Pomada modeladora/); // Compras aparecem sob demanda.
 });
 
 test('formulário novo exibe etapas, busca e total antes de confirmar', () => {
@@ -363,7 +363,7 @@ test('atalho de retorno aparece na ficha quando cliente e serviço são conhecid
     appointments: [{ ...sample, serviceId: 's1' }],
   });
   assert.match(html, /Agendar retorno/);
-  assert.match(html, /Resumo do cliente/);
+  assert.match(html, /Resumo do cliente/); // Opção disponível, seção recolhida por padrão.
 });
 
 test('retorno não é oferecido para agendamento avulso sem cadastro', () => {
@@ -372,4 +372,22 @@ test('retorno não é oferecido para agendamento avulso sem cadastro', () => {
     appointments: [{ ...sample, serviceId: 's1', customerId: null }],
   });
   assert.doesNotMatch(html, /Agendar retorno/);
+});
+
+
+test('serviços repetidos e sem limite de quantidade ficam no agendamento e somam duração', async () => {
+  const env = environment({ prisma: { service: {
+    findFirst: async () => ({ id: 's1', name: 'Corte', durationMinutes: 15, price: 40 }),
+    findMany: async q => { assert.deepEqual(q.where.id.in, ['s2']); return [{ id: 's2', name: 'Barba', durationMinutes: 10, price: 30 }]; },
+  } } });
+  const data = form({ ...context, unitId: 'u1', serviceId: 's1', customerId: 'c1', barberId: 'p1', startsAt: '2026-10-11T09:00' });
+  for (let i = 0; i < 12; i++) data.append('serviceIds', i % 2 ? 's2' : 's1');
+  const result = await redirectOf(env.actions.createAppointment, data);
+  assert.equal(result.searchParams.get('ok'), 'agenda');
+  const created = env.saved.find(q => q.data?.startsAt);
+  assert.equal(created.data.endsAt - created.data.startsAt, 165 * 60000);
+  const settings = env.saved.find(q => q.data?.enabledFeatures).data.enabledFeatures;
+  const booked = workspace.readWorkspace(settings).bookedServices[0].services;
+  assert.equal(booked.length, 13);
+  assert.deepEqual(booked.map(item => item.id).slice(0, 5), ['s1', 's1', 's2', 's1', 's2']);
 });
