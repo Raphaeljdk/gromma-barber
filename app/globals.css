@@ -7515,3 +7515,16 @@ html[data-theme="light"] .enterprise-home .enterprise-contact > .card {
 .agenda-customer-purchases article:last-child { border-bottom:0; }
 .agenda-customer-purchases article strong { font-size:.8rem; }
 .agenda-customer-purchases article small { font-size:.69rem; color:var(--erp-muted); }
+
+
+@media (min-width: 981px) {
+  /* Override the older 1000px breakpoint, keeping information beside the calendar. */
+  .agenda-interactive .agenda-main-layout.with-panel .agenda-side-panel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-row: auto;
+    max-height: min(82vh, 980px);
+    background: transparent;
+    padding: 0 2px 4px 0;
+    border: 0;
+  }
+}
