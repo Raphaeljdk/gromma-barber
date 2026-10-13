@@ -518,6 +518,28 @@ export async function TenantERPView({
     by: ["customerId"], where: { barberShopId: shop.id, customerId: { in: agendaCustomerIds }, status: "COMPLETED", startsAt: { lt: new Date() } }, _max: { startsAt: true },
   }) : [];
   const lastVisitByCustomer = new Map(lastVisits.map(item => [item.customerId, item._max.startsAt?.toISOString() || null]));
+  // Use only purchases from this tenant, already closed and linked to this client.
+  // Bound the history query to protect the agenda from unbounded scans.
+  const agendaRecentCommands = agendaCustomerIds.length ? await prisma.serviceCommand.findMany({
+    where: { barberShopId: shop.id, customerId: { in: agendaCustomerIds }, status: "CLOSED" },
+    include: { items: { where: { kind: "PRODUCT" }, select: { description: true, quantity: true } } },
+    orderBy: { closedAt: "desc" },
+    take: Math.min(1000, agendaCustomerIds.length * 15),
+  }) : [];
+  const recentProductsByCustomer = new Map<string, { description: string; quantity: number; date: string }[]>();
+  for (const previous of agendaRecentCommands) {
+    if (!previous.customerId || !previous.items.length) continue;
+    const collected = recentProductsByCustomer.get(previous.customerId) ?? [];
+    if (collected.length >= 5) continue;
+    for (const item of previous.items) {
+      if (collected.length >= 5) break;
+      if (!collected.some(existing => existing.description === item.description)) {
+        collected.push({ description: item.description, quantity: Number(item.quantity), date: (previous.closedAt || previous.openedAt).toISOString() });
+      }
+    }
+    recentProductsByCustomer.set(previous.customerId, collected);
+  }
+
   const activeClubPlans = new Map(workspace.clubPlans.filter((item) => item.active).map((item) => [item.id, item.name]));
   const customerPlan = new Map(workspace.clubMembers.filter((item) => item.status === "ACTIVE" && activeClubPlans.has(item.planId)).map((item) => [item.customerId, activeClubPlans.get(item.planId)!]));
 
@@ -880,6 +902,7 @@ export async function TenantERPView({
               notes: item.notes,
               lastVisit: item.customerId ? lastVisitByCustomer.get(item.customerId) || null : null,
               customerNotes: item.customer?.notes || null,
+              recentProducts: item.customerId ? recentProductsByCustomer.get(item.customerId) ?? [] : [],
               price: workspace.bookedServices.find(b => b.appointmentId === item.id)?.services.reduce((sum, service) => sum + service.price, 0) ?? Number(item.service?.price ?? 0),
               hasPlan: Boolean(item.customerId && customerPlan.has(item.customerId)),
               planName: item.customerId ? customerPlan.get(item.customerId) ?? null : null,
