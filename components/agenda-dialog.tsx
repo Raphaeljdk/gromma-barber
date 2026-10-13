@@ -7,11 +7,13 @@ import { X } from "lucide-react";
 export function AgendaDialog({
   title,
   subtitle,
+  variant,
   onClose,
   children,
 }: {
   title: string;
   subtitle?: string;
+  variant?: "booking" | "checkout";
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -32,7 +34,7 @@ export function AgendaDialog({
   return (
     <dialog
       ref={ref}
-      className="agenda-dialog"
+      className={`agenda-dialog${variant ? ` agenda-dialog-${variant}` : ""}`}
       aria-labelledby={titleId}
       onCancel={onClose}
       onClick={(event) => {
