@@ -1402,7 +1402,7 @@ export function ErpAgendaBoard({
                   serviceId: detail.serviceId || "",
                 });
                 setDetail(null);
-              }}>+ Agendar retorno</button>
+              }}>+ Agendar retorno</button>}
             </div>}
             <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
               <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
