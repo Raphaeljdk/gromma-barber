@@ -355,3 +355,21 @@ test('formulário novo exibe etapas, busca e total antes de confirmar', () => {
   assert.match(html, /Confirmar agendamento/);
   assert.doesNotMatch(html, /item para recompra/i);
 });
+
+
+test('atalho de retorno aparece na ficha quando cliente e serviço são conhecidos', () => {
+  const html = markup({
+    initialAppointmentId: 'a1',
+    appointments: [{ ...sample, serviceId: 's1' }],
+  });
+  assert.match(html, /Agendar retorno/);
+  assert.match(html, /Resumo do cliente/);
+});
+
+test('retorno não é oferecido para agendamento avulso sem cadastro', () => {
+  const html = markup({
+    initialAppointmentId: 'a1',
+    appointments: [{ ...sample, serviceId: 's1', customerId: null }],
+  });
+  assert.doesNotMatch(html, /Agendar retorno/);
+});
