@@ -78,6 +78,9 @@ export function AgendaAppointmentForm({
   draft: AgendaDraft;
   rotationEnabled: boolean;
 }) {
+  const [extraServices, setExtraServices] = useState<string[]>([]);
+  const [primaryService, setPrimaryService] = useState(draft.serviceId || "");
+  const selectedServices = services.filter(s => s.id === primaryService || extraServices.includes(s.id));
   const [unitId, setUnitId] = useState(
     draft.unitId || (units.length === 1 ? units[0].id : ""),
   );
@@ -104,7 +107,7 @@ export function AgendaAppointmentForm({
         </label>
         <label>
           <span className="label">Serviço</span>
-          <select className="select" name="serviceId" required defaultValue={draft.serviceId || ""}>
+          <select className="select" name="serviceId" required value={primaryService} onChange={e => setPrimaryService(e.target.value)}>
             <option value="" disabled>
               Selecione o serviço
             </option>
@@ -119,6 +122,11 @@ export function AgendaAppointmentForm({
             ))}
           </select>
         </label>
+        <div className="agenda-extra-services">
+          {extraServices.map((id, index) => <div className="agenda-service-row" key={index}><label><span className="label">Serviço adicional {index + 1}</span><select className="select" name="serviceIds" required value={id} onChange={e => setExtraServices(old => old.map((v, i) => i === index ? e.target.value : v))}><option value="">Selecione</option>{services.filter(s => s.id !== primaryService && (!extraServices.includes(s.id) || s.id === id)).map(s => <option key={s.id} value={s.id}>{s.name} · {s.durationMinutes} min · {s.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</option>)}</select></label><button type="button" className="btn secondary" aria-label={`Remover serviço adicional ${index + 1}`} onClick={() => setExtraServices(old => old.filter((_, i) => i !== index))}>Remover</button></div>)}
+          <button type="button" className="btn secondary" disabled={extraServices.length >= 11 || selectedServices.length >= services.length} onClick={() => setExtraServices(old => [...old, ""])}>＋ Adicionar outro serviço</button>
+          <p className="agenda-form-hint">Duração total: {selectedServices.reduce((sum, s) => sum + s.durationMinutes, 0)} min · Valor: {selectedServices.reduce((sum, s) => sum + s.price, 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+        </div>
         <label>
           <span className="label">Unidade</span>
           <select

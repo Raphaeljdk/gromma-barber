@@ -25,10 +25,12 @@ import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CommandCheckout } from "@/components/command-checkout";
+import { CashRegister } from "@/components/cash-register";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
-import { closeCommand, createCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
+import { createCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
 import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
@@ -405,7 +407,7 @@ export async function TenantERPView({
           orderBy: { openedAt: "desc" },
           skip: (comandasPage - 1) * pageSize,
           take: pageSize,
-          include: { customer: true, unit: true, items: true },
+          include: { customer: true, unit: true, items: true, appointment: true },
         })
       : Promise.resolve([]),
     needsCommandList ? prisma.serviceCommand.count({ where: commandWhere }) : Promise.resolve(0),
@@ -497,6 +499,14 @@ export async function TenantERPView({
       : Promise.resolve([]),
   ]);
 
+  const checkoutProducts = needsCommandList ? await prisma.product.findMany({ where: { barberShopId: shop.id, active: true }, select: { id: true, name: true, salePrice: true }, orderBy: { name: "asc" } }) : [];
+  const commandHistories = await Promise.all([...new Set(commands.flatMap(c => c.customerId ? [c.customerId] : []))].map(async customerId => {
+    const [history, visits] = await Promise.all([
+      prisma.serviceCommand.findMany({ where: { barberShopId: shop.id, customerId, status: "CLOSED" }, include: { items: true }, orderBy: { closedAt: "desc" }, take: 11 }),
+      prisma.appointment.aggregate({ where: { barberShopId: shop.id, customerId, status: "COMPLETED" }, _count: true, _max: { startsAt: true } }),
+    ]);
+    return { customerId, history, visits };
+  }));
   const agendaCustomerIds = [...new Set(agendaBoardAppointments.flatMap((item) => item.customerId ? [item.customerId] : []))];
   const firstVisits = agendaCustomerIds.length ? await prisma.appointment.groupBy({
     by: ["customerId"],
@@ -870,7 +880,7 @@ export async function TenantERPView({
               notes: item.notes,
               lastVisit: item.customerId ? lastVisitByCustomer.get(item.customerId) || null : null,
               customerNotes: item.customer?.notes || null,
-              price: Number(item.service?.price ?? 0),
+              price: workspace.bookedServices.find(b => b.appointmentId === item.id)?.services.reduce((sum, service) => sum + service.price, 0) ?? Number(item.service?.price ?? 0),
               hasPlan: Boolean(item.customerId && customerPlan.has(item.customerId)),
               planName: item.customerId ? customerPlan.get(item.customerId) ?? null : null,
               firstVisit: Boolean(item.customerId && (!firstVisitByCustomer.get(item.customerId) || firstVisitByCustomer.get(item.customerId)! >= item.startsAt)),
@@ -878,7 +888,7 @@ export async function TenantERPView({
               command: item.command ? { id: item.command.id, status: item.command.status, total: Number(item.command.total), items: item.command.items.map((line) => ({ id: line.id, description: line.description, quantity: Number(line.quantity), total: Number(line.total) })) } : null,
               barberId: item.barberId,
               barberName: item.barber?.name ?? "Sem preferência",
-              serviceName: item.service?.name ?? "Atendimento",
+              serviceName: workspace.bookedServices.find(b => b.appointmentId === item.id)?.services.map(s => s.name).join(" + ") || item.service?.name || "Atendimento",
               unitId: item.unitId,
               unitName: item.unit.name,
             }))}
@@ -1031,6 +1041,8 @@ export async function TenantERPView({
         </section>
 
         <section id="comandas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comandas")}>
+          {valueOf("checkoutError") && <div role="alert" className="notice error-notice">{valueOf("checkoutError")}</div>}
+          {valueOf("checkoutOk") && <div role="status" className="notice success">Operação salva com sucesso.</div>}
           <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "comanda" && <div className="notice erp-inline-notice success">Comanda fechada e financeiro atualizado.</div>}
           {actionError === "comanda" && <div className="notice erp-inline-notice error-notice">Não foi possível fechar a comanda.</div>}
@@ -1049,13 +1061,15 @@ export async function TenantERPView({
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td>
                 <td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{operationalBadge(command.status)}</td>
                 <td>
-                  {command.status === "OPEN" && canOperate ? (
-                    <form action={closeCommand}>
-                      <input type="hidden" name="tenantCode" value={tenantCode} />
-                      <input type="hidden" name="commandId" value={command.id} />
-                      <button className="btn secondary" type="submit">Fechar comanda</button>
-                    </form>
-                  ) : <span className="muted small">Finalizada</span>}
+                  <CommandCheckout key={`${command.id}:${command.updatedAt.toISOString()}:${valueOf("checkoutOk")}`} tenantCode={tenantCode} canOperate={canOperate} error={valueOf("commandId") === command.id ? valueOf("checkoutError") : ""} autoOpen={valueOf("commandId") === command.id}
+                    command={{ id: command.id, customerName: command.customer?.name ?? "Cliente avulso", unitName: command.unit.name, status: command.status, total: Number(command.total), subtotal: Number(command.subtotal), discount: Number(command.discount), notes: [command.customer?.notes, command.appointment?.notes].filter(Boolean).join("\n"), plan: command.customerId ? customerPlan.get(command.customerId) || "" : "",
+                      items: command.items.map(i => ({ id: i.id, description: i.description, kind: i.kind, quantity: Number(i.quantity), total: Number(i.total) })),
+                      history: (commandHistories.find(h => h.customerId === command.customerId)?.history || []).filter(h => h.id !== command.id).slice(0, 10).map(h => ({ id: h.id, date: (h.closedAt || h.openedAt).toISOString(), total: Number(h.total), items: h.items.map(i => ({ id: i.id, description: i.description, kind: i.kind, quantity: Number(i.quantity), total: Number(i.total) })) })),
+                      visits: commandHistories.find(h => h.customerId === command.customerId)?.visits._count || 0,
+                      lastVisit: commandHistories.find(h => h.customerId === command.customerId)?.visits._max.startsAt?.toISOString() || null,
+                    }}
+                    catalog={[...shop.services.map(i => ({ id: i.id, name: i.name, price: Number(i.price), kind: "SERVICE" })), ...checkoutProducts.map(i => ({ id: i.id, name: i.name, price: Number(i.salePrice), kind: "PRODUCT" }))]}
+                    session={workspace.cashSessions.find(session => session.unitId === command.unitId && !session.closedAt)} payment={workspace.commandPayments.find(p => p.commandId === command.id)} />
                 </td>
               </tr>
             )) : <tr><td colSpan={7} className="muted">Nenhuma comanda encontrada.</td></tr>}</tbody>
@@ -1383,7 +1397,9 @@ export async function TenantERPView({
         </section>
 
         <section id="caixa" className="demo-section" hidden={Boolean(moduleId && moduleId !== "caixa")}>
-          <div className="section-head"><div><div className="eyebrow">Caixa</div><h2>Resumo de caixa</h2></div><StatusPill tone="ready">Dados do financeiro</StatusPill></div>
+          {valueOf("checkoutError") && <div role="alert" className="notice error-notice">{valueOf("checkoutError")}</div>}
+          {valueOf("checkoutOk") && <div role="status" className="notice success">Operação salva com sucesso.</div>}
+          <CashRegister tenantCode={tenantCode} units={shop.units.filter(u => u.active).map(u => ({ id: u.id, name: u.name }))} sessions={workspace.cashSessions} payments={workspace.commandPayments} canOperate={canOperate || canFinance} /><h3 className="cash-consolidated">Visão financeira consolidada (todos os períodos)</h3>
           <div className="demo-metrics">
             <article className="card demo-metric"><span className="small muted">Receitas / recebíveis</span><strong>{brl(receivables)}</strong><small>lançamentos carregados</small></article>
             <article className="card demo-metric"><span className="small muted">Despesas / pagáveis</span><strong>{brl(payables)}</strong><small>lançamentos carregados</small></article>

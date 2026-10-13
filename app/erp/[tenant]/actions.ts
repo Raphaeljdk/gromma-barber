@@ -117,7 +117,10 @@ export async function updateAppointmentStatus(formData: FormData) {
         });
 
         if (!existingCommand) {
-          const serviceAmount = appointment.service?.price ?? 0;
+          const latestShop = await tx.barberShop.findUnique({ where: { id: shop.id } });
+          const booked = readWorkspace(latestShop?.enabledFeatures).bookedServices.find(item => item.appointmentId === appointment.id);
+          const lines = booked?.services ?? (appointment.service ? [{ name: appointment.service.name, price: Number(appointment.service.price) }] : []);
+          const serviceAmount = lines.reduce((sum, item) => sum + Math.round(item.price * 100), 0) / 100;
           const command = await tx.serviceCommand.create({
             data: {
               barberShopId: shop.id,
@@ -131,15 +134,15 @@ export async function updateAppointmentStatus(formData: FormData) {
             },
           });
 
-          if (appointment.service) {
+          for (const line of lines) {
             await tx.commandItem.create({
               data: {
                 commandId: command.id,
                 kind: "SERVICE",
-                description: appointment.service.name,
+                description: line.name,
                 quantity: 1,
-                unitPrice: appointment.service.price,
-                total: appointment.service.price,
+                unitPrice: line.price,
+                total: line.price,
               },
             });
           }
@@ -172,54 +175,6 @@ export async function updateAppointmentNotes(formData: FormData) {
   }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
   redirect(agendaReturnHref(tenantCode, formData, { ok: "agenda-informacoes" }));
-}
-
-export async function closeCommand(formData: FormData) {
-  const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}/comandas`;
-
-  if (!allowed(viewer, OPERATION_ROLES)) {
-    redirect(`${path}?erro=permissao#comandas`);
-  }
-
-  const commandId = text(formData, "commandId", 80);
-  const command = await prisma.serviceCommand.findFirst({
-    where: { id: commandId, barberShopId: shop.id, status: "OPEN" },
-  });
-
-  if (!command) redirect(`${path}?erro=comanda#comandas`);
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      const updated = await tx.serviceCommand.updateMany({
-        where: { id: command.id, barberShopId: shop.id, status: "OPEN" },
-        data: { status: "CLOSED", closedAt: new Date() },
-      });
-
-      if (updated.count !== 1) throw new Error("Command state changed concurrently");
-
-      if (Number(command.total) > 0) {
-        await tx.financialEntry.create({
-          data: {
-            barberShopId: shop.id,
-            unitId: command.unitId,
-            type: "RECEIVABLE",
-            status: "PENDING",
-            category: "Comandas",
-            description: `Comanda ${command.id.slice(-6).toUpperCase()}`,
-            amount: command.total,
-            dueDate: new Date(),
-          },
-        });
-      }
-    });
-  } catch (error) {
-    console.error("Failed to close command", error);
-    redirect(`${path}?erro=comanda#comandas`);
-  }
-
-  revalidatePath(path);
-  redirect(`${path}?ok=comanda#comandas`);
 }
 
 export async function markFinancialPaid(formData: FormData) {
@@ -260,6 +215,8 @@ export async function createAppointment(formData: FormData) {
 
   const unitId = text(formData, "unitId", 80);
   const serviceId = text(formData, "serviceId", 80);
+  const extraIds = [...new Set(formData.getAll("serviceIds").map(String).filter(id => id && id !== serviceId))];
+  if (extraIds.length > 11) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   const customerId = text(formData, "customerId", 80);
   const barberId = text(formData, "barberId", 80);
   const startsAtRaw = text(formData, "startsAt", 40);
@@ -283,7 +240,7 @@ export async function createAppointment(formData: FormData) {
     }),
     prisma.service.findFirst({
       where: { id: serviceId, barberShopId: shop.id, active: true },
-      select: { id: true, durationMinutes: true },
+      select: { id: true, name: true, price: true, durationMinutes: true },
     }),
     customerId
       ? prisma.customer.findFirst({
@@ -304,7 +261,10 @@ export async function createAppointment(formData: FormData) {
   }
 
   const workspace = readWorkspace(shop.enabledFeatures);
-  const endsAt = new Date(startsAt.getTime() + service.durationMinutes * 60_000);
+  const extraServices = extraIds.length ? await prisma.service.findMany({ where: { id: { in: extraIds }, barberShopId: shop.id, active: true }, select: { id: true, name: true, price: true, durationMinutes: true } }) : [];
+  if (extraServices.length !== extraIds.length) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
+  const selectedServices = [service, ...extraServices];
+  const endsAt = new Date(startsAt.getTime() + selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0) * 60_000);
   let barber = selectedBarber;
 
   if (!barber && workspace.settings.rotationEnabled) {
@@ -381,7 +341,7 @@ export async function createAppointment(formData: FormData) {
       const waitlistId = text(formData, "waitlistId", 100);
       const waiting = waitlistId ? latest.waitlist.find(item => item.id === waitlistId) : null;
       if (waitlistId && (!waiting || waiting.unitId !== unitId || (waiting.serviceId && waiting.serviceId !== serviceId) || (waiting.barberId && waiting.barberId !== barber?.id) || waiting.requestedDate !== startsAtRaw.slice(0, 10))) throw new Error("Waitlist changed");
-      await tx.appointment.create({
+      const createdAppointment = await tx.appointment.create({
       data: {
         barberShopId: shop.id,
         unitId: unit.id,
@@ -395,8 +355,9 @@ export async function createAppointment(formData: FormData) {
         notes: notes || null,
       },
       });
-      if (waiting) {
-        latest.waitlist = latest.waitlist.filter(item => item.id !== waiting.id);
+      if (extraServices.length) latest.bookedServices.push({ appointmentId: createdAppointment.id, services: selectedServices.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })) });
+      if (waiting) latest.waitlist = latest.waitlist.filter(item => item.id !== waiting.id);
+      if (waiting || extraServices.length) {
         await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, latest) } });
       }
     }, { isolationLevel: "Serializable" });

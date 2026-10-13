@@ -7217,3 +7217,43 @@ html[data-theme="light"] .enterprise-home .enterprise-contact > .card {
   }
 }
 
+
+/* Comanda, checkout e conferência de caixa */
+.tenant-erp .erp-floating-cash { top: 18px; bottom: auto; right: 22px; }
+.tenant-erp .erp-topbar { padding-right: 130px; }
+.checkout-stack { display: grid; gap: 22px; min-width: 0; }
+.checkout-stack h4 { margin: 0 0 12px; font-size: 1rem; }
+.checkout-summary { padding: 20px; display: grid; gap: 7px; border: 1px solid var(--erp-border); border-radius: 16px; background: var(--erp-panel-2); }
+.checkout-summary > strong { font-size: 2rem; color: var(--erp-gold); }
+.checkout-stack small, .cash-session small { color: var(--erp-muted); }
+.checkout-lines > div { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--erp-border); }
+.checkout-lines > div > span:first-child { flex: 1; min-width: 0; }
+.checkout-lines small { display: block; margin-top: 4px; }
+.checkout-lines b { white-space: nowrap; }
+.checkout-add { display: grid; grid-template-columns: minmax(0, 1fr) 80px auto; align-items: end; gap: 10px; margin-top: 16px; }
+.checkout-payment { padding: 18px; border: 1px solid var(--erp-border); border-radius: 16px; background: var(--erp-panel-2); }
+.checkout-history { border-top: 1px solid var(--erp-border); padding-top: 18px; }
+.checkout-history summary, .cash-session summary { cursor: pointer; font-weight: 700; padding: 10px 0; }
+.checkout-history article { padding: 12px 0; border-bottom: 1px solid var(--erp-border); }
+.checkout-history ul { padding-left: 20px; color: var(--erp-muted); line-height: 1.8; }
+.checkout-notes { white-space: pre-wrap; }
+.cash-opening { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; padding: 22px; }
+.cash-opening label { flex: 1; min-width: 210px; }
+.cash-session { padding: 22px; display: grid; gap: 16px; }
+.cash-session header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
+.cash-session h3 { margin: 0 0 6px; }
+.cash-method { padding: 16px; border-radius: 12px; background: var(--erp-panel-2); border: 1px solid var(--erp-border); display: grid; gap: 6px; }
+.cash-method > strong { font-size: 1.4rem; }
+.cash-consolidated { margin-top: 32px; }
+.agenda-extra-services { grid-column: 1 / -1; display: grid; gap: 10px; }
+.agenda-extra-services > button { justify-self: start; }
+.agenda-service-row { display: flex; align-items: end; gap: 8px; }
+.agenda-service-row label { flex: 1; min-width: 0; }
+.agenda-whatsapp { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; margin-top: 8px; border: 1px solid #2d8663; border-radius: 9px; color: var(--erp-text); background: var(--erp-panel-2); font-size: .76rem; font-weight: 700; }
+.agenda-whatsapp:hover { border-color: #38bf82; background: var(--erp-panel-3); }
+@media (max-width: 640px) {
+  .tenant-erp .erp-floating-cash { top: 10px; right: 10px; min-height: 38px; padding: 8px 10px; }
+  .checkout-add { grid-template-columns: minmax(0, 1fr) 70px; }
+  .checkout-add > button { grid-column: 1 / -1; }
+  .cash-opening, .cash-session { padding: 15px; }
+}

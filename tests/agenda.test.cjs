@@ -294,3 +294,18 @@ test('semana e mês mantêm fichas clicáveis, inclusive profissionais fora do d
   assert.match(markup({ view: 'week', appointments: [otherDay] }), /Cliente Exemplo/);
   assert.match(markup({ view: 'month' }), /Agendado pelo computador/);
 });
+
+test('múltiplos serviços reservam a duração combinada e salvam todos os itens', async () => {
+  const env = environment({ prisma: { service: {
+    findFirst: async () => ({ id: 's1', name: 'Corte', durationMinutes: 30, price: 40 }),
+    findMany: async q => { assert.equal(q.where.barberShopId, 'shop1'); return [{ id: 's2', name: 'Barba', durationMinutes: 20, price: 30 }]; },
+  } } });
+  const data = form({ ...context, unitId: 'u1', serviceId: 's1', customerId: 'c1', barberId: 'p1', startsAt: '2026-10-11T10:00' });
+  data.append('serviceIds', 's2');
+  const result = await redirectOf(env.actions.createAppointment, data);
+  assert.equal(result.searchParams.get('ok'), 'agenda');
+  const created = env.saved.find(q => q.data.startsAt);
+  assert.equal(created.data.endsAt - created.data.startsAt, 50 * 60000);
+  const settings = env.saved.find(q => q.data.enabledFeatures).data.enabledFeatures;
+  assert.deepEqual(workspace.readWorkspace(settings).bookedServices[0].services.map(s => s.name), ['Corte', 'Barba']);
+});
