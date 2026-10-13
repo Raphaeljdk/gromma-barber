@@ -945,6 +945,7 @@ export async function TenantERPView({
           {actionError === "fila" && <div className="notice erp-inline-notice error-notice">Revise os dados da lista de espera.</div>}
           {actionOk === "agenda-status" && <div className="notice erp-inline-notice success">Status do atendimento atualizado.</div>}
           {actionError === "agenda-status" && <div className="notice erp-inline-notice error-notice">A transição solicitada não é válida para este atendimento.</div>}
+          {actionError === "comanda-pendente" && <div className="notice erp-inline-notice error-notice">Este atendimento possui uma comanda aberta. Receba e feche a comanda antes de concluir o atendimento.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
 
           <div className="erp-subsection-head">
