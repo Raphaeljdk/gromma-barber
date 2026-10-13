@@ -7528,3 +7528,54 @@ html[data-theme="light"] .enterprise-home .enterprise-contact > .card {
     border: 0;
   }
 }
+
+/* Navegação de caixa: Comandas é uma subpágina, sem duplicar módulo. */
+.erp-nav-cash-parent { position:relative; display:flex; min-width:0; align-items:center; }
+.erp-nav-cash-parent > .erp-nav-item { flex:1; min-width:0; padding-right:41px; }
+.erp-nav-cash-parent.has-active-child > .erp-nav-item { color:var(--erp-text); }
+.erp-nav-cash-toggle {
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  display:grid; place-items:center; border:1px solid transparent;
+  width:29px; height:29px; border-radius:8px; padding:0;
+  background:var(--erp-panel-2); color:var(--erp-muted); cursor:pointer;
+}
+.erp-nav-cash-toggle:hover,.erp-nav-cash-toggle:focus-visible { color:var(--erp-gold); border-color:var(--erp-border-strong); }
+.erp-nav-cash-toggle svg { transition:transform .16s ease; }
+.erp-nav-cash-toggle[aria-expanded="true"] svg { transform:rotate(180deg); }
+.erp-nav-cash-children {
+  margin:2px 0 5px 23px; padding-left:12px;
+  border-left:1px solid var(--erp-border-strong);
+  display:grid; gap:3px;
+}
+.erp-nav-subitem {
+  display:flex; gap:10px; align-items:center; min-height:36px;
+  padding:7px 8px; border:1px solid transparent; border-radius:9px;
+  color:var(--erp-muted); font-size:.74rem; font-weight:700;
+}
+.erp-nav-subitem svg { flex-shrink:0; }
+.erp-nav-subitem:hover { background:var(--erp-panel-2); color:var(--erp-text); }
+.erp-nav-subitem.active {
+  background:color-mix(in srgb,var(--erp-gold) 13%,var(--erp-panel));
+  border-color:var(--erp-border-strong); color:var(--erp-gold);
+}
+.erp-nav-subitem .erp-nav-active-dot { margin-left:auto; flex-shrink:0; }
+.erp-sidebar.is-collapsed .erp-nav-cash-children { margin:4px 0 4px 7px; padding-left:7px; }
+.erp-sidebar.is-collapsed .erp-nav-subitem { width:44px; min-height:37px; justify-content:center; }
+.erp-sidebar.is-collapsed .erp-nav-cash-toggle { right:-3px; top:6px; transform:none; width:23px; height:23px; }
+.erp-sidebar.is-collapsed .erp-nav-cash-parent > .erp-nav-item { padding-right:8px; }
+.erp-sidebar.is-collapsed .erp-nav-cash-toggle svg { width:14px; height:14px; }
+html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
+
+/* Caixa oferece acesso imediato ao fluxo de recebimento. */
+.cash-command-shortcut {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+  gap:14px; padding:16px 18px; margin-bottom:18px;
+  background:var(--erp-panel-2); border:1px solid var(--erp-border-strong); border-radius:13px;
+}
+.cash-command-shortcut > div { display:grid; gap:5px; min-width:0; }
+.cash-command-shortcut strong { color:var(--erp-text); font-size:.88rem; }
+.cash-command-shortcut span { color:var(--erp-muted); font-size:.73rem; }
+.cash-command-shortcut .btn { white-space:nowrap; }
+@media (max-width:600px) {
+  .cash-command-shortcut .btn { width:100%; justify-content:center; }
+}
