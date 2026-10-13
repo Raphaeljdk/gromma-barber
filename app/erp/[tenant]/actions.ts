@@ -341,11 +341,29 @@ export async function createAppointment(formData: FormData) {
       const waitlistId = text(formData, "waitlistId", 100);
       const waiting = waitlistId ? latest.waitlist.find(item => item.id === waitlistId) : null;
       if (waitlistId && (!waiting || waiting.unitId !== unitId || (waiting.serviceId && waiting.serviceId !== serviceId) || (waiting.barberId && waiting.barberId !== barber?.id) || waiting.requestedDate !== startsAtRaw.slice(0, 10))) throw new Error("Waitlist changed");
+      // Clientes inscritos na fila não podem virar "Cliente avulso" no agendamento.
+      // Preserve o vínculo escolhido pela recepção; caso contrário, reutilize o telefone
+      // cadastrado ou crie a ficha somente na mesma transação do encaixe confirmado.
+      let bookedCustomerId = customer?.id ?? null;
+      if (waiting && !bookedCustomerId) {
+        const name = String(waiting.customerName ?? "").trim().slice(0, 120);
+        const phone = String(waiting.phone ?? "").trim().slice(0, 40);
+        if (name.length < 2) throw new Error("Waitlist customer has no name");
+        const existing = phone ? await tx.customer.findFirst({
+          where: { barberShopId: shop.id, active: true, OR: [{ phone }, { whatsapp: phone }] },
+          select: { id: true },
+        }) : null;
+        const linked = existing ?? await tx.customer.create({
+          data: { barberShopId: shop.id, unitId: unit.id, name, phone: phone || null, whatsapp: phone || null, active: true },
+          select: { id: true },
+        });
+        bookedCustomerId = linked.id;
+      }
       const createdAppointment = await tx.appointment.create({
       data: {
         barberShopId: shop.id,
         unitId: unit.id,
-        customerId: customer?.id ?? null,
+        customerId: bookedCustomerId,
         barberId: barber?.id ?? null,
         serviceId: service.id,
         startsAt,

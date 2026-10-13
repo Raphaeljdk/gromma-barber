@@ -88,8 +88,10 @@ test('encaixe remove apenas a entrada escolhida depois de criar o agendamento', 
   ] } } });
   const result = await redirectOf(env.actions.createAppointment, form({ ...context, unitId: 'u1', barberId: 'p1', serviceId: 's1', startsAt: '2026-10-11T14:00', waitlistId: 'w1' }));
   assert.equal(result.searchParams.get('ok'), 'agenda');
-  assert.equal(env.saved[0].data.serviceId, 's1');
-  assert.deepEqual(env.saved[1].data.enabledFeatures.operations.waitlist.map(w => w.id), ['w2']);
+  assert.equal(env.saved.find(q => q.data?.serviceId)?.data.serviceId, 's1');
+  assert.deepEqual(env.saved.find(q => q.data?.enabledFeatures)?.data.enabledFeatures.operations.waitlist.map(w => w.id), ['w2']);
+  assert.equal(env.saved.find(q => q.customerCreate)?.customerCreate.name, 'Ana');
+  assert.equal(env.saved.find(q => q.data?.serviceId)?.data.customerId, 'queue-c1');
 });
 
 test('novo agendamento não ignora bloqueios do profissional', async () => {
@@ -107,7 +109,10 @@ function environment(overrides = {}) {
   const prisma = {
     barberShop: { findUnique: async () => shop, findUniqueOrThrow: async () => shop, update: async (query) => { saved.push(query); return shop; } },
     barberShopUnit: { findFirst: scoped('unit') }, service: { findFirst: scoped('service') },
-    customer: { findFirst: scoped('customer') }, shopUser: { findFirst: scoped('professional') },
+    customer: {
+      findFirst: async (query) => { queries.push({ model: 'customer', query }); return query.where.id ? { id: query.where.id } : null; },
+      create: async (query) => { saved.push({ customerCreate: query.data }); return { id: 'queue-c1' }; },
+    }, shopUser: { findFirst: scoped('professional') },
     appointment: { findFirst: async () => null, create: async (query) => { saved.push(query); return { id: 'new' }; }, updateMany: async (query) => { saved.push(query); return { count: 1 }; } },
   };
   Object.assign(prisma, overrides.prisma);
