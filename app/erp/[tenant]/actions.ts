@@ -87,8 +87,14 @@ export async function updateAppointmentStatus(formData: FormData) {
 
   const appointment = await prisma.appointment.findFirst({
     where: { id: appointmentId, barberShopId: shop.id },
-    include: { service: true },
+    include: { service: true, command: { select: { status: true } } },
   });
+
+  if (action === "complete" && appointment?.command?.status === "OPEN") {
+    // Closing the appointment without payment would leave its comanda open.
+    // Checkout already finalizes both records atomically after receiving.
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "comanda-pendente" }));
+  }
 
   if (
     !appointment ||
