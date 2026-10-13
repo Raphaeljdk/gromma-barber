@@ -331,7 +331,7 @@ test('ficha exibe produtos comprados anteriormente, sem campo de recompra', () =
   const html = markup({ initialAppointmentId: 'a1', appointments: [{
     ...sample, recentProducts: [{ description: 'Pomada modeladora', quantity: 2, date: at('10:00') }],
   }] });
-  assert.match(html, /Personalizar ficha/);
+  assert.match(html, /aria-controls="agenda-detail-settings"/);
   assert.match(html, /Opções/);
   assert.doesNotMatch(html, /Pomada modeladora/); // Compras aparecem sob demanda.
 });
@@ -363,7 +363,7 @@ test('atalho de retorno aparece na ficha quando cliente e serviço são conhecid
     appointments: [{ ...sample, serviceId: 's1' }],
   });
   assert.match(html, /Agendar retorno/);
-  assert.match(html, /Resumo do cliente/); // Opção disponível, seção recolhida por padrão.
+  assert.match(html, /Opções/); // Seções adicionais ficam recolhidas por padrão.
 });
 
 test('retorno não é oferecido para agendamento avulso sem cadastro', () => {
