@@ -7490,3 +7490,28 @@ html[data-theme="light"] .enterprise-home .enterprise-contact > .card {
   .checkout-recent-product .btn { width: 100%; justify-content: center; }
   .checkout-overview-total strong { font-size: 1.36rem; }
 }
+
+
+/* Legendas usam a mesma semântica cromática dos cartões. */
+.agenda-interactive .agenda-status-legend i.scheduled { background:#4387e8; box-shadow:0 0 0 3px #4387e827; }
+.agenda-interactive .agenda-status-legend i.confirmed { background:#33ad80; box-shadow:0 0 0 3px #33ad8027; }
+.agenda-interactive .agenda-status-legend i.checked-in { background:#9872d6; box-shadow:0 0 0 3px #9872d627; }
+.agenda-interactive .agenda-status-legend i.service { background:#dea43b; box-shadow:0 0 0 3px #dea43b27; }
+.agenda-interactive .agenda-status-legend i.completed { background:#6da77d; box-shadow:0 0 0 3px #6da77d27; }
+.agenda-interactive .agenda-status-legend i.canceled { background:#c85d5d; box-shadow:0 0 0 3px #c85d5d27; }
+.agenda-interactive .agenda-status-legend i.no-show { background:#bd7951; box-shadow:0 0 0 3px #bd795127; }
+.agenda-customer-purchases {
+  display:grid; gap:10px; padding:15px;
+  border:1px solid var(--erp-border); border-radius:12px;
+  background:var(--erp-panel-2);
+}
+.agenda-customer-purchases h4 { margin:0; font-size:.88rem; color:var(--erp-text); }
+.agenda-customer-purchases > div { display:grid; gap:7px; }
+.agenda-customer-purchases article {
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:6px 12px; padding:8px 0;
+  border-bottom:1px solid var(--erp-border);
+}
+.agenda-customer-purchases article:last-child { border-bottom:0; }
+.agenda-customer-purchases article strong { font-size:.8rem; }
+.agenda-customer-purchases article small { font-size:.69rem; color:var(--erp-muted); }
