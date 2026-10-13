@@ -1,3 +1,4 @@
+import type { CashSession, CommandPayment, BookedServices } from "./checkout";
 import type { Prisma } from "@prisma/client";
 
 export type ClubPlanConfig = {
@@ -130,6 +131,10 @@ export type ErpWorkspace = {
   deductions: DeductionConfig[];
   waitlist: WaitlistConfig[];
   agendaBlocks: AgendaBlock[];
+  cashSessions: CashSession[];
+  commandPayments: CommandPayment[];
+  bookedServices: BookedServices[];
+  productLines: { itemId: string; productId: string }[];
   settings: OperationalSettings;
 };
 
@@ -146,6 +151,10 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   deductions: [],
   waitlist: [],
   agendaBlocks: [],
+  cashSessions: [],
+  commandPayments: [],
+  bookedServices: [],
+  productLines: [],
   settings: {
     openHour: 8,
     closeHour: 20,
@@ -187,6 +196,10 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     deductions: array<DeductionConfig>(operations.deductions),
     waitlist: array<WaitlistConfig>(operations.waitlist),
     agendaBlocks: array<AgendaBlock>(operations.agendaBlocks),
+    cashSessions: array<CashSession>(operations.cashSessions),
+    commandPayments: array<CommandPayment>(operations.commandPayments),
+    bookedServices: array<BookedServices>(operations.bookedServices),
+    productLines: array<{ itemId: string; productId: string }>(operations.productLines),
     settings: {
       openHour: Number(settings.openHour ?? DEFAULT_WORKSPACE.settings.openHour),
       closeHour: Number(settings.closeHour ?? DEFAULT_WORKSPACE.settings.closeHour),

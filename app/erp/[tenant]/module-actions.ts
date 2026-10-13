@@ -71,12 +71,13 @@ async function persistWorkspace(
   shop: WorkspaceShop,
   mutate: (workspace: ErpWorkspace) => void,
 ) {
-  const workspace = cloneWorkspace(readWorkspace(shop.enabledFeatures));
-  mutate(workspace);
-  await prisma.barberShop.update({
-    where: { id: shop.id },
-    data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) },
-  });
+  await prisma.$transaction(async tx => {
+    const fresh = await tx.barberShop.findUnique({ where: { id: shop.id } });
+    if (!fresh) throw new Error("Shop not found");
+    const workspace = cloneWorkspace(readWorkspace(fresh.enabledFeatures));
+    mutate(workspace);
+    await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) } });
+  }, { isolationLevel: "Serializable" });
 }
 
 function modulePath(tenantCode: string, module: string) {

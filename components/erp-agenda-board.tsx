@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { whatsappWaitlist } from "@/lib/checkout";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { rescheduleAppointment, saveAgendaBlock, removeAgendaBlock } from "@/app/erp/[tenant]/agenda-actions";
@@ -1259,6 +1260,7 @@ export function ErpAgendaBoard({
                         "Unidade não informada"}
                     </small>
                     {item.phone && <small>{item.phone}</small>}
+                    {whatsappWaitlist(item.phone, item.customerName, item.serviceName) && <a className="agenda-whatsapp" href={whatsappWaitlist(item.phone, item.customerName, item.serviceName)!} target="_blank" rel="noopener noreferrer" aria-label={`Avisar ${item.customerName} pelo WhatsApp`} title="Abrir WhatsApp com mensagem para revisar e enviar"><MessageCircle size={17} /> Avisar pelo WhatsApp</a>}
                     {item.notes && <small>{item.notes}</small>}
                   </div>
                   {canOperate && (
@@ -1376,7 +1378,7 @@ export function ErpAgendaBoard({
                 {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar atendimento</AgendaSubmit>}
               </form>
               {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Remarcar</button>}
-              {detail.command && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Abrir comanda financeira</Link>}
+              {detail.command && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>{detail.command.status === "OPEN" ? "Fechar comanda / checkout" : "Ver comanda e pagamento"}</Link>}
             </div>}
             <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
               <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
