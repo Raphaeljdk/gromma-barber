@@ -65,11 +65,13 @@ export function AgendaDialog({
 export function AgendaSubmit({
   children,
   secondary = false,
+  disabled = false,
   name,
   value,
 }: {
   children: ReactNode;
   secondary?: boolean;
+  disabled?: boolean;
   name?: string;
   value?: string;
 }) {
@@ -77,7 +79,7 @@ export function AgendaSubmit({
   return (
     <button
       className={`btn${secondary ? " secondary" : ""}`}
-      disabled={pending}
+      disabled={pending || disabled}
       type="submit"
       name={name}
       value={value}
