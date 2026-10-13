@@ -1067,7 +1067,7 @@ export async function TenantERPView({
         <section id="comandas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comandas")}>
           {valueOf("checkoutError") && <div role="alert" className="notice error-notice">{valueOf("checkoutError")}</div>}
           {valueOf("checkoutOk") && <div role="status" className="notice success">Operação salva com sucesso.</div>}
-          <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head"><div><div className="eyebrow">Caixa / Comandas</div><h2>Comandas e pagamentos</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/caixa`}>Voltar ao caixa</Link></div>
           {actionOk === "comanda" && <div className="notice erp-inline-notice success">Comanda fechada e financeiro atualizado.</div>}
           {actionError === "comanda" && <div className="notice erp-inline-notice error-notice">Não foi possível fechar a comanda.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
@@ -1423,6 +1423,10 @@ export async function TenantERPView({
         <section id="caixa" className="demo-section" hidden={Boolean(moduleId && moduleId !== "caixa")}>
           {valueOf("checkoutError") && <div role="alert" className="notice error-notice">{valueOf("checkoutError")}</div>}
           {valueOf("checkoutOk") && <div role="status" className="notice success">Operação salva com sucesso.</div>}
+          <div className="cash-command-shortcut">
+            <div><strong>Comandas e recebimentos</strong><span>{openCommands} {openCommands === 1 ? "comanda aberta" : "comandas abertas"} · registre os pagamentos e feche com segurança.</span></div>
+            <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?comandaStatus=OPEN`}>Ver comandas para receber →</Link>
+          </div>
           <CashRegister tenantCode={tenantCode} units={shop.units.filter(u => u.active).map(u => ({ id: u.id, name: u.name }))} sessions={workspace.cashSessions} payments={workspace.commandPayments} canOperate={canOperate || canFinance} /><h3 className="cash-consolidated">Visão financeira consolidada (todos os períodos)</h3>
           <div className="demo-metrics">
             <article className="card demo-metric"><span className="small muted">Receitas / recebíveis</span><strong>{brl(receivables)}</strong><small>lançamentos carregados</small></article>
