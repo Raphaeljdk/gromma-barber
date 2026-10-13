@@ -18,6 +18,7 @@ export type AgendaAppointment = {
   notes: string | null;
   lastVisit?: string | null;
   customerNotes?: string | null;
+  recentProducts?: { description: string; quantity: number; date: string }[];
   hasPlan: boolean;
   planName: string | null;
   firstVisit: boolean;
