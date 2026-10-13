@@ -1450,12 +1450,12 @@ export function ErpAgendaBoard({
                 setDetail(null);
               }}>+ Agendar retorno</button>}
             </div>}
-            <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
+            {detailView.customer && <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
               <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
               <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
               <p><strong>Preferências / observações do cadastro:</strong> {detail.customerNotes || "Não informadas"}</p>
-            </section>
-            <section className="agenda-customer-purchases">
+            </section>}
+            {detailView.purchases && <section className="agenda-customer-purchases">
               <h4>Últimos produtos comprados</h4>
               {detail.recentProducts?.length ? <div>
                 {detail.recentProducts.map((product, index) => <article key={product.description + index}>
@@ -1463,8 +1463,8 @@ export function ErpAgendaBoard({
                   <small>{product.quantity} un. · {new Date(product.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small>
                 </article>)}
               </div> : <p className="agenda-form-hint">Nenhuma compra de produto identificada nas últimas comandas.</p>}
-            </section>
-            <dl className="agenda-detail-grid">
+            </section>}
+            <dl className="agenda-detail-grid agenda-detail-grid-compact">
               <div>
                 <dt>Serviço</dt>
                 <dd>{detail.serviceName}</dd>
