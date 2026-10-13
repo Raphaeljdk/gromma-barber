@@ -21,7 +21,6 @@ import {
   Monitor,
   Cake,
   Sparkles,
-  ShoppingBag,
   Crown,
   UserRound,
   MapPin,
@@ -166,9 +165,6 @@ function AppointmentSignals({
     ...(appointment.birthday
       ? [{ icon: Cake, label: "Aniversariante do dia" }]
       : []),
-    ...(appointmentNotes(appointment.notes).repurchase
-      ? [{ icon: ShoppingBag, label: "Item para recompra" }]
-      : []),
     {
       icon: appointment.hasPlan ? Crown : UserRound,
       label: appointment.hasPlan
@@ -200,7 +196,6 @@ function AgendaLegend() {
     { icon: Store, label: "Agendado pelo totem" },
     { icon: Sparkles, label: "Primeira visita" },
     { icon: Cake, label: "Aniversariante do dia" },
-    { icon: ShoppingBag, label: "Item para recompra" },
     { icon: Crown, label: "Com plano" },
     { icon: UserRound, label: "Sem plano" },
     { icon: MapPin, label: "Cliente no local" },
@@ -227,8 +222,7 @@ function AgendaLegend() {
         ))}
       </div>
       <p className="agenda-form-hint">
-        A recompra é marcada na ficha. A primeira visita considera o histórico
-        de atendimentos concluídos.
+        A primeira visita considera o histórico de atendimentos concluídos.
       </p>
     </section>
   );
@@ -1398,13 +1392,12 @@ export function ErpAgendaBoard({
                 {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar atendimento</AgendaSubmit>}
               </form>
               {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Remarcar</button>}
-              {detail.command && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>{detail.command.status === "OPEN" ? "Fechar comanda / checkout" : "Ver comanda e pagamento"}</Link>}
+              {detail.command && <Link className={detail.command.status === "OPEN" ? "btn agenda-checkout-shortcut" : "btn secondary"} href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>{detail.command.status === "OPEN" ? "Receber e fechar comanda →" : "Ver pagamento"}</Link>}
             </div>}
             <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
               <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
               <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
               <p><strong>Preferências / observações do cadastro:</strong> {detail.customerNotes || "Não informadas"}</p>
-              <p><strong>Recompra:</strong> {appointmentNotes(detail.notes).repurchase ? detailNotes || "Item marcado; detalhes não informados" : "Nenhum item marcado"}</p>
             </section>
             <dl className="agenda-detail-grid">
               <div>
@@ -1431,15 +1424,7 @@ export function ErpAgendaBoard({
               >
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
-                <label className="agenda-checkbox">
-                  <input
-                    type="checkbox"
-                    name="repurchase"
-                    value="1"
-                    defaultChecked={appointmentNotes(detail.notes).repurchase}
-                  />
-                  <span>Cliente com item para recompra</span>
-                </label>
+                <input type="hidden" name="repurchase" value={appointmentNotes(detail.notes).repurchase ? "1" : "0"} />
                 <label>
                   <span className="label">Observações</span>
                   <textarea
@@ -1448,7 +1433,7 @@ export function ErpAgendaBoard({
                     rows={3}
                     maxLength={300}
                     defaultValue={detailNotes}
-                    placeholder="Detalhes do atendimento ou item para recompra"
+                    placeholder="Observações e preferências do atendimento"
                   />
                 </label>
                 <AgendaSubmit secondary>Salvar informações</AgendaSubmit>
@@ -1504,7 +1489,7 @@ export function ErpAgendaBoard({
                 <form action={updateAppointmentStatus}>
                   <AgendaContextFields context={context} />
                   <input type="hidden" name="appointmentId" value={detail.id} />
-                  {NEXT_ACTION[detail.status] && (
+                  {NEXT_ACTION[detail.status] && !(detail.status === "IN_SERVICE" && detail.command?.status === "OPEN") && (
                     <AgendaSubmit
                       name="action"
                       value={NEXT_ACTION[detail.status].action}
