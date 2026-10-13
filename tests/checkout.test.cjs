@@ -131,3 +131,39 @@ test('interface da comanda oferece recebimento rápido e últimas compras', () =
     assert.match(html, new RegExp(item));
   assert.doesNotMatch(html, /Cliente com item para recompra/);
 });
+
+
+test('Caixa apresenta atalho de conferência e exige conferência antes de fechar', () => {
+  const { CashRegister } = load('components/cash-register.tsx', {
+    '@/app/erp/[tenant]/checkout-actions': { openCash() {}, closeCash() {} },
+    'next/link': { __esModule: true, default: ({ children, ...props }) => React.createElement('a', props, children) },
+  });
+  const html = renderToStaticMarkup(React.createElement(CashRegister, {
+    tenantCode: 'GROMMA',
+    units: [{ id: 'u1', name: 'Matriz' }],
+    sessions: [{ id: 's1', unitId: 'u1', unitName: 'Matriz', openedAt: '2026-10-13T10:00:00Z', openedBy: 'Gerente', openingCents: 2000 }],
+    payments: [],
+    canOperate: true,
+  }));
+  assert.match(html, /Preencher valores previstos para conferir/);
+  assert.match(html, /Conferi o dinheiro, a maquininha e os recebimentos/);
+  assert.match(html, /Confirmar conferência e fechar caixa/);
+});
+
+test('Comandas fica subordinada a Caixa no menu, sem aparecer em Operação', () => {
+  const { ErpSidebar } = load('components/erp-sidebar.tsx', {
+    'next/navigation': { useRouter: () => ({ back() {}, push() {} }), usePathname: () => '/erp/GROMMA/caixa' },
+    'next/link': { __esModule: true, default: ({ children, ...props }) => React.createElement('a', props, children) },
+  });
+  const html = renderToStaticMarkup(React.createElement(ErpSidebar, {
+    business: 'Barbearia Teste', tenantCode: 'GROMMA', city: 'São Paulo', state: 'SP',
+    units: 1, users: 3, planKey: 'PRO', planName: 'Pro', planPrice: '100,00', email: 'demo@example.com',
+    viewerType: 'TENANT', supportHref: 'https://example.com',
+  }));
+  const iCaixa = html.indexOf('>Caixa</span>');
+  const iComandas = html.indexOf('>Comandas</span>');
+  assert.ok(iCaixa >= 0 && iComandas > iCaixa);
+  assert.match(html, /aria-controls="erp-nav-cash-children"/);
+  assert.match(html, /aria-expanded="true"/);
+  assert.equal((html.match(/>Comandas<\/span>/g) || []).length, 1);
+});
