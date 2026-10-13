@@ -12,6 +12,8 @@ import {
   GripVertical,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Settings2,
   Clock3,
   Users,
   Plus,
@@ -281,6 +283,27 @@ export function ErpAgendaBoard({
   const [detail, setDetail] = useState<AgendaAppointment | null>(
     () => appointments.find((item) => item.id === initialAppointmentId) ?? null,
   );
+  const [detailOptionsOpen, setDetailOptionsOpen] = useState(false);
+  const [detailView, setDetailView] = useState({
+    signals: false, customer: false, purchases: false,
+    notes: false, command: false, management: false,
+  });
+  const detailViewKey = "gromma-agenda-detail-v2:" + tenantCode;
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(detailViewKey) || "null");
+      if (stored && typeof stored === "object") {
+        setDetailView(previous => Object.fromEntries(
+          Object.entries(previous).map(([key, value]) => [key, typeof stored[key] === "boolean" ? stored[key] : value]),
+        ) as typeof previous);
+      }
+    } catch { /* Preferências opcionais não interrompem a agenda. */ }
+  }, [detailViewKey]);
+  function toggleDetailView(key: keyof typeof detailView, value: boolean) {
+    const next = { ...detailView, [key]: value };
+    setDetailView(next);
+    try { localStorage.setItem(detailViewKey, JSON.stringify(next)); } catch { /* Sem persistência local. */ }
+  }
   const context: AgendaContext = {
     tenantCode,
     agendaDate: selectedDate,
@@ -1365,7 +1388,7 @@ export function ErpAgendaBoard({
       )}
       {detail && (
         <AgendaDialog
-          title="Comanda do agendamento"
+          title={detail.command ? "Comanda do atendimento" : "Detalhes do agendamento"}
           subtitle={`${dateLabel(agendaDateKey(detail.startsAt), { dateStyle: "long" })} · ${agendaTime(detail.startsAt)}${detail.endsAt ? ` às ${agendaTime(detail.endsAt)}` : ""}`}
           onClose={() => setDetail(null)}
         >
@@ -1384,7 +1407,30 @@ export function ErpAgendaBoard({
                 {STATUS_LABELS[detail.status]}
               </span>
             </div>
-            <AppointmentSignals appointment={detail} expanded />
+            <div className="agenda-detail-preferences">
+              <span>{detail.serviceName} · {money(detail.price)}</span>
+              <button type="button" className="btn secondary" aria-expanded={detailOptionsOpen}
+                aria-controls="agenda-detail-settings" onClick={() => setDetailOptionsOpen(value => !value)}>
+                <Settings2 size={16} /> Opções <ChevronDown size={14} />
+              </button>
+            </div>
+            {detailOptionsOpen && <div id="agenda-detail-settings" className="agenda-detail-settings">
+              <div><strong>Personalizar ficha</strong><small>Deixe apenas as informações úteis para seu atendimento.</small></div>
+              <div className="agenda-detail-settings-grid">
+                {([
+                  ["signals", "Legendas e sinais"],
+                  ["customer", "Resumo do cliente"],
+                  ["purchases", "Produtos comprados"],
+                  ["notes", "Observações"],
+                  ["command", "Itens da comanda"],
+                  ["management", "Cancelar / não compareceu"],
+                ] as const).map(([key, label]) => <label key={key}>
+                  <input type="checkbox" checked={detailView[key]} onChange={event => toggleDetailView(key, event.target.checked)} />
+                  <span>{label}</span>
+                </label>)}
+              </div>
+            </div>}
+            {detailView.signals && <AppointmentSignals appointment={detail} expanded />}
             {canOperate && <div className="agenda-quick-actions">
               <form action={updateAppointmentStatus}><AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
                 {detail.status === "SCHEDULED" && <AgendaSubmit name="action" value="confirm">Confirmar presença</AgendaSubmit>}
