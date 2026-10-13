@@ -66,124 +66,130 @@ function ProfessionalField({
 }
 
 export function AgendaAppointmentForm({
-  context,
-  professionals,
-  units,
-  services,
-  customers,
-  draft,
-  rotationEnabled,
+  context, professionals, units, services, customers, draft, rotationEnabled,
 }: FormProps & {
   customers: AgendaCustomer[];
   draft: AgendaDraft;
   rotationEnabled: boolean;
 }) {
-  const [extraServices, setExtraServices] = useState<string[]>([]);
+  const [unitId, setUnitId] = useState(draft.unitId || (units.length === 1 ? units[0].id : ""));
   const [primaryService, setPrimaryService] = useState(draft.serviceId || "");
-  const selectedServices = services.filter(s => s.id === primaryService || extraServices.includes(s.id));
-  const [unitId, setUnitId] = useState(
-    draft.unitId || (units.length === 1 ? units[0].id : ""),
+  const [extraServices, setExtraServices] = useState<string[]>([]);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerId, setCustomerId] = useState(draft.customerId || "");
+  const [startsAt, setStartsAt] = useState(draft.startsAt);
+  const [showNotes, setShowNotes] = useState(Boolean(draft.notes));
+  const chosen = [primaryService, ...extraServices].filter(Boolean);
+  const selectedServices = chosen.map(id => services.find(service => service.id === id)).filter((item): item is AgendaService => Boolean(item));
+  const totalMinutes = selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0);
+  const totalPrice = selectedServices.reduce((sum, item) => sum + item.price, 0);
+  const visibleCustomers = customers.filter(customer =>
+    !customerSearch || customer.id === customerId ||
+    [customer.name, customer.phone || ""].some(value => value.toLocaleLowerCase("pt-BR").includes(customerSearch.toLocaleLowerCase("pt-BR")))
   );
+  const selectedCustomer = customers.find(item => item.id === customerId);
+  const finishAt = startsAt && totalMinutes
+    ? new Date(new Date(startsAt + ":00-03:00").getTime() + totalMinutes * 60000)
+        .toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })
+    : null;
+  const money = (amount: number) => amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  function addService(id: string) {
+    if (!id || chosen.includes(id) || chosen.length >= 12) return;
+    if (!primaryService) setPrimaryService(id);
+    else setExtraServices(previous => [...previous, id]);
+  }
+  function removeService(id: string) {
+    if (primaryService === id) {
+      setPrimaryService(extraServices[0] || "");
+      setExtraServices(previous => previous.slice(1));
+    } else setExtraServices(previous => previous.filter(value => value !== id));
+  }
+
   return (
-    <form
-      action={createAppointment}
-      className="erp-quick-form agenda-modal-form"
-    >
+    <form action={createAppointment} className="erp-quick-form agenda-modal-form agenda-booking-form">
       <AgendaContextFields context={context} />
       {draft.waitlistId && <input type="hidden" name="waitlistId" value={draft.waitlistId} />}
-      {draft.waitlistId && <p className="agenda-form-hint">Encaixe da fila: confira o cliente e o serviço. A entrada só será retirada da fila após salvar o agendamento.</p>}
-      <div className="grid grid-2">
-        <label>
-          <span className="label">Cliente</span>
-          <select name="customerId" className="select" defaultValue={draft.customerId || ""}>
-            <option value="">Cliente avulso</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-                {customer.phone ? ` · ${customer.phone}` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className="label">Serviço</span>
-          <select className="select" name="serviceId" required value={primaryService} onChange={e => { setPrimaryService(e.target.value); setExtraServices(old => old.filter(id => id !== e.target.value)); }}>
-            <option value="" disabled>
-              Selecione o serviço
-            </option>
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.name} · {service.durationMinutes} min ·{" "}
-                {service.price.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                })}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="agenda-extra-services">
-          {extraServices.map((id, index) => <div className="agenda-service-row" key={index}><label><span className="label">Serviço adicional {index + 1}</span><select className="select" name="serviceIds" required value={id} onChange={e => setExtraServices(old => old.map((v, i) => i === index ? e.target.value : v))}><option value="">Selecione</option>{services.filter(s => s.id !== primaryService && (!extraServices.includes(s.id) || s.id === id)).map(s => <option key={s.id} value={s.id}>{s.name} · {s.durationMinutes} min · {s.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</option>)}</select></label><button type="button" className="btn secondary" aria-label={`Remover serviço adicional ${index + 1}`} onClick={() => setExtraServices(old => old.filter((_, i) => i !== index))}>Remover</button></div>)}
-          <button type="button" className="btn secondary" disabled={extraServices.length >= 11 || selectedServices.length >= services.length} onClick={() => setExtraServices(old => [...old, ""])}>＋ Adicionar outro serviço</button>
-          <p className="agenda-form-hint">Duração total: {selectedServices.reduce((sum, s) => sum + s.durationMinutes, 0)} min · Valor: {selectedServices.reduce((sum, s) => sum + s.price, 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+      {draft.waitlistId && <p className="agenda-form-hint agenda-booking-alert">Encaixe da fila: o cliente só sairá da lista quando o atendimento for salvo.</p>}
+      <section className="agenda-booking-section">
+        <div className="agenda-booking-section-heading"><span className="agenda-booking-number">01</span><div><h4>Quem será atendido?</h4><p>Encontre o cliente pelo nome ou telefone.</p></div></div>
+        <div className="agenda-booking-customer">
+          <label><span className="label">Buscar cliente</span>
+            <input className="input" type="search" value={customerSearch} onChange={event => setCustomerSearch(event.target.value)} placeholder="Digite nome ou telefone para filtrar" autoComplete="off" />
+          </label>
+          <label><span className="label">Cliente selecionado</span>
+            <select name="customerId" className="select" value={customerId} onChange={event => setCustomerId(event.target.value)}>
+              <option value="">Cliente avulso (sem cadastro)</option>
+              {visibleCustomers.map(customer => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? " · " + customer.phone : ""}</option>)}
+            </select>
+          </label>
         </div>
-        <label>
-          <span className="label">Unidade</span>
-          <select
-            className="select"
-            name="unitId"
-            required
-            value={unitId}
-            onChange={(event) => setUnitId(event.target.value)}
-          >
-            <option value="" disabled>
-              Selecione a unidade
-            </option>
-            {units.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.name}
-              </option>
-            ))}
+        <div className="agenda-booking-selected" aria-live="polite">
+          {selectedCustomer ? <><strong>{selectedCustomer.name}</strong><span>{selectedCustomer.phone || "Telefone não cadastrado"}</span></> : <><strong>Atendimento avulso</strong><span>Para manter o histórico de visitas e compras, selecione um cliente cadastrado.</span></>}
+        </div>
+      </section>
+      <section className="agenda-booking-section">
+        <div className="agenda-booking-section-heading"><span className="agenda-booking-number">02</span><div><h4>Serviços do atendimento</h4><p>Selecione o principal e adicione outros com um clique.</p></div></div>
+        <label><span className="label">Serviço principal</span>
+          <select className="select" name="serviceId" required value={primaryService} onChange={event => {
+            const id = event.target.value;
+            setPrimaryService(id);
+            setExtraServices(previous => previous.filter(other => other !== id));
+          }}>
+            <option value="" disabled>Selecione um serviço</option>
+            {services.map(service => <option key={service.id} value={service.id}>{service.name + " · " + service.durationMinutes + " min · " + money(service.price)}</option>)}
           </select>
         </label>
-        <ProfessionalField
-          key={unitId}
-          professionals={professionals}
-          unitId={unitId}
-          initialBarberId={draft.barberId}
-        />
-        <label className="agenda-field-wide">
-          <span className="label">Data e hora</span>
-          <input
-            type="datetime-local"
-            className="input"
-            name="startsAt"
-            required
-            defaultValue={draft.startsAt}
-          />
-        </label>
-      </div>
-      {rotationEnabled && (
-        <p className="agenda-form-hint">
-          Sem preferência: o rodízio procura um profissional disponível.
-        </p>
-      )}
-      <label className="agenda-checkbox">
-        <input type="checkbox" name="repurchase" value="1" />
-        <span>Cliente com item para recompra</span>
-      </label>
-      <label>
-        <span className="label">Observações</span>
-        <textarea
-          className="input"
-          name="notes"
-          rows={3}
-          maxLength={300}
-          placeholder="Detalhes do atendimento ou item para recompra"
-          defaultValue={draft.notes || ""}
-        />
-      </label>
-      <AgendaSubmit>Salvar agendamento</AgendaSubmit>
+        <div className="agenda-booking-services">
+          <span className="label">Adicionar serviços extras</span>
+          <div className="agenda-booking-service-options">
+            {services.filter(service => !chosen.includes(service.id)).map(service => <button
+              type="button" className="agenda-booking-service-choice" key={service.id}
+              disabled={chosen.length >= 12}
+              onClick={() => addService(service.id)}
+              aria-label={"Adicionar " + service.name}
+            ><span>+ {service.name}</span><small>{service.durationMinutes} min · {money(service.price)}</small></button>)}
+            {!services.length && <small className="agenda-form-hint">Cadastre serviços para habilitar agendamentos.</small>}
+          </div>
+        </div>
+        {extraServices.map((id, index) => <input key={id} type="hidden" name="serviceIds" value={id} aria-label={"Serviço adicional " + (index + 1)} />)}
+        {!!selectedServices.length && <div className="agenda-booking-chosen">
+          {selectedServices.map(service => <span key={service.id}>{service.name}<button type="button" onClick={() => removeService(service.id)} aria-label={"Remover " + service.name}>×</button></span>)}
+        </div>}
+      </section>
+      <section className="agenda-booking-section">
+        <div className="agenda-booking-section-heading"><span className="agenda-booking-number">03</span><div><h4>Quando e com quem?</h4><p>Profissional, unidade e horário reservados juntos.</p></div></div>
+        <div className="grid grid-2">
+          <label><span className="label">Unidade</span>
+            <select name="unitId" className="select" required value={unitId} onChange={event => setUnitId(event.target.value)}>
+              <option value="" disabled>Selecione a unidade</option>
+              {units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
+            </select>
+          </label>
+          <ProfessionalField key={unitId} professionals={professionals} unitId={unitId} initialBarberId={draft.barberId} />
+          <label className="agenda-field-wide"><span className="label">Data e hora do atendimento</span>
+            <input className="input" name="startsAt" type="datetime-local" required value={startsAt} onChange={event => setStartsAt(event.target.value)} />
+          </label>
+        </div>
+        {rotationEnabled && <p className="agenda-form-hint">Sem preferência: o rodízio procura um profissional disponível. Conflitos são validados antes de salvar.</p>}
+      </section>
+      <section className="agenda-booking-section agenda-booking-final">
+        <div className="agenda-booking-section-heading"><span className="agenda-booking-number">04</span><div><h4>Conferir e confirmar</h4><p>Revise os detalhes para evitar erros de recepção.</p></div></div>
+        <div className="agenda-booking-total">
+          <div><small>Tempo reservado</small><strong>{totalMinutes} minutos{finishAt ? " · até " + finishAt : ""}</strong></div>
+          <div><small>Valor estimado</small><strong>{money(totalPrice)}</strong></div>
+        </div>
+        <button type="button" className="agenda-booking-notes-toggle" aria-expanded={showNotes} onClick={() => setShowNotes(!showNotes)}>
+          {showNotes ? "Ocultar observações" : "+ Adicionar observação (opcional)"}
+        </button>
+        {showNotes ? <label><span className="label">Observações</span>
+          <textarea className="input" name="notes" rows={3} maxLength={300} defaultValue={draft.notes || ""} placeholder="Preferências ou detalhes do atendimento..." />
+        </label> : <input type="hidden" name="notes" value={draft.notes || ""} />}
+        <div className="agenda-booking-submit">
+          <span>O agendamento só será criado se não houver conflito de horário.</span>
+          <AgendaSubmit>Confirmar agendamento</AgendaSubmit>
+        </div>
+      </section>
     </form>
   );
 }

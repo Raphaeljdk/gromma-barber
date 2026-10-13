@@ -6,6 +6,7 @@ export type AgendaAppointment = {
   endsAt: string | null;
   status: string;
   customerId: string | null;
+  serviceId?: string | null;
   customerName: string;
   customerPhone: string | null;
   barberId: string | null;
@@ -18,6 +19,7 @@ export type AgendaAppointment = {
   notes: string | null;
   lastVisit?: string | null;
   customerNotes?: string | null;
+  recentProducts?: { description: string; quantity: number; date: string }[];
   hasPlan: boolean;
   planName: string | null;
   firstVisit: boolean;

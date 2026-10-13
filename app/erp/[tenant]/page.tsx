@@ -518,6 +518,28 @@ export async function TenantERPView({
     by: ["customerId"], where: { barberShopId: shop.id, customerId: { in: agendaCustomerIds }, status: "COMPLETED", startsAt: { lt: new Date() } }, _max: { startsAt: true },
   }) : [];
   const lastVisitByCustomer = new Map(lastVisits.map(item => [item.customerId, item._max.startsAt?.toISOString() || null]));
+  // Use only purchases from this tenant, already closed and linked to this client.
+  // Bound the history query to protect the agenda from unbounded scans.
+  const agendaRecentCommands = agendaCustomerIds.length ? await prisma.serviceCommand.findMany({
+    where: { barberShopId: shop.id, customerId: { in: agendaCustomerIds }, status: "CLOSED" },
+    include: { items: { where: { kind: "PRODUCT" }, select: { description: true, quantity: true } } },
+    orderBy: { closedAt: "desc" },
+    take: Math.min(1000, agendaCustomerIds.length * 15),
+  }) : [];
+  const recentProductsByCustomer = new Map<string, { description: string; quantity: number; date: string }[]>();
+  for (const previous of agendaRecentCommands) {
+    if (!previous.customerId || !previous.items.length) continue;
+    const collected = recentProductsByCustomer.get(previous.customerId) ?? [];
+    if (collected.length >= 5) continue;
+    for (const item of previous.items) {
+      if (collected.length >= 5) break;
+      if (!collected.some(existing => existing.description === item.description)) {
+        collected.push({ description: item.description, quantity: Number(item.quantity), date: (previous.closedAt || previous.openedAt).toISOString() });
+      }
+    }
+    recentProductsByCustomer.set(previous.customerId, collected);
+  }
+
   const activeClubPlans = new Map(workspace.clubPlans.filter((item) => item.active).map((item) => [item.id, item.name]));
   const customerPlan = new Map(workspace.clubMembers.filter((item) => item.status === "ACTIVE" && activeClubPlans.has(item.planId)).map((item) => [item.customerId, activeClubPlans.get(item.planId)!]));
 
@@ -874,12 +896,14 @@ export async function TenantERPView({
               endsAt: item.endsAt?.toISOString() ?? null,
               status: item.status,
               customerId: item.customerId,
+              serviceId: item.serviceId,
               customerName: item.customer?.name ?? "Cliente avulso",
               customerPhone: item.customer?.phone ?? item.customer?.whatsapp ?? null,
               source: item.source,
               notes: item.notes,
               lastVisit: item.customerId ? lastVisitByCustomer.get(item.customerId) || null : null,
               customerNotes: item.customer?.notes || null,
+              recentProducts: item.customerId ? recentProductsByCustomer.get(item.customerId) ?? [] : [],
               price: workspace.bookedServices.find(b => b.appointmentId === item.id)?.services.reduce((sum, service) => sum + service.price, 0) ?? Number(item.service?.price ?? 0),
               hasPlan: Boolean(item.customerId && customerPlan.has(item.customerId)),
               planName: item.customerId ? customerPlan.get(item.customerId) ?? null : null,
@@ -922,6 +946,7 @@ export async function TenantERPView({
           {actionError === "fila" && <div className="notice erp-inline-notice error-notice">Revise os dados da lista de espera.</div>}
           {actionOk === "agenda-status" && <div className="notice erp-inline-notice success">Status do atendimento atualizado.</div>}
           {actionError === "agenda-status" && <div className="notice erp-inline-notice error-notice">A transição solicitada não é válida para este atendimento.</div>}
+          {actionError === "comanda-pendente" && <div className="notice erp-inline-notice error-notice">Este atendimento possui uma comanda aberta. Receba e feche a comanda antes de concluir o atendimento.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
 
           <div className="erp-subsection-head">
@@ -1043,7 +1068,7 @@ export async function TenantERPView({
         <section id="comandas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comandas")}>
           {valueOf("checkoutError") && <div role="alert" className="notice error-notice">{valueOf("checkoutError")}</div>}
           {valueOf("checkoutOk") && <div role="status" className="notice success">Operação salva com sucesso.</div>}
-          <div className="section-head"><div><div className="eyebrow">Operacional</div><h2>Comandas</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head"><div><div className="eyebrow">Caixa / Comandas</div><h2>Comandas e pagamentos</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/caixa`}>Voltar ao caixa</Link></div>
           {actionOk === "comanda" && <div className="notice erp-inline-notice success">Comanda fechada e financeiro atualizado.</div>}
           {actionError === "comanda" && <div className="notice erp-inline-notice error-notice">Não foi possível fechar a comanda.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
@@ -1399,6 +1424,10 @@ export async function TenantERPView({
         <section id="caixa" className="demo-section" hidden={Boolean(moduleId && moduleId !== "caixa")}>
           {valueOf("checkoutError") && <div role="alert" className="notice error-notice">{valueOf("checkoutError")}</div>}
           {valueOf("checkoutOk") && <div role="status" className="notice success">Operação salva com sucesso.</div>}
+          <div className="cash-command-shortcut">
+            <div><strong>Comandas e recebimentos</strong><span>{openCommands} {openCommands === 1 ? "comanda aberta" : "comandas abertas"} · registre os pagamentos e feche com segurança.</span></div>
+            <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?comandaStatus=OPEN`}>Ver comandas para receber →</Link>
+          </div>
           <CashRegister tenantCode={tenantCode} units={shop.units.filter(u => u.active).map(u => ({ id: u.id, name: u.name }))} sessions={workspace.cashSessions} payments={workspace.commandPayments} canOperate={canOperate || canFinance} /><h3 className="cash-consolidated">Visão financeira consolidada (todos os períodos)</h3>
           <div className="demo-metrics">
             <article className="card demo-metric"><span className="small muted">Receitas / recebíveis</span><strong>{brl(receivables)}</strong><small>lançamentos carregados</small></article>

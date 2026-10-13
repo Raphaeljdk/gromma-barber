@@ -21,7 +21,6 @@ import {
   Monitor,
   Cake,
   Sparkles,
-  ShoppingBag,
   Crown,
   UserRound,
   MapPin,
@@ -166,9 +165,6 @@ function AppointmentSignals({
     ...(appointment.birthday
       ? [{ icon: Cake, label: "Aniversariante do dia" }]
       : []),
-    ...(appointmentNotes(appointment.notes).repurchase
-      ? [{ icon: ShoppingBag, label: "Item para recompra" }]
-      : []),
     {
       icon: appointment.hasPlan ? Crown : UserRound,
       label: appointment.hasPlan
@@ -200,7 +196,6 @@ function AgendaLegend() {
     { icon: Store, label: "Agendado pelo totem" },
     { icon: Sparkles, label: "Primeira visita" },
     { icon: Cake, label: "Aniversariante do dia" },
-    { icon: ShoppingBag, label: "Item para recompra" },
     { icon: Crown, label: "Com plano" },
     { icon: UserRound, label: "Sem plano" },
     { icon: MapPin, label: "Cliente no local" },
@@ -227,8 +222,7 @@ function AgendaLegend() {
         ))}
       </div>
       <p className="agenda-form-hint">
-        A recompra é marcada na ficha. A primeira visita considera o histórico
-        de atendimentos concluídos.
+        A primeira visita considera o histórico de atendimentos concluídos.
       </p>
     </section>
   );
@@ -279,7 +273,7 @@ export function ErpAgendaBoard({
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const [orderMessage, setOrderMessage] = useState("");
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
   const [draft, setDraft] = useState<AgendaDraft | null>(
     canOperate ? (initialDraft ?? null) : null,
   );
@@ -710,44 +704,6 @@ export function ErpAgendaBoard({
             </Link>
           ))}
         </div>
-      </div>
-      <div className="agenda-summary-caption">
-        Indicadores de{" "}
-        {dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}
-      </div>
-      <div className="agenda-summary-grid">
-        {summaries.map(({ icon: Icon, label, value, filter }) => (
-          <article
-            className={
-              filter && selectedClientFilter === filter ? "selected" : ""
-            }
-            key={label}
-          >
-            {filter ? (
-              <Link
-                prefetch={false}
-                href={href({
-                  agendaClient: selectedClientFilter === filter ? "" : filter,
-                })}
-                aria-label={`${label}: ${value}. ${selectedClientFilter === filter ? "Remover" : "Aplicar"} filtro`}
-              >
-                <Icon size={18} />
-                <span>
-                  <small>{label}</small>
-                  <strong>{value}</strong>
-                </span>
-              </Link>
-            ) : (
-              <>
-                <Icon size={18} />
-                <div>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </div>
-              </>
-            )}
-          </article>
-        ))}
       </div>
       <div className="agenda-active-filters">
         <label>
@@ -1210,6 +1166,44 @@ export function ErpAgendaBoard({
               A data e a visualização são mantidas ao trocar de unidade.
             </small>
           </div>
+          <section className="agenda-side-card agenda-side-metrics" aria-label="Indicadores do dia">
+            <div className="agenda-side-head"><span>Indicadores do dia</span><strong>{dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}</strong></div>
+            <div className="agenda-summary-grid">
+              {summaries.map(({ icon: Icon, label, value, filter }) => (
+                <article
+                  className={
+                    filter && selectedClientFilter === filter ? "selected" : ""
+                  }
+                  key={label}
+                >
+                  {filter ? (
+                    <Link
+                      prefetch={false}
+                      href={href({
+                        agendaClient: selectedClientFilter === filter ? "" : filter,
+                      })}
+                      aria-label={`${label}: ${value}. ${selectedClientFilter === filter ? "Remover" : "Aplicar"} filtro`}
+                    >
+                      <Icon size={18} />
+                      <span>
+                        <small>{label}</small>
+                        <strong>{value}</strong>
+                      </span>
+                    </Link>
+                  ) : (
+                    <>
+                      <Icon size={18} />
+                      <div>
+                        <span>{label}</span>
+                        <strong>{value}</strong>
+                      </div>
+                    </>
+                  )}
+                </article>
+              ))}
+            </div>
+
+          </section>
           <section className="agenda-side-card">
             <div className="agenda-side-head">
               <span>Próximos horários livres</span>
@@ -1302,7 +1296,8 @@ export function ErpAgendaBoard({
       {draft && (
         <AgendaDialog
           title="Novo agendamento"
-          subtitle="Ficha de agendamento"
+          subtitle="Preencha a ficha e confira os detalhes antes de salvar"
+          variant="booking"
           onClose={() => setDraft(null)}
         >
           <AgendaAppointmentForm
@@ -1316,7 +1311,7 @@ export function ErpAgendaBoard({
           />
         </AgendaDialog>
       )}
-      {fitSlot && <AgendaDialog title="Agendar neste horário" subtitle={`${dateLabel(selectedDate, { dateStyle: "short" })} · ${fitSlot.startsAt.slice(11)}`} onClose={() => setFitSlot(null)}>
+      {fitSlot && <AgendaDialog title="Novo agendamento" subtitle={`Horário selecionado · ${dateLabel(selectedDate, { dateStyle: "short" })} às ${fitSlot.startsAt.slice(11)}`} variant="booking" onClose={() => setFitSlot(null)}>
         <div className="agenda-fit-list"><h4>Encaixes compatíveis da fila</h4>
           {fits.length ? fits.map(item => <button type="button" className="btn secondary" key={item.id} onClick={() => {
             const matches = customers.filter(c => item.phone && c.phone?.replace(/\D/g, "") === item.phone.replace(/\D/g, ""));
@@ -1397,13 +1392,31 @@ export function ErpAgendaBoard({
                 {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar atendimento</AgendaSubmit>}
               </form>
               {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Remarcar</button>}
-              {detail.command && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>{detail.command.status === "OPEN" ? "Fechar comanda / checkout" : "Ver comanda e pagamento"}</Link>}
+              {detail.command && <Link className={detail.command.status === "OPEN" ? "btn agenda-checkout-shortcut" : "btn secondary"} href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>{detail.command.status === "OPEN" ? "Receber e fechar comanda →" : "Ver pagamento"}</Link>}
+              {detail.customerId && detail.serviceId && <button type="button" className="btn secondary" onClick={() => {
+                setDraft({
+                  startsAt: `${addAgendaDays(agendaDateKey(new Date()), 7)}T${agendaTime(detail.startsAt)}`,
+                  barberId: detail.barberId || "",
+                  unitId: detail.unitId,
+                  customerId: detail.customerId || "",
+                  serviceId: detail.serviceId || "",
+                });
+                setDetail(null);
+              }}>+ Agendar retorno</button>}
             </div>}
             <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
               <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
               <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
               <p><strong>Preferências / observações do cadastro:</strong> {detail.customerNotes || "Não informadas"}</p>
-              <p><strong>Recompra:</strong> {appointmentNotes(detail.notes).repurchase ? detailNotes || "Item marcado; detalhes não informados" : "Nenhum item marcado"}</p>
+            </section>
+            <section className="agenda-customer-purchases">
+              <h4>Últimos produtos comprados</h4>
+              {detail.recentProducts?.length ? <div>
+                {detail.recentProducts.map((product, index) => <article key={product.description + index}>
+                  <strong>{product.description}</strong>
+                  <small>{product.quantity} un. · {new Date(product.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small>
+                </article>)}
+              </div> : <p className="agenda-form-hint">Nenhuma compra de produto identificada nas últimas comandas.</p>}
             </section>
             <dl className="agenda-detail-grid">
               <div>
@@ -1430,15 +1443,7 @@ export function ErpAgendaBoard({
               >
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
-                <label className="agenda-checkbox">
-                  <input
-                    type="checkbox"
-                    name="repurchase"
-                    value="1"
-                    defaultChecked={appointmentNotes(detail.notes).repurchase}
-                  />
-                  <span>Cliente com item para recompra</span>
-                </label>
+                <input type="hidden" name="repurchase" value={appointmentNotes(detail.notes).repurchase ? "1" : "0"} />
                 <label>
                   <span className="label">Observações</span>
                   <textarea
@@ -1447,7 +1452,7 @@ export function ErpAgendaBoard({
                     rows={3}
                     maxLength={300}
                     defaultValue={detailNotes}
-                    placeholder="Detalhes do atendimento ou item para recompra"
+                    placeholder="Observações e preferências do atendimento"
                   />
                 </label>
                 <AgendaSubmit secondary>Salvar informações</AgendaSubmit>
@@ -1503,7 +1508,7 @@ export function ErpAgendaBoard({
                 <form action={updateAppointmentStatus}>
                   <AgendaContextFields context={context} />
                   <input type="hidden" name="appointmentId" value={detail.id} />
-                  {NEXT_ACTION[detail.status] && (
+                  {NEXT_ACTION[detail.status] && !(detail.status === "IN_SERVICE" && detail.command?.status === "OPEN") && (
                     <AgendaSubmit
                       name="action"
                       value={NEXT_ACTION[detail.status].action}

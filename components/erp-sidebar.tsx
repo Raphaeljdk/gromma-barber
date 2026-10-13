@@ -7,6 +7,7 @@ import {
   BookOpenCheck,
   Building2,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -27,7 +28,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 type Props = {
@@ -54,7 +55,6 @@ const NAV_GROUPS = [
       { id: "agenda", label: "Agenda", icon: CalendarDays },
       { id: "clientes", label: "Clientes", icon: Users },
       { id: "servicos", label: "Serviços", icon: Store },
-      { id: "comandas", label: "Comandas", icon: ReceiptText },
     ],
   },
   {
@@ -127,6 +127,7 @@ export function ErpSidebar({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cashOpenOverride, setCashOpenOverride] = useState<boolean | null>(null);
 
   const active = useMemo(() => {
     const base = `/erp/${encodeURIComponent(tenantCode)}`;
@@ -134,6 +135,8 @@ export function ErpSidebar({
     const segment = pathname.slice(base.length).split("/").filter(Boolean)[0];
     return segment || "dashboard";
   }, [pathname, tenantCode]);
+
+  const cashExpanded = cashOpenOverride ?? (active === "caixa" || active === "comandas");
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -236,9 +239,8 @@ export function ErpSidebar({
                   ? routeFor(tenantCode, "plano")
                   : routeFor(tenantCode, item.id);
 
-                return (
+                const link = (
                   <Link
-                    key={item.id}
                     href={href}
                     className={[
                       "erp-nav-item",
@@ -260,6 +262,32 @@ export function ErpSidebar({
                     ) : null}
                   </Link>
                 );
+                if (item.id === "caixa") return (
+                  <Fragment key={item.id}>
+                    <div className={["erp-nav-cash-parent", active === "comandas" ? "has-active-child" : ""].join(" ")}>
+                      {link}
+                      <button type="button" className="erp-nav-cash-toggle"
+                        aria-label={cashExpanded ? "Recolher submenu de Caixa" : "Expandir submenu de Caixa"}
+                        aria-expanded={cashExpanded} aria-controls="erp-nav-cash-children"
+                        title="Expandir ou recolher comandas do caixa"
+                        onClick={() => setCashOpenOverride(!cashExpanded)}>
+                        <ChevronDown size={17} aria-hidden="true" />
+                      </button>
+                    </div>
+                    {cashExpanded && <div id="erp-nav-cash-children" className="erp-nav-cash-children">
+                      <Link href={routeFor(tenantCode, "comandas")}
+                        className={["erp-nav-subitem", active === "comandas" ? "active" : ""].join(" ")}
+                        aria-current={active === "comandas" ? "page" : undefined}
+                        onClick={() => setMobileOpen(false)}
+                        title={collapsed ? "Comandas" : undefined}>
+                        <ReceiptText size={16} strokeWidth={1.9} />
+                        <span className="erp-sidebar-label">Comandas</span>
+                        {active === "comandas" && <span className="erp-nav-active-dot" />}
+                      </Link>
+                    </div>}
+                  </Fragment>
+                );
+                return <Fragment key={item.id}>{link}</Fragment>;
               })}
             </div>
           ))}
