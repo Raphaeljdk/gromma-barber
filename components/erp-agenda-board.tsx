@@ -449,9 +449,23 @@ export function ErpAgendaBoard({
         a.time.localeCompare(b.time) ||
         a.professional.localeCompare(b.professional),
     );
-  const capacity =
-    activeProfessionals.length *
-    Math.floor(((closeHour - openHour) * 60) / slotMinutes);
+  const slotsPerProfessional = Math.floor(((closeHour - openHour) * 60) / slotMinutes);
+  const capacity = activeProfessionals.length * slotsPerProfessional;
+  // Ocupação é a proporção efetivamente reservada: horário passado não é atendimento.
+  // Bloqueios (almoço/folga) também não contam como vendas ou agenda ocupada.
+  const occupiedSlots = activeProfessionals.reduce((total, person) => {
+    const relevant = unitAppointments.filter(
+      item => item.barberId === person.id && !["CANCELED", "NO_SHOW"].includes(item.status),
+    );
+    const booked = Array.from({ length: slotsPerProfessional }, (_, index) => {
+      const minute = openHour * 60 + index * slotMinutes;
+      const slotStart = new Date(`${selectedDate}T${timeLabel(minute)}:00-03:00`).getTime();
+      const slotEnd = slotStart + slotMinutes * 60_000;
+      return relevant.some(item => new Date(item.startsAt).getTime() < slotEnd &&
+        (item.endsAt ? new Date(item.endsAt).getTime() : new Date(item.startsAt).getTime() + slotMinutes * 60_000) > slotStart);
+    }).filter(Boolean).length;
+    return total + booked;
+  }, 0);
   const activeDay = dayAppointments.filter(
     (item) => !["CANCELED", "NO_SHOW"].includes(item.status),
   );
@@ -481,7 +495,7 @@ export function ErpAgendaBoard({
     {
       icon: Users,
       label: "Ocupação",
-      value: `${capacity ? Math.round(((capacity - availableSlots.length) / capacity) * 100) : 0}%`,
+      value: `${capacity ? Math.round((occupiedSlots / capacity) * 100) : 0}%`,
     },
     {
       icon: UserRound,
@@ -563,10 +577,15 @@ export function ErpAgendaBoard({
     }
   }, [nowDate, selectedDate, view, nowTop]);
   const fits = fitSlot ? visibleWaitlist.filter(item => {
-    const service = services.find(service => service.id === item.serviceId);
-    if (!service || item.requestedDate !== selectedDate || (item.barberId && item.barberId !== fitSlot.barberId) || (fitSlot.unitId && item.unitId !== fitSlot.unitId)) return false;
-    const start = new Date(`${fitSlot.startsAt}:00-03:00`), end = new Date(start.getTime() + service.durationMinutes * 60000);
-    return Boolean(fitSlot.barberId) && withinAgendaHours(start, end, openHour, closeHour) && !hasAgendaBlock(blocks, fitSlot.barberId, start, end) && !appointments.some(a => a.barberId === fitSlot.barberId && !["CANCELED", "NO_SHOW"].includes(a.status) && new Date(a.startsAt) < end && (a.endsAt ? new Date(a.endsAt) : new Date(new Date(a.startsAt).getTime() + slotMinutes * 60000)) > start);
+    if (item.requestedDate !== selectedDate || (item.barberId && item.barberId !== fitSlot.barberId) || (fitSlot.unitId && item.unitId !== fitSlot.unitId)) return false;
+    const possibleServices = item.serviceId ? services.filter(service => service.id === item.serviceId) : services;
+    const start = new Date(`${fitSlot.startsAt}:00-03:00`);
+    return Boolean(fitSlot.barberId) && possibleServices.some(service => {
+      const end = new Date(start.getTime() + service.durationMinutes * 60000);
+      return withinAgendaHours(start, end, openHour, closeHour) &&
+        !hasAgendaBlock(blocks, fitSlot.barberId, start, end) &&
+        !appointments.some(a => a.barberId === fitSlot.barberId && !["CANCELED", "NO_SHOW"].includes(a.status) && new Date(a.startsAt) < end && (a.endsAt ? new Date(a.endsAt) : new Date(new Date(a.startsAt).getTime() + slotMinutes * 60000)) > start);
+    });
   }) : [];
 
   return (
@@ -1301,7 +1320,7 @@ export function ErpAgendaBoard({
         <div className="agenda-fit-list"><h4>Encaixes compatíveis da fila</h4>
           {fits.length ? fits.map(item => <button type="button" className="btn secondary" key={item.id} onClick={() => {
             const matches = customers.filter(c => item.phone && c.phone?.replace(/\D/g, "") === item.phone.replace(/\D/g, ""));
-            setDraft({ ...fitSlot, unitId: fitSlot.unitId || item.unitId || "", serviceId: item.serviceId || "", customerId: matches.length === 1 ? matches[0].id : "", waitlistId: item.id, notes: `Fila: ${item.customerName} · ${item.phone}. ${item.notes}` }); setFitSlot(null);
+            setDraft({ ...fitSlot, unitId: fitSlot.unitId || item.unitId || "", serviceId: item.serviceId || "", customerId: matches.length === 1 ? matches[0].id : "", waitlistId: item.id, notes: [item.notes, "Origem: fila de espera"].filter(Boolean).join(" · ") }); setFitSlot(null);
           }}>{item.customerName} · {item.serviceName}</button>) : <p className="agenda-form-hint">Nenhum cliente com serviço, duração e preferência compatíveis. A comparação considera o horário completo do serviço.</p>}
         </div>
         <AgendaAppointmentForm context={context} professionals={professionals} units={units} services={services} customers={customers} draft={fitSlot} rotationEnabled={settings.rotationEnabled} />
