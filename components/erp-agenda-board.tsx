@@ -279,7 +279,7 @@ export function ErpAgendaBoard({
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const [orderMessage, setOrderMessage] = useState("");
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
   const [draft, setDraft] = useState<AgendaDraft | null>(
     canOperate ? (initialDraft ?? null) : null,
   );
@@ -710,44 +710,6 @@ export function ErpAgendaBoard({
             </Link>
           ))}
         </div>
-      </div>
-      <div className="agenda-summary-caption">
-        Indicadores de{" "}
-        {dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}
-      </div>
-      <div className="agenda-summary-grid">
-        {summaries.map(({ icon: Icon, label, value, filter }) => (
-          <article
-            className={
-              filter && selectedClientFilter === filter ? "selected" : ""
-            }
-            key={label}
-          >
-            {filter ? (
-              <Link
-                prefetch={false}
-                href={href({
-                  agendaClient: selectedClientFilter === filter ? "" : filter,
-                })}
-                aria-label={`${label}: ${value}. ${selectedClientFilter === filter ? "Remover" : "Aplicar"} filtro`}
-              >
-                <Icon size={18} />
-                <span>
-                  <small>{label}</small>
-                  <strong>{value}</strong>
-                </span>
-              </Link>
-            ) : (
-              <>
-                <Icon size={18} />
-                <div>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </div>
-              </>
-            )}
-          </article>
-        ))}
       </div>
       <div className="agenda-active-filters">
         <label>
@@ -1210,6 +1172,48 @@ export function ErpAgendaBoard({
               A data e a visualização são mantidas ao trocar de unidade.
             </small>
           </div>
+          <section className="agenda-side-card agenda-side-metrics" aria-label="Indicadores do dia">
+            <div className="agenda-side-head"><span>Indicadores do dia</span><strong>${dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}</strong></div>
+            <div className="agenda-summary-caption">
+              Indicadores de{" "}
+              {dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}
+            </div>
+            <div className="agenda-summary-grid">
+              {summaries.map(({ icon: Icon, label, value, filter }) => (
+                <article
+                  className={
+                    filter && selectedClientFilter === filter ? "selected" : ""
+                  }
+                  key={label}
+                >
+                  {filter ? (
+                    <Link
+                      prefetch={false}
+                      href={href({
+                        agendaClient: selectedClientFilter === filter ? "" : filter,
+                      })}
+                      aria-label={`${label}: ${value}. ${selectedClientFilter === filter ? "Remover" : "Aplicar"} filtro`}
+                    >
+                      <Icon size={18} />
+                      <span>
+                        <small>{label}</small>
+                        <strong>{value}</strong>
+                      </span>
+                    </Link>
+                  ) : (
+                    <>
+                      <Icon size={18} />
+                      <div>
+                        <span>{label}</span>
+                        <strong>{value}</strong>
+                      </div>
+                    </>
+                  )}
+                </article>
+              ))}
+            </div>
+
+          </section>
           <section className="agenda-side-card">
             <div className="agenda-side-head">
               <span>Próximos horários livres</span>
@@ -1302,7 +1306,8 @@ export function ErpAgendaBoard({
       {draft && (
         <AgendaDialog
           title="Novo agendamento"
-          subtitle="Ficha de agendamento"
+          subtitle="Preencha a ficha e confira os detalhes antes de salvar"
+          variant="booking"
           onClose={() => setDraft(null)}
         >
           <AgendaAppointmentForm
@@ -1316,7 +1321,7 @@ export function ErpAgendaBoard({
           />
         </AgendaDialog>
       )}
-      {fitSlot && <AgendaDialog title="Agendar neste horário" subtitle={`${dateLabel(selectedDate, { dateStyle: "short" })} · ${fitSlot.startsAt.slice(11)}`} onClose={() => setFitSlot(null)}>
+      {fitSlot && <AgendaDialog title="Novo agendamento" subtitle={`Horário selecionado · ${dateLabel(selectedDate, { dateStyle: "short" })} às ${fitSlot.startsAt.slice(11)}`} variant="booking" onClose={() => setFitSlot(null)}>
         <div className="agenda-fit-list"><h4>Encaixes compatíveis da fila</h4>
           {fits.length ? fits.map(item => <button type="button" className="btn secondary" key={item.id} onClick={() => {
             const matches = customers.filter(c => item.phone && c.phone?.replace(/\D/g, "") === item.phone.replace(/\D/g, ""));
