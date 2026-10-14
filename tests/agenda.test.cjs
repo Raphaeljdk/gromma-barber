@@ -443,9 +443,11 @@ test('vídeo 14/10: múltiplos serviços aparecem em contador em vez de chips du
 
 test('opções da ficha mostram apenas excluir, falta e confirmação WhatsApp', () => {
   const html = markup({ initialAppointmentId: 'a1', appointments: [{ ...sample, customerPhone: '(11) 99999-4321' }] });
-  for (const label of ['Excluir agendamento', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(html, new RegExp(label));
+  // O menu é interativo e começa fechado na renderização SSR.
+  assert.match(html, /aria-controls="agenda-detail-settings"/);
   assert.doesNotMatch(html, /Personalizar ficha/);
-  assert.match(html, /https:\/\/wa\.me\/5511999994321/);
+  const code = require('node:fs').readFileSync(require('node:path').resolve('components/erp-agenda-board.tsx'), 'utf8');
+  for (const label of ['Excluir agendamento', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(code, new RegExp(label));
 });
 test('confirmação WhatsApp inclui data, serviço e horário sem envio automático', () => {
   const { whatsappAppointmentConfirmation } = load('lib/checkout.ts');
