@@ -7866,3 +7866,7 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
 .agenda-service-line button { flex-shrink:0; border:1px solid var(--erp-border-strong); border-radius:8px; background:var(--erp-panel-2); color:var(--erp-text); padding:7px 11px; font-size:.7rem; cursor:pointer; }
 .agenda-service-line button:hover { border-color:#bb5252; color:#de6b6b; }
 @media(max-width:550px) { .agenda-booking-service-entry { grid-template-columns:1fr; } .agenda-add-service-button { width:100%; } }
+
+/* A seleção insere o serviço imediatamente: seletor ocupa toda a largura. */
+.agenda-booking-service-entry { grid-template-columns: minmax(0, 1fr); }
+.agenda-booking-service-entry .select { width:100%; }
