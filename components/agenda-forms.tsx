@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createAppointment } from "@/app/erp/[tenant]/actions";
 import { addWaitlist } from "@/app/erp/[tenant]/module-actions";
 import type {
@@ -74,12 +74,13 @@ export function AgendaAppointmentForm({
 }) {
   const [unitId, setUnitId] = useState(draft.unitId || (units.length === 1 ? units[0].id : ""));
   const [primaryService, setPrimaryService] = useState(draft.serviceId || "");
-  const [extraServices, setExtraServices] = useState<string[]>([]);
+  const [extraServices, setExtraServices] = useState<{ key: number; serviceId: string }[]>([]);
+  const nextExtraKey = useRef(0);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerId, setCustomerId] = useState(draft.customerId || "");
   const [startsAt, setStartsAt] = useState(draft.startsAt);
   const [showNotes, setShowNotes] = useState(Boolean(draft.notes));
-  const chosen = [primaryService, ...extraServices].filter(Boolean);
+  const chosen = [primaryService, ...extraServices.map(item => item.serviceId)].filter(Boolean);
   const selectedServices = chosen.map(id => services.find(service => service.id === id)).filter((item): item is AgendaService => Boolean(item));
   const totalMinutes = selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0);
   const totalPrice = selectedServices.reduce((sum, item) => sum + item.price, 0);
@@ -95,16 +96,16 @@ export function AgendaAppointmentForm({
   const money = (amount: number) => amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   function addService(id: string) {
-    if (!id || chosen.includes(id) || chosen.length >= 12) return;
+    if (!id || !services.some(service => service.id === id)) return;
+    // A mesma opção pode aparecer mais de uma vez (atendimentos combinados).
+    // A duração real é validada contra o expediente no servidor.
     if (!primaryService) setPrimaryService(id);
-    else setExtraServices(previous => [...previous, id]);
+    else setExtraServices(previous => [...previous, { key: ++nextExtraKey.current, serviceId: id }]);
   }
-  function removeService(id: string) {
-    if (primaryService === id) {
-      setPrimaryService(extraServices[0] || "");
-      setExtraServices(previous => previous.slice(1));
-    } else setExtraServices(previous => previous.filter(value => value !== id));
+  function removeExtra(key: number) {
+    setExtraServices(previous => previous.filter(item => item.key !== key));
   }
+  const tooLongForOneDay = totalMinutes > 24 * 60;
 
   return (
     <form action={createAppointment} className="erp-quick-form agenda-modal-form agenda-booking-form">
@@ -134,7 +135,7 @@ export function AgendaAppointmentForm({
           <select className="select" name="serviceId" required value={primaryService} onChange={event => {
             const id = event.target.value;
             setPrimaryService(id);
-            setExtraServices(previous => previous.filter(other => other !== id));
+
           }}>
             <option value="" disabled>Selecione um serviço</option>
             {services.map(service => <option key={service.id} value={service.id}>{service.name + " · " + service.durationMinutes + " min · " + money(service.price)}</option>)}
@@ -143,19 +144,23 @@ export function AgendaAppointmentForm({
         <div className="agenda-booking-services">
           <span className="label">Adicionar serviços extras</span>
           <div className="agenda-booking-service-options">
-            {services.filter(service => !chosen.includes(service.id)).map(service => <button
+            {services.map(service => <button
               type="button" className="agenda-booking-service-choice" key={service.id}
-              disabled={chosen.length >= 12}
               onClick={() => addService(service.id)}
               aria-label={"Adicionar " + service.name}
             ><span>+ {service.name}</span><small>{service.durationMinutes} min · {money(service.price)}</small></button>)}
             {!services.length && <small className="agenda-form-hint">Cadastre serviços para habilitar agendamentos.</small>}
           </div>
         </div>
-        {extraServices.map((id, index) => <input key={id} type="hidden" name="serviceIds" value={id} aria-label={"Serviço adicional " + (index + 1)} />)}
+        {extraServices.map((item, index) => <input key={item.key} type="hidden" name="serviceIds" value={item.serviceId} aria-label={"Serviço adicional " + (index + 1)} />)}
         {!!selectedServices.length && <div className="agenda-booking-chosen">
-          {selectedServices.map(service => <span key={service.id}>{service.name}<button type="button" onClick={() => removeService(service.id)} aria-label={"Remover " + service.name}>×</button></span>)}
+          <span key="principal" className="agenda-booking-main-service">{selectedServices[0]?.name} <small>Principal</small></span>
+          {extraServices.map(item => {
+            const service = services.find(service => service.id === item.serviceId);
+            return service && <span key={item.key}>{service.name}<button type="button" onClick={() => removeExtra(item.key)} aria-label={"Remover uma ocorrência de " + service.name}>×</button></span>;
+          })}
         </div>}
+        <p className="agenda-form-hint">{chosen.length} {chosen.length === 1 ? "serviço selecionado" : "serviços selecionados"} · É possível adicionar o mesmo serviço mais de uma vez.</p>
       </section>
       <section className="agenda-booking-section">
         <div className="agenda-booking-section-heading"><span className="agenda-booking-number">03</span><div><h4>Quando e com quem?</h4><p>Profissional, unidade e horário reservados juntos.</p></div></div>
@@ -185,9 +190,10 @@ export function AgendaAppointmentForm({
         {showNotes ? <label><span className="label">Observações</span>
           <textarea className="input" name="notes" rows={3} maxLength={300} defaultValue={draft.notes || ""} placeholder="Preferências ou detalhes do atendimento..." />
         </label> : <input type="hidden" name="notes" value={draft.notes || ""} />}
+        {tooLongForOneDay && <p role="alert" className="agenda-form-hint">A duração ultrapassa 24 horas. Divida esse atendimento em horários diferentes.</p>}
         <div className="agenda-booking-submit">
-          <span>O agendamento só será criado se não houver conflito de horário.</span>
-          <AgendaSubmit>Confirmar agendamento</AgendaSubmit>
+          <span>A duração e os conflitos são conferidos antes de salvar.</span>
+          <AgendaSubmit disabled={tooLongForOneDay}>Confirmar agendamento</AgendaSubmit>
         </div>
       </section>
     </form>

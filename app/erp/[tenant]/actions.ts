@@ -221,8 +221,11 @@ export async function createAppointment(formData: FormData) {
 
   const unitId = text(formData, "unitId", 80);
   const serviceId = text(formData, "serviceId", 80);
-  const extraIds = [...new Set(formData.getAll("serviceIds").map(String).filter(id => id && id !== serviceId))];
-  if (extraIds.length > 11) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
+  // Repetições são intencionais: duas ocorrências do mesmo serviço reservam
+  // duas durações e entram duas vezes na comanda, sem limite arbitrário de itens.
+  const extraIds = formData.getAll("serviceIds").map(String).filter(Boolean);
+  if (extraIds.some(id => id.length > 80)) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
+  const uniqueExtraIds = [...new Set(extraIds.filter(id => id !== serviceId))];
   const customerId = text(formData, "customerId", 80);
   const barberId = text(formData, "barberId", 80);
   const startsAtRaw = text(formData, "startsAt", 40);
@@ -267,10 +270,17 @@ export async function createAppointment(formData: FormData) {
   }
 
   const workspace = readWorkspace(shop.enabledFeatures);
-  const extraServices = extraIds.length ? await prisma.service.findMany({ where: { id: { in: extraIds }, barberShopId: shop.id, active: true }, select: { id: true, name: true, price: true, durationMinutes: true } }) : [];
-  if (extraServices.length !== extraIds.length) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
-  const selectedServices = [service, ...extraServices];
-  const endsAt = new Date(startsAt.getTime() + selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0) * 60_000);
+  const extraServicesFound = uniqueExtraIds.length ? await prisma.service.findMany({
+    where: { id: { in: uniqueExtraIds }, barberShopId: shop.id, active: true },
+    select: { id: true, name: true, price: true, durationMinutes: true },
+  }) : [];
+  if (extraServicesFound.length !== uniqueExtraIds.length) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
+  const serviceById = new Map([service, ...extraServicesFound].map(item => [item.id, item]));
+  const selectedServices = [service, ...extraIds.map(id => serviceById.get(id)!)];
+  const totalMinutes = selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0);
+  if (!Number.isSafeInteger(totalMinutes) || totalMinutes <= 0 || totalMinutes > 24 * 60)
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
+  const endsAt = new Date(startsAt.getTime() + totalMinutes * 60_000);
   let barber = selectedBarber;
 
   if (!barber && workspace.settings.rotationEnabled) {
@@ -379,9 +389,9 @@ export async function createAppointment(formData: FormData) {
         notes: notes || null,
       },
       });
-      if (extraServices.length) latest.bookedServices.push({ appointmentId: createdAppointment.id, services: selectedServices.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })) });
+      if (extraIds.length) latest.bookedServices.push({ appointmentId: createdAppointment.id, services: selectedServices.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })) });
       if (waiting) latest.waitlist = latest.waitlist.filter(item => item.id !== waiting.id);
-      if (waiting || extraServices.length) {
+      if (waiting || extraIds.length) {
         await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, latest) } });
       }
     }, { isolationLevel: "Serializable" });

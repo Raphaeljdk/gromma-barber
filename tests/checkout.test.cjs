@@ -127,8 +127,10 @@ test('interface da comanda oferece recebimento rápido e últimas compras', () =
     catalog: [{ id: 'p1', name: 'Pomada', price: 35, kind: 'PRODUCT' }],
     session: { id: 's1', unitId: 'u1', unitName: 'Matriz', openedAt: '2026-10-13T10:00:00Z', openedBy: 'gerente', openingCents: 0 },
   }));
-  for (const item of ['Últimos produtos comprados', 'Pomada', 'Receber tudo em', 'Confirmar pagamento e fechar', 'Adicionar novamente'])
+  for (const item of ['Opções', 'Adicionar item', 'Receber e fechar', 'Dividir pagamento', 'Dinheiro', 'Débito', 'Crédito', 'Pix'])
     assert.match(html, new RegExp(item));
+  assert.doesNotMatch(html, /Adicionar novamente/); // Compras anteriores ficam ocultas por padrão.
+  assert.match(html, /disabled=""/); // Não encerra sem escolha consciente de pagamento.
   assert.doesNotMatch(html, /Cliente com item para recompra/);
 });
 
