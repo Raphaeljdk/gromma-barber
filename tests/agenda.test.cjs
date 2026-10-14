@@ -258,6 +258,7 @@ function markup(changes = {}) {
     'next/navigation': { useRouter: () => ({ push() {} }) },
     'next/link': { __esModule: true, default: ({ children, prefetch, ...props }) => React.createElement('a', props, children) },
     '@/app/erp/[tenant]/actions': { createAppointment() {}, updateAppointmentStatus() {}, updateAppointmentNotes() {} },
+    '@/app/erp/[tenant]/checkout-actions': { addCommandItem() {}, removeCommandItem() {} },
     '@/app/erp/[tenant]/module-actions': { addWaitlist() {}, resolveWaitlist() {} },
   });
   return renderToStaticMarkup(React.createElement(ErpAgendaBoard, {
