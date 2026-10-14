@@ -1427,7 +1427,6 @@ export function ErpAgendaBoard({
 
             {canOperate && <div className="agenda-quick-actions">
               <form action={updateAppointmentStatus}><AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
-                {detail.status === "SCHEDULED" && <AgendaSubmit name="action" value="confirm">Confirmar presença</AgendaSubmit>}
                 {["SCHEDULED", "CONFIRMED"].includes(detail.status) && <AgendaSubmit name="action" value="arrive">No local · iniciar serviço</AgendaSubmit>}
                 {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar serviço</AgendaSubmit>}
               </form>

@@ -74,7 +74,7 @@ export function AgendaAppointmentForm({
 }) {
   const [unitId, setUnitId] = useState(draft.unitId || (units.length === 1 ? units[0].id : ""));
   const [primaryService, setPrimaryService] = useState(draft.serviceId || "");
-  const [servicePickerId, setServicePickerId] = useState("");
+
   const [extraServices, setExtraServices] = useState<{ key: number; serviceId: string }[]>([]);
   const nextExtraKey = useRef(0);
   const [customerSearch, setCustomerSearch] = useState("");
@@ -215,18 +215,16 @@ export function AgendaAppointmentForm({
         <div className="agenda-booking-section-heading"><span className="agenda-booking-number">02</span><div><h4>Serviços do atendimento</h4><p>Selecione o principal e adicione outros com um clique.</p></div></div>
         <div className="agenda-booking-service-entry">
           <label><span className="label">Selecionar serviço</span>
-            <select className="select" value={servicePickerId} onChange={event => setServicePickerId(event.target.value)}>
-              <option value="">Selecione o serviço a inserir</option>
+            <select className="select" defaultValue="" onChange={event => { if (event.target.value) addService(event.target.value); event.target.value = ""; }}>
+              <option value="">Selecione para adicionar automaticamente</option>
               {services.map(service => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} min · {money(service.price)}</option>)}
             </select>
           </label>
-          <button type="button" className="btn agenda-add-service-button" aria-label="Inserir serviço na lista" disabled={!servicePickerId}
-            onClick={() => { addService(servicePickerId); setServicePickerId(""); }}>+ Inserir</button>
         </div>
         <input type="hidden" name="serviceId" value={primaryService} />
         {extraServices.map((item, index) => <input key={item.key} type="hidden" name="serviceIds" value={item.serviceId} aria-label={"Serviço adicional " + (index + 1)} />)}
         <div className="agenda-booking-service-list" aria-live="polite">
-          <div className="agenda-booking-section-heading"><div><h4>Serviços inseridos</h4><p>{chosen.length ? chosen.length + " selecionado(s)" : "Adicione um serviço utilizando o botão + Inserir"}</p></div></div>
+          <div className="agenda-booking-section-heading"><div><h4>Serviços inseridos</h4><p>{chosen.length ? chosen.length + " selecionado(s)" : "Selecione um serviço acima para adicioná-lo"}</p></div></div>
           {primaryService && (() => {
             const service = services.find(item => item.id === primaryService);
             return service && <div className="agenda-service-line">

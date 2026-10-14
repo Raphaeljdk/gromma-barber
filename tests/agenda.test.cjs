@@ -437,7 +437,7 @@ test('vídeo 14/10: múltiplos serviços aparecem em contador em vez de chips du
     customers: [], draft: { startsAt: '2026-10-14T09:30', unitId: 'u1', customerId: '', serviceId: 's1' },
     rotationEnabled: false,
   }));
-  assert.match(html, /Inserir serviço na lista/);
+  assert.match(html, /Selecione para adicionar automaticamente/);
   assert.match(html, /Serviços inseridos/);
   assert.match(html, /30 minutos/);
   assert.match(html, /50,00/);
@@ -493,9 +493,10 @@ test('vídeo 3: inclusão de serviços usa apenas seletor e botão Inserir', () 
     services: [{id:'s1',name:'Corte',price:50,durationMinutes:30}],
     customers: [], draft: { startsAt:'2026-10-14T10:00',barberId:'',unitId:'u1',serviceId:'s1' }, rotationEnabled: false,
   }));
-  assert.match(html,/\+ Inserir/);
+  assert.match(html,/Selecione para adicionar automaticamente/);
   assert.match(html,/Serviços inseridos/);
   assert.doesNotMatch(html,/agenda-booking-service-choice/);
+  assert.doesNotMatch(html,/Inserir serviço na lista/);
   assert.equal((html.match(/name="serviceId"/g)||[]).length,1);
   assert.match(html,/Unidade, horário e profissional/);
   assert.doesNotMatch(html,/Quando e com quem\?/);
