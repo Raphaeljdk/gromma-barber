@@ -476,7 +476,7 @@ test('comanda traz três últimas visitas e dois comandos lado a lado', () => {
       { id: 'i2', quantity: 1, description: 'Barba', total: 60 },
     ] },
   }] });
-  for (const label of ['Agendamentos realizados', 'Corte + Barba', 'Selagem', 'Energético', 'Salvar agendamento', 'Fechar comanda', 'Adicionar ou retirar serviços']) {
+  for (const label of ['Agendamentos realizados', 'Corte + Barba', 'Selagem', 'Energético', 'Salvar agendamento', 'Fechar comanda', 'Inserir serviço', 'Adicionar produtos e abrir checkout', 'Excluir']) {
     assert.ok(html.includes(label), `Esperado: ${label}`);
   }
   assert.match(html, /agenda-save-a1/);
