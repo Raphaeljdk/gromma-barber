@@ -316,13 +316,14 @@ test('múltiplos serviços reservam a duração combinada e salvam todos os iten
 });
 
 
-test('indicadores aparecem dentro do painel de unidades, não acima da agenda', () => {
+test('indicadores de dashboard aparecem acima da barra de ferramentas da agenda', () => {
   const html = markup();
   const side = html.indexOf('id="agenda-information-panel"');
   const metrics = html.indexOf('Indicadores do dia');
   const calendar = html.indexOf('class="agenda-main-calendar"');
+  const toolbar = html.indexOf('class="agenda-toolbar"');
   assert.ok(side > calendar);
-  assert.ok(metrics > side);
+  assert.ok(metrics > 0 && metrics < toolbar && toolbar < calendar);
   assert.match(html, /Agendados/);
   assert.doesNotMatch(html, /Item para recompra/);
 });
@@ -349,7 +350,7 @@ test('formulário novo exibe etapas, busca e total antes de confirmar', () => {
     draft: { startsAt: '2026-10-11T09:00', barberId: 'p1', unitId: 'u1', customerId: 'c1', serviceId: 's1' },
     rotationEnabled: false,
   }));
-  assert.match(html, /Quem será atendido/);
+  assert.match(html, /Cliente e horário/);
   assert.match(html, /Buscar cliente/);
   assert.match(html, /Serviços do atendimento/);
   assert.match(html, /Confirmar agendamento/);
@@ -435,8 +436,8 @@ test('vídeo 14/10: múltiplos serviços aparecem em contador em vez de chips du
     customers: [], draft: { startsAt: '2026-10-14T09:30', unitId: 'u1', customerId: '', serviceId: 's1' },
     rotationEnabled: false,
   }));
-  assert.match(html, /Adicionar Barba/);
-  assert.match(html, /1 serviço/);
+  assert.match(html, /Inserir serviço na lista/);
+  assert.match(html, /Serviços inseridos/);
   assert.match(html, /30 minutos/);
   assert.match(html, /50,00/);
 });
@@ -479,4 +480,22 @@ test('comanda traz três últimas visitas e dois comandos lado a lado', () => {
     assert.match(html, new RegExp(label));
   }
   assert.match(html, /agenda-save-a1/);
+});
+
+test('vídeo 3: inclusão de serviços usa apenas seletor e botão Inserir', () => {
+  const { AgendaAppointmentForm } = load('components/agenda-forms.tsx', {
+    '@/app/erp/[tenant]/actions': { createAppointment() {} },
+    '@/app/erp/[tenant]/module-actions': { addWaitlist() {} },
+  });
+  const html = renderToStaticMarkup(React.createElement(AgendaAppointmentForm, {
+    context, professionals: [], units: [{id:'u1',name:'Matriz'}],
+    services: [{id:'s1',name:'Corte',price:50,durationMinutes:30}],
+    customers: [], draft: { startsAt:'2026-10-14T10:00',barberId:'',unitId:'u1',serviceId:'s1' }, rotationEnabled: false,
+  }));
+  assert.match(html,/\+ Inserir/);
+  assert.match(html,/Serviços inseridos/);
+  assert.doesNotMatch(html,/agenda-booking-service-choice/);
+  assert.equal((html.match(/name="serviceId"/g)||[]).length,1);
+  assert.match(html,/Unidade, horário e profissional/);
+  assert.doesNotMatch(html,/Quando e com quem\?/);
 });
