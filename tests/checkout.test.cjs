@@ -169,3 +169,18 @@ test('Comandas fica subordinada a Caixa no menu, sem aparecer em Operação', ()
   assert.match(html, /aria-expanded="true"/);
   assert.equal((html.match(/>Comandas<\/span>/g) || []).length, 1);
 });
+
+test('retorno da comanda preserva ficha e filtros da agenda inclusive quando a operação falha', async () => {
+  for (const expectedTotal of ['10000', '9999']) {
+    const env = environment();
+    const r = await result(env.actions.checkoutCommand, form({
+      expectedTotal, agendaReturn: '1', appointmentId: 'a1', agendaDate: '2026-10-14',
+      agendaView: 'week', agendaUnit: 'u1', agendaProfessional: 'p1', agendaClient: 'on-site',
+    }));
+    assert.equal(r.pathname, '/erp/GROMMA/agenda');
+    for (const [key, value] of Object.entries({ appointmentId: 'a1', agendaDate: '2026-10-14', agendaView: 'week', agendaUnit: 'u1', agendaProfessional: 'p1', agendaClient: 'on-site' })) {
+      assert.equal(r.searchParams.get(key), value);
+    }
+    assert.equal(r.searchParams.has(expectedTotal === '10000' ? 'checkoutOk' : 'checkoutError'), true);
+  }
+});

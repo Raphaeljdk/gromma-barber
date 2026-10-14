@@ -90,9 +90,11 @@ export function AgendaAppointmentForm({
   const totalMinutes = selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0);
   const totalPrice = selectedServices.reduce((sum, item) => sum + item.price, 0);
   const customerQuery = customerSearch.trim().toLocaleLowerCase("pt-BR");
+  const normalizedPhoneQuery = customerQuery.replace(/\D/g, "");
   const visibleCustomers = customerQuery
     ? customers.filter(customer =>
         [customer.name, customer.phone || ""].some(value => value.toLocaleLowerCase("pt-BR").includes(customerQuery))
+        || (normalizedPhoneQuery.length > 0 && !/[a-z]/i.test(customerQuery) && (customer.phone || "").replace(/\D/g, "").includes(normalizedPhoneQuery))
       )
     : [];
   const selectedCustomer = customers.find(item => item.id === customerId);

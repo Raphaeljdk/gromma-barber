@@ -519,27 +519,29 @@ export async function TenantERPView({
   }) : [];
   const lastVisitByCustomer = new Map(lastVisits.map(item => [item.customerId, item._max.startsAt?.toISOString() || null]));
   // Três atendimentos efetivamente realizados por cliente, nunca de outra empresa.
-  const previousAppointments = agendaCustomerIds.length ? await prisma.appointment.findMany({
-    where: {
-      barberShopId: shop.id,
-      customerId: { in: agendaCustomerIds },
-      status: "COMPLETED",
-      startsAt: { lt: new Date() },
-    },
+  const customerHistories = agendaCustomerIds.length ? await prisma.customer.findMany({
+    where: { barberShopId: shop.id, id: { in: agendaCustomerIds } },
     select: {
-      id: true, customerId: true, startsAt: true, status: true,
-      service: { select: { name: true } }, barber: { select: { name: true } },
+      appointments: {
+        where: { barberShopId: shop.id, status: "COMPLETED", startsAt: { lt: new Date() } },
+        select: {
+          id: true, customerId: true, startsAt: true, status: true,
+          service: { select: { name: true } }, barber: { select: { name: true } },
+        },
+        orderBy: { startsAt: "desc" },
+        // One extra entry allows excluding the appointment currently being viewed.
+        take: 4,
+      },
     },
-    orderBy: { startsAt: "desc" },
-    take: Math.min(3000, agendaCustomerIds.length * 25),
   }) : [];
+  const previousAppointments = customerHistories.flatMap(customer => customer.appointments);
   const lastThreeByCustomer = new Map<string, {
     id: string; date: string; service: string; professional: string; status: string;
   }[]>();
   for (const previous of previousAppointments) {
     if (!previous.customerId) continue;
     const current = lastThreeByCustomer.get(previous.customerId) ?? [];
-    if (current.length >= 3) continue;
+    if (current.length >= 4) continue;
     current.push({
       id: previous.id, date: previous.startsAt.toISOString(),
       service: workspace.bookedServices.find(entry => entry.appointmentId === previous.id)?.services.map(v => v.name).join(" + ")
@@ -944,7 +946,7 @@ export async function TenantERPView({
               lastVisit: item.customerId ? lastVisitByCustomer.get(item.customerId) || null : null,
               customerNotes: item.customer?.notes || null,
               recentProducts: item.customerId ? recentProductsByCustomer.get(item.customerId) ?? [] : [],
-              lastThreeAppointments: item.customerId ? (lastThreeByCustomer.get(item.customerId) ?? []).filter(previous => previous.id !== item.id) : [],
+              lastThreeAppointments: item.customerId ? (lastThreeByCustomer.get(item.customerId) ?? []).filter(previous => previous.id !== item.id).slice(0, 3) : [],
               price: workspace.bookedServices.find(b => b.appointmentId === item.id)?.services.reduce((sum, service) => sum + service.price, 0) ?? Number(item.service?.price ?? 0),
               hasPlan: Boolean(item.customerId && customerPlan.has(item.customerId)),
               planName: item.customerId ? customerPlan.get(item.customerId) ?? null : null,

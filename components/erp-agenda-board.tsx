@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { whatsappWaitlist, whatsappAppointmentConfirmation } from "@/lib/checkout";
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { rescheduleAppointment, saveAgendaBlock, removeAgendaBlock } from "@/app/erp/[tenant]/agenda-actions";
 import { addCommandItem, removeCommandItem } from "@/app/erp/[tenant]/checkout-actions";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
@@ -281,9 +281,11 @@ export function ErpAgendaBoard({
     canOperate ? (initialDraft ?? null) : null,
   );
   const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const [detail, setDetail] = useState<AgendaAppointment | null>(
+  const [selectedDetail, setDetail] = useState<AgendaAppointment | null>(
     () => appointments.find((item) => item.id === initialAppointmentId) ?? null,
   );
+  // Use refreshed server data after status changes and command item mutations.
+  const detail = selectedDetail ? appointments.find(item => item.id === selectedDetail.id) ?? null : null;
   const [detailOptionsOpen, setDetailOptionsOpen] = useState(false);
 
   const context: AgendaContext = {
@@ -1370,6 +1372,7 @@ export function ErpAgendaBoard({
       )}
       {detail && (
         <AgendaDialog
+          variant="checkout"
           title={detail.command ? "Comanda do atendimento" : "Detalhes do agendamento"}
           subtitle={`${dateLabel(agendaDateKey(detail.startsAt), { dateStyle: "long" })} · ${agendaTime(detail.startsAt)}${detail.endsAt ? ` às ${agendaTime(detail.endsAt)}` : ""}`}
           onClose={() => setDetail(null)}
@@ -1428,7 +1431,7 @@ export function ErpAgendaBoard({
                 {["SCHEDULED", "CONFIRMED"].includes(detail.status) && <AgendaSubmit name="action" value="checkin">No local</AgendaSubmit>}
                 {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar atendimento</AgendaSubmit>}
               </form>
-              {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Remarcar</button>}
+              {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Reagendar</button>}
               {detail.customerId && detail.serviceId && <button type="button" className="btn secondary" onClick={() => {
                 setDraft({
                   startsAt: `${addAgendaDays(agendaDateKey(new Date()), 7)}T${agendaTime(detail.startsAt)}`,
@@ -1444,6 +1447,7 @@ export function ErpAgendaBoard({
               <div className="agenda-command-summary-title"><h4>Dados do atendimento</h4><span>{STATUS_LABELS[detail.status]}</span></div>
               <p><strong>Cliente:</strong> {detail.customerName} · {detail.customerPhone || "Telefone não informado"}</p>
               <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
+              {detail.customerNotes && <p><strong>Preferências do cliente:</strong> {detail.customerNotes}</p>}
               <p><strong>Data e horário:</strong> {dateLabel(agendaDateKey(detail.startsAt), { dateStyle: "short" })} · {agendaTime(detail.startsAt)}{detail.endsAt ? ` às ${agendaTime(detail.endsAt)}` : ""}</p>
               <p><strong>Unidade:</strong> {detail.unitName} · <strong>Profissional:</strong> {detail.barberName}</p>
             </section>
@@ -1489,7 +1493,7 @@ export function ErpAgendaBoard({
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
                 <input type="hidden" name="repurchase" value={appointmentNotes(detail.notes).repurchase ? "1" : "0"} />
-                <textarea className="input" name="notes" rows={3} maxLength={300} defaultValue={detailNotes} placeholder="Observações e preferências do atendimento" />
+                <textarea className="input" name="notes" aria-label="Observações do agendamento" rows={3} maxLength={300} defaultValue={detailNotes} placeholder="Observações e preferências do atendimento" />
               </form>
             </details> : (detailNotes && <div className="agenda-detail-notes"><strong>Observações</strong><p>{detailNotes}</p></div>)}
             {detail.command && <section className="agenda-command-details agenda-command-services">
@@ -1499,6 +1503,7 @@ export function ErpAgendaBoard({
                 <input type="hidden" name="commandId" value={detail.command.id} />
                 <input type="hidden" name="agendaReturn" value="1" />
                 <input type="hidden" name="appointmentId" value={detail.id} />
+                {["agendaView", "agendaUnit", "agendaProfessional", "agendaClient"].map(key => <input key={key} type="hidden" name={key} value={context[key as keyof AgendaContext]} />)}
                 <input type="hidden" name="agendaDate" value={selectedDate} />
                 <input type="hidden" name="quantity" value="1" />
                 <label><span className="label">Inserir serviço</span><select className="select" name="catalogItem" defaultValue="" required>
@@ -1516,7 +1521,8 @@ export function ErpAgendaBoard({
                     <input type="hidden" name="itemId" value={item.id} />
                     <input type="hidden" name="agendaReturn" value="1" />
                     <input type="hidden" name="appointmentId" value={detail.id} />
-                    <input type="hidden" name="agendaDate" value={selectedDate} />
+                    {["agendaView", "agendaUnit", "agendaProfessional", "agendaClient"].map(key => <input key={key} type="hidden" name={key} value={context[key as keyof AgendaContext]} />)}
+                <input type="hidden" name="agendaDate" value={selectedDate} />
                     <AgendaSubmit secondary>Excluir</AgendaSubmit>
                   </form>}
                 </div>)}
