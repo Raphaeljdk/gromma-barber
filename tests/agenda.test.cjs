@@ -500,3 +500,39 @@ test('vídeo 3: inclusão de serviços usa apenas seletor e botão Inserir', () 
   assert.match(html,/Unidade, horário e profissional/);
   assert.doesNotMatch(html,/Quando e com quem\?/);
 });
+
+test('No local inicia atendimento e cria comanda só uma vez, sem cobrar', async () => {
+  const records = [];
+  const appointment = { id: 'a1', barberShopId: 'shop1', unitId: 'u1', customerId: 'c1', serviceId: 's1', status: 'CONFIRMED',
+    service: { id: 's1', name: 'Corte', price: 55 }, command: null };
+  const env = environment({ prisma: {
+    appointment: {
+      findFirst: async () => appointment,
+      updateMany: async query => { records.push({ type: 'status', query }); return { count: 1 }; },
+    },
+    serviceCommand: {
+      findUnique: async () => null,
+      create: async query => { records.push({ type: 'command', query }); return { id: 'cmd1' }; },
+    },
+    commandItem: {
+      create: async query => { records.push({ type: 'item', query }); return { id: 'line1' }; },
+    },
+  } });
+  const url = await redirectOf(env.actions.updateAppointmentStatus,
+    form({ ...context, appointmentId: 'a1', action: 'arrive' }));
+  assert.equal(url.searchParams.get('erro'), null);
+  assert.equal(records.find(item => item.type === 'status').query.data.status, 'IN_SERVICE');
+  assert.equal(records.filter(item => item.type === 'command').length, 1);
+  assert.equal(records.find(item => item.type === 'command').query.data.status, 'OPEN');
+  assert.equal(records.filter(item => item.type === 'item').length, 1);
+  assert.equal(records.find(item => item.type === 'item').query.data.description, 'Corte');
+  assert.ok(!records.some(item => item.type === 'payment'));
+});
+test('No local não pode recriar comanda quando atendimento já começou', async () => {
+  const env = environment({ prisma: { appointment: { findFirst: async () => ({
+    id: 'a1', barberShopId: 'shop1', status: 'IN_SERVICE', command: { status: 'OPEN' },
+  }) } } });
+  const result = await redirectOf(env.actions.updateAppointmentStatus,
+    form({ ...context, appointmentId: 'a1', action: 'arrive' }));
+  assert.equal(result.searchParams.get('erro'), 'agenda-status');
+});
