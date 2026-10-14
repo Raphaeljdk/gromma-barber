@@ -134,9 +134,6 @@ export function AgendaAppointmentForm({
     }
   }
   const tooLongForOneDay = totalMinutes > 24 * 60;
-  const extraCounts = services.map(service => ({
-    service, count: extraServices.filter(item => item.serviceId === service.id).length,
-  })).filter(entry => entry.count > 0);
 
   return (
     <form action={createAppointment} className="erp-quick-form agenda-modal-form agenda-booking-form">
