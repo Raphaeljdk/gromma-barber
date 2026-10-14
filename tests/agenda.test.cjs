@@ -333,7 +333,7 @@ test('ficha exibe produtos comprados anteriormente, sem campo de recompra', () =
   }] });
   assert.match(html, /aria-controls="agenda-detail-settings"/);
   assert.match(html, /Opções/);
-  assert.doesNotMatch(html, /Pomada modeladora/); // Compras aparecem sob demanda.
+  assert.match(html, /Pomada modeladora/); // Histórico fica visível na comanda, como na gravação.
 });
 
 test('formulário novo exibe etapas, busca e total antes de confirmar', () => {
@@ -459,4 +459,24 @@ test('confirmação WhatsApp inclui data, serviço e horário sem envio automát
   assert.match(result.searchParams.get('text'), /10:30/);
   assert.match(result.searchParams.get('text'), /Corte/);
   assert.equal(whatsappAppointmentConfirmation('123', 'João', 'Corte', at('10:30')), null);
+});
+
+test('comanda traz três últimas visitas e dois comandos lado a lado', () => {
+  const html = markup({ initialAppointmentId: 'a1', appointments: [{
+    ...sample,
+    lastThreeAppointments: [
+      { id: 'h1', date: at('08:00'), service: 'Corte + Barba', professional: 'Marcos', status: 'COMPLETED' },
+      { id: 'h2', date: at('09:00'), service: 'Selagem', professional: 'João', status: 'COMPLETED' },
+      { id: 'h3', date: at('10:00'), service: 'Corte', professional: 'Marcos', status: 'COMPLETED' },
+    ],
+    recentProducts: [{ description: 'Energético', quantity: 1, date: at('09:00'), professional: 'João' }],
+    command: { id: 'command1', status: 'OPEN', total: 140, items: [
+      { id: 'i1', quantity: 1, description: 'Corte', total: 80 },
+      { id: 'i2', quantity: 1, description: 'Barba', total: 60 },
+    ] },
+  }] });
+  for (const label of ['Agendamentos realizados', 'Corte + Barba', 'Selagem', 'Energético', 'Salvar agendamento', 'Fechar comanda', 'Adicionar ou retirar serviços']) {
+    assert.match(html, new RegExp(label));
+  }
+  assert.match(html, /agenda-save-a1/);
 });
