@@ -19,7 +19,8 @@ export type AgendaAppointment = {
   notes: string | null;
   lastVisit?: string | null;
   customerNotes?: string | null;
-  recentProducts?: { description: string; quantity: number; date: string }[];
+  recentProducts?: { description: string; quantity: number; date: string; professional?: string }[];
+  lastThreeAppointments?: { id: string; date: string; service: string; professional: string; status: string }[];
   hasPlan: boolean;
   planName: string | null;
   firstVisit: boolean;
