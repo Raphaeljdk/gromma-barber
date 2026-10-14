@@ -27,6 +27,15 @@ async function run(form: FormData, module: "caixa" | "comandas", operation: (tx:
   }
   revalidatePath(`/erp/${encodeURIComponent(tenant)}`, "layout");
   const command = module === "comandas" ? `&commandId=${encodeURIComponent(value(form, "commandId"))}` : "";
+  if (module === "comandas" && value(form, "agendaReturn") === "1") {
+    const appointment = encodeURIComponent(value(form, "appointmentId"));
+    const agendaDate = encodeURIComponent(value(form, "agendaDate"));
+    const filters = new URLSearchParams();
+    for (const key of ["agendaView", "agendaUnit", "agendaProfessional", "agendaClient"]) {
+      if (value(form, key)) filters.set(key, value(form, key));
+    }
+    redirect(`/erp/${encodeURIComponent(tenant)}/agenda?${error ? `checkoutError=${encodeURIComponent(error)}` : "checkoutOk=1"}&appointmentId=${appointment}&agendaDate=${agendaDate}&${filters.toString()}`);
+  }
   redirect(`${path}?${error ? `checkoutError=${encodeURIComponent(error)}` : "checkoutOk=1"}${command}`);
 }
 async function configuration(tx: Prisma.TransactionClient, shopId: string) {

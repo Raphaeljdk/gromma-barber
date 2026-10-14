@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { whatsappWaitlist, whatsappAppointmentConfirmation } from "@/lib/checkout";
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { rescheduleAppointment, saveAgendaBlock, removeAgendaBlock } from "@/app/erp/[tenant]/agenda-actions";
+import { addCommandItem, removeCommandItem } from "@/app/erp/[tenant]/checkout-actions";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import type { AgendaBlock } from "@/lib/erp-workspace";
 import {
@@ -280,30 +281,13 @@ export function ErpAgendaBoard({
     canOperate ? (initialDraft ?? null) : null,
   );
   const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const [detail, setDetail] = useState<AgendaAppointment | null>(
+  const [selectedDetail, setDetail] = useState<AgendaAppointment | null>(
     () => appointments.find((item) => item.id === initialAppointmentId) ?? null,
   );
+  // Use refreshed server data after status changes and command item mutations.
+  const detail = selectedDetail ? appointments.find(item => item.id === selectedDetail.id) ?? null : null;
   const [detailOptionsOpen, setDetailOptionsOpen] = useState(false);
-  const [detailView, setDetailView] = useState({
-    signals: false, customer: false, purchases: false,
-    notes: false, command: false, management: false,
-  });
-  const detailViewKey = "gromma-agenda-detail-v2:" + tenantCode;
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(detailViewKey) || "null");
-      if (stored && typeof stored === "object") {
-        setDetailView(previous => Object.fromEntries(
-          Object.entries(previous).map(([key, value]) => [key, typeof stored[key] === "boolean" ? stored[key] : value]),
-        ) as typeof previous);
-      }
-    } catch { /* Preferências opcionais não interrompem a agenda. */ }
-  }, [detailViewKey]);
-  function toggleDetailView(key: keyof typeof detailView, value: boolean) {
-    const next = { ...detailView, [key]: value };
-    setDetailView(next);
-    try { localStorage.setItem(detailViewKey, JSON.stringify(next)); } catch { /* Sem persistência local. */ }
-  }
+
   const context: AgendaContext = {
     tenantCode,
     agendaDate: selectedDate,
@@ -652,6 +636,44 @@ export function ErpAgendaBoard({
           </button>
         </div>
       </div>
+          <section className="agenda-dashboard-panel" aria-label="Indicadores do dia">
+            <div className="agenda-dashboard-head"><span>Indicadores do dia</span><strong>{dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}</strong></div>
+            <div className="agenda-summary-grid">
+              {summaries.map(({ icon: Icon, label, value, filter }) => (
+                <article
+                  className={
+                    filter && selectedClientFilter === filter ? "selected" : ""
+                  }
+                  key={label}
+                >
+                  {filter ? (
+                    <Link
+                      prefetch={false}
+                      href={href({
+                        agendaClient: selectedClientFilter === filter ? "" : filter,
+                      })}
+                      aria-label={`${label}: ${value}. ${selectedClientFilter === filter ? "Remover" : "Aplicar"} filtro`}
+                    >
+                      <Icon size={18} />
+                      <span>
+                        <small>{label}</small>
+                        <strong>{value}</strong>
+                      </span>
+                    </Link>
+                  ) : (
+                    <>
+                      <Icon size={18} />
+                      <div>
+                        <span>{label}</span>
+                        <strong>{value}</strong>
+                      </div>
+                    </>
+                  )}
+                </article>
+              ))}
+            </div>
+
+          </section>
       <div className="agenda-toolbar">
         <button type="button" className="btn secondary" onClick={() => {
           if (selectedDate !== nowDate || view !== "day") router.push(`${href({ agendaDate: nowDate, agendaView: "day" })}#agenda-now`);
@@ -1189,44 +1211,6 @@ export function ErpAgendaBoard({
               A data e a visualização são mantidas ao trocar de unidade.
             </small>
           </div>
-          <section className="agenda-side-card agenda-side-metrics" aria-label="Indicadores do dia">
-            <div className="agenda-side-head"><span>Indicadores do dia</span><strong>{dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}</strong></div>
-            <div className="agenda-summary-grid">
-              {summaries.map(({ icon: Icon, label, value, filter }) => (
-                <article
-                  className={
-                    filter && selectedClientFilter === filter ? "selected" : ""
-                  }
-                  key={label}
-                >
-                  {filter ? (
-                    <Link
-                      prefetch={false}
-                      href={href({
-                        agendaClient: selectedClientFilter === filter ? "" : filter,
-                      })}
-                      aria-label={`${label}: ${value}. ${selectedClientFilter === filter ? "Remover" : "Aplicar"} filtro`}
-                    >
-                      <Icon size={18} />
-                      <span>
-                        <small>{label}</small>
-                        <strong>{value}</strong>
-                      </span>
-                    </Link>
-                  ) : (
-                    <>
-                      <Icon size={18} />
-                      <div>
-                        <span>{label}</span>
-                        <strong>{value}</strong>
-                      </div>
-                    </>
-                  )}
-                </article>
-              ))}
-            </div>
-
-          </section>
           <section className="agenda-side-card">
             <div className="agenda-side-head">
               <span>Próximos horários livres</span>
@@ -1388,6 +1372,7 @@ export function ErpAgendaBoard({
       )}
       {detail && (
         <AgendaDialog
+          variant="checkout"
           title={detail.command ? "Comanda do atendimento" : "Detalhes do agendamento"}
           subtitle={`${dateLabel(agendaDateKey(detail.startsAt), { dateStyle: "long" })} · ${agendaTime(detail.startsAt)}${detail.endsAt ? ` às ${agendaTime(detail.endsAt)}` : ""}`}
           onClose={() => setDetail(null)}
@@ -1439,15 +1424,14 @@ export function ErpAgendaBoard({
               {!detail.customerPhone && <p className="agenda-form-hint">WhatsApp indisponível: cliente sem telefone cadastrado.</p>}
               {(!canOperate || !["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status)) && <p className="agenda-form-hint">Nenhuma alteração de status disponível para este atendimento.</p>}
             </div>}
-            {detailView.signals && <AppointmentSignals appointment={detail} expanded />}
+
             {canOperate && <div className="agenda-quick-actions">
               <form action={updateAppointmentStatus}><AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
                 {detail.status === "SCHEDULED" && <AgendaSubmit name="action" value="confirm">Confirmar presença</AgendaSubmit>}
                 {["SCHEDULED", "CONFIRMED"].includes(detail.status) && <AgendaSubmit name="action" value="checkin">No local</AgendaSubmit>}
                 {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar atendimento</AgendaSubmit>}
               </form>
-              {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Remarcar</button>}
-              {detail.command && <Link className={detail.command.status === "OPEN" ? "btn agenda-checkout-shortcut" : "btn secondary"} href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>{detail.command.status === "OPEN" ? "Receber e fechar comanda →" : "Ver pagamento"}</Link>}
+              {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Reagendar</button>}
               {detail.customerId && detail.serviceId && <button type="button" className="btn secondary" onClick={() => {
                 setDraft({
                   startsAt: `${addAgendaDays(agendaDateKey(new Date()), 7)}T${agendaTime(detail.startsAt)}`,
@@ -1459,20 +1443,32 @@ export function ErpAgendaBoard({
                 setDetail(null);
               }}>+ Agendar retorno</button>}
             </div>}
-            {detailView.customer && <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
-              <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
+            <section className="agenda-customer-summary agenda-command-summary">
+              <div className="agenda-command-summary-title"><h4>Dados do atendimento</h4><span>{STATUS_LABELS[detail.status]}</span></div>
+              <p><strong>Cliente:</strong> {detail.customerName} · {detail.customerPhone || "Telefone não informado"}</p>
               <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
-              <p><strong>Preferências / observações do cadastro:</strong> {detail.customerNotes || "Não informadas"}</p>
-            </section>}
-            {detailView.purchases && <section className="agenda-customer-purchases">
-              <h4>Últimos produtos comprados</h4>
+              {detail.customerNotes && <p><strong>Preferências do cliente:</strong> {detail.customerNotes}</p>}
+              <p><strong>Data e horário:</strong> {dateLabel(agendaDateKey(detail.startsAt), { dateStyle: "short" })} · {agendaTime(detail.startsAt)}{detail.endsAt ? ` às ${agendaTime(detail.endsAt)}` : ""}</p>
+              <p><strong>Unidade:</strong> {detail.unitName} · <strong>Profissional:</strong> {detail.barberName}</p>
+            </section>
+            <section className="agenda-previous-appointments">
+              <div className="agenda-command-summary-title"><h4>Agendamentos realizados</h4><small>Últimos 3 atendimentos</small></div>
+              {detail.lastThreeAppointments?.length ? <div className="agenda-previous-list">
+                {detail.lastThreeAppointments.map(previous => <article key={previous.id}>
+                  <time>{new Date(previous.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</time>
+                  <strong>{previous.service}</strong><small>{previous.professional}</small>
+                </article>)}
+              </div> : <p className="agenda-form-hint">Nenhum atendimento concluído anteriormente para este cliente.</p>}
+            </section>
+            <section className="agenda-customer-purchases">
+              <div className="agenda-command-summary-title"><h4>Histórico de compras</h4><small>Últimos produtos adquiridos</small></div>
               {detail.recentProducts?.length ? <div>
                 {detail.recentProducts.map((product, index) => <article key={product.description + index}>
-                  <strong>{product.description}</strong>
+                  <div><strong>{product.description}</strong><small>{product.professional || "Profissional não informado"}</small></div>
                   <small>{product.quantity} un. · {new Date(product.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small>
                 </article>)}
-              </div> : <p className="agenda-form-hint">Nenhuma compra de produto identificada nas últimas comandas.</p>}
-            </section>}
+              </div> : <p className="agenda-form-hint">Sem produtos comprados anteriormente.</p>}
+            </section>
             <dl className="agenda-detail-grid agenda-detail-grid-compact">
               <div>
                 <dt>Serviço</dt>
@@ -1491,74 +1487,54 @@ export function ErpAgendaBoard({
                 <dd>{detail.unitName}</dd>
               </div>
             </dl>
-            {detailView.notes && (canOperate ? (
-              <form
-                action={updateAppointmentNotes}
-                className="agenda-modal-form"
-              >
+            {canOperate ? <details className="agenda-command-notes">
+              <summary>Observações do agendamento <span>Editar</span></summary>
+              <form action={updateAppointmentNotes} id={`agenda-save-${detail.id}`} className="agenda-modal-form">
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
                 <input type="hidden" name="repurchase" value={appointmentNotes(detail.notes).repurchase ? "1" : "0"} />
-                <label>
-                  <span className="label">Observações</span>
-                  <textarea
-                    className="input"
-                    name="notes"
-                    rows={3}
-                    maxLength={300}
-                    defaultValue={detailNotes}
-                    placeholder="Observações e preferências do atendimento"
-                  />
-                </label>
-                <AgendaSubmit secondary>Salvar informações</AgendaSubmit>
+                <textarea className="input" name="notes" aria-label="Observações do agendamento" rows={3} maxLength={300} defaultValue={detailNotes} placeholder="Observações e preferências do atendimento" />
               </form>
-            ) : (
-              detailNotes && (
-                <div className="agenda-detail-notes">
-                  <strong>Observações</strong>
-                  <p>{detailNotes}</p>
-                </div>
-              )
-            ))}
-            {detailView.command && (detail.command ? (
-              <section className="agenda-command-details">
-                <h4>
-                  Comanda de atendimento ·{" "}
-                  {detail.command.status === "OPEN"
-                    ? "Aberta"
-                    : detail.command.status === "CLOSED"
-                      ? "Fechada"
-                      : "Cancelada"}
-                </h4>
-                <dl>
-                  {detail.command.items.map((item) => (
-                    <Fragment key={item.id}>
-                      <dt>
-                        {item.quantity} × {item.description}
-                      </dt>
-                      <dd>{money(item.total)}</dd>
-                    </Fragment>
-                  ))}
-                  <dt>
-                    <strong>Total</strong>
-                  </dt>
-                  <dd>
-                    <strong>{money(detail.command.total)}</strong>
-                  </dd>
-                </dl>
-                <Link
-                  className="btn secondary"
-                  href={`/erp/${encodeURIComponent(tenantCode)}/comandas`}
-                >
-                  Ir para comandas
-                </Link>
-              </section>
-            ) : (
-              <p className="agenda-form-hint">
-                A comanda de atendimento é gerada ao iniciar o serviço.
-              </p>
-            ))}
-
+            </details> : (detailNotes && <div className="agenda-detail-notes"><strong>Observações</strong><p>{detailNotes}</p></div>)}
+            {detail.command && <section className="agenda-command-details agenda-command-services">
+              <div className="agenda-command-summary-title"><h4>Serviços e produtos na comanda</h4><strong>{money(detail.command.total)}</strong></div>
+              {canOperate && detail.command.status === "OPEN" && <form action={addCommandItem} className="agenda-command-add-form">
+                <input type="hidden" name="tenantCode" value={tenantCode} />
+                <input type="hidden" name="commandId" value={detail.command.id} />
+                <input type="hidden" name="agendaReturn" value="1" />
+                <input type="hidden" name="appointmentId" value={detail.id} />
+                {["agendaView", "agendaUnit", "agendaProfessional", "agendaClient"].map(key => <input key={key} type="hidden" name={key} value={context[key as keyof AgendaContext]} />)}
+                <input type="hidden" name="agendaDate" value={selectedDate} />
+                <input type="hidden" name="quantity" value="1" />
+                <label><span className="label">Inserir serviço</span><select className="select" name="catalogItem" defaultValue="" required>
+                  <option value="" disabled>Selecione o serviço</option>
+                  {services.map(service => <option key={service.id} value={`SERVICE:${service.id}`}>{service.name} · {money(service.price)}</option>)}
+                </select></label>
+                <AgendaSubmit secondary>+ Inserir</AgendaSubmit>
+              </form>}
+              <div className="agenda-command-item-list">
+                {detail.command.items.map(item => <div key={item.id}>
+                  <span>{item.quantity} × {item.description}</span><strong>{money(item.total)}</strong>
+                  {canOperate && detail.command?.status === "OPEN" && <form action={removeCommandItem}>
+                    <input type="hidden" name="tenantCode" value={tenantCode} />
+                    <input type="hidden" name="commandId" value={detail.command.id} />
+                    <input type="hidden" name="itemId" value={item.id} />
+                    <input type="hidden" name="agendaReturn" value="1" />
+                    <input type="hidden" name="appointmentId" value={detail.id} />
+                    {["agendaView", "agendaUnit", "agendaProfessional", "agendaClient"].map(key => <input key={key} type="hidden" name={key} value={context[key as keyof AgendaContext]} />)}
+                <input type="hidden" name="agendaDate" value={selectedDate} />
+                    <AgendaSubmit secondary>Excluir</AgendaSubmit>
+                  </form>}
+                </div>)}
+              </div>
+              {detail.command.status === "OPEN" && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Adicionar produtos e abrir checkout</Link>}
+            </section>}
+            <div className="agenda-command-bottom-actions">
+              {canOperate && <button type="submit" form={`agenda-save-${detail.id}`} className="btn secondary" title="Salva as observações alteradas">Salvar agendamento</button>}
+              {detail.command?.status === "OPEN" ? <Link className="btn agenda-checkout-shortcut" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Fechar comanda →</Link>
+                : detail.command?.status === "CLOSED" ? <span className="agenda-form-hint">Comanda fechada</span>
+                : <span className="agenda-form-hint">A comanda poderá ser fechada após iniciar o atendimento.</span>}
+            </div>
           </div>
         </AgendaDialog>
       )}
