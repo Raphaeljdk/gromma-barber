@@ -284,26 +284,7 @@ export function ErpAgendaBoard({
     () => appointments.find((item) => item.id === initialAppointmentId) ?? null,
   );
   const [detailOptionsOpen, setDetailOptionsOpen] = useState(false);
-  const [detailView, setDetailView] = useState({
-    signals: false, customer: false, purchases: false,
-    notes: false, command: false, management: false,
-  });
-  const detailViewKey = "gromma-agenda-detail-v2:" + tenantCode;
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(detailViewKey) || "null");
-      if (stored && typeof stored === "object") {
-        setDetailView(previous => Object.fromEntries(
-          Object.entries(previous).map(([key, value]) => [key, typeof stored[key] === "boolean" ? stored[key] : value]),
-        ) as typeof previous);
-      }
-    } catch { /* Preferências opcionais não interrompem a agenda. */ }
-  }, [detailViewKey]);
-  function toggleDetailView(key: keyof typeof detailView, value: boolean) {
-    const next = { ...detailView, [key]: value };
-    setDetailView(next);
-    try { localStorage.setItem(detailViewKey, JSON.stringify(next)); } catch { /* Sem persistência local. */ }
-  }
+
   const context: AgendaContext = {
     tenantCode,
     agendaDate: selectedDate,
@@ -1439,7 +1420,7 @@ export function ErpAgendaBoard({
               {!detail.customerPhone && <p className="agenda-form-hint">WhatsApp indisponível: cliente sem telefone cadastrado.</p>}
               {(!canOperate || !["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status)) && <p className="agenda-form-hint">Nenhuma alteração de status disponível para este atendimento.</p>}
             </div>}
-            {detailView.signals && <AppointmentSignals appointment={detail} expanded />}
+
             {canOperate && <div className="agenda-quick-actions">
               <form action={updateAppointmentStatus}><AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
                 {detail.status === "SCHEDULED" && <AgendaSubmit name="action" value="confirm">Confirmar presença</AgendaSubmit>}
@@ -1447,7 +1428,6 @@ export function ErpAgendaBoard({
                 {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar atendimento</AgendaSubmit>}
               </form>
               {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Remarcar</button>}
-              {detail.command && <Link className={detail.command.status === "OPEN" ? "btn agenda-checkout-shortcut" : "btn secondary"} href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>{detail.command.status === "OPEN" ? "Receber e fechar comanda →" : "Ver pagamento"}</Link>}
               {detail.customerId && detail.serviceId && <button type="button" className="btn secondary" onClick={() => {
                 setDraft({
                   startsAt: `${addAgendaDays(agendaDateKey(new Date()), 7)}T${agendaTime(detail.startsAt)}`,
@@ -1459,20 +1439,31 @@ export function ErpAgendaBoard({
                 setDetail(null);
               }}>+ Agendar retorno</button>}
             </div>}
-            {detailView.customer && <section className="agenda-customer-summary"><h4>Resumo do cliente</h4>
-              <p><strong>Última visita concluída:</strong> {detail.lastVisit ? dateLabel(agendaDateKey(detail.lastVisit), { dateStyle: "short" }) : "Nenhuma registrada"}</p>
+            <section className="agenda-customer-summary agenda-command-summary">
+              <div className="agenda-command-summary-title"><h4>Dados do atendimento</h4><span>{STATUS_LABELS[detail.status]}</span></div>
+              <p><strong>Cliente:</strong> {detail.customerName} · {detail.customerPhone || "Telefone não informado"}</p>
               <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
-              <p><strong>Preferências / observações do cadastro:</strong> {detail.customerNotes || "Não informadas"}</p>
-            </section>}
-            {detailView.purchases && <section className="agenda-customer-purchases">
-              <h4>Últimos produtos comprados</h4>
+              <p><strong>Data e horário:</strong> {dateLabel(agendaDateKey(detail.startsAt), { dateStyle: "short" })} · {agendaTime(detail.startsAt)}{detail.endsAt ? ` às ${agendaTime(detail.endsAt)}` : ""}</p>
+              <p><strong>Unidade:</strong> {detail.unitName} · <strong>Profissional:</strong> {detail.barberName}</p>
+            </section>
+            <section className="agenda-previous-appointments">
+              <div className="agenda-command-summary-title"><h4>Agendamentos realizados</h4><small>Últimos 3 atendimentos</small></div>
+              {detail.lastThreeAppointments?.length ? <div className="agenda-previous-list">
+                {detail.lastThreeAppointments.map(previous => <article key={previous.id}>
+                  <time>{new Date(previous.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</time>
+                  <strong>{previous.service}</strong><small>{previous.professional}</small>
+                </article>)}
+              </div> : <p className="agenda-form-hint">Nenhum atendimento concluído anteriormente para este cliente.</p>}
+            </section>
+            <section className="agenda-customer-purchases">
+              <div className="agenda-command-summary-title"><h4>Histórico de compras</h4><small>Últimos produtos adquiridos</small></div>
               {detail.recentProducts?.length ? <div>
                 {detail.recentProducts.map((product, index) => <article key={product.description + index}>
-                  <strong>{product.description}</strong>
+                  <div><strong>{product.description}</strong><small>{product.professional || "Profissional não informado"}</small></div>
                   <small>{product.quantity} un. · {new Date(product.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small>
                 </article>)}
-              </div> : <p className="agenda-form-hint">Nenhuma compra de produto identificada nas últimas comandas.</p>}
-            </section>}
+              </div> : <p className="agenda-form-hint">Sem produtos comprados anteriormente.</p>}
+            </section>
             <dl className="agenda-detail-grid agenda-detail-grid-compact">
               <div>
                 <dt>Serviço</dt>
@@ -1491,74 +1482,30 @@ export function ErpAgendaBoard({
                 <dd>{detail.unitName}</dd>
               </div>
             </dl>
-            {detailView.notes && (canOperate ? (
-              <form
-                action={updateAppointmentNotes}
-                className="agenda-modal-form"
-              >
+            {canOperate ? <details className="agenda-command-notes">
+              <summary>Observações do agendamento <span>Editar</span></summary>
+              <form action={updateAppointmentNotes} id={`agenda-save-${detail.id}`} className="agenda-modal-form">
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
                 <input type="hidden" name="repurchase" value={appointmentNotes(detail.notes).repurchase ? "1" : "0"} />
-                <label>
-                  <span className="label">Observações</span>
-                  <textarea
-                    className="input"
-                    name="notes"
-                    rows={3}
-                    maxLength={300}
-                    defaultValue={detailNotes}
-                    placeholder="Observações e preferências do atendimento"
-                  />
-                </label>
-                <AgendaSubmit secondary>Salvar informações</AgendaSubmit>
+                <textarea className="input" name="notes" rows={3} maxLength={300} defaultValue={detailNotes} placeholder="Observações e preferências do atendimento" />
               </form>
-            ) : (
-              detailNotes && (
-                <div className="agenda-detail-notes">
-                  <strong>Observações</strong>
-                  <p>{detailNotes}</p>
-                </div>
-              )
-            ))}
-            {detailView.command && (detail.command ? (
-              <section className="agenda-command-details">
-                <h4>
-                  Comanda de atendimento ·{" "}
-                  {detail.command.status === "OPEN"
-                    ? "Aberta"
-                    : detail.command.status === "CLOSED"
-                      ? "Fechada"
-                      : "Cancelada"}
-                </h4>
-                <dl>
-                  {detail.command.items.map((item) => (
-                    <Fragment key={item.id}>
-                      <dt>
-                        {item.quantity} × {item.description}
-                      </dt>
-                      <dd>{money(item.total)}</dd>
-                    </Fragment>
-                  ))}
-                  <dt>
-                    <strong>Total</strong>
-                  </dt>
-                  <dd>
-                    <strong>{money(detail.command.total)}</strong>
-                  </dd>
-                </dl>
-                <Link
-                  className="btn secondary"
-                  href={`/erp/${encodeURIComponent(tenantCode)}/comandas`}
-                >
-                  Ir para comandas
-                </Link>
-              </section>
-            ) : (
-              <p className="agenda-form-hint">
-                A comanda de atendimento é gerada ao iniciar o serviço.
-              </p>
-            ))}
-
+            </details> : (detailNotes && <div className="agenda-detail-notes"><strong>Observações</strong><p>{detailNotes}</p></div>)}
+            {detail.command && <section className="agenda-command-details agenda-command-services">
+              <div className="agenda-command-summary-title"><h4>Serviços e produtos na comanda</h4><strong>{money(detail.command.total)}</strong></div>
+              <div className="agenda-command-item-list">
+                {detail.command.items.map(item => <div key={item.id}>
+                  <span>{item.quantity} × {item.description}</span><strong>{money(item.total)}</strong>
+                </div>)}
+              </div>
+              {detail.command.status === "OPEN" && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>+ Adicionar ou retirar serviços e produtos</Link>}
+            </section>}
+            <div className="agenda-command-bottom-actions">
+              {canOperate && <button type="submit" form={`agenda-save-${detail.id}`} className="btn secondary" title="Salva as observações alteradas">Salvar agendamento</button>}
+              {detail.command?.status === "OPEN" ? <Link className="btn agenda-checkout-shortcut" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Fechar comanda →</Link>
+                : detail.command?.status === "CLOSED" ? <span className="agenda-form-hint">Comanda fechada</span>
+                : <span className="agenda-form-hint">A comanda poderá ser fechada após iniciar o atendimento.</span>}
+            </div>
           </div>
         </AgendaDialog>
       )}
