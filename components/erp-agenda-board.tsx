@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { whatsappWaitlist } from "@/lib/checkout";
+import { whatsappWaitlist, whatsappAppointmentConfirmation } from "@/lib/checkout";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { rescheduleAppointment, saveAgendaBlock, removeAgendaBlock } from "@/app/erp/[tenant]/agenda-actions";
@@ -1414,21 +1414,30 @@ export function ErpAgendaBoard({
                 <Settings2 size={16} /> Opções <ChevronDown size={14} />
               </button>
             </div>
-            {detailOptionsOpen && <div id="agenda-detail-settings" className="agenda-detail-settings">
-              <div><strong>Personalizar ficha</strong><small>Deixe apenas as informações úteis para seu atendimento.</small></div>
-              <div className="agenda-detail-settings-grid">
-                {([
-                  ["signals", "Legendas e sinais"],
-                  ["customer", "Resumo do cliente"],
-                  ["purchases", "Produtos comprados"],
-                  ["notes", "Observações"],
-                  ["command", "Itens da comanda"],
-                  ["management", "Cancelar / não compareceu"],
-                ] as const).map(([key, label]) => <label key={key}>
-                  <input type="checkbox" checked={detailView[key]} onChange={event => toggleDetailView(key, event.target.checked)} />
-                  <span>{label}</span>
-                </label>)}
-              </div>
+            {detailOptionsOpen && <div id="agenda-detail-settings" className="agenda-detail-settings agenda-action-menu">
+              <strong>Ações do agendamento</strong>
+              {canOperate && ["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status) && !detail.command && <form
+                action={updateAppointmentStatus} onSubmit={event => {
+                  if (!window.confirm("Excluir este agendamento da agenda? O registro será marcado como cancelado para preservar o histórico.")) event.preventDefault();
+                }}>
+                <AgendaContextFields context={context} />
+                <input type="hidden" name="appointmentId" value={detail.id} />
+                <AgendaSubmit secondary name="action" value="cancel">Excluir agendamento</AgendaSubmit>
+              </form>}
+              {canOperate && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <form
+                action={updateAppointmentStatus} onSubmit={event => {
+                  if (!window.confirm("Marcar este cliente como faltante?")) event.preventDefault();
+                }}>
+                <AgendaContextFields context={context} />
+                <input type="hidden" name="appointmentId" value={detail.id} />
+                <AgendaSubmit secondary name="action" value="no_show">Cliente faltou</AgendaSubmit>
+              </form>}
+              {whatsappAppointmentConfirmation(detail.customerPhone || "", detail.customerName, detail.serviceName, detail.startsAt) && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && <a className="btn secondary agenda-whatsapp-confirm" target="_blank" rel="noopener noreferrer"
+                href={whatsappAppointmentConfirmation(detail.customerPhone || "", detail.customerName, detail.serviceName, detail.startsAt)!}>
+                <MessageCircle size={16} /> Enviar confirmação pelo WhatsApp
+              </a>}
+              {!detail.customerPhone && <p className="agenda-form-hint">WhatsApp indisponível: cliente sem telefone cadastrado.</p>}
+              {(!canOperate || !["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status)) && <p className="agenda-form-hint">Nenhuma alteração de status disponível para este atendimento.</p>}
             </div>}
             {detailView.signals && <AppointmentSignals appointment={detail} expanded />}
             {canOperate && <div className="agenda-quick-actions">
@@ -1549,26 +1558,7 @@ export function ErpAgendaBoard({
                 A comanda de atendimento é gerada ao iniciar o serviço.
               </p>
             ))}
-            {canOperate && detailView.management && (
-              <div className="agenda-detail-actions">
-                <form action={updateAppointmentStatus}>
-                  <AgendaContextFields context={context} />
-                  <input type="hidden" name="appointmentId" value={detail.id} />
-                  {["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(
-                    detail.status,
-                  ) && (
-                    <AgendaSubmit secondary name="action" value="cancel">
-                      Cancelar agendamento
-                    </AgendaSubmit>
-                  )}
-                  {["SCHEDULED", "CONFIRMED"].includes(detail.status) && (
-                    <AgendaSubmit secondary name="action" value="no_show">
-                      Não compareceu
-                    </AgendaSubmit>
-                  )}
-                </form>
-              </div>
-            )}
+
           </div>
         </AgendaDialog>
       )}

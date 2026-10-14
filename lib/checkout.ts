@@ -27,3 +27,28 @@ export function whatsappWaitlist(phone: string, name: string, service: string) {
   if (!/^[1-9]\d{11,14}$/.test(number)) return null;
   return `https://wa.me/${number}?text=${encodeURIComponent(`Olá, ${name}! Surgiu uma possibilidade de encaixe para ${service}. Podemos combinar o horário por aqui?`)}`;
 }
+
+/**
+ * Prepara uma mensagem no WhatsApp sem disparar mensagens automaticamente.
+ * Somente números brasileiros válidos são aceitos, evitando links incorretos.
+ */
+export function whatsappAppointmentConfirmation(
+  phone: string,
+  customerName: string,
+  serviceName: string,
+  startsAt: string,
+): string | null {
+  let number = phone.replace(/\D/g, "");
+  if (number.length === 10 || number.length === 11) number = "55" + number;
+  if (!/^55\d{10,11}$/.test(number)) return null;
+  const start = new Date(startsAt);
+  if (Number.isNaN(start.getTime())) return null;
+  const date = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric",
+  }).format(start);
+  const time = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false,
+  }).format(start);
+  const message = `Olá, ${customerName}! Tudo bem? Gostaríamos de confirmar seu agendamento de ${serviceName} para ${date} às ${time}. Pode confirmar sua presença por aqui?`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+}

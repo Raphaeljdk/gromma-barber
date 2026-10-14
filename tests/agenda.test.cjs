@@ -440,3 +440,23 @@ test('vídeo 14/10: múltiplos serviços aparecem em contador em vez de chips du
   assert.match(html, /30 minutos/);
   assert.match(html, /50,00/);
 });
+
+test('opções da ficha mostram apenas excluir, falta e confirmação WhatsApp', () => {
+  const html = markup({ initialAppointmentId: 'a1', appointments: [{ ...sample, customerPhone: '(11) 99999-4321' }] });
+  // O menu é interativo e começa fechado na renderização SSR.
+  assert.match(html, /aria-controls="agenda-detail-settings"/);
+  assert.doesNotMatch(html, /Personalizar ficha/);
+  const code = require('node:fs').readFileSync(require('node:path').resolve('components/erp-agenda-board.tsx'), 'utf8');
+  for (const label of ['Excluir agendamento', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(code, new RegExp(label));
+});
+test('confirmação WhatsApp inclui data, serviço e horário sem envio automático', () => {
+  const { whatsappAppointmentConfirmation } = load('lib/checkout.ts');
+  const url = whatsappAppointmentConfirmation('(11) 99999-4321', 'João', 'Corte', at('10:30'));
+  assert.ok(url);
+  const result = new URL(url);
+  assert.equal(result.hostname, 'wa.me');
+  assert.match(result.searchParams.get('text'), /João/);
+  assert.match(result.searchParams.get('text'), /10:30/);
+  assert.match(result.searchParams.get('text'), /Corte/);
+  assert.equal(whatsappAppointmentConfirmation('123', 'João', 'Corte', at('10:30')), null);
+});
