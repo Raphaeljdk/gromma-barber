@@ -78,17 +78,36 @@ export function AgendaAppointmentForm({
   const nextExtraKey = useRef(0);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerId, setCustomerId] = useState(draft.customerId || "");
+  const [customerChoicesOpen, setCustomerChoicesOpen] = useState(false);
+  // Pesquisa iniciada exige uma escolha explícita: nunca deixar a ficha como
+  // "avulso" por acidente após a recepção digitar um nome conhecido.
+  const [walkIn, setWalkIn] = useState(!draft.customerId);
   const [startsAt, setStartsAt] = useState(draft.startsAt);
   const [showNotes, setShowNotes] = useState(Boolean(draft.notes));
   const chosen = [primaryService, ...extraServices.map(item => item.serviceId)].filter(Boolean);
   const selectedServices = chosen.map(id => services.find(service => service.id === id)).filter((item): item is AgendaService => Boolean(item));
   const totalMinutes = selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0);
   const totalPrice = selectedServices.reduce((sum, item) => sum + item.price, 0);
-  const visibleCustomers = customers.filter(customer =>
-    !customerSearch || customer.id === customerId ||
-    [customer.name, customer.phone || ""].some(value => value.toLocaleLowerCase("pt-BR").includes(customerSearch.toLocaleLowerCase("pt-BR")))
-  );
+  const customerQuery = customerSearch.trim().toLocaleLowerCase("pt-BR");
+  const visibleCustomers = customerQuery
+    ? customers.filter(customer =>
+        [customer.name, customer.phone || ""].some(value => value.toLocaleLowerCase("pt-BR").includes(customerQuery))
+      )
+    : [];
   const selectedCustomer = customers.find(item => item.id === customerId);
+  const customerChoiceMissing = !selectedCustomer && !walkIn;
+  function pickCustomer(id: string) {
+    setCustomerId(id);
+    setWalkIn(false);
+    setCustomerSearch("");
+    setCustomerChoicesOpen(false);
+  }
+  function pickWalkIn() {
+    setCustomerId("");
+    setCustomerSearch("");
+    setWalkIn(true);
+    setCustomerChoicesOpen(false);
+  }
   const finishAt = startsAt && totalMinutes
     ? new Date(new Date(startsAt + ":00-03:00").getTime() + totalMinutes * 60000)
         .toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })
@@ -106,6 +125,9 @@ export function AgendaAppointmentForm({
     setExtraServices(previous => previous.filter(item => item.key !== key));
   }
   const tooLongForOneDay = totalMinutes > 24 * 60;
+  const extraCounts = services.map(service => ({
+    service, count: extraServices.filter(item => item.serviceId === service.id).length,
+  })).filter(entry => entry.count > 0);
 
   return (
     <form action={createAppointment} className="erp-quick-form agenda-modal-form agenda-booking-form">
@@ -114,19 +136,53 @@ export function AgendaAppointmentForm({
       {draft.waitlistId && <p className="agenda-form-hint agenda-booking-alert">Encaixe da fila: o cliente só sairá da lista quando o atendimento for salvo.</p>}
       <section className="agenda-booking-section">
         <div className="agenda-booking-section-heading"><span className="agenda-booking-number">01</span><div><h4>Quem será atendido?</h4><p>Encontre o cliente pelo nome ou telefone.</p></div></div>
-        <div className="agenda-booking-customer">
-          <label><span className="label">Buscar cliente</span>
-            <input className="input" type="search" value={customerSearch} onChange={event => setCustomerSearch(event.target.value)} placeholder="Digite nome ou telefone para filtrar" autoComplete="off" />
-          </label>
-          <label><span className="label">Cliente selecionado</span>
-            <select name="customerId" className="select" value={customerId} onChange={event => setCustomerId(event.target.value)}>
-              <option value="">Cliente avulso (sem cadastro)</option>
-              {visibleCustomers.map(customer => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? " · " + customer.phone : ""}</option>)}
-            </select>
-          </label>
-        </div>
-        <div className="agenda-booking-selected" aria-live="polite">
-          {selectedCustomer ? <><strong>{selectedCustomer.name}</strong><span>{selectedCustomer.phone || "Telefone não cadastrado"}</span></> : <><strong>Atendimento avulso</strong><span>Para manter o histórico de visitas e compras, selecione um cliente cadastrado.</span></>}
+        <div className="agenda-customer-chooser">
+          <label htmlFor="agenda-customer-search"><span className="label">Buscar cliente cadastrado</span></label>
+          <input type="hidden" name="customerId" value={customerId} />
+          <div className="agenda-customer-searchbox">
+            <input id="agenda-customer-search" className="input" type="search" value={customerSearch}
+              placeholder="Digite o nome ou telefone e selecione abaixo"
+              autoComplete="off"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="agenda-customer-results"
+              aria-expanded={customerChoicesOpen && !!customerQuery}
+              onChange={event => {
+                setCustomerSearch(event.target.value);
+                setCustomerChoicesOpen(true);
+                setWalkIn(false);
+                setCustomerId("");
+              }}
+              onFocus={() => setCustomerChoicesOpen(true)}
+              onKeyDown={event => {
+                if (event.key === "Escape") setCustomerChoicesOpen(false);
+                if (event.key === "Enter" && visibleCustomers.length) {
+                  event.preventDefault();
+                  pickCustomer(visibleCustomers[0].id);
+                }
+              }}
+            />
+            {customerQuery && customerChoicesOpen && <div id="agenda-customer-results" className="agenda-customer-results" role="listbox" aria-label="Clientes encontrados">
+              {visibleCustomers.slice(0, 8).map(customer =>
+                <button type="button" role="option" aria-selected={false}
+                  className="agenda-customer-option" key={customer.id}
+                  onClick={() => pickCustomer(customer.id)}>
+                  <span><strong>{customer.name}</strong><small>{customer.phone || "Sem telefone"}</small></span>
+                  <span>Selecionar</span>
+                </button>
+              )}
+              {!visibleCustomers.length && <p className="agenda-form-hint">Nenhum cadastro encontrado. Confira o nome ou escolha atendimento avulso.</p>}
+              {visibleCustomers.length > 8 && <p className="agenda-form-hint">Mostrando 8 clientes. Digite mais letras para refinar.</p>}
+            </div>}
+          </div>
+          <div className="agenda-customer-choice-row" aria-live="polite">
+            {selectedCustomer
+              ? <div className="agenda-customer-picked"><span className="agenda-customer-picked-icon">{selectedCustomer.name.charAt(0).toUpperCase()}</span><span><strong>{selectedCustomer.name}</strong><small>{selectedCustomer.phone || "Sem telefone"} · Cadastro vinculado</small></span></div>
+              : <span className="agenda-form-hint">{walkIn ? "Atendimento avulso selecionado. Sem histórico de cliente." : "Selecione um cliente nos resultados para vincular a visita."}</span>}
+            <button type="button" className={walkIn ? "agenda-walkin-btn active" : "agenda-walkin-btn"}
+              aria-pressed={walkIn} onClick={pickWalkIn}>Atendimento avulso</button>
+          </div>
+          {customerChoiceMissing && <p role="status" className="agenda-form-hint agenda-customer-required">Escolha um cliente encontrado ou clique em atendimento avulso antes de confirmar.</p>}
         </div>
       </section>
       <section className="agenda-booking-section">
@@ -154,13 +210,18 @@ export function AgendaAppointmentForm({
         </div>
         {extraServices.map((item, index) => <input key={item.key} type="hidden" name="serviceIds" value={item.serviceId} aria-label={"Serviço adicional " + (index + 1)} />)}
         {!!selectedServices.length && <div className="agenda-booking-chosen">
-          <span key="principal" className="agenda-booking-main-service">{selectedServices[0]?.name} <small>Principal</small></span>
-          {extraServices.map(item => {
-            const service = services.find(service => service.id === item.serviceId);
-            return service && <span key={item.key}>{service.name}<button type="button" onClick={() => removeExtra(item.key)} aria-label={"Remover uma ocorrência de " + service.name}>×</button></span>;
-          })}
+          <span className="agenda-booking-main-service">{selectedServices[0]?.name} <small>Principal</small></span>
+          {extraCounts.map(({ service, count }) => <span key={service.id} className="agenda-booking-count">
+            <strong>{count}× {service.name}</strong>
+            <button type="button" aria-label={"Remover uma unidade de " + service.name}
+              onClick={() => {
+                const last = [...extraServices].reverse().find(item => item.serviceId === service.id);
+                if (last) removeExtra(last.key);
+              }}>−</button>
+            <button type="button" aria-label={"Adicionar outra unidade de " + service.name} onClick={() => addService(service.id)}>+</button>
+          </span>)}
         </div>}
-        <p className="agenda-form-hint">{chosen.length} {chosen.length === 1 ? "serviço selecionado" : "serviços selecionados"} · É possível adicionar o mesmo serviço mais de uma vez.</p>
+        <p className="agenda-form-hint">{chosen.length} {chosen.length === 1 ? "serviço" : "serviços"} · {totalMinutes} minutos · {money(totalPrice)}. É possível repetir o mesmo serviço.</p>
       </section>
       <section className="agenda-booking-section">
         <div className="agenda-booking-section-heading"><span className="agenda-booking-number">03</span><div><h4>Quando e com quem?</h4><p>Profissional, unidade e horário reservados juntos.</p></div></div>
@@ -193,7 +254,7 @@ export function AgendaAppointmentForm({
         {tooLongForOneDay && <p role="alert" className="agenda-form-hint">A duração ultrapassa 24 horas. Divida esse atendimento em horários diferentes.</p>}
         <div className="agenda-booking-submit">
           <span>A duração e os conflitos são conferidos antes de salvar.</span>
-          <AgendaSubmit disabled={tooLongForOneDay}>Confirmar agendamento</AgendaSubmit>
+          <AgendaSubmit disabled={tooLongForOneDay || customerChoiceMissing}>Confirmar agendamento</AgendaSubmit>
         </div>
       </section>
     </form>

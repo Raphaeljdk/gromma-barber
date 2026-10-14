@@ -391,3 +391,52 @@ test('serviços repetidos e sem limite de quantidade ficam no agendamento e soma
   assert.equal(booked.length, 13);
   assert.deepEqual(booked.map(item => item.id).slice(0, 5), ['s1', 's1', 's2', 's1', 's2']);
 });
+
+
+test('vídeo 14/10: cliente é escolhido na busca, sem segundo dropdown avulso', () => {
+  const { AgendaAppointmentForm } = load('components/agenda-forms.tsx', {
+    '@/app/erp/[tenant]/actions': { createAppointment() {} },
+    '@/app/erp/[tenant]/module-actions': { addWaitlist() {} },
+  });
+  const props = {
+    context, professionals: [{ id: 'p1', name: 'Profissional Um', unitId: 'u1' }],
+    units: [{ id: 'u1', name: 'Matriz' }],
+    services: [{ id: 's1', name: 'Corte', durationMinutes: 45, price: 50 }],
+    customers: [{ id: 'c1', name: 'Bruno Ferreira', phone: '(11) 99999-9999' }],
+    rotationEnabled: false,
+  };
+  const withCustomer = renderToStaticMarkup(React.createElement(AgendaAppointmentForm, {
+    ...props, draft: { startsAt: '2026-10-14T09:30', barberId: 'p1', unitId: 'u1', customerId: 'c1', serviceId: 's1' },
+  }));
+  assert.match(withCustomer, /role="combobox"/);
+  assert.match(withCustomer, /name="customerId" value="c1"/);
+  assert.match(withCustomer, /Bruno Ferreira/);
+  assert.match(withCustomer, /Cadastro vinculado/);
+  assert.match(withCustomer, /Atendimento avulso/);
+  assert.doesNotMatch(withCustomer, /<select[^>]*name="customerId"/);
+  const avulso = renderToStaticMarkup(React.createElement(AgendaAppointmentForm, {
+    ...props, draft: { startsAt: '2026-10-14T09:30', barberId: 'p1', unitId: 'u1', customerId: '', serviceId: 's1' },
+  }));
+  assert.match(avulso, /Atendimento avulso selecionado/);
+  assert.match(avulso, /name="customerId" value=""/);
+});
+
+test('vídeo 14/10: múltiplos serviços aparecem em contador em vez de chips duplicados', () => {
+  const { AgendaAppointmentForm } = load('components/agenda-forms.tsx', {
+    '@/app/erp/[tenant]/actions': { createAppointment() {} },
+    '@/app/erp/[tenant]/module-actions': { addWaitlist() {} },
+  });
+  const html = renderToStaticMarkup(React.createElement(AgendaAppointmentForm, {
+    context, professionals: [], units: [{ id: 'u1', name: 'Matriz' }],
+    services: [
+      { id: 's1', name: 'Corte', durationMinutes: 30, price: 50 },
+      { id: 's2', name: 'Barba', durationMinutes: 20, price: 30 },
+    ],
+    customers: [], draft: { startsAt: '2026-10-14T09:30', unitId: 'u1', customerId: '', serviceId: 's1' },
+    rotationEnabled: false,
+  }));
+  assert.match(html, /Adicionar Barba/);
+  assert.match(html, /1 serviço/);
+  assert.match(html, /30 minutos/);
+  assert.match(html, /50,00/);
+});
