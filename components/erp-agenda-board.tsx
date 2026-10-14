@@ -1428,8 +1428,8 @@ export function ErpAgendaBoard({
             {canOperate && <div className="agenda-quick-actions">
               <form action={updateAppointmentStatus}><AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
                 {detail.status === "SCHEDULED" && <AgendaSubmit name="action" value="confirm">Confirmar presença</AgendaSubmit>}
-                {["SCHEDULED", "CONFIRMED"].includes(detail.status) && <AgendaSubmit name="action" value="checkin">No local</AgendaSubmit>}
-                {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar atendimento</AgendaSubmit>}
+                {["SCHEDULED", "CONFIRMED"].includes(detail.status) && <AgendaSubmit name="action" value="arrive">No local · iniciar serviço</AgendaSubmit>}
+                {detail.status === "CHECKED_IN" && <AgendaSubmit name="action" value="start">Iniciar serviço</AgendaSubmit>}
               </form>
               {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Reagendar</button>}
               {detail.customerId && detail.serviceId && <button type="button" className="btn secondary" onClick={() => {
