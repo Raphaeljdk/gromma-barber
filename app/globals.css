@@ -7819,3 +7819,50 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .agenda-command-bottom-actions > .btn { min-width: 0; flex-basis:100%; }
   .agenda-command-bottom-actions .agenda-form-hint { text-align:left; }
 }
+
+
+/* Reunião: indicadores como dashboard acima da barra principal da agenda. */
+.agenda-dashboard-panel { display:grid; gap:10px; margin:14px 0; }
+.agenda-dashboard-head {
+  display:flex; gap:12px; align-items:center; justify-content:space-between;
+  color:var(--erp-text); font-size:.82rem; font-weight:750;
+}
+.agenda-dashboard-head strong { color:var(--erp-gold); font-size:.74rem; }
+.agenda-dashboard-panel .agenda-summary-grid {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; min-width:0;
+}
+.agenda-dashboard-panel .agenda-summary-grid article {
+  display:flex; gap:10px; align-items:center;
+  min-width:0; min-height:72px; border:1px solid var(--erp-border);
+  border-radius:11px; padding:12px; background:var(--erp-panel-2);
+}
+.agenda-dashboard-panel .agenda-summary-grid article:has(a) { padding:0; }
+.agenda-dashboard-panel .agenda-summary-grid article > a {
+  display:flex; align-items:center; gap:10px; width:100%; padding:12px; min-height:72px;
+}
+.agenda-dashboard-panel .agenda-summary-grid article svg { flex:0 0 19px; color:var(--erp-gold); }
+.agenda-dashboard-panel .agenda-summary-grid article :is(div, a>span) { display:grid; gap:4px; min-width:0; }
+.agenda-dashboard-panel .agenda-summary-grid article :is(span,small) { font-size:.7rem; color:var(--erp-muted); line-height:1.35; }
+.agenda-dashboard-panel .agenda-summary-grid article strong { color:var(--erp-text); font-size:1.18rem; line-height:1.2; }
+.agenda-dashboard-panel .agenda-summary-grid article.selected { border-color:var(--erp-gold); background:color-mix(in srgb,var(--erp-gold) 11%,var(--erp-panel)); }
+@media(max-width:990px) { .agenda-dashboard-panel .agenda-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:480px) {
+  .agenda-dashboard-panel .agenda-summary-grid { gap:7px; }
+  .agenda-dashboard-panel .agenda-summary-grid article, .agenda-dashboard-panel .agenda-summary-grid article > a { padding:9px; min-height:65px; gap:7px; }
+  .agenda-dashboard-panel .agenda-summary-grid article strong { font-size:1.08rem; }
+}
+/* Cadastro de agendamento: serviços entram um por vez, sem sugestões redundantes. */
+.agenda-booking-timing { display:grid; gap:12px; border-top:1px solid var(--erp-border); padding-top:13px; }
+.agenda-booking-timing .agenda-field-wide { grid-column:1/-1; }
+.agenda-booking-service-entry { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:9px; align-items:end; }
+.agenda-booking-service-entry label { min-width:0; }
+.agenda-add-service-button { align-self:end; min-height:42px; white-space:nowrap; }
+.agenda-add-service-button:disabled { opacity:.5; cursor:not-allowed; }
+.agenda-booking-service-list { display:grid; gap:0; border:1px solid var(--erp-border); background:var(--erp-panel); padding:12px 14px; border-radius:11px; min-width:0; }
+.agenda-service-line { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--erp-border); }
+.agenda-service-line span { display:grid; gap:5px; min-width:0; }
+.agenda-service-line strong { font-size:.77rem; color:var(--erp-text); }
+.agenda-service-line small { font-size:.68rem; color:var(--erp-muted); }
+.agenda-service-line button { flex-shrink:0; border:1px solid var(--erp-border-strong); border-radius:8px; background:var(--erp-panel-2); color:var(--erp-text); padding:7px 11px; font-size:.7rem; cursor:pointer; }
+.agenda-service-line button:hover { border-color:#bb5252; color:#de6b6b; }
+@media(max-width:550px) { .agenda-booking-service-entry { grid-template-columns:1fr; } .agenda-add-service-button { width:100%; } }
