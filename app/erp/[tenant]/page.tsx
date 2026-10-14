@@ -918,6 +918,8 @@ export async function TenantERPView({
         </section>
 
         <section id="agenda" className="demo-section" hidden={Boolean(moduleId && moduleId !== "agenda")}>
+          {valueOf("checkoutError") && <div role="alert" className="notice error-notice">{valueOf("checkoutError")}</div>}
+          {valueOf("checkoutOk") && <div role="status" className="notice success">Comanda atualizada.</div>}
           <div className="section-head">
             <div><div className="eyebrow">Agenda operacional</div><h2>Agenda, disponibilidade e fila de espera</h2></div>
             <StatusPill tone="ready">Operacional</StatusPill>
