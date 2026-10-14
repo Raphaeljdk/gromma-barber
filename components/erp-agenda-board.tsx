@@ -1335,12 +1335,12 @@ export function ErpAgendaBoard({
         </AgendaDialog>
       )}
       {fitSlot && <AgendaDialog title="Novo agendamento" subtitle={`Horário selecionado · ${dateLabel(selectedDate, { dateStyle: "short" })} às ${fitSlot.startsAt.slice(11)}`} variant="booking" onClose={() => setFitSlot(null)}>
-        <div className="agenda-fit-list"><h4>Encaixes compatíveis da fila</h4>
-          {fits.length ? fits.map(item => <button type="button" className="btn secondary" key={item.id} onClick={() => {
+        {fits.length > 0 && <div className="agenda-fit-list"><h4>Clientes da fila para este horário</h4>
+          {fits.map(item => <button type="button" className="btn secondary" key={item.id} onClick={() => {
             const matches = customers.filter(c => item.phone && c.phone?.replace(/\D/g, "") === item.phone.replace(/\D/g, ""));
             setDraft({ ...fitSlot, unitId: fitSlot.unitId || item.unitId || "", serviceId: item.serviceId || "", customerId: matches.length === 1 ? matches[0].id : "", waitlistId: item.id, notes: [item.notes, "Origem: fila de espera"].filter(Boolean).join(" · ") }); setFitSlot(null);
-          }}>{item.customerName} · {item.serviceName}</button>) : <p className="agenda-form-hint">Nenhum cliente com serviço, duração e preferência compatíveis. A comparação considera o horário completo do serviço.</p>}
-        </div>
+          }}>{item.customerName} · {item.serviceName}</button>)}
+        </div>}
         <AgendaAppointmentForm context={context} professionals={professionals} units={units} services={services} customers={customers} draft={fitSlot} rotationEnabled={settings.rotationEnabled} />
       </AgendaDialog>}
       {moveTarget && <AgendaDialog title="Confirmar remarcação" subtitle="O horário original só muda depois da confirmação." onClose={() => setMoveTarget(null)}>
