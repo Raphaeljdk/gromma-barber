@@ -633,6 +633,44 @@ export function ErpAgendaBoard({
           </button>
         </div>
       </div>
+          <section className="agenda-dashboard-panel" aria-label="Indicadores do dia">
+            <div className="agenda-dashboard-head"><span>Indicadores do dia</span><strong>{dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}</strong></div>
+            <div className="agenda-summary-grid">
+              {summaries.map(({ icon: Icon, label, value, filter }) => (
+                <article
+                  className={
+                    filter && selectedClientFilter === filter ? "selected" : ""
+                  }
+                  key={label}
+                >
+                  {filter ? (
+                    <Link
+                      prefetch={false}
+                      href={href({
+                        agendaClient: selectedClientFilter === filter ? "" : filter,
+                      })}
+                      aria-label={`${label}: ${value}. ${selectedClientFilter === filter ? "Remover" : "Aplicar"} filtro`}
+                    >
+                      <Icon size={18} />
+                      <span>
+                        <small>{label}</small>
+                        <strong>{value}</strong>
+                      </span>
+                    </Link>
+                  ) : (
+                    <>
+                      <Icon size={18} />
+                      <div>
+                        <span>{label}</span>
+                        <strong>{value}</strong>
+                      </div>
+                    </>
+                  )}
+                </article>
+              ))}
+            </div>
+
+          </section>
       <div className="agenda-toolbar">
         <button type="button" className="btn secondary" onClick={() => {
           if (selectedDate !== nowDate || view !== "day") router.push(`${href({ agendaDate: nowDate, agendaView: "day" })}#agenda-now`);
@@ -1170,44 +1208,6 @@ export function ErpAgendaBoard({
               A data e a visualização são mantidas ao trocar de unidade.
             </small>
           </div>
-          <section className="agenda-side-card agenda-side-metrics" aria-label="Indicadores do dia">
-            <div className="agenda-side-head"><span>Indicadores do dia</span><strong>{dateLabel(selectedDate, { day: "2-digit", month: "2-digit" })}</strong></div>
-            <div className="agenda-summary-grid">
-              {summaries.map(({ icon: Icon, label, value, filter }) => (
-                <article
-                  className={
-                    filter && selectedClientFilter === filter ? "selected" : ""
-                  }
-                  key={label}
-                >
-                  {filter ? (
-                    <Link
-                      prefetch={false}
-                      href={href({
-                        agendaClient: selectedClientFilter === filter ? "" : filter,
-                      })}
-                      aria-label={`${label}: ${value}. ${selectedClientFilter === filter ? "Remover" : "Aplicar"} filtro`}
-                    >
-                      <Icon size={18} />
-                      <span>
-                        <small>{label}</small>
-                        <strong>{value}</strong>
-                      </span>
-                    </Link>
-                  ) : (
-                    <>
-                      <Icon size={18} />
-                      <div>
-                        <span>{label}</span>
-                        <strong>{value}</strong>
-                      </div>
-                    </>
-                  )}
-                </article>
-              ))}
-            </div>
-
-          </section>
           <section className="agenda-side-card">
             <div className="agenda-side-head">
               <span>Próximos horários livres</span>
