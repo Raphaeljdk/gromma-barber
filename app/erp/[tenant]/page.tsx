@@ -518,11 +518,45 @@ export async function TenantERPView({
     by: ["customerId"], where: { barberShopId: shop.id, customerId: { in: agendaCustomerIds }, status: "COMPLETED", startsAt: { lt: new Date() } }, _max: { startsAt: true },
   }) : [];
   const lastVisitByCustomer = new Map(lastVisits.map(item => [item.customerId, item._max.startsAt?.toISOString() || null]));
+  // Três atendimentos efetivamente realizados por cliente, nunca de outra empresa.
+  const previousAppointments = agendaCustomerIds.length ? await prisma.appointment.findMany({
+    where: {
+      barberShopId: shop.id,
+      customerId: { in: agendaCustomerIds },
+      status: "COMPLETED",
+      startsAt: { lt: new Date() },
+    },
+    select: {
+      id: true, customerId: true, startsAt: true, status: true,
+      service: { select: { name: true } }, barber: { select: { name: true } },
+    },
+    orderBy: { startsAt: "desc" },
+    take: Math.min(3000, agendaCustomerIds.length * 25),
+  }) : [];
+  const lastThreeByCustomer = new Map<string, {
+    id: string; date: string; service: string; professional: string; status: string;
+  }[]>();
+  for (const previous of previousAppointments) {
+    if (!previous.customerId) continue;
+    const current = lastThreeByCustomer.get(previous.customerId) ?? [];
+    if (current.length >= 3) continue;
+    current.push({
+      id: previous.id, date: previous.startsAt.toISOString(),
+      service: workspace.bookedServices.find(entry => entry.appointmentId === previous.id)?.services.map(v => v.name).join(" + ")
+        || previous.service?.name || "Atendimento",
+      professional: previous.barber?.name || "Sem preferência", status: previous.status,
+    });
+    lastThreeByCustomer.set(previous.customerId, current);
+  }
+
   // Use only purchases from this tenant, already closed and linked to this client.
   // Bound the history query to protect the agenda from unbounded scans.
   const agendaRecentCommands = agendaCustomerIds.length ? await prisma.serviceCommand.findMany({
     where: { barberShopId: shop.id, customerId: { in: agendaCustomerIds }, status: "CLOSED" },
-    include: { items: { where: { kind: "PRODUCT" }, select: { description: true, quantity: true } } },
+    include: {
+      items: { where: { kind: "PRODUCT" }, select: { description: true, quantity: true } },
+      appointment: { select: { barber: { select: { name: true } } } },
+    },
     orderBy: { closedAt: "desc" },
     take: Math.min(1000, agendaCustomerIds.length * 15),
   }) : [];
@@ -534,7 +568,11 @@ export async function TenantERPView({
     for (const item of previous.items) {
       if (collected.length >= 5) break;
       if (!collected.some(existing => existing.description === item.description)) {
-        collected.push({ description: item.description, quantity: Number(item.quantity), date: (previous.closedAt || previous.openedAt).toISOString() });
+        collected.push({
+          description: item.description, quantity: Number(item.quantity),
+          date: (previous.closedAt || previous.openedAt).toISOString(),
+          professional: previous.appointment?.barber?.name || "Não informado",
+        });
       }
     }
     recentProductsByCustomer.set(previous.customerId, collected);
@@ -904,6 +942,7 @@ export async function TenantERPView({
               lastVisit: item.customerId ? lastVisitByCustomer.get(item.customerId) || null : null,
               customerNotes: item.customer?.notes || null,
               recentProducts: item.customerId ? recentProductsByCustomer.get(item.customerId) ?? [] : [],
+              lastThreeAppointments: item.customerId ? (lastThreeByCustomer.get(item.customerId) ?? []).filter(previous => previous.id !== item.id) : [],
               price: workspace.bookedServices.find(b => b.appointmentId === item.id)?.services.reduce((sum, service) => sum + service.price, 0) ?? Number(item.service?.price ?? 0),
               hasPlan: Boolean(item.customerId && customerPlan.has(item.customerId)),
               planName: item.customerId ? customerPlan.get(item.customerId) ?? null : null,
