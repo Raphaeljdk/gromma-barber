@@ -7763,3 +7763,59 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .agenda-walkin-btn { width:100%; }
   .agenda-booking-section { padding:12px; }
 }
+
+
+/* Reuniões GROMMA — comanda operacional em formato profissional e compacto. */
+.agenda-command-summary,
+.agenda-previous-appointments,
+.agenda-command-notes,
+.agenda-command-services {
+  border:1px solid var(--erp-border); border-radius:12px;
+  background:var(--erp-panel-2); padding:13px 15px; min-width:0;
+}
+.agenda-command-summary { display:grid; gap:7px; }
+.agenda-command-summary p { margin:0; font-size:.74rem; line-height:1.5; }
+.agenda-command-summary p strong { color:var(--erp-text); }
+.agenda-command-summary-title {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:8px; margin-bottom:10px;
+}
+.agenda-command-summary-title h4 { font-size:.82rem; margin:0; }
+.agenda-command-summary-title small,
+.agenda-command-summary-title > span { color:var(--erp-muted); font-size:.69rem; }
+.agenda-command-summary-title strong { color:var(--erp-gold); }
+.agenda-previous-list { display:grid; gap:0; }
+.agenda-previous-list article {
+  display:grid; grid-template-columns:100px minmax(100px,1fr) minmax(100px, .8fr);
+  align-items:center; gap:10px; padding:9px 0;
+  border-bottom:1px solid var(--erp-border);
+}
+.agenda-previous-list article:last-child { border-bottom:0; }
+.agenda-previous-list time,.agenda-previous-list small { color:var(--erp-muted); font-size:.67rem; }
+.agenda-previous-list strong { font-size:.72rem; color:var(--erp-text); }
+.agenda-command-services .agenda-command-item-list { display:grid; gap:0; }
+.agenda-command-item-list > div {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:9px 0; border-bottom:1px solid var(--erp-border); font-size:.75rem;
+}
+.agenda-command-item-list > div:last-child { border-bottom:0; }
+.agenda-command-item-list strong { white-space:nowrap; font-variant-numeric:tabular-nums; }
+.agenda-command-services > .btn { margin-top:12px; font-size:.73rem; }
+.agenda-command-notes { padding:0; }
+.agenda-command-notes summary { cursor:pointer; padding:13px 15px; color:var(--erp-text); font-weight:750; font-size:.77rem; }
+.agenda-command-notes summary span { float:right; color:var(--erp-gold); }
+.agenda-command-notes form { padding:0 15px 14px; }
+.agenda-command-notes textarea { min-height:68px; }
+.agenda-command-bottom-actions {
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  border-top:1px solid var(--erp-border); padding-top:13px; margin-top:4px;
+}
+.agenda-command-bottom-actions > .btn { flex:1; text-align:center; justify-content:center; min-height:43px; min-width:160px; }
+.agenda-command-bottom-actions .agenda-form-hint { flex:1; text-align:right; }
+.agenda-customer-purchases article > div { display:grid; gap:3px; min-width:0; }
+@media(max-width:570px) {
+  .agenda-previous-list article { grid-template-columns: 85px minmax(0,1fr); gap:7px; }
+  .agenda-previous-list article small { grid-column:2; }
+  .agenda-command-bottom-actions > .btn { min-width: 0; flex-basis:100%; }
+  .agenda-command-bottom-actions .agenda-form-hint { text-align:left; }
+}
