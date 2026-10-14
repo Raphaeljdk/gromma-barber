@@ -7683,3 +7683,83 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .checkout-compact-total > strong { font-size:1.35rem; }
   .agenda-detail-grid-compact { grid-template-columns:1fr 1fr; }
 }
+
+
+/* Ajustes da agenda a partir dos vídeos de 14/10 — cliente e serviços. */
+.agenda-customer-chooser { min-width:0; display:grid; gap:11px; }
+.agenda-customer-chooser > label .label { font-size:.74rem; font-weight:750; }
+.agenda-customer-searchbox { position:relative; min-width:0; }
+.agenda-customer-searchbox .input {
+  display:block; width:100%; min-height:47px;
+  border:1px solid var(--erp-border-strong);
+}
+.agenda-customer-results {
+  position:relative; z-index:6;
+  display:grid; gap:4px; padding:7px; margin-top:7px; max-height:240px;
+  overflow:auto; background:var(--erp-panel); border:1px solid var(--erp-border-strong);
+  border-radius:12px; box-shadow:0 10px 24px #0002;
+}
+.agenda-customer-option {
+  display:flex; align-items:center; justify-content:space-between; text-align:left;
+  gap:10px; padding:9px 12px; border:1px solid transparent; border-radius:9px;
+  background:transparent; color:var(--erp-text); cursor:pointer; min-height:45px;
+}
+.agenda-customer-option:hover, .agenda-customer-option:focus-visible {
+  background:color-mix(in srgb,var(--erp-gold) 10%,var(--erp-panel));
+  border-color:var(--erp-border-strong);
+}
+.agenda-customer-option > span:first-child { display:grid; gap:4px; }
+.agenda-customer-option strong { font-size:.77rem; }
+.agenda-customer-option small { color:var(--erp-muted); font-size:.68rem; }
+.agenda-customer-option > span:last-child { color:var(--erp-gold); font-size:.7rem; font-weight:700; }
+.agenda-customer-choice-row {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  flex-wrap:wrap; min-height:56px; border:1px solid var(--erp-border);
+  background:var(--erp-panel); border-radius:10px; padding:8px 11px;
+}
+.agenda-customer-choice-row > .agenda-form-hint { flex:1; }
+.agenda-customer-picked { display:flex; gap:10px; align-items:center; min-width:0; }
+.agenda-customer-picked-icon {
+  flex:0 0 31px; height:31px; display:grid; place-items:center;
+  border:1px solid var(--erp-border-strong);
+  border-radius:9px; background:var(--erp-panel-2);
+  color:var(--erp-gold); font-weight:800;
+}
+.agenda-customer-picked > span:last-child { display:grid; gap:3px; }
+.agenda-customer-picked strong { font-size:.8rem; color:var(--erp-text); }
+.agenda-customer-picked small { font-size:.69rem; color:var(--erp-muted); }
+.agenda-walkin-btn {
+  cursor:pointer; min-height:34px; border-radius:9px; padding:7px 11px;
+  border:1px solid var(--erp-border-strong);
+  background:var(--erp-panel-2); color:var(--erp-muted);
+  font-size:.71rem; font-weight:750;
+}
+.agenda-walkin-btn.active {
+  border-color:var(--erp-gold);
+  background:color-mix(in srgb,var(--erp-gold) 10%,var(--erp-panel));
+  color:var(--erp-gold);
+}
+.agenda-customer-required { color:#caa55f; padding:0 3px; }
+.agenda-booking-count {
+  gap:7px !important; padding:4px 5px 4px 10px !important;
+}
+.agenda-booking-count strong { font-weight:700; font-size:.7rem; }
+.agenda-booking-count button {
+  display:grid; place-items:center;
+  width:27px; height:27px; min-width:27px;
+  padding:0 !important; border:1px solid var(--erp-border-strong) !important;
+  border-radius:8px; background:var(--erp-panel-2) !important;
+  color:var(--erp-text) !important; font-size:.92rem !important;
+}
+.agenda-booking-count button:hover { border-color:var(--erp-gold) !important; color:var(--erp-gold) !important; }
+.agenda-booking-section { gap:12px; padding:15px; }
+.agenda-dialog-booking .agenda-dialog-head { margin-bottom:13px; padding-bottom:12px; }
+.agenda-dialog-booking .agenda-booking-section-heading { gap:10px; }
+.agenda-dialog-booking .agenda-booking-section-heading p { line-height:1.35; }
+.agenda-dialog-booking .agenda-booking-service-options { max-height:130px; }
+@media(max-width:550px) {
+  .agenda-customer-choice-row { align-items:flex-start; }
+  .agenda-customer-picked { flex:1 1 100%; }
+  .agenda-walkin-btn { width:100%; }
+  .agenda-booking-section { padding:12px; }
+}
