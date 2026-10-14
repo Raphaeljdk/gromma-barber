@@ -5,6 +5,7 @@ import { whatsappWaitlist, whatsappAppointmentConfirmation } from "@/lib/checkou
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { rescheduleAppointment, saveAgendaBlock, removeAgendaBlock } from "@/app/erp/[tenant]/agenda-actions";
+import { addCommandItem, removeCommandItem } from "@/app/erp/[tenant]/checkout-actions";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import type { AgendaBlock } from "@/lib/erp-workspace";
 import {
@@ -1493,12 +1494,34 @@ export function ErpAgendaBoard({
             </details> : (detailNotes && <div className="agenda-detail-notes"><strong>Observações</strong><p>{detailNotes}</p></div>)}
             {detail.command && <section className="agenda-command-details agenda-command-services">
               <div className="agenda-command-summary-title"><h4>Serviços e produtos na comanda</h4><strong>{money(detail.command.total)}</strong></div>
+              {canOperate && detail.command.status === "OPEN" && <form action={addCommandItem} className="agenda-command-add-form">
+                <input type="hidden" name="tenantCode" value={tenantCode} />
+                <input type="hidden" name="commandId" value={detail.command.id} />
+                <input type="hidden" name="agendaReturn" value="1" />
+                <input type="hidden" name="appointmentId" value={detail.id} />
+                <input type="hidden" name="agendaDate" value={selectedDate} />
+                <input type="hidden" name="quantity" value="1" />
+                <label><span className="label">Inserir serviço</span><select className="select" name="catalogItem" defaultValue="" required>
+                  <option value="" disabled>Selecione o serviço</option>
+                  {services.map(service => <option key={service.id} value={`SERVICE:${service.id}`}>{service.name} · {money(service.price)}</option>)}
+                </select></label>
+                <AgendaSubmit secondary>+ Inserir</AgendaSubmit>
+              </form>}
               <div className="agenda-command-item-list">
                 {detail.command.items.map(item => <div key={item.id}>
                   <span>{item.quantity} × {item.description}</span><strong>{money(item.total)}</strong>
+                  {canOperate && detail.command?.status === "OPEN" && <form action={removeCommandItem}>
+                    <input type="hidden" name="tenantCode" value={tenantCode} />
+                    <input type="hidden" name="commandId" value={detail.command.id} />
+                    <input type="hidden" name="itemId" value={item.id} />
+                    <input type="hidden" name="agendaReturn" value="1" />
+                    <input type="hidden" name="appointmentId" value={detail.id} />
+                    <input type="hidden" name="agendaDate" value={selectedDate} />
+                    <AgendaSubmit secondary>Excluir</AgendaSubmit>
+                  </form>}
                 </div>)}
               </div>
-              {detail.command.status === "OPEN" && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>+ Adicionar ou retirar serviços e produtos</Link>}
+              {detail.command.status === "OPEN" && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Adicionar produtos e abrir checkout</Link>}
             </section>}
             <div className="agenda-command-bottom-actions">
               {canOperate && <button type="submit" form={`agenda-save-${detail.id}`} className="btn secondary" title="Salva as observações alteradas">Salvar agendamento</button>}
