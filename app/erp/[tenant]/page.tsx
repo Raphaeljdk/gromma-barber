@@ -560,7 +560,7 @@ export async function TenantERPView({
     orderBy: { closedAt: "desc" },
     take: Math.min(1000, agendaCustomerIds.length * 15),
   }) : [];
-  const recentProductsByCustomer = new Map<string, { description: string; quantity: number; date: string }[]>();
+  const recentProductsByCustomer = new Map<string, { description: string; quantity: number; date: string; professional?: string }[]>();
   for (const previous of agendaRecentCommands) {
     if (!previous.customerId || !previous.items.length) continue;
     const collected = recentProductsByCustomer.get(previous.customerId) ?? [];
