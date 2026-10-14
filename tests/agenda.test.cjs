@@ -440,3 +440,21 @@ test('vídeo 14/10: múltiplos serviços aparecem em contador em vez de chips du
   assert.match(html, /30 minutos/);
   assert.match(html, /50,00/);
 });
+
+test('opções da ficha mostram apenas excluir, falta e confirmação WhatsApp', () => {
+  const html = markup({ initialAppointmentId: 'a1', appointments: [{ ...sample, customerPhone: '(11) 99999-4321' }] });
+  for (const label of ['Excluir agendamento', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(html, new RegExp(label));
+  assert.doesNotMatch(html, /Personalizar ficha/);
+  assert.match(html, /https:\/\/wa\.me\/5511999994321/);
+});
+test('confirmação WhatsApp inclui data, serviço e horário sem envio automático', () => {
+  const { whatsappAppointmentConfirmation } = load('lib/checkout.ts');
+  const url = whatsappAppointmentConfirmation('(11) 99999-4321', 'João', 'Corte', at('10:30'));
+  assert.ok(url);
+  const result = new URL(url);
+  assert.equal(result.hostname, 'wa.me');
+  assert.match(result.searchParams.get('text'), /João/);
+  assert.match(result.searchParams.get('text'), /10:30/);
+  assert.match(result.searchParams.get('text'), /Corte/);
+  assert.equal(whatsappAppointmentConfirmation('123', 'João', 'Corte', at('10:30')), null);
+});
