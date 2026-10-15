@@ -105,6 +105,53 @@ export async function registerAgendaCustomer(input: {
   }
 }
 
+
+/** Abre a comanda no checkout sem exigir etapa de chegada ou início do serviço. */
+export async function openAppointmentCheckout(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  if (!allowed(viewer, OPERATION_ROLES)) redirect(agendaReturnHref(tenantCode, formData, { erro: "permissao" }));
+  const appointmentId = text(formData, "appointmentId", 80);
+  if (!appointmentId) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-status" }));
+  let commandId = "";
+  try {
+    commandId = await prisma.$transaction(async tx => {
+      const appointment = await tx.appointment.findFirst({
+        where: { id: appointmentId, barberShopId: shop.id },
+        include: { service: { select: { name: true, price: true } }, command: { select: { id: true, status: true } } },
+      });
+      if (!appointment || ["CANCELED", "NO_SHOW"].includes(appointment.status))
+        throw new Error("Agendamento indisponível");
+      if (appointment.command) return appointment.command.id;
+      const latestShop = await tx.barberShop.findUnique({ where: { id: shop.id } });
+      const booked = readWorkspace(latestShop?.enabledFeatures).bookedServices.find(v => v.appointmentId === appointment.id);
+      const lines = booked?.services ?? (appointment.service ? [{ name: appointment.service.name, price: Number(appointment.service.price) }] : []);
+      if (!lines.length) throw new Error("Agendamento sem serviços");
+      const total = lines.reduce((sum, item) => sum + Math.round(Number(item.price) * 100), 0) / 100;
+      const command = await tx.serviceCommand.create({
+        data: { barberShopId: shop.id, unitId: appointment.unitId, customerId: appointment.customerId,
+          appointmentId: appointment.id, status: "OPEN", subtotal: total, discount: 0, total },
+      });
+      for (const line of lines) await tx.commandItem.create({
+        data: { commandId: command.id, kind: "SERVICE", description: line.name,
+          quantity: 1, unitPrice: Number(line.price), total: Number(line.price) },
+      });
+      return command.id;
+    });
+  } catch (error) {
+    // Duplo clique: se a chave única foi criada no primeiro pedido, reutilizá-la.
+    const existing = await prisma.serviceCommand.findFirst({
+      where: { barberShopId: shop.id, appointmentId }, select: { id: true },
+    });
+    if (existing) commandId = existing.id;
+    else {
+      console.error("Failed to prepare appointment checkout", error);
+      redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-status" }));
+    }
+  }
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
+  redirect(`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(commandId)}`);
+}
+
 const APPOINTMENT_TRANSITIONS = {
   confirm: { from: ["SCHEDULED"], to: "CONFIRMED" },
   checkin: { from: ["SCHEDULED", "CONFIRMED"], to: "CHECKED_IN" },

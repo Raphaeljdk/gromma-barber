@@ -130,6 +130,6 @@ export async function checkoutCommand(form: FormData) {
     for (const method of PAYMENT_METHODS) if (amounts[method] > 0) await tx.financialEntry.create({ data: { barberShopId: shopId, unitId: command.unitId, type: "RECEIVABLE", status: "PAID", category: "Comandas", description: `Comanda ${command.id.slice(-6).toUpperCase()} · ${PAYMENT_LABELS[method]}`, amount: amounts[method] / 100, dueDate: now, paidAt: now } });
     workspace.commandPayments.push({ id: workspaceId("payment"), commandId: command.id, sessionId: session.id, customerName: command.customer?.name ?? "Cliente avulso", paidAt: now.toISOString(), amounts });
     await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
-    if (command.appointmentId) await tx.appointment.updateMany({ where: { id: command.appointmentId, barberShopId: shopId, status: "IN_SERVICE" }, data: { status: "COMPLETED" } });
+    if (command.appointmentId) await tx.appointment.updateMany({ where: { id: command.appointmentId, barberShopId: shopId, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] } }, data: { status: "COMPLETED" } });
   });
 }
