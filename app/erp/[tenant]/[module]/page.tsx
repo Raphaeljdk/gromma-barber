@@ -17,6 +17,7 @@ const MODULES = new Set([
   "unidades",
   "relatorios",
   "gerencial",
+  "auditoria",
   "documentos",
   "avaliacoes",
   "alertas",

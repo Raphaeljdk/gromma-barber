@@ -114,6 +114,7 @@ function environment(overrides = {}) {
       create: async (query) => { saved.push({ customerCreate: query.data }); return { id: 'queue-c1' }; },
     }, shopUser: { findFirst: scoped('professional') },
     appointment: { findFirst: async () => null, create: async (query) => { saved.push(query); return { id: 'new' }; }, updateMany: async (query) => { saved.push(query); return { count: 1 }; } },
+    adminAuditLog: { create: async (query) => { saved.push({ audit: query.data }); return { id: 'audit1' }; } },
   };
   Object.assign(prisma, overrides.prisma);
   prisma.$transaction = async (callback) => callback(prisma);
@@ -414,12 +415,12 @@ test('vídeo 14/10: cliente é escolhido na busca, sem segundo dropdown avulso',
   assert.match(withCustomer, /name="customerId" value="c1"/);
   assert.match(withCustomer, /Bruno Ferreira/);
   assert.match(withCustomer, /Cadastro vinculado/);
-  assert.match(withCustomer, /Atendimento avulso/);
+  assert.match(withCustomer, /Cadastrar cliente/);
   assert.doesNotMatch(withCustomer, /<select[^>]*name="customerId"/);
   const avulso = renderToStaticMarkup(React.createElement(AgendaAppointmentForm, {
     ...props, draft: { startsAt: '2026-10-14T09:30', barberId: 'p1', unitId: 'u1', customerId: '', serviceId: 's1' },
   }));
-  assert.match(avulso, /Atendimento avulso selecionado/);
+  assert.match(avulso, /Selecione ou cadastre um cliente/);
   assert.match(avulso, /name="customerId" value=""/);
 });
 
@@ -449,7 +450,7 @@ test('opções da ficha mostram apenas excluir, falta e confirmação WhatsApp',
   assert.match(html, /aria-controls="agenda-detail-settings"/);
   assert.doesNotMatch(html, /Personalizar ficha/);
   const code = require('node:fs').readFileSync(require('node:path').resolve('components/erp-agenda-board.tsx'), 'utf8');
-  for (const label of ['Excluir agendamento', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(code, new RegExp(label));
+  for (const label of ['Cancelar e retirar da agenda', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(code, new RegExp(label));
 });
 test('confirmação WhatsApp inclui data, serviço e horário sem envio automático', () => {
   const { whatsappAppointmentConfirmation } = load('lib/checkout.ts');
@@ -580,4 +581,50 @@ test('check-in antigo abre comanda pela mesma ação No local, sem registrar pag
   assert.equal(actionsRecorded.filter(record => record.kind === 'command').length, 1);
   assert.equal(actionsRecorded.filter(record => record.kind === 'item').length, 1);
   assert.equal(actionsRecorded.filter(record => record.kind === 'payment').length, 0);
+});
+
+
+test('agendamento cancelado desaparece das visões Dia, Semana e Mês', () => {
+  for (const view of ['day', 'week', 'month']) {
+    const html = markup({ view, appointments: [{ ...sample, status: 'CANCELED' }] });
+    assert.doesNotMatch(html, /Abrir agendamento de Cliente Exemplo/);
+    assert.doesNotMatch(html, /agenda-appointment canceled/);
+    assert.doesNotMatch(html, /agenda-week-item canceled/);
+    assert.doesNotMatch(html, /agenda-month-item canceled/);
+  }
+});
+
+test('cancelar preserva status e cria auditoria com acesso e solicitante separados', async () => {
+  const appointment = { id: 'a1', barberShopId: 'shop1', unitId: 'u1', customerId: 'c1', serviceId: 's1',
+    startsAt: new Date(at('10:00')), status: 'SCHEDULED', command: null };
+  const env = environment({
+    viewer: { type: 'TENANT', role: 'RECEPTIONIST', userId: 'recep1', email: 'recepcao@gromma.test', barberShopId: 'shop1' },
+    prisma: { appointment: { findFirst: async () => appointment,
+      updateMany: async q => { env.saved.push(q); return { count: 1 }; } } },
+  });
+  const destination = await redirectOf(env.actions.updateAppointmentStatus, form({
+    ...context, appointmentId: 'a1', action: 'cancel', cancelRequestedBy: 'CLIENTE',
+  }));
+  assert.equal(destination.searchParams.get('ok'), 'agenda-status');
+  assert.equal(env.saved.find(q => q.data?.status).data.status, 'CANCELED');
+  const audit = env.saved.find(q => q.audit)?.audit;
+  assert.equal(audit.action, 'APPOINTMENT_CANCELED');
+  assert.equal(audit.barberShopId, 'shop1');
+  assert.equal(audit.adminEmail, 'recepcao@gromma.test');
+  assert.equal(audit.details.actorUserId, 'recep1');
+  assert.equal(audit.details.requestedBy, 'CLIENTE');
+  assert.equal(audit.details.performedVia, 'ACESSO_BARBEARIA');
+});
+
+test('cadastro rápido seleciona o novo cliente sem exigir atendimento avulso', async () => {
+  const env = environment({ prisma: { customer: {
+    findFirst: async () => null,
+    create: async query => ({ id: 'c-new', name: query.data.name, phone: query.data.phone }),
+  } } });
+  const result = await env.actions.registerAgendaCustomer({ tenantCode: 'GROMMA', name: 'Ana Maria', phone: '(11) 99999-9999', unitId: 'u1' });
+  assert.equal(result.ok, true);
+  assert.equal(result.customer.name, 'Ana Maria');
+  assert.equal(result.customer.phone, '(11) 99999-9999');
+  const invalid = await env.actions.registerAgendaCustomer({ tenantCode: 'GROMMA', name: 'A', phone: '123' });
+  assert.equal(invalid.ok, false);
 });

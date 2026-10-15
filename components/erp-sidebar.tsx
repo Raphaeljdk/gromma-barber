@@ -43,6 +43,7 @@ type Props = {
   planPrice: string;
   email: string;
   viewerType: "TENANT" | "ADMIN";
+  canManage: boolean;
   supportHref: string;
   logoutAction?: () => Promise<void>;
 };
@@ -81,6 +82,7 @@ const NAV_GROUPS = [
       { id: "unidades", label: "Unidades", icon: Building2 },
       { id: "relatorios", label: "Relatórios", icon: FileText },
       { id: "gerencial", label: "Gerencial", icon: LayoutDashboard },
+      { id: "auditoria", label: "Auditoria", icon: ScrollText },
     ],
   },
   {
@@ -120,6 +122,7 @@ export function ErpSidebar({
   planPrice,
   email,
   viewerType,
+  canManage,
   supportHref,
   logoutAction,
 }: Props) {
@@ -232,6 +235,7 @@ export function ErpSidebar({
             <div className="erp-nav-group" key={group.label}>
               <span className="erp-nav-group-label">{group.label}</span>
               {group.items.map((item) => {
+                if (item.id === "auditoria" && !canManage) return null;
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const isLocked = "proOnly" in item && item.proOnly && planKey !== "PRO";

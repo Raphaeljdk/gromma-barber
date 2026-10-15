@@ -7870,3 +7870,21 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
 /* A seleção insere o serviço imediatamente: seletor ocupa toda a largura. */
 .agenda-booking-service-entry { grid-template-columns: minmax(0, 1fr); }
 .agenda-booking-service-entry .select { width:100%; }
+
+.agenda-customer-registration-backdrop {position:fixed;inset:0;z-index:1100;display:grid;place-items:center;padding:16px;background:#000b}
+.agenda-customer-registration {display:grid;gap:14px;width:min(100%,440px);max-height:90dvh;overflow:auto;padding:20px;background:var(--erp-panel);border:1px solid var(--erp-border-strong);border-radius:14px}
+.agenda-customer-registration-head {display:flex;justify-content:space-between;gap:10px;align-items:start}
+.agenda-customer-registration-head > div {display:grid;gap:6px}
+.agenda-customer-registration-head small {font-size:.73rem;color:var(--erp-muted)}
+.agenda-customer-registration-head button {background:var(--erp-panel-2);border:1px solid var(--erp-border);color:var(--erp-text);border-radius:8px;width:33px;height:33px}
+.agenda-customer-registration label,.agenda-cancellation-source {display:grid;gap:7px}
+.agenda-customer-registration-actions {display:flex;gap:8px;justify-content:end;flex-wrap:wrap}
+.agenda-audit-list {display:grid}
+.agenda-audit-entry {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;border-top:1px solid var(--erp-border);padding:14px 0}
+.agenda-audit-entry > div {display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
+.agenda-audit-entry strong {font-size:.75rem}
+.agenda-audit-entry small {font-size:.68rem;color:var(--erp-muted)}
+.agenda-audit-legacy {padding:14px;border:1px solid var(--erp-border);border-radius:12px;margin-top:15px}
+.agenda-audit-legacy-entry {display:flex;flex-wrap:wrap;gap:12px;padding:9px 0;border-top:1px solid var(--erp-border);font-size:.73rem}
+@media(max-width:850px){.agenda-audit-entry{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.agenda-audit-entry{grid-template-columns:1fr}}

@@ -62,6 +62,49 @@ async function unitForShop(barberShopId: string, unitId: string) {
   });
 }
 
+
+/** Cadastro rápido na própria agenda, sem redirecionar nem perder o horário escolhido. */
+export async function registerAgendaCustomer(input: {
+  tenantCode: string; name: string; phone: string; unitId?: string;
+}): Promise<{ ok: true; customer: { id: string; name: string; phone: string } } | { ok: false; error: string }> {
+  const tenantCode = String(input.tenantCode || "").trim().toUpperCase().slice(0, 80);
+  if (!tenantCode) return { ok: false, error: "Unidade de acesso inválida." };
+  const viewer = await requireTenantAccess(tenantCode);
+  if (!allowed(viewer, OPERATION_ROLES)) return { ok: false, error: "Sem autorização para cadastrar clientes." };
+  const shop = await prisma.barberShop.findUnique({ where: { tenantCode }, select: { id: true, status: true, accessReleased: true } });
+  if (!shop || shop.status !== "APPROVED" || !shop.accessReleased
+    || (viewer.type === "TENANT" && viewer.barberShopId !== shop.id)) {
+    return { ok: false, error: "Barbearia indisponível." };
+  }
+  const name = String(input.name || "").trim().replace(/\s+/g, " ").slice(0, 120);
+  const phone = String(input.phone || "").trim().slice(0, 40);
+  const digits = phone.replace(/\D/g, "");
+  if (name.length < 2 || digits.length < 10 || digits.length > 11) {
+    return { ok: false, error: "Informe o nome e um telefone válido com DDD." };
+  }
+  const unitId = String(input.unitId || "").trim();
+  if (unitId) {
+    const unit = await prisma.barberShopUnit.findFirst({ where: { id: unitId, barberShopId: shop.id, active: true }, select: { id: true } });
+    if (!unit) return { ok: false, error: "Unidade inválida." };
+  }
+  const existing = await prisma.customer.findFirst({
+    where: { barberShopId: shop.id, active: true, name: { equals: name, mode: "insensitive" }, OR: [{ phone }, { whatsapp: phone }] },
+    select: { id: true, name: true, phone: true, whatsapp: true },
+  });
+  if (existing) return { ok: true, customer: { id: existing.id, name: existing.name, phone: existing.phone || existing.whatsapp || phone } };
+  try {
+    const customer = await prisma.customer.create({
+      data: { barberShopId: shop.id, unitId: unitId || null, name, phone, whatsapp: phone },
+      select: { id: true, name: true, phone: true },
+    });
+    revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/clientes`);
+    return { ok: true, customer: { id: customer.id, name: customer.name, phone: customer.phone || phone } };
+  } catch (error) {
+    console.error("Failed to create quick agenda customer", error);
+    return { ok: false, error: "Não foi possível cadastrar. Tente novamente." };
+  }
+}
+
 const APPOINTMENT_TRANSITIONS = {
   confirm: { from: ["SCHEDULED"], to: "CONFIRMED" },
   checkin: { from: ["SCHEDULED", "CONFIRMED"], to: "CHECKED_IN" },
@@ -119,6 +162,28 @@ export async function updateAppointmentStatus(formData: FormData) {
 
       if (updated.count !== 1) throw new Error("Appointment state changed concurrently");
 
+      // Auditoria é persistida na mesma transação, sem apagar a reserva.
+      await tx.adminAuditLog.create({
+        data: {
+          barberShopId: shop.id,
+          action: action === "cancel" ? "APPOINTMENT_CANCELED" : action === "no_show" ? "APPOINTMENT_NO_SHOW" : "APPOINTMENT_STATUS_CHANGED",
+          adminEmail: viewer.email || "acesso autenticado",
+          details: {
+            appointmentId: appointment.id,
+            customerId: appointment.customerId,
+            unitId: appointment.unitId,
+            scheduledAt: appointment.startsAt ? new Date(appointment.startsAt).toISOString() : null,
+            previousStatus: appointment.status,
+            newStatus: transition.to,
+            operation: action,
+            actorType: viewer.type,
+            actorRole: viewer.type === "TENANT" ? viewer.role : "ADMIN",
+            actorUserId: viewer.type === "TENANT" ? viewer.userId : null,
+            requestedBy: action === "cancel" && text(formData, "cancelRequestedBy") === "CLIENTE" ? "CLIENTE" : "BARBEARIA",
+            performedVia: "ACESSO_BARBEARIA",
+          },
+        },
+      });
       if (transition.to === "IN_SERVICE") {
         const existingCommand = await tx.serviceCommand.findUnique({
           where: { appointmentId: appointment.id },
