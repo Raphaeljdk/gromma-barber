@@ -172,7 +172,7 @@ export async function updateAppointmentStatus(formData: FormData) {
             appointmentId: appointment.id,
             customerId: appointment.customerId,
             unitId: appointment.unitId,
-            scheduledAt: appointment.startsAt.toISOString(),
+            scheduledAt: appointment.startsAt ? new Date(appointment.startsAt).toISOString() : null,
             previousStatus: appointment.status,
             newStatus: transition.to,
             operation: action,
