@@ -317,10 +317,12 @@ export function ErpAgendaBoard({
           : item.barberId === selectedProfessionalId)),
   );
   const dayAppointments = unitAppointments.filter(
-    (item) => agendaDateKey(item.startsAt) === selectedDate,
+    (item) => item.status !== "CANCELED" && agendaDateKey(item.startsAt) === selectedDate,
   );
+  // Cancelamentos permanecem no banco e na Auditoria, mas nunca ocupam cartões
+  // ou contagens visuais em Dia/Semana/Mês.
   const displayedAppointments = unitAppointments.filter((item) =>
-    matchesAgendaClient(item, selectedClientFilter),
+    item.status !== "CANCELED" && matchesAgendaClient(item, selectedClientFilter),
   );
   const displayedDayAppointments = displayedAppointments.filter(
     (item) => agendaDateKey(item.startsAt) === selectedDate,
@@ -334,7 +336,7 @@ export function ErpAgendaBoard({
     ...person,
     canSchedule: true,
   }));
-  for (const item of unitAppointments) {
+  for (const item of unitAppointments.filter(item => item.status !== "CANCELED")) {
     if (item.barberId && !columns.some((person) => person.id === item.barberId))
       columns.push({
         id: item.barberId,
@@ -1401,7 +1403,13 @@ export function ErpAgendaBoard({
                 }}>
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
-                <AgendaSubmit secondary name="action" value="cancel">Excluir agendamento</AgendaSubmit>
+                <label className="agenda-cancellation-source"><span>Quem solicitou o cancelamento?</span>
+                  <select name="cancelRequestedBy" className="select" defaultValue="BARBEARIA">
+                    <option value="BARBEARIA">Barbearia</option>
+                    <option value="CLIENTE">Cliente (solicitação recebida)</option>
+                  </select>
+                </label>
+                <AgendaSubmit secondary name="action" value="cancel">Cancelar e retirar da agenda</AgendaSubmit>
               </form>}
               {canOperate && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <form
                 action={updateAppointmentStatus} onSubmit={event => {
