@@ -43,6 +43,7 @@ type Props = {
   planPrice: string;
   email: string;
   viewerType: "TENANT" | "ADMIN";
+  canManage: boolean;
   supportHref: string;
   logoutAction?: () => Promise<void>;
 };
@@ -81,6 +82,7 @@ const NAV_GROUPS = [
       { id: "unidades", label: "Unidades", icon: Building2 },
       { id: "relatorios", label: "Relatórios", icon: FileText },
       { id: "gerencial", label: "Gerencial", icon: LayoutDashboard },
+      { id: "auditoria", label: "Auditoria", icon: ScrollText },
     ],
   },
   {
