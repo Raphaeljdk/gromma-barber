@@ -208,7 +208,14 @@ export function AgendaAppointmentForm({
           </div>
           {customerChoiceMissing && <p role="status" className="agenda-form-hint agenda-customer-required">Selecione ou cadastre um cliente antes de confirmar.</p>}
           {registrationOpen && <div className="agenda-customer-registration-backdrop" role="presentation">
-            <div role="dialog" aria-modal="true" aria-labelledby="agenda-new-customer-title" className="agenda-customer-registration">
+            <div role="dialog" aria-modal="true" aria-labelledby="agenda-new-customer-title" className="agenda-customer-registration"
+              onKeyDown={event => {
+                if (event.key === "Escape") { event.preventDefault(); setRegistrationOpen(false); }
+                if (event.key === "Enter" && (event.target as HTMLElement).tagName === "INPUT") {
+                  event.preventDefault();
+                  if (!registering && registrationName.trim().length >= 2 && registrationPhone.replace(/\\D/g, "").length >= 10) saveNewCustomer();
+                }
+              }}>
               <div className="agenda-customer-registration-head">
                 <div><strong id="agenda-new-customer-title">Cadastrar cliente</strong><small>O cliente ficará vinculado ao agendamento.</small></div>
                 <button type="button" aria-label="Fechar cadastro" onClick={() => setRegistrationOpen(false)}>×</button>
