@@ -582,3 +582,49 @@ test('check-in antigo abre comanda pela mesma ação No local, sem registrar pag
   assert.equal(actionsRecorded.filter(record => record.kind === 'item').length, 1);
   assert.equal(actionsRecorded.filter(record => record.kind === 'payment').length, 0);
 });
+
+
+test('agendamento cancelado desaparece das visões Dia, Semana e Mês', () => {
+  for (const view of ['day', 'week', 'month']) {
+    const html = markup({ view, appointments: [{ ...sample, status: 'CANCELED' }] });
+    assert.doesNotMatch(html, /Abrir agendamento de Cliente Exemplo/);
+    assert.doesNotMatch(html, /agenda-appointment canceled/);
+    assert.doesNotMatch(html, /agenda-week-item canceled/);
+    assert.doesNotMatch(html, /agenda-month-item canceled/);
+  }
+});
+
+test('cancelar preserva status e cria auditoria com acesso e solicitante separados', async () => {
+  const appointment = { id: 'a1', barberShopId: 'shop1', unitId: 'u1', customerId: 'c1', serviceId: 's1',
+    startsAt: new Date(at('10:00')), status: 'SCHEDULED', command: null };
+  const env = environment({
+    viewer: { type: 'TENANT', role: 'RECEPTIONIST', userId: 'recep1', email: 'recepcao@gromma.test', barberShopId: 'shop1' },
+    prisma: { appointment: { findFirst: async () => appointment,
+      updateMany: async q => { env.saved.push(q); return { count: 1 }; } } },
+  });
+  const destination = await redirectOf(env.actions.updateAppointmentStatus, form({
+    ...context, appointmentId: 'a1', action: 'cancel', cancelRequestedBy: 'CLIENTE',
+  }));
+  assert.equal(destination.searchParams.get('ok'), 'agenda-status');
+  assert.equal(env.saved.find(q => q.data?.status).data.status, 'CANCELED');
+  const audit = env.saved.find(q => q.audit)?.audit;
+  assert.equal(audit.action, 'APPOINTMENT_CANCELED');
+  assert.equal(audit.barberShopId, 'shop1');
+  assert.equal(audit.adminEmail, 'recepcao@gromma.test');
+  assert.equal(audit.details.actorUserId, 'recep1');
+  assert.equal(audit.details.requestedBy, 'CLIENTE');
+  assert.equal(audit.details.performedVia, 'ACESSO_BARBEARIA');
+});
+
+test('cadastro rápido seleciona o novo cliente sem exigir atendimento avulso', async () => {
+  const env = environment({ prisma: { customer: {
+    findFirst: async () => null,
+    create: async query => ({ id: 'c-new', name: query.data.name, phone: query.data.phone }),
+  } } });
+  const result = await env.actions.registerAgendaCustomer({ tenantCode: 'GROMMA', name: 'Ana Maria', phone: '(11) 99999-9999', unitId: 'u1' });
+  assert.equal(result.ok, true);
+  assert.equal(result.customer.name, 'Ana Maria');
+  assert.equal(result.customer.phone, '(11) 99999-9999');
+  const invalid = await env.actions.registerAgendaCustomer({ tenantCode: 'GROMMA', name: 'A', phone: '123' });
+  assert.equal(invalid.ok, false);
+});
