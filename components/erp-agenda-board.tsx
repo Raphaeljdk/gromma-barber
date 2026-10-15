@@ -19,7 +19,8 @@ import {
   Users,
   Plus,
   ListOrdered,
-  PanelRight,
+  PanelRightOpen,
+  PanelRightClose,
   Smartphone,
   Monitor,
   Cake,
@@ -270,7 +271,7 @@ export function ErpAgendaBoard({
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const [orderMessage, setOrderMessage] = useState("");
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [draft, setDraft] = useState<AgendaDraft | null>(
     canOperate ? (initialDraft ?? null) : null,
   );
@@ -618,16 +619,6 @@ export function ErpAgendaBoard({
               </button>
             </>
           )}
-          <button
-            type="button"
-            className={`btn secondary agenda-panel-toggle${panelOpen ? " active" : ""}`}
-            aria-controls="agenda-information-panel"
-            aria-expanded={panelOpen}
-            onClick={() => setPanelOpen(!panelOpen)}
-          >
-            <PanelRight size={17} />
-            Unidades e informações
-          </button>
         </div>
       </div>
           <section className="agenda-dashboard-panel" aria-label="Indicadores do dia">
@@ -724,7 +715,8 @@ export function ErpAgendaBoard({
             )}
           </strong>
         </div>
-        <div className="agenda-view-switch" aria-label="Visualização da agenda">
+        <div className="agenda-view-tools">
+          <div className="agenda-view-switch" aria-label="Visualização da agenda">
           {(
             [
               ["day", "Dia"],
@@ -742,6 +734,18 @@ export function ErpAgendaBoard({
               {label}
             </Link>
           ))}
+          </div>
+          <button
+            type="button"
+            className={`agenda-information-toggle${panelOpen ? " active" : ""}`}
+            aria-controls="agenda-information-panel"
+            aria-expanded={panelOpen}
+            aria-label={panelOpen ? "Ocultar unidades e informações" : "Mostrar unidades e informações"}
+            title={panelOpen ? "Recolher painel de unidades e informações" : "Abrir painel de unidades e informações"}
+            onClick={() => setPanelOpen(value => !value)}
+          >
+            {panelOpen ? <PanelRightClose size={19} aria-hidden="true" /> : <PanelRightOpen size={19} aria-hidden="true" />}
+          </button>
         </div>
       </div>
       <div className="agenda-active-filters">
