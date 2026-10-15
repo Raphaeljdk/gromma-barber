@@ -537,3 +537,47 @@ test('No local não pode recriar comanda quando atendimento já começou', async
     form({ ...context, appointmentId: 'a1', action: 'arrive' }));
   assert.equal(result.searchParams.get('erro'), 'agenda-status');
 });
+
+
+test('reunião: nenhum botão separado para iniciar atendimento na ficha', () => {
+  const current = markup({
+    initialAppointmentId: 'a1',
+    appointments: [{ ...sample, status: 'CONFIRMED', command: null }],
+  });
+  assert.match(current, /No local · iniciar serviço/);
+  assert.doesNotMatch(current, /Iniciar atendimento/);
+  assert.doesNotMatch(current, /name="action" value="start"/);
+  const historical = markup({
+    initialAppointmentId: 'a1',
+    appointments: [{ ...sample, status: 'CHECKED_IN', command: null }],
+  });
+  assert.match(historical, /No local · abrir comanda/);
+  assert.doesNotMatch(historical, /Iniciar atendimento/);
+  assert.doesNotMatch(historical, /name="action" value="start"/);
+});
+
+test('check-in antigo abre comanda pela mesma ação No local, sem registrar pagamento', async () => {
+  const actionsRecorded = [];
+  const historical = { id: 'a1', barberShopId: 'shop1', unitId: 'u1', customerId: 'c1', serviceId: 's1',
+    status: 'CHECKED_IN', service: { id: 's1', name: 'Corte', price: 55 }, command: null };
+  const env = environment({ prisma: {
+    appointment: {
+      findFirst: async () => historical,
+      updateMany: async query => { actionsRecorded.push({ kind: 'status', query }); return { count: 1 }; },
+    },
+    serviceCommand: {
+      findUnique: async () => null,
+      create: async query => { actionsRecorded.push({ kind: 'command', query }); return { id: 'command1' }; },
+    },
+    commandItem: {
+      create: async query => { actionsRecorded.push({ kind: 'item', query }); return { id: 'line1' }; },
+    },
+  } });
+  const destination = await redirectOf(env.actions.updateAppointmentStatus,
+    form({ ...context, appointmentId: 'a1', action: 'arrive' }));
+  assert.equal(destination.searchParams.get('erro'), null);
+  assert.equal(actionsRecorded.find(record => record.kind === 'status').query.data.status, 'IN_SERVICE');
+  assert.equal(actionsRecorded.filter(record => record.kind === 'command').length, 1);
+  assert.equal(actionsRecorded.filter(record => record.kind === 'item').length, 1);
+  assert.equal(actionsRecorded.filter(record => record.kind === 'payment').length, 0);
+});
