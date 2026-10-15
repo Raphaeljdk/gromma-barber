@@ -7870,3 +7870,54 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
 /* A seleção insere o serviço imediatamente: seletor ocupa toda a largura. */
 .agenda-booking-service-entry { grid-template-columns: minmax(0, 1fr); }
 .agenda-booking-service-entry .select { width:100%; }
+
+/* Agenda: painel informativo acessado por ícone junto à visão Dia/Semana/Mês.
+   Oculto por padrão para que o calendário use toda a largura. */
+.agenda-interactive .agenda-view-tools {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:9px;
+  margin-left:auto;
+  min-width:0;
+}
+.agenda-interactive .agenda-information-toggle {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:40px;
+  min-width:42px;
+  padding:0;
+  border:1px solid var(--erp-border-strong);
+  border-radius:10px;
+  background:var(--erp-panel-2);
+  color:var(--erp-muted);
+  cursor:pointer;
+  transition:border-color .15s, background .15s, color .15s;
+}
+.agenda-interactive .agenda-information-toggle:hover,
+.agenda-interactive .agenda-information-toggle.active {
+  color:var(--erp-gold);
+  border-color:var(--erp-gold);
+  background:color-mix(in srgb,var(--erp-gold) 10%,var(--erp-panel-2));
+}
+.agenda-interactive .agenda-information-toggle:focus-visible {
+  outline:2px solid var(--erp-gold);
+  outline-offset:3px;
+}
+@media(max-width:820px) {
+  .agenda-interactive .agenda-view-tools {
+    width:100%;
+    margin-left:0;
+    align-items:stretch;
+  }
+  .agenda-interactive .agenda-view-tools .agenda-view-switch { flex:1; min-width:0; }
+  .agenda-interactive .agenda-view-tools .agenda-information-toggle { flex:0 0 42px; }
+}
+@media(max-width:600px) {
+  .agenda-interactive .agenda-view-tools .agenda-view-switch {
+    width:auto;
+    flex:1;
+  }
+}
