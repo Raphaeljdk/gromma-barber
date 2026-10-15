@@ -36,6 +36,7 @@ import { resolveWaitlist } from "@/app/erp/[tenant]/module-actions";
 import {
   updateAppointmentNotes,
   updateAppointmentStatus,
+  openAppointmentCheckout,
 } from "@/app/erp/[tenant]/actions";
 import {
   AGENDA_TIME_ZONE,
