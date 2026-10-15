@@ -141,6 +141,7 @@ const MODULE_TITLES: Record<string, string> = {
   unidades: "Unidades",
   relatorios: "Relatórios",
   gerencial: "Gerencial",
+  auditoria: "Auditoria",
   documentos: "Documentos",
   avaliacoes: "Avaliações",
   alertas: "Alertas",
@@ -311,7 +312,7 @@ export async function TenantERPView({
   };
   const appointmentWhere: Prisma.AppointmentWhereInput = {
     barberShopId: shop.id,
-    ...(agendaStatus ? { status: agendaStatus } : {}),
+    ...(agendaStatus ? { status: agendaStatus } : { status: { not: "CANCELED" } }),
   };
   const commandWhere: Prisma.ServiceCommandWhereInput = {
     barberShopId: shop.id,
