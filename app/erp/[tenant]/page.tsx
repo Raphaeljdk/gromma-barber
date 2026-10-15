@@ -1918,6 +1918,51 @@ export async function TenantERPView({
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/treinamentos`} searchParams={qs} param="treinamentosPage" page={treinamentosPage} total={workspace.training.length} pageSize={pageSize} label="conteúdos" />
         </section>
 
+        <section id="auditoria" className="demo-section" hidden={Boolean(moduleId && moduleId !== "auditoria")}>
+          <div className="section-head">
+            <div><div className="eyebrow">Gestão · Auditoria</div><h2>Histórico de movimentações da agenda</h2></div>
+            <StatusPill tone="ready">Registro persistente</StatusPill>
+          </div>
+          {!auditCanView ? <p className="notice error-notice">A auditoria é exclusiva do proprietário e da gerência.</p> : <>
+            <p className="muted small">Os cancelamentos saem do calendário, mas permanecem registrados. A origem da solicitação e o usuário que executou a ação são informações diferentes.</p>
+            <div className="card erp-workspace-card">
+              <div className="erp-card-title"><div><span>Histórico de ações</span><strong>{auditCount} movimentação(ões) registrada(s)</strong></div><StatusPill tone="ready">Por barbearia</StatusPill></div>
+              <div className="agenda-audit-list">
+                {auditEvents.map(record => {
+                  const data = record.details && typeof record.details === "object" && !Array.isArray(record.details)
+                    ? record.details as Record<string, unknown> : {};
+                  const from = String(data.previousStatus || "—");
+                  const to = String(data.newStatus || "—");
+                  const canceled = record.action === "APPOINTMENT_CANCELED";
+                  return <article key={record.id} className="agenda-audit-entry">
+                    <div><strong>{canceled ? "Agendamento cancelado" : record.action === "APPOINTMENT_NO_SHOW" ? "Cliente faltou" : "Status alterado"}</strong>
+                      <small>{new Date(record.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small></div>
+                    <div><strong>{from} → {to}</strong><small>Agendamento: {String(data.appointmentId || "Não informado")}</small></div>
+                    <div><strong>{record.adminEmail}</strong><small>Operado pelo acesso: {String(data.actorRole || "Não registrado")}</small></div>
+                    <div><strong>Solicitação: {canceled ? (data.requestedBy === "CLIENTE" ? "Cliente" : "Barbearia") : "Ação da barbearia"}</strong>
+                      <small>Executado via: {String(data.performedVia || "Não registrado")}</small></div>
+                  </article>;
+                })}
+                {!auditEvents.length && <p className="muted small">Nenhuma movimentação auditada nesta página.</p>}
+              </div>
+            </div>
+            {legacyCancellations.length > 0 && <details className="agenda-audit-legacy"><summary>Cancelamentos anteriores — histórico preservado</summary>
+              <p className="muted small">Registros antigos podem não ter autor ou origem identificáveis. Não atribuímos informações que não foram gravadas na época.</p>
+              {legacyCancellations.filter(entry => !auditEvents.some(row => {
+                const info = row.details && typeof row.details === "object" && !Array.isArray(row.details)
+                  ? row.details as Record<string, unknown> : {};
+                return info.appointmentId === entry.id && row.action === "APPOINTMENT_CANCELED";
+              })).slice(0, 40).map(entry => <div key={entry.id} className="agenda-audit-legacy-entry">
+                <strong>{entry.customer?.name || "Cliente sem cadastro"}</strong>
+                <span>{new Date(entry.startsAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
+                <small>Cancelado · autoria não registrada</small>
+              </div>)}
+            </details>}
+            <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/auditoria`} searchParams={qs}
+              param="auditoriaPage" page={auditPage} total={auditCount} pageSize={25} label="movimentações" />
+          </>}
+        </section>
+
         <section id="configuracoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "configuracoes")}>
           <div className="section-head">
             <div><div className="eyebrow">Configurações</div><h2>Ajustes da operação</h2></div>
