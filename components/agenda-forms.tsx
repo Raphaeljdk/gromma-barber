@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { createAppointment } from "@/app/erp/[tenant]/actions";
+import { useRef, useState, useTransition } from "react";
+import { createAppointment, registerAgendaCustomer } from "@/app/erp/[tenant]/actions";
 import { addWaitlist } from "@/app/erp/[tenant]/module-actions";
 import type {
   AgendaContext,
@@ -80,9 +80,12 @@ export function AgendaAppointmentForm({
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerId, setCustomerId] = useState(draft.customerId || "");
   const [customerChoicesOpen, setCustomerChoicesOpen] = useState(false);
-  // Pesquisa iniciada exige uma escolha explícita: nunca deixar a ficha como
-  // "avulso" por acidente após a recepção digitar um nome conhecido.
-  const [walkIn, setWalkIn] = useState(!draft.customerId);
+  const [registeredCustomer, setRegisteredCustomer] = useState<AgendaCustomer | null>(null);
+  const [registrationOpen, setRegistrationOpen] = useState(false);
+  const [registrationName, setRegistrationName] = useState("");
+  const [registrationPhone, setRegistrationPhone] = useState("");
+  const [registrationError, setRegistrationError] = useState("");
+  const [registering, startRegistration] = useTransition();
   const [startsAt, setStartsAt] = useState(draft.startsAt);
   const [showNotes, setShowNotes] = useState(Boolean(draft.notes));
   const chosen = [primaryService, ...extraServices.map(item => item.serviceId)].filter(Boolean);
@@ -97,19 +100,31 @@ export function AgendaAppointmentForm({
         || (normalizedPhoneQuery.length > 0 && !/[a-z]/i.test(customerQuery) && (customer.phone || "").replace(/\D/g, "").includes(normalizedPhoneQuery))
       )
     : [];
-  const selectedCustomer = customers.find(item => item.id === customerId);
-  const customerChoiceMissing = !selectedCustomer && !walkIn;
+  const selectedCustomer = customers.find(item => item.id === customerId) ??
+    (registeredCustomer?.id === customerId ? registeredCustomer : null);
+  const customerChoiceMissing = !selectedCustomer;
   function pickCustomer(id: string) {
     setCustomerId(id);
-    setWalkIn(false);
     setCustomerSearch("");
     setCustomerChoicesOpen(false);
   }
-  function pickWalkIn() {
-    setCustomerId("");
-    setCustomerSearch("");
-    setWalkIn(true);
-    setCustomerChoicesOpen(false);
+  function saveNewCustomer() {
+    setRegistrationError("");
+    startRegistration(async () => {
+      try {
+        const result = await registerAgendaCustomer({
+          tenantCode: context.tenantCode, name: registrationName, phone: registrationPhone, unitId,
+        });
+        if (!result.ok) { setRegistrationError(result.error); return; }
+        setRegisteredCustomer(result.customer);
+        pickCustomer(result.customer.id);
+        setRegistrationOpen(false);
+        setRegistrationName("");
+        setRegistrationPhone("");
+      } catch {
+        setRegistrationError("Não foi possível cadastrar. Verifique a conexão e tente novamente.");
+      }
+    });
   }
   const finishAt = startsAt && totalMinutes
     ? new Date(new Date(startsAt + ":00-03:00").getTime() + totalMinutes * 60000)
@@ -158,7 +173,6 @@ export function AgendaAppointmentForm({
               onChange={event => {
                 setCustomerSearch(event.target.value);
                 setCustomerChoicesOpen(true);
-                setWalkIn(false);
                 setCustomerId("");
               }}
               onFocus={() => setCustomerChoicesOpen(true)}
@@ -179,18 +193,42 @@ export function AgendaAppointmentForm({
                   <span>Selecionar</span>
                 </button>
               )}
-              {!visibleCustomers.length && <p className="agenda-form-hint">Nenhum cadastro encontrado. Confira o nome ou escolha atendimento avulso.</p>}
+              {!visibleCustomers.length && <p className="agenda-form-hint">Cliente não encontrado. Use Cadastrar cliente abaixo.</p>}
               {visibleCustomers.length > 8 && <p className="agenda-form-hint">Mostrando 8 clientes. Digite mais letras para refinar.</p>}
             </div>}
           </div>
           <div className="agenda-customer-choice-row" aria-live="polite">
             {selectedCustomer
               ? <div className="agenda-customer-picked"><span className="agenda-customer-picked-icon">{selectedCustomer.name.charAt(0).toUpperCase()}</span><span><strong>{selectedCustomer.name}</strong><small>{selectedCustomer.phone || "Sem telefone"} · Cadastro vinculado</small></span></div>
-              : <span className="agenda-form-hint">{walkIn ? "Atendimento avulso selecionado. Sem histórico de cliente." : "Selecione um cliente nos resultados para vincular a visita."}</span>}
-            <button type="button" className={walkIn ? "agenda-walkin-btn active" : "agenda-walkin-btn"}
-              aria-pressed={walkIn} onClick={pickWalkIn}>Atendimento avulso</button>
+              : <span className="agenda-form-hint">Selecione um cliente existente ou cadastre um novo sem sair da agenda.</span>}
+            <button type="button" className="agenda-walkin-btn" onClick={() => {
+              setRegistrationName(customerSearch && !/\d/.test(customerSearch) ? customerSearch : "");
+              setRegistrationOpen(true); setCustomerChoicesOpen(false); setRegistrationError("");
+            }}>+ Cadastrar cliente</button>
           </div>
-          {customerChoiceMissing && <p role="status" className="agenda-form-hint agenda-customer-required">Escolha um cliente encontrado ou clique em atendimento avulso antes de confirmar.</p>}
+          {customerChoiceMissing && <p role="status" className="agenda-form-hint agenda-customer-required">Selecione ou cadastre um cliente antes de confirmar.</p>}
+          {registrationOpen && <div className="agenda-customer-registration-backdrop" role="presentation">
+            <div role="dialog" aria-modal="true" aria-labelledby="agenda-new-customer-title" className="agenda-customer-registration">
+              <div className="agenda-customer-registration-head">
+                <div><strong id="agenda-new-customer-title">Cadastrar cliente</strong><small>O cliente ficará vinculado ao agendamento.</small></div>
+                <button type="button" aria-label="Fechar cadastro" onClick={() => setRegistrationOpen(false)}>×</button>
+              </div>
+              <label><span className="label">Nome do cliente</span>
+                <input className="input" autoFocus value={registrationName} maxLength={120} autoComplete="off"
+                  onChange={event => setRegistrationName(event.target.value)} placeholder="Nome e sobrenome" />
+              </label>
+              <label><span className="label">Telefone com DDD</span>
+                <input className="input" type="tel" inputMode="tel" value={registrationPhone} maxLength={40}
+                  onChange={event => setRegistrationPhone(event.target.value)} placeholder="(11) 99999-9999" />
+              </label>
+              {registrationError && <p role="alert" className="notice error-notice">{registrationError}</p>}
+              <div className="agenda-customer-registration-actions">
+                <button type="button" className="btn secondary" disabled={registering} onClick={() => setRegistrationOpen(false)}>Voltar</button>
+                <button type="button" className="btn" disabled={registering || registrationName.trim().length < 2 || registrationPhone.replace(/\D/g, "").length < 10}
+                  onClick={saveNewCustomer}>{registering ? "Salvando..." : "Salvar e selecionar cliente"}</button>
+              </div>
+            </div>
+          </div>}
         </div>
         <div className="agenda-booking-timing">
           <div className="agenda-booking-section-heading"><div><h4>Unidade, horário e profissional</h4><p>Todos os dados do agendamento no mesmo lugar.</p></div></div>
