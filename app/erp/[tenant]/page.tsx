@@ -812,6 +812,7 @@ export async function TenantERPView({
         planPrice={brl(plan.monthlyFee)}
         email={viewer.email}
         viewerType={viewer.type}
+        canManage={auditCanView}
         supportHref={supportHref}
         logoutAction={viewer.type === "TENANT" ? logoutTenant : undefined}
       />
