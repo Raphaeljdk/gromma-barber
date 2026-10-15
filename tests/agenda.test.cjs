@@ -545,14 +545,16 @@ test('reunião: nenhum botão separado para iniciar atendimento na ficha', () =>
     initialAppointmentId: 'a1',
     appointments: [{ ...sample, status: 'CONFIRMED', command: null }],
   });
-  assert.match(current, /No local · iniciar serviço/);
+  assert.match(current, /Fechar comanda/);
+  assert.doesNotMatch(current, /No local · iniciar serviço/);
   assert.doesNotMatch(current, /Iniciar atendimento/);
   assert.doesNotMatch(current, /name="action" value="start"/);
   const historical = markup({
     initialAppointmentId: 'a1',
     appointments: [{ ...sample, status: 'CHECKED_IN', command: null }],
   });
-  assert.match(historical, /No local · abrir comanda/);
+  assert.match(historical, /Fechar comanda/);
+  assert.doesNotMatch(historical, /No local · abrir comanda/);
   assert.doesNotMatch(historical, /Iniciar atendimento/);
   assert.doesNotMatch(historical, /name="action" value="start"/);
 });
@@ -627,4 +629,11 @@ test('cadastro rápido seleciona o novo cliente sem exigir atendimento avulso', 
   assert.equal(result.customer.phone, '(11) 99999-9999');
   const invalid = await env.actions.registerAgendaCustomer({ tenantCode: 'GROMMA', name: 'A', phone: '123' });
   assert.equal(invalid.ok, false);
+});
+
+test('agendamento novo mostra Fechar comanda sem exigir chegada', () => {
+  const html = markup({ initialAppointmentId: 'a1', appointments: [{ ...sample, status: 'SCHEDULED', command: null }] });
+  assert.match(html, /Fechar comanda/);
+  assert.doesNotMatch(html, /No local · iniciar serviço/);
+  assert.match(html, /name="appointmentId" value="a1"/);
 });
