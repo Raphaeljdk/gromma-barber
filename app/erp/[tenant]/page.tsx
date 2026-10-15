@@ -500,6 +500,15 @@ export async function TenantERPView({
       : Promise.resolve([]),
   ]);
 
+  const auditCanView = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewer.role);
+  const auditPage = Math.min(pageOf("auditoriaPage"), 1000);
+  const auditWhere: Prisma.AdminAuditLogWhereInput = { barberShopId: shop.id, action: { startsWith: "APPOINTMENT_" } };
+  const [auditEvents, auditCount, legacyCancellations] = activeModule === "auditoria" && auditCanView ? await Promise.all([
+    prisma.adminAuditLog.findMany({ where: auditWhere, orderBy: { createdAt: "desc" }, skip: (auditPage - 1) * 25, take: 25 }),
+    prisma.adminAuditLog.count({ where: auditWhere }),
+    prisma.appointment.findMany({ where: { barberShopId: shop.id, status: "CANCELED" }, orderBy: { updatedAt: "desc" }, select: { id: true, startsAt: true, updatedAt: true, customer: { select: { name: true } } }, take: 100 }),
+  ]) : [[], 0, []];
+
   const checkoutProducts = needsCommandList ? await prisma.product.findMany({ where: { barberShopId: shop.id, active: true }, select: { id: true, name: true, salePrice: true }, orderBy: { name: "asc" } }) : [];
   const commandHistories = await Promise.all([...new Set(commands.flatMap(c => c.customerId ? [c.customerId] : []))].map(async customerId => {
     const [history, visits] = await Promise.all([
