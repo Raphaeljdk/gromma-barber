@@ -1428,9 +1428,6 @@ export function ErpAgendaBoard({
             </div>}
 
             {canOperate && <div className="agenda-quick-actions">
-              <form action={updateAppointmentStatus}><AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
-                {["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status) && <AgendaSubmit name="action" value="arrive">{detail.status === "CHECKED_IN" ? "No local · abrir comanda" : "No local · iniciar serviço"}</AgendaSubmit>}
-              </form>
               {["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <button className="btn secondary" type="button" onClick={() => { setMoveTarget({ item: detail, startsAt: `${agendaDateKey(detail.startsAt)}T${agendaTime(detail.startsAt)}`, barberId: detail.barberId || "" }); setDetail(null); }}>Reagendar</button>}
               {detail.customerId && detail.serviceId && <button type="button" className="btn secondary" onClick={() => {
                 setDraft({
@@ -1531,9 +1528,13 @@ export function ErpAgendaBoard({
             </section>}
             <div className="agenda-command-bottom-actions">
               {canOperate && <button type="submit" form={`agenda-save-${detail.id}`} className="btn secondary" title="Salva as observações alteradas">Salvar agendamento</button>}
-              {detail.command?.status === "OPEN" ? <Link className="btn agenda-checkout-shortcut" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Fechar comanda →</Link>
-                : detail.command?.status === "CLOSED" ? <span className="agenda-form-hint">Comanda fechada</span>
-                : <span className="agenda-form-hint">A comanda ficará disponível quando o cliente estiver no local.</span>}
+              {detail.command?.status === "CLOSED" ? <span className="agenda-form-hint">Comanda fechada</span>
+                : ["CANCELED", "NO_SHOW"].includes(detail.status) ? <span className="agenda-form-hint">Atendimento encerrado sem cobrança.</span>
+                : detail.command?.status === "OPEN" ? <Link className="btn agenda-checkout-shortcut" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Fechar comanda →</Link>
+                : canOperate ? <form action={openAppointmentCheckout} className="agenda-direct-checkout">
+                    <AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
+                    <AgendaSubmit>Fechar comanda →</AgendaSubmit>
+                  </form> : null}
             </div>
           </div>
         </AgendaDialog>
