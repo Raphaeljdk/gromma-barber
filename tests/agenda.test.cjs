@@ -274,7 +274,7 @@ test('grade, símbolos e navegação são renderizados com unidade preservada', 
   const html = markup();
   assert.match(html, /Ir para uma data/);
   assert.match(html, /Novo agendamento/);
-  assert.match(html, /aria-expanded="true"/);
+  assert.match(html, /aria-expanded="false" aria-label="Mostrar unidades e informações"/);
   assert.match(html, /agendaUnit=u1/);
   assert.match(html, /Primeira visita/);
   assert.match(html, /Aniversariante do dia/);
@@ -580,4 +580,23 @@ test('check-in antigo abre comanda pela mesma ação No local, sem registrar pag
   assert.equal(actionsRecorded.filter(record => record.kind === 'command').length, 1);
   assert.equal(actionsRecorded.filter(record => record.kind === 'item').length, 1);
   assert.equal(actionsRecorded.filter(record => record.kind === 'payment').length, 0);
+});
+
+
+test('vídeo: ícone ao lado de Dia/Semana/Mês abre painel oculto sem poluir barra superior', () => {
+  for (const view of ['day', 'week', 'month']) {
+    const html = markup({ view });
+    const top = html.indexOf('class="agenda-top-actions"');
+    const dashboard = html.indexOf('class="agenda-dashboard-panel"');
+    const toolbar = html.indexOf('class="agenda-toolbar"');
+    const views = html.indexOf('class="agenda-view-switch"');
+    const icon = html.indexOf('class="agenda-information-toggle"');
+    const panel = html.indexOf('id="agenda-information-panel"');
+    assert.ok(top >= 0 && dashboard > top && toolbar > dashboard);
+    assert.ok(icon > views && panel > icon);
+    assert.doesNotMatch(html.slice(top, dashboard), /agenda-panel-toggle/);
+    assert.match(html, /aria-controls="agenda-information-panel" aria-expanded="false" aria-label="Mostrar unidades e informações"/);
+    assert.match(html, /class="agenda-main-layout"/); // Agenda ocupa a largura sem painel.
+    assert.match(html, /id="agenda-information-panel"[^>]+hidden=""/); // Informações ainda existem e podem ser abertas.
+  }
 });
