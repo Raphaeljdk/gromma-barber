@@ -275,7 +275,7 @@ test('grade, símbolos e navegação são renderizados com unidade preservada', 
   const html = markup();
   assert.match(html, /Ir para uma data/);
   assert.match(html, /Novo agendamento/);
-  assert.match(html, /aria-expanded="true"/);
+  assert.match(html, /aria-expanded="false" aria-label="Mostrar unidades e informações"/);
   assert.match(html, /agendaUnit=u1/);
   assert.match(html, /Primeira visita/);
   assert.match(html, /Aniversariante do dia/);
@@ -636,4 +636,15 @@ test('agendamento novo mostra Fechar comanda sem exigir chegada', () => {
   assert.match(html, /Fechar comanda/);
   assert.doesNotMatch(html, /No local · iniciar serviço/);
   assert.match(html, /name="appointmentId" value="a1"/);
+});
+
+test('controle de informações ao lado das visões e fora da barra de ações', () => {
+  const html = markup({ view: 'day' });
+  const top = html.indexOf('class="agenda-top-actions"');
+  const toolbar = html.indexOf('class="agenda-toolbar"');
+  const viewSwitch = html.indexOf('class="agenda-view-switch"');
+  const icon = html.indexOf('class="agenda-information-toggle"');
+  assert.ok(top >= 0 && toolbar > top && viewSwitch > toolbar && icon > viewSwitch);
+  assert.doesNotMatch(html.slice(top, toolbar), /agenda-panel-toggle/);
+  assert.match(html, /aria-controls="agenda-information-panel" aria-expanded="false"/);
 });
