@@ -65,7 +65,9 @@ async function unitForShop(barberShopId: string, unitId: string) {
 const APPOINTMENT_TRANSITIONS = {
   confirm: { from: ["SCHEDULED"], to: "CONFIRMED" },
   checkin: { from: ["SCHEDULED", "CONFIRMED"], to: "CHECKED_IN" },
-  arrive: { from: ["SCHEDULED", "CONFIRMED"], to: "IN_SERVICE" },
+  // A ação "No local" inicia o serviço diretamente, também recuperando visitas
+  // antigas marcadas como CHECKED_IN, sem exigir um segundo botão.
+  arrive: { from: ["SCHEDULED", "CONFIRMED", "CHECKED_IN"], to: "IN_SERVICE" },
   start: { from: ["CHECKED_IN"], to: "IN_SERVICE" },
   complete: { from: ["IN_SERVICE"], to: "COMPLETED" },
   cancel: { from: ["SCHEDULED", "CONFIRMED", "CHECKED_IN"], to: "CANCELED" },
