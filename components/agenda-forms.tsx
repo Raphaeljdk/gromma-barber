@@ -213,7 +213,7 @@ export function AgendaAppointmentForm({
                 if (event.key === "Escape") { event.preventDefault(); setRegistrationOpen(false); }
                 if (event.key === "Enter" && (event.target as HTMLElement).tagName === "INPUT") {
                   event.preventDefault();
-                  if (!registering && registrationName.trim().length >= 2 && registrationPhone.replace(/\\D/g, "").length >= 10) saveNewCustomer();
+                  if (!registering && registrationName.trim().length >= 2 && registrationPhone.replace(/[^0-9]/g, "").length >= 10) saveNewCustomer();
                 }
               }}>
               <div className="agenda-customer-registration-head">
