@@ -114,6 +114,7 @@ function environment(overrides = {}) {
       create: async (query) => { saved.push({ customerCreate: query.data }); return { id: 'queue-c1' }; },
     }, shopUser: { findFirst: scoped('professional') },
     appointment: { findFirst: async () => null, create: async (query) => { saved.push(query); return { id: 'new' }; }, updateMany: async (query) => { saved.push(query); return { count: 1 }; } },
+    adminAuditLog: { create: async (query) => { saved.push({ audit: query.data }); return { id: 'audit1' }; } },
   };
   Object.assign(prisma, overrides.prisma);
   prisma.$transaction = async (callback) => callback(prisma);
@@ -414,12 +415,12 @@ test('vídeo 14/10: cliente é escolhido na busca, sem segundo dropdown avulso',
   assert.match(withCustomer, /name="customerId" value="c1"/);
   assert.match(withCustomer, /Bruno Ferreira/);
   assert.match(withCustomer, /Cadastro vinculado/);
-  assert.match(withCustomer, /Atendimento avulso/);
+  assert.match(withCustomer, /Cadastrar cliente/);
   assert.doesNotMatch(withCustomer, /<select[^>]*name="customerId"/);
   const avulso = renderToStaticMarkup(React.createElement(AgendaAppointmentForm, {
     ...props, draft: { startsAt: '2026-10-14T09:30', barberId: 'p1', unitId: 'u1', customerId: '', serviceId: 's1' },
   }));
-  assert.match(avulso, /Atendimento avulso selecionado/);
+  assert.match(avulso, /Selecione ou cadastre um cliente/);
   assert.match(avulso, /name="customerId" value=""/);
 });
 
