@@ -450,7 +450,7 @@ test('opções da ficha mostram apenas excluir, falta e confirmação WhatsApp',
   assert.match(html, /aria-controls="agenda-detail-settings"/);
   assert.doesNotMatch(html, /Personalizar ficha/);
   const code = require('node:fs').readFileSync(require('node:path').resolve('components/erp-agenda-board.tsx'), 'utf8');
-  for (const label of ['Excluir agendamento', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(code, new RegExp(label));
+  for (const label of ['Cancelar e retirar da agenda', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(code, new RegExp(label));
 });
 test('confirmação WhatsApp inclui data, serviço e horário sem envio automático', () => {
   const { whatsappAppointmentConfirmation } = load('lib/checkout.ts');
