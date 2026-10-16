@@ -1485,14 +1485,6 @@ export function ErpAgendaBoard({
               {detail.command.status === "OPEN" && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Adicionar produtos e abrir checkout</Link>}
             </section>}
             <div className="agenda-command-bottom-actions">
-              {canOperate && <button type="submit" form={`agenda-save-${detail.id}`} className="btn secondary" title="Salva as observações alteradas">Salvar agendamento</button>}
-              {detail.command?.status === "CLOSED" ? <span className="agenda-form-hint">Comanda fechada</span>
-                : ["CANCELED", "NO_SHOW"].includes(detail.status) ? <span className="agenda-form-hint">Atendimento encerrado sem cobrança.</span>
-                : detail.command?.status === "OPEN" ? <Link className="btn agenda-checkout-shortcut" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Fechar comanda →</Link>
-                : canOperate ? <form action={openAppointmentCheckout} className="agenda-direct-checkout">
-                    <AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
-                    <AgendaSubmit>Fechar comanda →</AgendaSubmit>
-                  </form> : null}
               <div className="agenda-bottom-options">
                 <button type="button" className="btn secondary" aria-expanded={detailOptionsOpen}
                   aria-controls="agenda-detail-settings" aria-haspopup="true"
@@ -1517,6 +1509,11 @@ export function ErpAgendaBoard({
                 <input type="hidden" name="appointmentId" value={detail.id} />
                 <AgendaSubmit secondary name="action" value="no_show">Cliente faltou</AgendaSubmit>
               </form>}
+              {canOperate && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && <form action={updateAppointmentStatus}>
+                <AgendaContextFields context={context} />
+                <input type="hidden" name="appointmentId" value={detail.id} />
+                <AgendaSubmit secondary name="action" value="checkin">Cliente no local</AgendaSubmit>
+              </form>}
               {whatsappAppointmentConfirmation(detail.customerPhone || "", detail.customerName, detail.serviceName, detail.startsAt) && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && <a className="btn secondary agenda-whatsapp-confirm" target="_blank" rel="noopener noreferrer"
                 href={whatsappAppointmentConfirmation(detail.customerPhone || "", detail.customerName, detail.serviceName, detail.startsAt)!}>
                 <MessageCircle size={16} /> Enviar confirmação pelo WhatsApp
@@ -1525,6 +1522,14 @@ export function ErpAgendaBoard({
               {(!canOperate || !["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status)) && <p className="agenda-form-hint">Nenhuma alteração de status disponível para este atendimento.</p>}
             </div>}
               </div>
+              {detail.command?.status === "CLOSED" ? <span className="agenda-form-hint">Comanda fechada</span>
+                : ["CANCELED", "NO_SHOW"].includes(detail.status) ? <span className="agenda-form-hint">Atendimento encerrado sem cobrança.</span>
+                : detail.command?.status === "OPEN" ? <Link className="btn agenda-checkout-shortcut" href={`/erp/${encodeURIComponent(tenantCode)}/comandas?commandId=${encodeURIComponent(detail.command.id)}`}>Fechar comanda →</Link>
+                : canOperate ? <form action={openAppointmentCheckout} className="agenda-direct-checkout">
+                    <AgendaContextFields context={context} /><input type="hidden" name="appointmentId" value={detail.id} />
+                    <AgendaSubmit>Fechar comanda →</AgendaSubmit>
+                  </form> : null}
+              {canOperate && <button type="submit" form={`agenda-save-${detail.id}`} className="btn secondary" title="Salva as observações alteradas">Salvar agendamento</button>}
             </div>
           </div>
         </AgendaDialog>
