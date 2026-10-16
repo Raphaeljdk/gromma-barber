@@ -184,3 +184,54 @@ test('retorno da comanda preserva ficha e filtros da agenda inclusive quando a o
     assert.equal(r.searchParams.has(expectedTotal === '10000' ? 'checkoutOk' : 'checkoutError'), true);
   }
 });
+
+
+test('desconto percentual no total e cupom promocional produzem valor consistente', async () => {
+  const env = environment();
+  env.state.shop.enabledFeatures.operations.coupons = [{ id: 'cp1', code: 'INFLU', kind: 'FIXED', value: 5, expiresAt: null, active: true }];
+  const q = money.calculateCheckoutPricing(
+    [{ id: 'i1', total: 100 }], 0,
+    { kind: 'PERCENT', scope: 'ORDER', itemId: '', value: '10', couponCode: 'influ' },
+    env.state.shop.enabledFeatures.operations.coupons,
+  );
+  assert.deepEqual([q.manualCents, q.couponCents, q.discountCents, q.totalCents], [1000, 500, 1500, 8500]);
+  const url = await result(env.actions.checkoutCommand, form({
+    PIX: '85', expectedTotal: '8500', discountKind: 'PERCENT',
+    discountScope: 'ORDER', discountValue: '10', couponCode: 'INFLU',
+  }));
+  assert.equal(url.searchParams.get('checkoutOk'), '1');
+  assert.equal(env.state.command.status, 'CLOSED');
+  assert.equal(env.state.command.total, 85);
+  assert.equal(env.state.command.discount, 15);
+  assert.equal(env.state.entries[0].amount, 85);
+  const payment = readWorkspace(env.state.shop.enabledFeatures).commandPayments[0];
+  assert.equal(payment.couponCode, 'INFLU');
+  assert.equal(payment.discountCents, 1500);
+});
+test('desconto por item não pode ultrapassar preço do item nem usar id inválido', () => {
+  const lineItems = [{ id: 'a', total: 40 }, { id: 'b', total: 60 }];
+  const q = money.calculateCheckoutPricing(lineItems, 0, {
+    kind: 'FIXED', scope: 'ITEM', itemId: 'a', value: '10.00', couponCode: '',
+  }, []);
+  assert.equal(q.totalCents, 9000);
+  assert.throws(() => money.calculateCheckoutPricing(lineItems, 0, {
+    kind: 'FIXED', scope: 'ITEM', itemId: 'a', value: '45', couponCode: '',
+  }, []), /supera/);
+  assert.throws(() => money.calculateCheckoutPricing(lineItems, 0, {
+    kind: 'PERCENT', scope: 'ITEM', itemId: 'fake', value: '10', couponCode: '',
+  }, []), /Selecione um item/);
+});
+test('cupom inativo, expirado e valor adulterado não fecham comanda', async () => {
+  const coupons = [{ id: 'c1', code: 'EXPIRADO', kind: 'FIXED', value: 10, active: true, expiresAt: '2025-01-01' }];
+  const env = environment();
+  env.state.shop.enabledFeatures.operations.coupons = coupons;
+  for (const data of [
+    { couponCode: 'EXPIRADO', expectedTotal: '9000', PIX: '90' },
+    { discountKind: 'FIXED', discountScope: 'ORDER', discountValue: '5', expectedTotal: '10000', PIX: '100' },
+  ]) {
+    const url = await result(env.actions.checkoutCommand, form(data));
+    assert.ok(url.searchParams.get('checkoutError'));
+  }
+  assert.equal(env.state.command.status, 'OPEN');
+  assert.equal(env.state.entries.length, 0);
+});
