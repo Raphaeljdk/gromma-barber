@@ -360,12 +360,12 @@ test('formulário novo exibe etapas, busca e total antes de confirmar', () => {
 });
 
 
-test('atalho de retorno aparece na ficha quando cliente e serviço são conhecidos', () => {
+test('retorno foi removido da ficha mesmo quando cliente e serviço são conhecidos', () => {
   const html = markup({
     initialAppointmentId: 'a1',
     appointments: [{ ...sample, serviceId: 's1' }],
   });
-  assert.match(html, /Agendar retorno/);
+  assert.doesNotMatch(html, /Agendar retorno/);
   assert.match(html, /Opções/); // Seções adicionais ficam recolhidas por padrão.
 });
 
@@ -614,7 +614,7 @@ test('cancelar preserva status e cria auditoria com acesso e solicitante separad
   assert.equal(audit.barberShopId, 'shop1');
   assert.equal(audit.adminEmail, 'recepcao@gromma.test');
   assert.equal(audit.details.actorUserId, 'recep1');
-  assert.equal(audit.details.requestedBy, 'CLIENTE');
+  assert.equal(audit.details.requestedBy, null); // Solicitante não é presumido a partir da sessão.
   assert.equal(audit.details.performedVia, 'ACESSO_BARBEARIA');
 });
 
