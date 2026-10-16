@@ -126,12 +126,12 @@ export function CommandCheckout({
           <button type="button" className="btn secondary checkout-compact-action" onClick={() => setSettingsOpen(v => !v)} aria-expanded={settingsOpen} aria-controls={"checkout-options-" + command.id}><Settings2 size={16} /> Opções <ChevronDown size={14} /></button>
         </div>
       </div>
-      {fiscalOpen && <div id={"checkout-fiscal-" + command.id} className="checkout-fiscal-panel" role="region" aria-label="Emissão fiscal">
+      {fiscalOpen && <div id={"checkout-fiscal-" + command.id} className="checkout-fiscal-panel" role="region" aria-label="Emissão fiscal" style={{ display: "grid", gap: 10, padding: 14, marginBottom: 12, borderRadius: 12, border: "1px solid var(--erp-border-strong)", background: "var(--erp-panel-2)" }}>
         <strong>Nota fiscal de serviços</strong>
         <p>Emissão fiscal ainda não configurada. É preciso integrar um emissor autorizado de NFS-e para gerar um documento fiscal válido.</p>
         {!paid && <small>Conclua o pagamento antes de emitir a nota fiscal.</small>}
         {!command.customerEmail && <small>Para envio por e-mail, o cliente precisa ter um e-mail cadastrado.</small>}
-        <div className="checkout-fiscal-actions">
+        <div className="checkout-fiscal-actions" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           <button type="button" className="btn secondary" disabled
             title="Disponível após integração fiscal e emissão válida da nota">Enviar nota fiscal por e-mail</button>
           <button type="button" className="btn secondary" disabled
