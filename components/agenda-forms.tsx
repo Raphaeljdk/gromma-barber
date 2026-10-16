@@ -84,6 +84,9 @@ export function AgendaAppointmentForm({
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [registrationName, setRegistrationName] = useState("");
   const [registrationPhone, setRegistrationPhone] = useState("");
+  const [registrationEmail, setRegistrationEmail] = useState("");
+  const [registrationBirthDate, setRegistrationBirthDate] = useState("");
+  const [registrationSource, setRegistrationSource] = useState("");
   const [registrationError, setRegistrationError] = useState("");
   const [registering, startRegistration] = useTransition();
   const [startsAt, setStartsAt] = useState(draft.startsAt);
@@ -114,6 +117,7 @@ export function AgendaAppointmentForm({
       try {
         const result = await registerAgendaCustomer({
           tenantCode: context.tenantCode, name: registrationName, phone: registrationPhone, unitId,
+          email: registrationEmail, birthDate: registrationBirthDate, discoverySource: registrationSource,
         });
         if (!result.ok) { setRegistrationError(result.error); return; }
         setRegisteredCustomer(result.customer);
@@ -121,6 +125,7 @@ export function AgendaAppointmentForm({
         setRegistrationOpen(false);
         setRegistrationName("");
         setRegistrationPhone("");
+        setRegistrationEmail(""); setRegistrationBirthDate(""); setRegistrationSource("");
       } catch {
         setRegistrationError("Não foi possível cadastrar. Verifique a conexão e tente novamente.");
       }
@@ -158,9 +163,11 @@ export function AgendaAppointmentForm({
       {draft.waitlistId && <input type="hidden" name="waitlistId" value={draft.waitlistId} />}
       {draft.waitlistId && <p className="agenda-form-hint agenda-booking-alert">Encaixe da fila: o cliente só sairá da lista quando o atendimento for salvo.</p>}
       <section className="agenda-booking-section">
-        <div className="agenda-booking-section-heading"><span className="agenda-booking-number">01</span><div><h4>Cliente e horário</h4><p>Encontre o cliente e escolha unidade, data, horário e profissional.</p></div></div>
+        <div className="agenda-booking-section-heading"><span className="agenda-booking-number">01</span><div><h4>Cliente e horário</h4></div></div>
         <div className="agenda-customer-chooser">
-          <label htmlFor="agenda-customer-search"><span className="label">Buscar cliente cadastrado</span></label>
+          <div className="agenda-customer-search-heading">
+            <label htmlFor="agenda-customer-search"><span className="label">Buscar cliente cadastrado</span></label>
+          </div>
           <input type="hidden" name="customerId" value={customerId} />
           <div className="agenda-customer-searchbox">
             <input id="agenda-customer-search" className="input" type="search" value={customerSearch}
@@ -193,14 +200,14 @@ export function AgendaAppointmentForm({
                   <span>Selecionar</span>
                 </button>
               )}
-              {!visibleCustomers.length && <p className="agenda-form-hint">Cliente não encontrado. Use Cadastrar cliente abaixo.</p>}
+              {!visibleCustomers.length && <p className="agenda-form-hint">Cliente não encontrado. Use Cadastrar cliente acima.</p>}
               {visibleCustomers.length > 8 && <p className="agenda-form-hint">Mostrando 8 clientes. Digite mais letras para refinar.</p>}
             </div>}
           </div>
           <div className="agenda-customer-choice-row" aria-live="polite">
             {selectedCustomer
               ? <div className="agenda-customer-picked"><span className="agenda-customer-picked-icon">{selectedCustomer.name.charAt(0).toUpperCase()}</span><span><strong>{selectedCustomer.name}</strong><small>{selectedCustomer.phone || "Sem telefone"} · Cadastro vinculado</small></span></div>
-              : <span className="agenda-form-hint">Selecione um cliente existente ou cadastre um novo sem sair da agenda.</span>}
+              : <span className="agenda-form-hint">Selecione um cliente ou cadastre um novo.</span>}
             <button type="button" className="agenda-walkin-btn" onClick={() => {
               setRegistrationName(customerSearch && !/\d/.test(customerSearch) ? customerSearch : "");
               setRegistrationOpen(true); setCustomerChoicesOpen(false); setRegistrationError("");
@@ -227,6 +234,24 @@ export function AgendaAppointmentForm({
               <label><span className="label">Telefone com DDD</span>
                 <input className="input" type="tel" inputMode="tel" value={registrationPhone} maxLength={40}
                   onChange={event => setRegistrationPhone(event.target.value)} placeholder="(11) 99999-9999" />
+              </label>
+              <label><span className="label">Data de nascimento (opcional)</span>
+                <input className="input" type="date" value={registrationBirthDate} max={new Date().toISOString().slice(0,10)}
+                  onChange={event => setRegistrationBirthDate(event.target.value)} />
+              </label>
+              <label><span className="label">E-mail (opcional)</span>
+                <input className="input" type="email" maxLength={180} value={registrationEmail}
+                  onChange={event => setRegistrationEmail(event.target.value)} placeholder="cliente@email.com" />
+              </label>
+              <label><span className="label">Como conheceu a barbearia? (opcional)</span>
+                <select className="select" value={registrationSource} onChange={event => setRegistrationSource(event.target.value)}>
+                  <option value="">Não informado</option>
+                  <option value="INDICACAO">Indicação</option>
+                  <option value="INSTAGRAM">Instagram</option>
+                  <option value="FACEBOOK">Facebook</option>
+                  <option value="FACHADA">Fachada da loja</option>
+                  <option value="OUTRO">Outro</option>
+                </select>
               </label>
               {registrationError && <p role="alert" className="notice error-notice">{registrationError}</p>}
               <div className="agenda-customer-registration-actions">
