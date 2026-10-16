@@ -1509,15 +1509,15 @@ export function ErpAgendaBoard({
                 <input type="hidden" name="appointmentId" value={detail.id} />
                 <AgendaSubmit secondary name="action" value="no_show">Cliente faltou</AgendaSubmit>
               </form>}
+              {whatsappAppointmentConfirmation(detail.customerPhone || "", detail.customerName, detail.serviceName, detail.startsAt) && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && <a className="btn secondary agenda-whatsapp-confirm" target="_blank" rel="noopener noreferrer"
+                href={whatsappAppointmentConfirmation(detail.customerPhone || "", detail.customerName, detail.serviceName, detail.startsAt)!}>
+                <MessageCircle size={16} /> Enviar confirmação pelo WhatsApp
+              </a>}
               {canOperate && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && <form action={updateAppointmentStatus}>
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
                 <AgendaSubmit secondary name="action" value="checkin">Cliente no local</AgendaSubmit>
               </form>}
-              {whatsappAppointmentConfirmation(detail.customerPhone || "", detail.customerName, detail.serviceName, detail.startsAt) && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && <a className="btn secondary agenda-whatsapp-confirm" target="_blank" rel="noopener noreferrer"
-                href={whatsappAppointmentConfirmation(detail.customerPhone || "", detail.customerName, detail.serviceName, detail.startsAt)!}>
-                <MessageCircle size={16} /> Enviar confirmação pelo WhatsApp
-              </a>}
               {!detail.customerPhone && <p className="agenda-form-hint">WhatsApp indisponível: cliente sem telefone cadastrado.</p>}
               {(!canOperate || !["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status)) && <p className="agenda-form-hint">Nenhuma alteração de status disponível para este atendimento.</p>}
             </div>}
