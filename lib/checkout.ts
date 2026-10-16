@@ -2,7 +2,7 @@ export const PAYMENT_METHODS = ["CASH", "DEBIT", "CREDIT", "PIX"] as const;
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
 export const PAYMENT_LABELS: Record<PaymentMethod, string> = { CASH: "Dinheiro", DEBIT: "Débito", CREDIT: "Crédito", PIX: "Pix" };
 export type CashSession = { id: string; unitId: string; unitName: string; openedAt: string; openedBy: string; openingCents: number; closedAt?: string; closedBy?: string; counted?: Record<PaymentMethod, number>; note?: string };
-export type CommandPayment = { id: string; commandId: string; sessionId: string; customerName: string; paidAt: string; amounts: Record<PaymentMethod, number> };
+export type CommandPayment = { id: string; commandId: string; sessionId: string; customerName: string; paidAt: string; amounts: Record<PaymentMethod, number>; couponCode?: string; discountCents?: number; manualDiscountCents?: number };
 export type BookedServices = { appointmentId: string; services: { id: string; name: string; price: number; durationMinutes: number }[] };
 export function cents(value: unknown): number {
   const raw = String(value ?? "").trim().replace(",", ".");
