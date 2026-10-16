@@ -131,6 +131,8 @@ test('interface da comanda oferece recebimento rápido e últimas compras', () =
     assert.match(html, new RegExp(item));
   assert.doesNotMatch(html, /Adicionar novamente/); // Compras anteriores ficam ocultas por padrão.
   assert.match(html, /Descontos e cupons/);
+  assert.match(html, /Emitir Nota Fiscal/);
+  assert.doesNotMatch(html, /Nota fiscal enviada com sucesso/);
   assert.doesNotMatch(html, /Histórico de atendimento/);
   assert.doesNotMatch(html, /Últimas compras/);
   assert.match(html, /disabled=""/); // Não encerra sem escolha consciente de pagamento.
@@ -237,4 +239,12 @@ test('cupom inativo, expirado e valor adulterado não fecham comanda', async () 
   }
   assert.equal(env.state.command.status, 'OPEN');
   assert.equal(env.state.entries.length, 0);
+});
+
+test('emissão fiscal futura não simula envio nem PDF válido', () => {
+  const code = fs.readFileSync(path.join(root,'components/command-checkout.tsx'), 'utf8');
+  assert.match(code, /Enviar nota fiscal por e-mail/);
+  assert.match(code, /Baixar PDF para imprimir/);
+  assert.match(code, /Emissão fiscal ainda não configurada/);
+  assert.match(code, /className="btn secondary" disabled/);
 });
