@@ -10,7 +10,7 @@ import { brl } from "@/lib/plans";
 
 type Line = { id: string; description: string; quantity: number; total: number; kind: string };
 export type CommandView = {
-  id: string; customerName: string; unitName: string; status: string;
+  id: string; customerName: string; customerEmail?: string; unitName: string; status: string;
   total: number; subtotal: number; discount: number; notes: string; plan: string;
   items: Line[]; history: { id: string; date: string; total: number; items: Line[] }[];
   lastVisit: string | null; visits: number;
@@ -37,6 +37,7 @@ export function CommandCheckout({
 }) {
   const [open, setOpen] = useState(autoOpen);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [fiscalOpen, setFiscalOpen] = useState(false);
   const [view, setView] = useState<Visibility>(DEFAULT_VIEW);
   const [showAdd, setShowAdd] = useState(false);
   const [split, setSplit] = useState(false);
@@ -118,9 +119,25 @@ export function CommandCheckout({
         </div>
         <div className="checkout-toolbar-actions">
           {editable && <button type="button" className="btn secondary checkout-compact-action" onClick={() => { setShowAdd(v => !v); if (!view.items) changeView("items", true); }} aria-expanded={showAdd}><Plus size={15} /> {showAdd ? "Fechar inclusão" : "Adicionar item"}</button>}
+          <button type="button" className="btn secondary checkout-compact-action" aria-expanded={fiscalOpen}
+            aria-controls={"checkout-fiscal-" + command.id} onClick={() => setFiscalOpen(v => !v)}>
+            <ReceiptText size={16}/> Emitir Nota Fiscal <ChevronDown size={14}/>
+          </button>
           <button type="button" className="btn secondary checkout-compact-action" onClick={() => setSettingsOpen(v => !v)} aria-expanded={settingsOpen} aria-controls={"checkout-options-" + command.id}><Settings2 size={16} /> Opções <ChevronDown size={14} /></button>
         </div>
       </div>
+      {fiscalOpen && <div id={"checkout-fiscal-" + command.id} className="checkout-fiscal-panel" role="region" aria-label="Emissão fiscal">
+        <strong>Nota fiscal de serviços</strong>
+        <p>Emissão fiscal ainda não configurada. É preciso integrar um emissor autorizado de NFS-e para gerar um documento fiscal válido.</p>
+        {!paid && <small>Conclua o pagamento antes de emitir a nota fiscal.</small>}
+        {!command.customerEmail && <small>Para envio por e-mail, o cliente precisa ter um e-mail cadastrado.</small>}
+        <div className="checkout-fiscal-actions">
+          <button type="button" className="btn secondary" disabled
+            title="Disponível após integração fiscal e emissão válida da nota">Enviar nota fiscal por e-mail</button>
+          <button type="button" className="btn secondary" disabled
+            title="Disponível quando houver NFS-e emitida e PDF fornecido pelo emissor">Baixar PDF para imprimir</button>
+        </div>
+      </div>}
       {settingsOpen && <div id={"checkout-options-" + command.id} className="checkout-visibility-panel" aria-label="Personalizar comanda">
         <div><strong>Informações visíveis</strong><small>Escolha o que precisa aparecer. Preferência salva neste navegador.</small></div>
         <div className="checkout-visibility-options">{VISIBILITY_OPTIONS.map(option =>
