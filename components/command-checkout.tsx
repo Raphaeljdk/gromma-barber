@@ -166,7 +166,7 @@ export function CommandCheckout({
               <input type="hidden" name="sessionId" value={session.id} />
               <input type="hidden" name="expectedTotal" value={totalCents} />
               <button type="button" className="checkout-split-toggle" aria-expanded={showDiscount}
-                onClick={() => setShowDiscount(v => !v)}>Descontos e cupons <ChevronDown size={15}/></button>
+                onClick={() => { if (showDiscount) { setDiscountKind("NONE"); setDiscountScope("ORDER"); setDiscountItemId(""); setDiscountValue(""); setCouponCode(""); } setShowDiscount(!showDiscount); }}>Descontos e cupons <ChevronDown size={15}/></button>
               {showDiscount && <div className="checkout-discount-panel">
                 <label><span className="label">Tipo de desconto</span>
                   <select className="select" name="discountKind" value={discountKind}
