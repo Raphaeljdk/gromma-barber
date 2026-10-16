@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, CreditCard, History, Plus, ReceiptText, Settings2, ShoppingBag, Trash2, Wallet } from "lucide-react";
+import { Check, ChevronDown, CreditCard, Plus, ReceiptText, Settings2, Trash2, Wallet } from "lucide-react";
 import { AgendaDialog, AgendaSubmit } from "./agenda-dialog";
 import { addCommandItem, removeCommandItem, checkoutCommand } from "@/app/erp/[tenant]/checkout-actions";
-import { PAYMENT_METHODS, PAYMENT_LABELS, type CashSession, type CommandPayment, type PaymentMethod } from "@/lib/checkout";
+import { PAYMENT_METHODS, PAYMENT_LABELS, calculateCheckoutPricing, type CheckoutCoupon, type CashSession, type CommandPayment, type PaymentMethod } from "@/lib/checkout";
 import { brl } from "@/lib/plans";
 
 type Line = { id: string; description: string; quantity: number; total: number; kind: string };
@@ -16,14 +16,12 @@ export type CommandView = {
   lastVisit: string | null; visits: number;
 };
 type CatalogItem = { id: string; name: string; price: number; kind: string };
-type DetailKey = "items" | "products" | "history" | "notes" | "details";
+type DetailKey = "items" | "notes" | "details";
 type Visibility = Record<DetailKey, boolean>;
 
-const DEFAULT_VIEW: Visibility = { items: true, products: false, history: false, notes: false, details: false };
+const DEFAULT_VIEW: Visibility = { items: true, notes: false, details: false };
 const VISIBILITY_OPTIONS: { key: DetailKey; label: string }[] = [
   { key: "items", label: "Itens da comanda" },
-  { key: "products", label: "Últimas compras" },
-  { key: "history", label: "Histórico de visitas" },
   { key: "notes", label: "Observações do cliente" },
   { key: "details", label: "Detalhar valores" },
 ];
@@ -31,10 +29,10 @@ const date = (v: string) => new Date(v).toLocaleDateString("pt-BR", { timeZone: 
 const zeroAmounts = (): Record<PaymentMethod, string> => ({ CASH: "", DEBIT: "", CREDIT: "", PIX: "" });
 
 export function CommandCheckout({
-  tenantCode, command, catalog, session, payment, canOperate, error, autoOpen = false,
+  tenantCode, command, catalog, session, payment, canOperate, error, coupons = [], autoOpen = false,
 }: {
   tenantCode: string; command: CommandView; catalog: CatalogItem[];
-  session?: CashSession; payment?: CommandPayment; canOperate: boolean;
+  session?: CashSession; payment?: CommandPayment; canOperate: boolean; coupons?: CheckoutCoupon[];
   error?: string; autoOpen?: boolean;
 }) {
   const [open, setOpen] = useState(autoOpen);
@@ -44,6 +42,12 @@ export function CommandCheckout({
   const [split, setSplit] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [amounts, setAmounts] = useState<Record<PaymentMethod, string>>(zeroAmounts);
+  const [showDiscount, setShowDiscount] = useState(false);
+  const [discountKind, setDiscountKind] = useState<"NONE" | "FIXED" | "PERCENT">("NONE");
+  const [discountScope, setDiscountScope] = useState<"ORDER" | "ITEM">("ORDER");
+  const [discountItemId, setDiscountItemId] = useState("");
+  const [discountValue, setDiscountValue] = useState("");
+  const [couponCode, setCouponCode] = useState("");
   const viewKey = "gromma-checkout-view-v3:" + tenantCode;
 
   useEffect(() => {
@@ -61,7 +65,17 @@ export function CommandCheckout({
     try { localStorage.setItem(viewKey, JSON.stringify(next)); } catch { /* Mantém a preferência apenas nesta sessão. */ }
   }
 
-  const totalCents = Math.round(command.total * 100);
+  let pricingError = "";
+  let pricing = { totalCents: Math.round(command.total * 100), discountCents: Math.round(command.discount * 100), subtotalCents: Math.round(command.subtotal * 100), couponCents: 0, manualCents: 0 };
+  try {
+    pricing = calculateCheckoutPricing(
+      command.items.map(item => ({ id: item.id, total: item.total })),
+      Math.round(command.discount * 100),
+      { kind: discountKind, scope: discountScope, itemId: discountItemId, value: discountValue, couponCode },
+      coupons,
+    );
+  } catch (e) { pricingError = e instanceof Error ? e.message : "Desconto ou cupom inválido."; }
+  const totalCents = pricing.totalCents;
   const invalidAmounts = PAYMENT_METHODS.some(method =>
     amounts[method].trim() !== "" &&
     (!/^\d{1,8}([.,]\d{1,2})?$/.test(amounts[method]) || !Number.isFinite(Number(amounts[method].replace(",", "."))))
@@ -72,21 +86,15 @@ export function CommandCheckout({
   }, 0);
   const editable = canOperate && command.status === "OPEN";
   const paid = command.status === "CLOSED";
-  const ready = editable && Boolean(session) && !invalidAmounts && (selectedMethod !== null || split) && sum === totalCents;
+  const ready = editable && Boolean(session) && !pricingError && !invalidAmounts && (selectedMethod !== null || split) && sum === totalCents;
   const fields = <><input type="hidden" name="tenantCode" value={tenantCode} /><input type="hidden" name="commandId" value={command.id} /></>;
-  const previousProducts = command.history.flatMap(visit =>
-    visit.items.filter(item => item.kind === "PRODUCT").map(item => ({ ...item, date: visit.date }))
-  );
-  const recentProducts = previousProducts.filter((item, index, all) =>
-    all.findIndex(other => other.description === item.description) === index
-  ).slice(0, 6);
   const cleanedNotes = command.notes.replaceAll("[GROMMA:RECOMPRA]", "").trim();
   const selectedLabel = selectedMethod ? PAYMENT_LABELS[selectedMethod] : "";
 
   function receiveAll(method: PaymentMethod) {
     setSelectedMethod(method);
     setSplit(false);
-    setAmounts({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", [method]: command.total.toFixed(2) });
+    setAmounts({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", [method]: (totalCents / 100).toFixed(2) });
   }
   function toggleSplit() {
     setSplit(previous => !previous);
@@ -124,8 +132,8 @@ export function CommandCheckout({
           {error && <div role="alert" className="notice error-notice">{error}</div>}
           <div className="checkout-compact-total">
             <span>{paid ? "Total recebido" : "Valor da comanda"}</span>
-            <strong>{brl(command.total)}</strong>
-            {view.details && <small>Subtotal: {brl(command.subtotal)} · Desconto: {brl(command.discount)}</small>}
+            <strong>{brl(paid ? command.total : totalCents / 100)}</strong>
+            {(view.details || (!paid && pricing.discountCents > 0)) && <small>Subtotal: {brl(command.subtotal)} · Desconto: {brl(paid ? command.discount : pricing.discountCents / 100)}</small>}
           </div>
           {view.items && <section className="checkout-section">
             <header className="checkout-section-head"><h4><ReceiptText size={18} /> Itens da comanda</h4><span className="checkout-muted-count">{command.items.length}</span></header>
@@ -145,28 +153,6 @@ export function CommandCheckout({
             <label><span className="label">Qtd.</span><input className="input" name="quantity" type="number" min="1" max="100" defaultValue="1" required /></label>
             <AgendaSubmit secondary><Plus size={16} /> Incluir</AgendaSubmit>
           </form>}
-          {view.products && <section className="checkout-section">
-            <header className="checkout-section-head"><h4><ShoppingBag size={18} /> Últimas compras</h4></header>
-            {recentProducts.length ? <div className="checkout-recent-products">{recentProducts.map(item => {
-              const matches = catalog.filter(product => product.kind === "PRODUCT" && product.name === item.description);
-              return <div key={item.description} className="checkout-recent-product">
-                <div><strong>{item.description}</strong><small>{date(item.date)} · {item.quantity} un.</small></div>
-                {editable && matches.length === 1 && <form action={addCommandItem}>{fields}
-                  <input type="hidden" name="catalogItem" value={"PRODUCT:" + matches[0].id} />
-                  <input type="hidden" name="quantity" value="1" />
-                  <AgendaSubmit secondary><Plus size={14} /> Adicionar novamente</AgendaSubmit>
-                </form>}
-              </div>;
-            })}</div> : <p className="agenda-form-hint">Sem compras anteriores registradas.</p>}
-          </section>}
-          {view.history && <section className="checkout-section">
-            <header className="checkout-section-head"><h4><History size={18} /> Histórico de atendimento</h4></header>
-            <p className="agenda-form-hint">{command.visits} visita(s){command.lastVisit ? " · Última: " + date(command.lastVisit) : ""}</p>
-            <div className="checkout-history-list">{command.history.length ? command.history.map(visit =>
-              <article key={visit.id}><strong>{date(visit.date)} · {brl(visit.total)}</strong>
-                <ul>{visit.items.map(item => <li key={item.id}>{item.quantity} × {item.description}</li>)}</ul>
-              </article>) : <p className="agenda-form-hint">Nenhuma comanda anterior.</p>}</div>
-          </section>}
           {view.notes && <section className="checkout-section">
             <header className="checkout-section-head"><h4>Observações</h4></header>
             <p className="checkout-notes">{cleanedNotes || "Nenhuma observação cadastrada."}</p>
@@ -179,6 +165,53 @@ export function CommandCheckout({
               {fields}
               <input type="hidden" name="sessionId" value={session.id} />
               <input type="hidden" name="expectedTotal" value={totalCents} />
+              <button type="button" className="checkout-split-toggle" aria-expanded={showDiscount}
+                onClick={() => setShowDiscount(v => !v)}>Descontos e cupons <ChevronDown size={15}/></button>
+              {showDiscount && <div className="checkout-discount-panel">
+                <label><span className="label">Tipo de desconto</span>
+                  <select className="select" name="discountKind" value={discountKind}
+                    onChange={e => { setDiscountKind(e.target.value as "NONE" | "FIXED" | "PERCENT"); setDiscountValue(""); }}>
+                    <option value="NONE">Sem desconto manual</option>
+                    <option value="FIXED">Valor (R$)</option>
+                    <option value="PERCENT">Porcentagem (%)</option>
+                  </select>
+                </label>
+                {discountKind !== "NONE" && <>
+                  <label><span className="label">Aplicar desconto em</span>
+                    <select className="select" name="discountScope" value={discountScope}
+                      onChange={e => setDiscountScope(e.target.value as "ORDER" | "ITEM")}>
+                      <option value="ORDER">Toda a comanda</option><option value="ITEM">Somente um item</option>
+                    </select>
+                  </label>
+                  {discountScope === "ITEM" && <label><span className="label">Item para desconto</span>
+                    <select className="select" name="discountItemId" value={discountItemId} onChange={e => setDiscountItemId(e.target.value)}>
+                      <option value="">Selecione um item</option>
+                      {command.items.map(item => <option key={item.id} value={item.id}>{item.description} · {brl(item.total)}</option>)}
+                    </select>
+                  </label>}
+                  <label><span className="label">{discountKind === "PERCENT" ? "Desconto (%)" : "Desconto (R$)"}</span>
+                    <input className="input" name="discountValue" type="number" inputMode="decimal" min="0.01"
+                      max={discountKind === "PERCENT" ? 100 : undefined} step=".01"
+                      value={discountValue} onChange={e => setDiscountValue(e.target.value)} placeholder="0,00" />
+                  </label>
+                </>}
+                {discountKind === "NONE" && <><input type="hidden" name="discountScope" value="ORDER" />
+                  <input type="hidden" name="discountValue" value="" /></>}
+                {discountKind !== "NONE" && discountScope === "ORDER" && <input type="hidden" name="discountItemId" value="" />}
+                <label><span className="label">Cupom promocional (opcional)</span>
+                  <input className="input" name="couponCode" list="gromma-checkout-coupons"
+                    value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Código do cupom" maxLength={40} />
+                  <datalist id="gromma-checkout-coupons">{coupons.filter(c => c.active).map(c => <option key={c.code} value={c.code}/>)}</datalist>
+                </label>
+                {pricingError ? <p className="checkout-discount-error" role="alert">{pricingError}</p>
+                  : <p className="agenda-form-hint">Desconto: {brl(pricing.discountCents / 100)} · Total: {brl(pricing.totalCents / 100)}</p>}
+              </div>}
+              {!showDiscount && <>
+                <input type="hidden" name="discountKind" value="NONE"/>
+                <input type="hidden" name="discountScope" value="ORDER"/>
+                <input type="hidden" name="discountValue" value=""/>
+                <input type="hidden" name="couponCode" value=""/>
+              </>}
               <div className="checkout-payment-shortcuts">
                 {PAYMENT_METHODS.map(method =>
                   <button type="button" key={method}
@@ -205,8 +238,9 @@ export function CommandCheckout({
                 <div className={sum === totalCents ? "is-balanced" : "is-unbalanced"}><span>Diferença</span><strong>{brl((totalCents - sum) / 100)}</strong></div>
               </div>}
               {!split && <p className="checkout-payment-selection" role="status">
-                {selectedMethod ? <><Check size={16} /> {brl(command.total)} em {selectedLabel}</> : "Escolha uma forma acima para habilitar o fechamento."}
+                {selectedMethod ? <><Check size={16} /> {brl(totalCents / 100)} em {selectedLabel}</> : "Escolha uma forma acima para habilitar o fechamento."}
               </p>}
+              <button type="button" className="checkout-registered-card-info" disabled title="Requer integração com processadora e autorização do cliente">Cartão cadastrado · integração futura</button>
               <AgendaSubmit disabled={!ready}><Check size={16} /> {ready ? "Confirmar recebimento e fechar" : "Selecionar pagamento para fechar"}</AgendaSubmit>
               <small className="checkout-payment-warning">Ao confirmar, você registra o recebimento, baixa os produtos do estoque e encerra esta comanda. Faça isso apenas depois de conferir o pagamento.</small>
             </form> : <div className="checkout-cash-required"><p>O caixa desta unidade está fechado. Abra-o antes de receber.</p>
