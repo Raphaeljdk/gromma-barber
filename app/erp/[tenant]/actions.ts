@@ -243,7 +243,7 @@ export async function updateAppointmentStatus(formData: FormData) {
             actorType: viewer.type,
             actorRole: viewer.type === "TENANT" ? viewer.role : "ADMIN",
             actorUserId: viewer.type === "TENANT" ? viewer.userId : null,
-            requestedBy: action === "cancel" && text(formData, "cancelRequestedBy") === "CLIENTE" ? "CLIENTE" : "BARBEARIA",
+            requestedBy: null, // Solicitante não informado; o executor autenticado permanece na auditoria.
             performedVia: "ACESSO_BARBEARIA",
           },
         },
