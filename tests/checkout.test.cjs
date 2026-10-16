@@ -130,6 +130,9 @@ test('interface da comanda oferece recebimento rápido e últimas compras', () =
   for (const item of ['Opções', 'Adicionar item', 'Receber e fechar', 'Dividir pagamento', 'Dinheiro', 'Débito', 'Crédito', 'Pix'])
     assert.match(html, new RegExp(item));
   assert.doesNotMatch(html, /Adicionar novamente/); // Compras anteriores ficam ocultas por padrão.
+  assert.match(html, /Descontos e cupons/);
+  assert.doesNotMatch(html, /Histórico de atendimento/);
+  assert.doesNotMatch(html, /Últimas compras/);
   assert.match(html, /disabled=""/); // Não encerra sem escolha consciente de pagamento.
   assert.doesNotMatch(html, /Cliente com item para recompra/);
 });
