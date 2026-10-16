@@ -1939,7 +1939,7 @@ export async function TenantERPView({
                       <small>{new Date(record.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small></div>
                     <div><strong>{from} → {to}</strong><small>Agendamento: {String(data.appointmentId || "Não informado")}</small></div>
                     <div><strong>{record.adminEmail}</strong><small>Operado pelo acesso: {String(data.actorRole || "Não registrado")}</small></div>
-                    <div><strong>Solicitação: {canceled ? (data.requestedBy === "CLIENTE" ? "Cliente" : "Barbearia") : "Ação da barbearia"}</strong>
+                    <div><strong>Solicitação: {canceled ? (data.requestedBy === "CLIENTE" ? "Cliente" : data.requestedBy === "BARBEARIA" ? "Barbearia" : "Não informado") : "Ação da barbearia"}</strong>
                       <small>Executado via: {String(data.performedVia || "Não registrado")}</small></div>
                   </article>;
                 })}
