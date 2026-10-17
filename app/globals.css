@@ -8541,3 +8541,68 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .tenant-erp .erp-mobile-trigger { right:10px; }
   .tenant-erp .erp-floating-cash { right:104px; }
 }
+
+
+/* GROMMA customer records: isolate expanded detail from adjacent cards.
+   Grid rows may not allow the expanded profile to overlap another record. */
+.tenant-erp .erp-customer-records tbody > tr {
+  position: relative;
+  align-items: start;
+  isolation: isolate;
+}
+.tenant-erp .erp-customer-records tbody > tr:has(td:nth-child(5) > details[open]) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 16px;
+}
+.tenant-erp .erp-customer-records tbody > tr:has(td:nth-child(5) > details[open]) > td {
+  grid-column: 1 / -1 !important;
+  grid-row: auto !important;
+  display: none;
+}
+.tenant-erp .erp-customer-records tbody > tr:has(td:nth-child(5) > details[open]) > td:nth-child(5) {
+  display: block;
+  min-width: 0;
+  width: 100%;
+}
+.tenant-erp .erp-customer-records td:nth-child(5) > details[open] {
+  position: static;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.tenant-erp .erp-customer-records td:nth-child(5) > details[open] > summary {
+  margin: 0 0 16px;
+  background: var(--erp-panel, transparent);
+  border: 1px solid var(--erp-border, rgba(128,128,128,.25));
+}
+.tenant-erp .erp-customer-records td:nth-child(5) :is(form, input, textarea, select, .erp-profile-panel) {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 760px) {
+  .tenant-erp .erp-customer-records tbody > tr {
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 10px;
+    overflow: hidden;
+  }
+  .tenant-erp .erp-customer-records tbody > tr:not(:has(td:nth-child(5) > details[open])) > td:nth-child(5) {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+  .tenant-erp .erp-customer-records tbody > tr:has(td:nth-child(5) > details[open]) {
+    overflow: visible;
+    padding: 14px;
+  }
+  .tenant-erp .erp-customer-records .erp-quick-form,
+  .tenant-erp .erp-customer-records .erp-profile-sections {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .tenant-erp .erp-customer-records .erp-quick-form :is(input, textarea, select) {
+    font-size: 16px;
+  }
+}
