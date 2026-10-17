@@ -1003,46 +1003,6 @@ export async function TenantERPView({
           {actionError === "comanda-pendente" && <div className="notice erp-inline-notice error-notice">Este atendimento possui uma comanda aberta. Receba e feche a comanda antes de concluir o atendimento.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
 
-          <div className="erp-subsection-head">
-            <div><span>Histórico e operação</span><strong>Agendamentos registrados</strong></div>
-          </div>
-          <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}/agenda`}
-            searchParams={qs}
-            pageParam="agendaPage"
-            hash="agenda"
-            selects={[{ param: "agendaStatus", value: agendaStatus, label: "Status", options: APPOINTMENT_STATUS_OPTIONS }]}
-          />
-          <div className="table-wrap"><table>
-            <thead><tr><th>Data</th><th>Cliente</th><th>Profissional</th><th>Serviço</th><th>Unidade</th><th>Status</th><th>Ações</th></tr></thead>
-            <tbody>{appointments.length ? appointments.map((item) => (
-              <tr key={item.id}>
-                <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short",timeZone:"America/Sao_Paulo"}).format(item.startsAt)}</td>
-                <td>{item.customer?.name ?? "—"}</td><td>{item.barber?.name ?? "—"}</td><td>{item.service?.name ?? "—"}</td><td>{item.unit.name}</td><td>{operationalBadge(item.status)}</td>
-                <td>
-                  <div className="erp-row-actions">
-                    {canOperate && APPOINTMENT_NEXT_ACTION[item.status] && (
-                      <form action={updateAppointmentStatus}>
-                        <input type="hidden" name="tenantCode" value={tenantCode} />
-                        <input type="hidden" name="appointmentId" value={item.id} />
-                        <button className="btn secondary" type="submit" name="action" value={APPOINTMENT_NEXT_ACTION[item.status].action}>
-                          {APPOINTMENT_NEXT_ACTION[item.status].label}
-                        </button>
-                      </form>
-                    )}
-                    {canOperate && ["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(item.status) && (
-                      <form action={updateAppointmentStatus}>
-                        <input type="hidden" name="tenantCode" value={tenantCode} />
-                        <input type="hidden" name="appointmentId" value={item.id} />
-                        <button className="erp-table-quiet-action" type="submit" name="action" value="cancel">Cancelar</button>
-                      </form>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            )) : <tr><td colSpan={7} className="muted">Nenhum agendamento encontrado.</td></tr>}</tbody>
-          </table></div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/agenda`} searchParams={qs} param="agendaPage" page={agendaPage} total={appointmentsTotal} pageSize={pageSize} hash="agenda" label="agendamentos" />
         </section>
 
         <section id="clientes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "clientes")}>
@@ -1140,8 +1100,8 @@ export async function TenantERPView({
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td>
                 <td>{command.customer?.name ?? "—"}</td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{operationalBadge(command.status)}</td>
                 <td>
-                  <CommandCheckout key={`${command.id}:${command.updatedAt.toISOString()}:${valueOf("checkoutOk")}`} tenantCode={tenantCode} canOperate={canOperate} error={valueOf("commandId") === command.id ? valueOf("checkoutError") : ""} autoOpen={valueOf("commandId") === command.id}
-                    command={{ id: command.id, customerName: command.customer?.name ?? "Cliente avulso", unitName: command.unit.name, status: command.status, total: Number(command.total), subtotal: Number(command.subtotal), discount: Number(command.discount), notes: [command.customer?.notes, command.appointment?.notes].filter(Boolean).join("\n"), plan: command.customerId ? customerPlan.get(command.customerId) || "" : "",
+                  <CommandCheckout key={`${command.id}:${command.updatedAt.toISOString()}:${valueOf("checkoutOk")}`} tenantCode={tenantCode} canOperate={canOperate} error={valueOf("commandId") === command.id ? valueOf("checkoutError") : ""} autoOpen={valueOf("commandId") === command.id} coupons={workspace.coupons.map(({ code, kind, value, active, expiresAt }) => ({ code, kind, value, active, expiresAt }))}
+                    command={{ id: command.id, customerName: command.customer?.name ?? "Cliente avulso", customerEmail: command.customer?.email || "", unitName: command.unit.name, status: command.status, total: Number(command.total), subtotal: Number(command.subtotal), discount: Number(command.discount), notes: [command.customer?.notes, command.appointment?.notes].filter(Boolean).join("\n"), plan: command.customerId ? customerPlan.get(command.customerId) || "" : "",
                       items: command.items.map(i => ({ id: i.id, description: i.description, kind: i.kind, quantity: Number(i.quantity), total: Number(i.total) })),
                       history: (commandHistories.find(h => h.customerId === command.customerId)?.history || []).filter(h => h.id !== command.id).slice(0, 10).map(h => ({ id: h.id, date: (h.closedAt || h.openedAt).toISOString(), total: Number(h.total), items: h.items.map(i => ({ id: i.id, description: i.description, kind: i.kind, quantity: Number(i.quantity), total: Number(i.total) })) })),
                       visits: commandHistories.find(h => h.customerId === command.customerId)?.visits._count || 0,
@@ -1939,7 +1899,7 @@ export async function TenantERPView({
                       <small>{new Date(record.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small></div>
                     <div><strong>{from} → {to}</strong><small>Agendamento: {String(data.appointmentId || "Não informado")}</small></div>
                     <div><strong>{record.adminEmail}</strong><small>Operado pelo acesso: {String(data.actorRole || "Não registrado")}</small></div>
-                    <div><strong>Solicitação: {canceled ? (data.requestedBy === "CLIENTE" ? "Cliente" : "Barbearia") : "Ação da barbearia"}</strong>
+                    <div><strong>Solicitação: {canceled ? (data.requestedBy === "CLIENTE" ? "Cliente" : data.requestedBy === "BARBEARIA" ? "Barbearia" : "Não informado") : "Ação da barbearia"}</strong>
                       <small>Executado via: {String(data.performedVia || "Não registrado")}</small></div>
                   </article>;
                 })}

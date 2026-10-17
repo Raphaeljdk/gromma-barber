@@ -66,6 +66,7 @@ async function unitForShop(barberShopId: string, unitId: string) {
 /** Cadastro rápido na própria agenda, sem redirecionar nem perder o horário escolhido. */
 export async function registerAgendaCustomer(input: {
   tenantCode: string; name: string; phone: string; unitId?: string;
+  email?: string; birthDate?: string; discoverySource?: string;
 }): Promise<{ ok: true; customer: { id: string; name: string; phone: string } } | { ok: false; error: string }> {
   const tenantCode = String(input.tenantCode || "").trim().toUpperCase().slice(0, 80);
   if (!tenantCode) return { ok: false, error: "Unidade de acesso inválida." };
@@ -82,6 +83,21 @@ export async function registerAgendaCustomer(input: {
   if (name.length < 2 || digits.length < 10 || digits.length > 11) {
     return { ok: false, error: "Informe o nome e um telefone válido com DDD." };
   }
+  const email = String(input.email || "").trim().toLowerCase().slice(0, 180);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return { ok: false, error: "Informe um e-mail válido." };
+  const birth = String(input.birthDate || "").trim();
+  if (birth && !/^\d{4}-\d{2}-\d{2}$/.test(birth))
+    return { ok: false, error: "Data de nascimento inválida." };
+  const parsedBirth = birth ? new Date(birth + "T12:00:00.000Z") : null;
+  if (parsedBirth && (Number.isNaN(parsedBirth.getTime()) || parsedBirth.toISOString().slice(0, 10) !== birth || parsedBirth > new Date()))
+    return { ok: false, error: "Data de nascimento inválida." };
+  const discoverySource = String(input.discoverySource || "").trim();
+  const sources = ["", "INDICACAO", "INSTAGRAM", "FACEBOOK", "FACHADA", "OUTRO"];
+  if (!sources.includes(discoverySource)) return { ok: false, error: "Origem do cliente inválida." };
+  const sourceLabels: Record<string, string> = {
+    INDICACAO: "Indicação", INSTAGRAM: "Instagram", FACEBOOK: "Facebook", FACHADA: "Fachada da loja", OUTRO: "Outro",
+  };
   const unitId = String(input.unitId || "").trim();
   if (unitId) {
     const unit = await prisma.barberShopUnit.findFirst({ where: { id: unitId, barberShopId: shop.id, active: true }, select: { id: true } });
@@ -94,7 +110,8 @@ export async function registerAgendaCustomer(input: {
   if (existing) return { ok: true, customer: { id: existing.id, name: existing.name, phone: existing.phone || existing.whatsapp || phone } };
   try {
     const customer = await prisma.customer.create({
-      data: { barberShopId: shop.id, unitId: unitId || null, name, phone, whatsapp: phone },
+      data: { barberShopId: shop.id, unitId: unitId || null, name, phone, whatsapp: phone,
+        email: email || null, birthDate: parsedBirth, notes: discoverySource ? "Como conheceu: " + sourceLabels[discoverySource] : null },
       select: { id: true, name: true, phone: true },
     });
     revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/clientes`);
@@ -226,7 +243,7 @@ export async function updateAppointmentStatus(formData: FormData) {
             actorType: viewer.type,
             actorRole: viewer.type === "TENANT" ? viewer.role : "ADMIN",
             actorUserId: viewer.type === "TENANT" ? viewer.userId : null,
-            requestedBy: action === "cancel" && text(formData, "cancelRequestedBy") === "CLIENTE" ? "CLIENTE" : "BARBEARIA",
+            requestedBy: null, // Solicitante não informado; o executor autenticado permanece na auditoria.
             performedVia: "ACESSO_BARBEARIA",
           },
         },

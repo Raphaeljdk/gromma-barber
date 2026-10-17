@@ -360,12 +360,12 @@ test('formulário novo exibe etapas, busca e total antes de confirmar', () => {
 });
 
 
-test('atalho de retorno aparece na ficha quando cliente e serviço são conhecidos', () => {
+test('retorno foi removido da ficha mesmo quando cliente e serviço são conhecidos', () => {
   const html = markup({
     initialAppointmentId: 'a1',
     appointments: [{ ...sample, serviceId: 's1' }],
   });
-  assert.match(html, /Agendar retorno/);
+  assert.doesNotMatch(html, /Agendar retorno/);
   assert.match(html, /Opções/); // Seções adicionais ficam recolhidas por padrão.
 });
 
@@ -444,13 +444,13 @@ test('vídeo 14/10: múltiplos serviços aparecem em contador em vez de chips du
   assert.match(html, /50,00/);
 });
 
-test('opções da ficha mostram apenas excluir, falta e confirmação WhatsApp', () => {
+test('opções da ficha reúnem cancelamento, falta, WhatsApp e No local', () => {
   const html = markup({ initialAppointmentId: 'a1', appointments: [{ ...sample, customerPhone: '(11) 99999-4321' }] });
   // O menu é interativo e começa fechado na renderização SSR.
   assert.match(html, /aria-controls="agenda-detail-settings"/);
   assert.doesNotMatch(html, /Personalizar ficha/);
   const code = require('node:fs').readFileSync(require('node:path').resolve('components/erp-agenda-board.tsx'), 'utf8');
-  for (const label of ['Cancelar e retirar da agenda', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp']) assert.match(code, new RegExp(label));
+  for (const label of ['Cancelar e retirar da agenda', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp', 'Cliente no local']) assert.match(code, new RegExp(label));
 });
 test('confirmação WhatsApp inclui data, serviço e horário sem envio automático', () => {
   const { whatsappAppointmentConfirmation } = load('lib/checkout.ts');
@@ -614,7 +614,7 @@ test('cancelar preserva status e cria auditoria com acesso e solicitante separad
   assert.equal(audit.barberShopId, 'shop1');
   assert.equal(audit.adminEmail, 'recepcao@gromma.test');
   assert.equal(audit.details.actorUserId, 'recep1');
-  assert.equal(audit.details.requestedBy, 'CLIENTE');
+  assert.equal(audit.details.requestedBy, null); // Solicitante não é presumido a partir da sessão.
   assert.equal(audit.details.performedVia, 'ACESSO_BARBEARIA');
 });
 
@@ -647,4 +647,22 @@ test('controle de informações ao lado das visões e fora da barra de ações',
   assert.ok(top >= 0 && toolbar > top && viewSwitch > toolbar && icon > viewSwitch);
   assert.doesNotMatch(html.slice(top, toolbar), /agenda-panel-toggle/);
   assert.match(html, /aria-controls="agenda-information-panel" aria-expanded="false"/);
+});
+
+test('rodapé segue ordem Opções, Fechar comanda, Salvar agendamento', () => {
+  const code = fs.readFileSync(path.resolve(root, 'components/erp-agenda-board.tsx'), 'utf8');
+  const start = code.indexOf('<div className="agenda-command-bottom-actions">');
+  const footer = code.slice(start, code.indexOf('</AgendaDialog>', start));
+  const options = footer.indexOf('className="agenda-bottom-options"');
+  const checkout = footer.indexOf('Fechar comanda →');
+  const save = footer.indexOf('Salvar agendamento');
+  assert.ok(start >= 0 && options >= 0 && checkout > options && save > checkout);
+  const cancel = footer.indexOf('Cancelar e retirar da agenda');
+  const missed = footer.indexOf('Cliente faltou');
+  const whatsapp = footer.indexOf('Enviar confirmação pelo WhatsApp');
+  const onsite = footer.indexOf('Cliente no local');
+  assert.ok(cancel > options && missed > cancel && whatsapp > missed && onsite > whatsapp);
+  assert.match(footer, /name="action" value="checkin"/);
+  const actions = fs.readFileSync(path.resolve(root, 'app/erp/[tenant]/actions.ts'), 'utf8');
+  assert.match(actions, /checkin:\s*\{ from: \["SCHEDULED", "CONFIRMED"\], to: "CHECKED_IN" \}/);
 });
