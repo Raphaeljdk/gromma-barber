@@ -160,6 +160,8 @@ export function ErpSidebar({
         type="button"
         onClick={() => setMobileOpen(true)}
         aria-label="Abrir menu do ERP"
+        aria-expanded={mobileOpen}
+        aria-controls="erp-mobile-navigation"
       >
         <Menu size={20} />
         <span>Menu</span>
@@ -175,6 +177,8 @@ export function ErpSidebar({
       )}
 
       <aside
+        id="erp-mobile-navigation"
+        aria-label="Navegação do ERP"
         className={[
           "demo-sidebar",
           "erp-sidebar",
