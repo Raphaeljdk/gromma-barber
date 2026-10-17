@@ -8123,3 +8123,44 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
     pointer-events:auto;
   }
 }
+
+
+/* GROMMA — Opções da comanda: native popover em top layer.
+   Os ancestrais do modal rolam, portanto um menu absolute era recortado pelo dialog. */
+.agenda-dialog #agenda-detail-settings[popover] {
+  position:fixed !important;
+  inset:auto !important;
+  top:var(--agenda-options-top, 12px) !important;
+  left:var(--agenda-options-left, 12px) !important;
+  width:min(360px,calc(100vw - 24px)) !important;
+  max-width:calc(100vw - 24px) !important;
+  max-height:min(var(--agenda-options-height, 380px),calc(100dvh - 24px)) !important;
+  margin:0 !important;
+  padding:14px !important;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  background:var(--erp-panel);
+  color:var(--erp-text);
+  border:1px solid var(--erp-border-strong);
+  border-radius:12px;
+  box-shadow:0 18px 55px #0009;
+  z-index:1000;
+}
+.agenda-dialog #agenda-detail-settings[popover]:not(:popover-open) {display:none !important}
+.agenda-dialog #agenda-detail-settings[popover]:popover-open {display:grid;gap:8px}
+.agenda-dialog #agenda-detail-settings[popover] form,
+.agenda-dialog #agenda-detail-settings[popover] a {width:100%;min-width:0;margin:0}
+.agenda-dialog #agenda-detail-settings[popover] :is(button,a) {
+  display:flex;align-items:center;justify-content:flex-start;
+  min-height:46px;width:100%;white-space:normal;text-align:left;
+  overflow-wrap:anywhere;touch-action:manipulation;
+}
+.agenda-dialog #agenda-detail-settings[popover] strong {font-size:.83rem;padding:2px 0}
+@media(max-width:850px){
+  .agenda-dialog #agenda-detail-settings[popover] {
+    position:fixed !important;
+    width:min(360px,calc(100vw - 24px)) !important;
+    max-height:min(var(--agenda-options-height, 380px),calc(100dvh - 24px)) !important;
+    margin:0 !important;
+  }
+}
