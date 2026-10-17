@@ -195,6 +195,17 @@ export async function checkoutCommand(form: FormData) {
       value: value(form, "discountValue"),
       couponCode: value(form, "couponCode"),
     };
+    const itemDiscountsRaw = String(form.get("itemDiscounts") ?? "[]");
+    if (itemDiscountsRaw.length > 5000) throw new OperationError("Muitos descontos informados.");
+    try {
+      const parsed: unknown = JSON.parse(itemDiscountsRaw);
+      if (!Array.isArray(parsed) || parsed.length > command.items.length || parsed.some(item =>
+        !item || typeof item !== "object" || typeof item.itemId !== "string" ||
+        !["FIXED", "PERCENT"].includes(item.kind) || typeof item.value !== "string" ||
+        item.itemId.length > 200 || item.value.length > 30
+      )) throw new Error("Formato inválido.");
+      discountInput.itemDiscounts = parsed;
+    } catch { throw new OperationError("Descontos individuais inválidos."); }
     let pricing;
     try {
       pricing = calculateCheckoutPricing(
