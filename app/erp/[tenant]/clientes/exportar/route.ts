@@ -70,26 +70,34 @@ function spreadsheet(rows: string[][]) {
   ]);
 }
 function pdf(rows: string[][]) {
-  const escape = (s: string) => s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7e]/g, "?").replace(/[\\()]/g, "\\$&");
-  const lines = ["GROMMA BARBER - Relatorio de clientes", "Gerado em " + new Date().toLocaleDateString("pt-BR"), "", ...rows.slice(1, 45).map(row => row.slice(0, 3).join(" | ").slice(0, 100))];
-  const stream = lines.map((line, i) => `BT /F1 9 Tf 40 ${790 - i * 16} Td (${escape(line)}) Tj ET`).join("\n");
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`,
-  ];
-  let result = "%PDF-1.4\n";
+  const escape = (s: string) => s.normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^\\x20-\\x7e]/g, "?").replace(/[\\\\()]/g, "\\\\$&");
+  const entries = rows.slice(1).map(row => row.slice(0, 3).join(" | ").slice(0, 105));
+  const pages: string[][] = [];
+  const pageSize = 44;
+  for (let index = 0; index < entries.length; index += pageSize) pages.push(entries.slice(index, index + pageSize));
+  if (!pages.length) pages.push(["Nenhum cliente encontrado."]);
+  const objects: string[] = ["<< /Type /Catalog /Pages 2 0 R >>", "", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"];
+  const pageIds: number[] = [];
+  pages.forEach((entriesOnPage, index) => {
+    const pageId = objects.length + 1;
+    const contentId = pageId + 1;
+    pageIds.push(pageId);
+    const lines = ["GROMMA BARBER - Relatorio de clientes", "Gerado em " + new Date().toLocaleDateString("pt-BR"), "Pagina " + (index + 1) + " de " + pages.length, "", ...entriesOnPage];
+    const stream = lines.map((line, lineIndex) => `BT /F1 9 Tf 40 ${790 - lineIndex * 16} Td (${escape(line)}) Tj ET`).join("\\n");
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`);
+    objects.push(`<< /Length ${Buffer.byteLength(stream)} >>\\nstream\\n${stream}\\nendstream`);
+  });
+  objects[1] = `<< /Type /Pages /Kids [${pageIds.map(id => id + " 0 R").join(" ")}] /Count ${pageIds.length} >>`;
+  let result = "%PDF-1.4\\n";
   const offsets = [0];
   for (let i = 0; i < objects.length; i++) {
     offsets.push(Buffer.byteLength(result));
-    result += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
+    result += `${i + 1} 0 obj\\n${objects[i]}\\nendobj\\n`;
   }
   const xref = Buffer.byteLength(result);
-  result += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (const offset of offsets.slice(1)) result += String(offset).padStart(10, "0") + " 00000 n \n";
-  result += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  result += `xref\\n0 ${objects.length + 1}\\n0000000000 65535 f \\n`;
+  for (const offset of offsets.slice(1)) result += String(offset).padStart(10, "0") + " 00000 n \\n";
+  result += `trailer\\n<< /Size ${objects.length + 1} /Root 1 0 R >>\\nstartxref\\n${xref}\\n%%EOF`;
   return Buffer.from(result, "ascii");
 }
 export async function GET(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
