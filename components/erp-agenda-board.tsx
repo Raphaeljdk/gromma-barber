@@ -1546,17 +1546,17 @@ export function ErpAgendaBoard({
                   onToggle={event => setDetailOptionsOpen(event.currentTarget.matches(":popover-open"))}
                   className="agenda-detail-settings agenda-action-menu">
               <strong>Ações do agendamento</strong>
-              {canOperate && ["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status) && !detail.command && <form
+              {canOperate && ["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status) && (!detail.command || detail.command.status === "OPEN") && <form
                 action={updateAppointmentStatus} onSubmit={event => {
-                  if (!window.confirm("Excluir este agendamento da agenda? O registro será marcado como cancelado para preservar o histórico.")) event.preventDefault();
+                  if (!window.confirm("Cancelar este agendamento e retirar da agenda? Se houver uma comanda aberta sem pagamento, ela será descartada; a movimentação ficará na auditoria.")) event.preventDefault();
                 }}>
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
                 <AgendaSubmit secondary name="action" value="cancel">Cancelar e retirar da agenda</AgendaSubmit>
               </form>}
-              {canOperate && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <form
+              {canOperate && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && (!detail.command || detail.command.status === "OPEN") && <form
                 action={updateAppointmentStatus} onSubmit={event => {
-                  if (!window.confirm("Marcar este cliente como faltante?")) event.preventDefault();
+                  if (!window.confirm("Marcar cliente como faltante e retirar da agenda? Uma comanda aberta sem pagamento também será descartada, preservando a auditoria.")) event.preventDefault();
                 }}>
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
