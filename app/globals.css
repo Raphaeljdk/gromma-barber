@@ -8426,3 +8426,109 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   }
   .tenant-erp .erp-customer-records .erp-quick-form { grid-template-columns: minmax(0,1fr); }
 }
+
+
+/* 2026-10-17 mobile polish: linked KPI cards were unstyled because the
+   original rule only targeted direct article children. */
+.tenant-erp #clientes .erp-kpi-row {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:18px 0 20px;
+}
+.tenant-erp #clientes .erp-kpi-row > a {
+  display:block;
+  min-width:0;
+  color:inherit;
+  text-decoration:none;
+}
+.tenant-erp #clientes .erp-kpi-row > a > article {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:7px;
+  min-height:116px;
+  height:100%;
+  box-sizing:border-box;
+  padding:18px;
+  border:1px solid var(--erp-border);
+  border-radius:16px;
+  background:var(--erp-panel);
+  transition:border-color .18s ease,transform .18s ease;
+}
+.tenant-erp #clientes .erp-kpi-row > a:hover > article,
+.tenant-erp #clientes .erp-kpi-row > a:focus-visible > article {
+  border-color:var(--erp-gold,#b99756);
+}
+.tenant-erp #clientes .erp-kpi-row article > span,
+.tenant-erp #clientes .erp-kpi-row article > strong,
+.tenant-erp #clientes .erp-kpi-row article > small {
+  display:block;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  line-height:1.35;
+}
+.tenant-erp #clientes .erp-kpi-row article > span {
+  color:var(--erp-muted);
+  font-size:.76rem;
+  font-weight:750;
+  letter-spacing:.035em;
+  text-transform:uppercase;
+}
+.tenant-erp #clientes .erp-kpi-row article > strong {
+  color:var(--erp-text);
+  font-size:clamp(1.65rem,3vw,2.1rem);
+  font-weight:800;
+  letter-spacing:-.04em;
+}
+.tenant-erp #clientes .erp-kpi-row article > small {
+  color:var(--erp-muted);
+  font-size:.76rem;
+}
+.tenant-erp #clientes .section-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  text-align:left;
+}
+.tenant-erp #clientes .erp-quick-actions { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0; }
+.tenant-erp #clientes .erp-quick-actions > a { min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+@media (max-width:850px) {
+  /* The fixed mobile shortcuts must not obscure the topbar controls. */
+  .tenant-erp .erp-topbar { padding-right:0; }
+  .tenant-erp .erp-top-actions { flex-wrap:wrap; min-width:0; }
+  .tenant-erp .erp-mobile-trigger,
+  .tenant-erp .erp-floating-cash {
+    height:42px;
+    min-height:42px;
+    padding:8px 11px;
+    font-size:.76rem;
+    border-radius:12px;
+    box-shadow:0 3px 12px rgba(0,0,0,.12);
+  }
+  .tenant-erp .erp-mobile-trigger { min-width:84px; right:12px; }
+  .tenant-erp .erp-floating-cash { right:108px; }
+  .tenant-erp #clientes .erp-kpi-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .tenant-erp #clientes .erp-kpi-row > a > article { min-height:104px; padding:13px; }
+}
+@media (max-width:620px) {
+  .tenant-erp #clientes .erp-kpi-row { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .tenant-erp #clientes .erp-kpi-row > a:first-child { grid-column:1 / -1; }
+  .tenant-erp #clientes .erp-kpi-row > a > article { min-height:98px; padding:15px; }
+  .tenant-erp #clientes .erp-kpi-row > a:first-child > article { min-height:86px; }
+  .tenant-erp #clientes .section-head { align-items:flex-start; }
+  .tenant-erp #clientes .erp-quick-actions > a { flex:1 1 130px; }
+  .tenant-erp #clientes .erp-quick-create > summary { min-height:48px; }
+  .tenant-erp .erp-main { padding-inline:14px; }
+  .tenant-erp .erp-topbar {
+    min-width:0;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .tenant-erp .erp-top-actions { gap:6px; }
+  .tenant-erp .erp-mobile-trigger { right:10px; }
+  .tenant-erp .erp-floating-cash { right:104px; }
+}
