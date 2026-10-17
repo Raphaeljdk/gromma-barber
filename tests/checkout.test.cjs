@@ -288,7 +288,7 @@ test('comanda oferece categoria antes de filtrar o item, não lista única', () 
   assert.ok(section.indexOf('>Categoria</span>') >= 0);
   assert.ok(section.indexOf('>Item da categoria</span>') > section.indexOf('>Categoria</span>'));
   assert.match(section, /catalog\.filter\(item => item\.kind === itemCategory\)/);
-  assert.match(section, /setSelectedCatalogItem\("")/);
+  assert.ok(section.includes('setSelectedCatalogItem("")'));
 });
 
 
