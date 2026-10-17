@@ -197,12 +197,12 @@ export async function updateAppointmentStatus(formData: FormData) {
 
   const appointment = await prisma.appointment.findFirst({
     where: { id: appointmentId, barberShopId: shop.id },
-    include: { service: true, command: { select: { id: true, status: true } } },
+    include: { service: true, command: { select: { status: true } } },
   });
 
-  const isAbandonment = action === "cancel" || action === "no_show";
-  // Não permitir descartar uma comanda já paga ou encerrada.
-  if (isAbandonment && appointment?.command && appointment.command.status !== "OPEN") {
+  // Nunca cancelar um serviço já pago; uma comanda ainda aberta pode ser
+  // descartada com seu conteúdo preservado na Auditoria.
+  if (["cancel", "no_show"].includes(action) && appointment?.command?.status === "CLOSED") {
     redirect(agendaReturnHref(tenantCode, formData, { erro: "comanda-pendente" }));
   }
 
@@ -232,20 +232,46 @@ export async function updateAppointmentStatus(formData: FormData) {
 
       if (updated.count !== 1) throw new Error("Appointment state changed concurrently");
 
-      // Uma comanda aberta ainda não recebeu pagamento. Cancelá-la junto à
-      // reserva impede pendências financeiras ou reabertura acidental.
-      // O registro e os itens permanecem disponíveis no histórico/auditoria.
-      if (isAbandonment && appointment.command) {
-        const canceled = await tx.serviceCommand.updateMany({
-          where: {
-            id: appointment.command.id,
-            barberShopId: shop.id,
-            appointmentId: appointment.id,
-            status: "OPEN",
-          },
-          data: { status: "CANCELED", closedAt: new Date() },
+      let unpaidCommandCanceled: {
+        commandId: string; subtotal: number; total: number;
+        items: { description: string; kind: string; quantity: number; total: number }[];
+      } | null = null;
+
+      if (action === "cancel" || action === "no_show") {
+        const existing = await tx.serviceCommand.findFirst({
+          where: { appointmentId: appointment.id, barberShopId: shop.id },
+          include: { items: true },
         });
-        if (canceled.count !== 1) throw new Error("Command was closed or modified concurrently");
+        if (existing) {
+          if (existing.status !== "OPEN") throw new Error("Paid command cannot be cancelled by an agenda status change");
+          const latestShop = await tx.barberShop.findUnique({
+            where: { id: shop.id }, select: { enabledFeatures: true },
+          });
+          const workspace = readWorkspace(latestShop?.enabledFeatures);
+          if (workspace.commandPayments.some(payment => payment.commandId === existing.id))
+            throw new Error("Cannot void a command with payments");
+
+          // Serviço/produtos não geraram entrada financeira nem saída de estoque:
+          // liberar o rascunho aberto e manter um resumo no histórico imutável.
+          unpaidCommandCanceled = {
+            commandId: existing.id, subtotal: Number(existing.subtotal), total: Number(existing.total),
+            items: existing.items.map(item => ({
+              description: item.description, kind: item.kind,
+              quantity: Number(item.quantity), total: Number(item.total),
+            })),
+          };
+          const deleted = await tx.serviceCommand.deleteMany({
+            where: { id: existing.id, barberShopId: shop.id, status: "OPEN" },
+          });
+          if (deleted.count !== 1) throw new Error("Command changed during cancellation");
+          const discardedItemIds = new Set(existing.items.map(item => item.id));
+          workspace.productLines = workspace.productLines.filter(item => !discardedItemIds.has(item.itemId));
+          workspace.serviceLines = workspace.serviceLines.filter(item => !discardedItemIds.has(item.itemId));
+          await tx.barberShop.update({
+            where: { id: shop.id },
+            data: { enabledFeatures: writeWorkspace(latestShop?.enabledFeatures, workspace) },
+          });
+        }
       }
 
       // Auditoria é persistida na mesma transação, sem apagar a reserva.
@@ -262,13 +288,12 @@ export async function updateAppointmentStatus(formData: FormData) {
             previousStatus: appointment.status,
             newStatus: transition.to,
             operation: action,
-            commandId: isAbandonment ? appointment.command?.id ?? null : null,
-            commandDisposition: isAbandonment && appointment.command ? "CANCELED_WITH_APPOINTMENT" : null,
             actorType: viewer.type,
             actorRole: viewer.type === "TENANT" ? viewer.role : "ADMIN",
             actorUserId: viewer.type === "TENANT" ? viewer.userId : null,
             requestedBy: null, // Solicitante não informado; o executor autenticado permanece na auditoria.
             performedVia: "ACESSO_BARBEARIA",
+            unpaidCommandCanceled,
           },
         },
       });
