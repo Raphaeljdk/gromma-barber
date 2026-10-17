@@ -1034,6 +1034,7 @@ export async function TenantERPView({
             pageParam="clientesPage"
             hash="clientes"
             search={{ param: "clientesQ", value: clientesQ, placeholder: "Buscar por nome, e-mail ou telefone" }}
+            autoSubmit
           />
           <div className="table-wrap"><table>
             <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th></tr></thead>
