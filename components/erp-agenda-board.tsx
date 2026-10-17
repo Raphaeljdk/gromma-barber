@@ -9,6 +9,7 @@ import { addCommandItem, removeCommandItem } from "@/app/erp/[tenant]/checkout-a
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import type { AgendaBlock } from "@/lib/erp-workspace";
 import {
+  ArrowLeftRight,
   CalendarDays,
   GripVertical,
   ChevronLeft,
@@ -814,6 +815,10 @@ export function ErpAgendaBoard({
       <div className={`agenda-main-layout${panelOpen ? " with-panel" : ""}`}>
         <div className="agenda-main-calendar">
           {view === "day" ? (
+            <>
+            <p className="agenda-mobile-swipe-hint" role="note">
+              <ArrowLeftRight size={15} aria-hidden="true" /> Deslize para os lados para ver outros profissionais.
+            </p>
             <div
               className="agenda-calendar-shell"
               ref={calendarRef}
@@ -1007,6 +1012,7 @@ export function ErpAgendaBoard({
                 ))}
               </div>
             </div>
+            </>
           ) : view === "week" ? (
             <div
               className="agenda-week-grid"
