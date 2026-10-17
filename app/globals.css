@@ -8717,3 +8717,26 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
 .tenant-erp .erp-customer-card .erp-quick-form input,.tenant-erp .erp-customer-card .erp-quick-form textarea{max-width:100%;width:100%;box-sizing:border-box;min-width:0}
 .tenant-erp .erp-customer-card .erp-profile-sections{min-width:0;max-width:100%;overflow-wrap:anywhere}
 @media(max-width:700px){.tenant-erp .erp-customer-card{padding:12px;border-radius:14px}.tenant-erp .erp-customer-card .erp-quick-form{grid-template-columns:minmax(0,1fr)}.tenant-erp .erp-customer-card-head{gap:8px}.tenant-erp .erp-customer-card .erp-profile-sections{display:grid;grid-template-columns:minmax(0,1fr)}}
+
+
+/* Compact command search on phones: accessible 44px target without giant bar. */
+@media (max-width: 850px) {
+  .tenant-erp .erp-topbar { gap: 8px; padding-bottom: 8px; }
+  .tenant-erp .erp-topbar .erp-top-center {
+    width: min(100%, 340px);
+    max-width: 100%;
+    justify-self: start;
+  }
+  .tenant-erp .erp-topbar .erp-command-trigger {
+    min-height: 44px;
+    height: 44px;
+    padding: 0 12px;
+    font-size: .86rem;
+    border-radius: 11px;
+    box-shadow: none;
+  }
+  .tenant-erp .erp-topbar .erp-command-trigger kbd { display: none; }
+}
+@media (max-width: 390px) {
+  .tenant-erp .erp-topbar .erp-top-center { width: min(100%, 290px); }
+}
