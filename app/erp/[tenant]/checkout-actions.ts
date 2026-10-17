@@ -144,7 +144,7 @@ export async function addCommandItem(form: FormData) {
     if (product) workspace.productLines.push({ itemId: item.id, productId: product.id });
     if (service && command.appointmentId) workspace.serviceLines.push({ itemId: item.id, serviceId: service.id });
     if (command.appointmentId && service) {
-      await synchronizeCommandDuration(tx, shopId, command.appointmentId, [...command.items, item], workspace);
+      await synchronizeCommandDuration(tx, shopId, command.appointmentId, command.items.some(line => line.id === item.id) ? command.items : [...command.items, item], workspace);
     }
     await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
     const subtotal = cents(command.subtotal) + price * quantity;
