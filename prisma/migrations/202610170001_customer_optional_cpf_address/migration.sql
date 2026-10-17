@@ -1,0 +1,1 @@
+ALTER TABLE "Customer" ADD COLUMN "cpf" TEXT, ADD COLUMN "address" TEXT;
