@@ -4,7 +4,7 @@ import { requireTenantAccess } from "@/lib/tenant-auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace } from "@/lib/erp-workspace";
-import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayments, sessionTotals, calculateCheckoutPricing, servicesFromCommandLines, type CheckoutDiscountInput } from "@/lib/checkout";
+import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayments, sessionTotals, calculateCheckoutPricing, parseAppliedItemDiscounts, servicesFromCommandLines, type CheckoutDiscountInput } from "@/lib/checkout";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import type { Prisma } from "@prisma/client";
 
@@ -197,9 +197,10 @@ export async function checkoutCommand(form: FormData) {
     };
     let pricing;
     try {
+      const applied = parseAppliedItemDiscounts(String(form.get("appliedItemDiscounts") ?? ""));
       pricing = calculateCheckoutPricing(
         command.items.map(item => ({ id: item.id, total: Number(item.total) })),
-        cents(command.discount), discountInput, workspace.coupons, new Date(),
+        cents(command.discount), discountInput, workspace.coupons, new Date(), applied,
       );
     } catch (e) { throw new OperationError(e instanceof Error ? e.message : "Desconto inválido."); }
     if (String(pricing.totalCents) !== value(form, "expectedTotal") || pricing.subtotalCents !== subtotal)

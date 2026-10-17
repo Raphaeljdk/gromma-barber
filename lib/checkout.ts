@@ -59,13 +59,48 @@ export type CheckoutDiscountInput = {
   kind: "NONE" | "PERCENT" | "FIXED"; scope: "ORDER" | "ITEM";
   itemId: string; value: string; couponCode: string;
 };
+export type AppliedItemDiscount = { itemId: string; kind: "PERCENT" | "FIXED"; value: string };
+export function parseAppliedItemDiscounts(raw: string): AppliedItemDiscount[] {
+  if (raw.length > 4000) throw new Error("Muitos descontos.");
+  let data: unknown;
+  try { data = JSON.parse(raw || "[]"); } catch { throw new Error("Descontos inválidos."); }
+  if (!Array.isArray(data) || data.length > 50) throw new Error("Quantidade de descontos inválida.");
+  return data.map((entry: unknown) => {
+    if (!entry || typeof entry !== "object") throw new Error("Desconto inválido.");
+    const d = entry as Record<string, unknown>;
+    if (typeof d.itemId !== "string" || d.itemId.length > 100 || !["PERCENT","FIXED"].includes(String(d.kind)) || typeof d.value !== "string" || d.value.length > 20)
+      throw new Error("Desconto inválido.");
+    return { itemId: d.itemId, kind: d.kind as "PERCENT" | "FIXED", value: d.value };
+  });
+}
+export function calculateAppliedItemDiscounts(items: CheckoutPricingLine[], discounts: AppliedItemDiscount[]) {
+  const totals = new Map(items.map(item => [item.id, Math.round(item.total * 100)]));
+  const deductions = new Map<string, number>();
+  for (const d of discounts) {
+    const base = totals.get(d.itemId);
+    if (base === undefined) throw new Error("O item com desconto não está mais na comanda.");
+    const used = deductions.get(d.itemId) ?? 0;
+    let amount: number;
+    if (d.kind === "FIXED") amount = cents(d.value);
+    else {
+      if (!/^\\d{1,3}([.,]\\d{1,2})?$/.test(d.value)) throw new Error("Percentual inválido.");
+      const rate = Math.round(Number(d.value.replace(",", ".")) * 100);
+      if (rate <= 0 || rate > 10000) throw new Error("Percentual fora do limite.");
+      amount = Math.round(base * rate / 10000);
+    }
+    if (amount <= 0 || used + amount > base) throw new Error("O desconto supera o valor do item.");
+    deductions.set(d.itemId, used + amount);
+  }
+  return deductions;
+}
 export type CheckoutPricingLine = { id: string; total: number };
 export function calculateCheckoutPricing(
   items: CheckoutPricingLine[], existingDiscountCents: number,
-  input: CheckoutDiscountInput, coupons: CheckoutCoupon[], now = new Date(),
+  input: CheckoutDiscountInput, coupons: CheckoutCoupon[], now = new Date(), appliedItemDiscounts: AppliedItemDiscount[] = [],
 ) {
   const subtotalCents = items.reduce((total, item) => total + Math.round(item.total * 100), 0);
   if (subtotalCents < 0 || !Number.isSafeInteger(subtotalCents)) throw new Error("Subtotal inválido.");
+  const appliedCents = [...calculateAppliedItemDiscounts(items, appliedItemDiscounts).values()].reduce((a,b) => a+b,0);
   let manualCents = 0;
   let legacyCents = 0;
   if (input.kind === "NONE") {
@@ -95,7 +130,7 @@ export function calculateCheckoutPricing(
     const coupon = coupons.find(item => item.code.toUpperCase() === code && item.active);
     if (!coupon) throw new Error("Cupom inexistente ou inativo.");
     if (coupon.expiresAt && new Date(coupon.expiresAt).getTime() < now.getTime()) throw new Error("Cupom expirado.");
-    const available = subtotalCents - manualCents - legacyCents;
+    const available = subtotalCents - manualCents - legacyCents - appliedCents;
     if (coupon.kind === "PERCENT") {
       if (!Number.isFinite(coupon.value) || coupon.value < 0 || coupon.value > 100) throw new Error("Cupom inválido.");
       couponCents = Math.round(available * coupon.value / 100);
@@ -105,7 +140,7 @@ export function calculateCheckoutPricing(
     }
     if (couponCents > available) throw new Error("Cupom supera o valor restante da comanda.");
   }
-  const discountCents = legacyCents + manualCents + couponCents;
+  const discountCents = legacyCents + manualCents + appliedCents + couponCents;
   const totalCents = subtotalCents - discountCents;
   if (totalCents <= 0) throw new Error("O total precisa ser maior que zero para registrar um recebimento.");
   return { subtotalCents, manualCents, couponCents, discountCents, totalCents, couponCode: code };

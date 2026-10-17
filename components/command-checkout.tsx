@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Check, ChevronDown, CreditCard, Plus, ReceiptText, Settings2, Trash2, Wallet } from "lucide-react";
 import { AgendaDialog, AgendaSubmit } from "./agenda-dialog";
 import { addCommandItem, removeCommandItem, checkoutCommand } from "@/app/erp/[tenant]/checkout-actions";
-import { PAYMENT_METHODS, PAYMENT_LABELS, calculateCheckoutPricing, type CheckoutCoupon, type CashSession, type CommandPayment, type PaymentMethod } from "@/lib/checkout";
+import { PAYMENT_METHODS, PAYMENT_LABELS, calculateCheckoutPricing, calculateAppliedItemDiscounts, type AppliedItemDiscount, type CheckoutCoupon, type CashSession, type CommandPayment, type PaymentMethod } from "@/lib/checkout";
 import { brl } from "@/lib/plans";
 
 type Line = { id: string; description: string; quantity: number; total: number; kind: string };
@@ -51,6 +51,8 @@ export function CommandCheckout({
   const [discountItemId, setDiscountItemId] = useState("");
   const [discountValue, setDiscountValue] = useState("");
   const [couponCode, setCouponCode] = useState("");
+  const [appliedItemDiscounts, setAppliedItemDiscounts] = useState<AppliedItemDiscount[]>([]);
+  const [discountFeedback, setDiscountFeedback] = useState("");
   const viewKey = "gromma-checkout-view-v3:" + tenantCode;
 
   useEffect(() => {
@@ -75,10 +77,11 @@ export function CommandCheckout({
       command.items.map(item => ({ id: item.id, total: item.total })),
       Math.round(command.discount * 100),
       { kind: discountKind, scope: discountScope, itemId: discountItemId, value: discountValue, couponCode },
-      coupons,
+      coupons, new Date(), appliedItemDiscounts,
     );
   } catch (e) { pricingError = e instanceof Error ? e.message : "Desconto ou cupom inválido."; }
   const totalCents = pricing.totalCents;
+  const itemDeductions = (() => { try { return calculateAppliedItemDiscounts(command.items, appliedItemDiscounts); } catch { return new Map<string, number>(); } })();
   const invalidAmounts = PAYMENT_METHODS.some(method =>
     amounts[method].trim() !== "" &&
     (!/^\d{1,8}([.,]\d{1,2})?$/.test(amounts[method]) || !Number.isFinite(Number(amounts[method].replace(",", "."))))
@@ -94,6 +97,17 @@ export function CommandCheckout({
   const cleanedNotes = command.notes.replaceAll("[GROMMA:RECOMPRA]", "").trim();
   const selectedLabel = selectedMethod ? PAYMENT_LABELS[selectedMethod] : "";
 
+  function applyItemDiscount() {
+    try {
+      if (discountScope !== "ITEM" || discountKind === "NONE" || !discountItemId) throw new Error("Selecione o item e o desconto.");
+      const next = [...appliedItemDiscounts, { itemId: discountItemId, kind: discountKind, value: discountValue } as AppliedItemDiscount];
+      calculateAppliedItemDiscounts(command.items, next);
+      setAppliedItemDiscounts(next);
+      setDiscountKind("NONE"); setDiscountValue(""); setDiscountItemId("");
+      setDiscountFeedback("Desconto aplicado. Você pode selecionar outro item.");
+      setSelectedMethod(null); setAmounts(zeroAmounts());
+    } catch (error) { setDiscountFeedback(error instanceof Error ? error.message : "Desconto inválido."); }
+  }
   function receiveAll(method: PaymentMethod) {
     setSelectedMethod(method);
     setSplit(false);
@@ -158,7 +172,7 @@ export function CommandCheckout({
             <header className="checkout-section-head"><h4><ReceiptText size={18} /> Itens da comanda</h4><span className="checkout-muted-count">{command.items.length}</span></header>
             <div className="checkout-lines">{command.items.length ? command.items.map(item => <div key={item.id}>
               <span><strong>{item.description}</strong><small>{item.kind === "PRODUCT" ? "Produto" : "Serviço"} · {item.quantity} un.</small></span>
-              <b>{brl(item.total)}</b>
+              <b>{itemDeductions.has(item.id) ? <><del className="checkout-old-price">{brl(item.total)}</del><strong className="checkout-new-price">{brl((Math.round(item.total * 100) - (itemDeductions.get(item.id) ?? 0)) / 100)}</strong></> : brl(item.total)}</b>
               {editable && <form action={removeCommandItem}>{fields}<input type="hidden" name="itemId" value={item.id} /><button className="agenda-icon-button" type="submit" title={"Remover " + item.description} aria-label={"Remover " + item.description}><Trash2 size={16} /></button></form>}
             </div>) : <p className="agenda-form-hint">Nenhum serviço ou produto na comanda.</p>}</div>
           </section>}
@@ -198,7 +212,7 @@ export function CommandCheckout({
               <input type="hidden" name="sessionId" value={session.id} />
               <input type="hidden" name="expectedTotal" value={totalCents} />
               <button type="button" className="checkout-split-toggle" aria-expanded={showDiscount}
-                onClick={() => { if (showDiscount) { setDiscountKind("NONE"); setDiscountScope("ORDER"); setDiscountItemId(""); setDiscountValue(""); setCouponCode(""); } setShowDiscount(!showDiscount); }}>Descontos e cupons <ChevronDown size={15}/></button>
+                onClick={() => { setShowDiscount(!showDiscount); }}>Descontos e cupons <ChevronDown size={15}/></button>
               {showDiscount && <div className="checkout-discount-panel">
                 <label><span className="label">Tipo de desconto</span>
                   <select className="select" name="discountKind" value={discountKind}
@@ -227,6 +241,16 @@ export function CommandCheckout({
                       value={discountValue} onChange={e => setDiscountValue(e.target.value)} placeholder="0,00" />
                   </label>
                 </>}
+                {discountScope === "ITEM" && discountKind !== "NONE" && <button className="btn secondary" type="button" onClick={applyItemDiscount}><Plus size={16}/> Aplicar desconto neste item</button>}
+                {appliedItemDiscounts.length > 0 && <div className="checkout-applied-discounts">
+                  <strong>Descontos aplicados ({appliedItemDiscounts.length})</strong>
+                  {appliedItemDiscounts.map((d, index) => <div key={index}>
+                    <span>{command.items.find(item => item.id === d.itemId)?.description ?? "Item removido"} · {d.kind === "PERCENT" ? d.value + "%" : brl(Number(d.value.replace(",", ".")))}</span>
+                    <button type="button" className="btn secondary" onClick={() => { setAppliedItemDiscounts(current => current.filter((_, i) => i !== index)); setSelectedMethod(null); setAmounts(zeroAmounts()); }} aria-label="Remover desconto"><Trash2 size={14}/></button>
+                  </div>)}
+                </div>}
+                {discountFeedback && <p role="status" className="agenda-form-hint">{discountFeedback}</p>}
+                <input type="hidden" name="appliedItemDiscounts" value={JSON.stringify(appliedItemDiscounts)}/>
                 {discountKind === "NONE" && <><input type="hidden" name="discountScope" value="ORDER" />
                   <input type="hidden" name="discountValue" value="" /></>}
                 {discountKind !== "NONE" && discountScope === "ORDER" && <input type="hidden" name="discountItemId" value="" />}
