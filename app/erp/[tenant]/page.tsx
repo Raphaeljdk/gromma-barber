@@ -23,6 +23,7 @@ import { logoutTenant } from "@/app/cliente/actions";
 import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
 import { BackButton } from "@/components/back-button";
 import { ErpSidebar } from "@/components/erp-sidebar";
+import { CustomerPhotos } from "@/components/customer-photos";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
@@ -1076,6 +1077,7 @@ export async function TenantERPView({
                       </label>
                       <button className="btn" type="submit">Salvar alterações</button>
                     </form>
+                    <CustomerPhotos tenantCode={tenantCode} customerId={customer.id} />
                     {canManage && <form action={deactivateCustomer}>
                       <input type="hidden" name="tenantCode" value={tenantCode} />
                       <input type="hidden" name="customerId" value={customer.id} />
