@@ -723,3 +723,74 @@ test('menu Opções usa top layer e não é cortado pelo scroll do modal', () =>
     assert.ok(code.includes(label), 'Opção preservada: ' + label);
   }
 });
+
+
+test('menu Opções mantém Cancelar e Cliente faltou com comanda OPEN', () => {
+  const appointment = { ...sample, status: 'CONFIRMED', customerPhone: '(11) 99999-4321',
+    command: { id: 'cmd1', status: 'OPEN', total: 55, items: [
+      { id: 'item1', quantity: 1, description: 'Corte', total: 55 },
+    ] },
+  };
+  const html = markup({ initialAppointmentId: 'a1', appointments: [appointment] });
+  for (const label of ['Cancelar e retirar da agenda', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp', 'Cliente no local']) {
+    assert.ok(html.includes(label), 'Menu sem a ação: ' + label);
+  }
+  const closed = markup({ initialAppointmentId: 'a1', appointments: [{
+    ...appointment, command: { ...appointment.command, status: 'CLOSED' },
+  }] });
+  assert.doesNotMatch(closed, />Cancelar e retirar da agenda</);
+  assert.doesNotMatch(closed, />Cliente faltou</);
+});
+
+test('Cancelar e Cliente faltou cancelam comanda OPEN sem pagamento e preservam auditoria', async () => {
+  for (const operation of ['cancel', 'no_show']) {
+    const changes = [];
+    const appointment = { id: 'a1', barberShopId: 'shop1', unitId: 'u1', customerId: 'c1',
+      startsAt: new Date(at('10:00')), status: 'CONFIRMED',
+      command: { id: 'cmd1', status: 'OPEN' },
+    };
+    const env = environment({ prisma: {
+      appointment: {
+        findFirst: async () => appointment,
+        updateMany: async q => { changes.push({ type: 'appointment', data: q }); return { count: 1 }; },
+      },
+      serviceCommand: {
+        updateMany: async q => { changes.push({ type: 'command', data: q }); return { count: 1 }; },
+      },
+    } });
+    const destination = await redirectOf(env.actions.updateAppointmentStatus,
+      form({ ...context, appointmentId: 'a1', action: operation }));
+    assert.equal(destination.searchParams.get('ok'), 'agenda-status');
+    const next = operation === 'cancel' ? 'CANCELED' : 'NO_SHOW';
+    assert.equal(changes.find(q => q.type === 'appointment').data.data.status, next);
+    const command = changes.find(q => q.type === 'command').data;
+    assert.equal(command.where.appointmentId, 'a1');
+    assert.equal(command.where.barberShopId, 'shop1');
+    assert.equal(command.where.status, 'OPEN');
+    assert.equal(command.data.status, 'CANCELED');
+    assert.ok(command.data.closedAt instanceof Date);
+    const audit = env.saved.find(q => q.audit)?.audit;
+    assert.equal(audit.action, operation === 'cancel' ? 'APPOINTMENT_CANCELED' : 'APPOINTMENT_NO_SHOW');
+    assert.equal(audit.details.commandId, 'cmd1');
+    assert.equal(audit.details.commandDisposition, 'CANCELED_WITH_APPOINTMENT');
+    assert.equal(env.saved.filter(q => q.payment).length, 0);
+  }
+});
+
+test('cancelamento jamais anula comanda paga ou fechada', async () => {
+  const commands = [];
+  const env = environment({ prisma: {
+    appointment: {
+      findFirst: async () => ({
+        id: 'a1', barberShopId: 'shop1', status: 'CONFIRMED',
+        command: { id: 'cmd1', status: 'CLOSED' },
+      }),
+      updateMany: async () => assert.fail('Não pode cancelar após pagamento'),
+    },
+    serviceCommand: { updateMany: async q => { commands.push(q); return { count: 1 }; } },
+  } });
+  const result = await redirectOf(env.actions.updateAppointmentStatus,
+    form({ ...context, appointmentId: 'a1', action: 'cancel' }));
+  assert.equal(result.searchParams.get('erro'), 'comanda-pendente');
+  assert.equal(commands.length, 0);
+});
