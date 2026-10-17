@@ -38,7 +38,22 @@ function environment(options = {}) {
   const tx = {
     barberShop: { findUnique: async () => state.shop, findUniqueOrThrow: async () => state.shop, update: async q => { writes.push('workspace'); Object.assign(state.shop, q.data); } },
     barberShopUnit: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return { id: 'u1', name: 'Centro' }; } },
-    serviceCommand: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return state.command?.status === 'OPEN' ? state.command : null; }, updateMany: async q => { writes.push('command'); Object.assign(state.command, q.data); return { count: 1 }; } },
+    serviceCommand: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return state.command?.status === 'OPEN' ? state.command : null; }, updateMany: async q => { writes.push('command'); Object.assign(state.command, q.data); return { count: 1 }; },
+      update: async q => { writes.push('command'); Object.assign(state.command, q.data); return state.command; } },
+    commandItem: {
+      create: async q => { const item = { id: 'added' + (state.command.items.length + 1), ...q.data }; state.command.items.push(item); writes.push('item'); return item; },
+      delete: async q => { state.command.items = state.command.items.filter(item => item.id !== q.where.id); writes.push('removeItem'); },
+    },
+    appointment: {
+      findFirst: async q => q.where?.id?.not ? (options.conflict ? { id: 'competing' } : null) : state.appointment,
+      updateMany: async q => { if (!state.appointment) return { count: 0 }; Object.assign(state.appointment, q.data); writes.push('appointment'); return { count: 1 }; },
+    },
+    service: {
+      findFirst: async q => (state.services ?? []).find(service => service.id === q.where.id && service.active !== false) ?? null,
+      findMany: async () => state.services ?? [],
+    },
+    product: { findFirst: async q => (state.products ?? []).find(product => product.id === q.where.id) ?? null },
+
     stockMovement: { groupBy: async q => { assert.equal(q.where.unitId, 'u1'); assert.equal(q.where.barberShopId, 'shop1'); return [{ type: 'IN', _sum: { quantity: options.stock ?? 3 } }]; }, create: async q => { writes.push('stock'); state.stock.push(q.data); } },
     financialEntry: { create: async q => { writes.push('finance'); state.entries.push(q.data); } },
   };
@@ -274,4 +289,60 @@ test('comanda oferece categoria antes de filtrar o item, não lista única', () 
   assert.ok(section.indexOf('>Item da categoria</span>') > section.indexOf('>Categoria</span>'));
   assert.match(section, /catalog\.filter\(item => item\.kind === itemCategory\)/);
   assert.match(section, /setSelectedCatalogItem\("")/);
+});
+
+
+test('incluir serviço no checkout aumenta endsAt, serviço exibido e tempo reservado', async () => {
+  const start = new Date('2026-10-15T12:00:00Z');
+  const service = [
+    { id: 's1', name: 'Barba Premium', price: 60, durationMinutes: 35 },
+    { id: 's2', name: 'Corte Premium', price: 80, durationMinutes: 45 },
+  ];
+  const env = environment({ state: {
+    services: service,
+    appointment: { id: 'a1', status: 'CONFIRMED', startsAt: start,
+      endsAt: new Date(start.getTime() + 35 * 60000), barberId: 'b1', serviceId: 's1' },
+    command: { id: 'c1', unitId: 'u1', barberShopId: 'shop1', appointmentId: 'a1', status: 'OPEN',
+      subtotal: 60, total: 60, discount: 0, items: [
+        { id: 'original', kind: 'SERVICE', description: 'Barba Premium', quantity: 1, unitPrice: 60, total: 60 },
+      ] },
+    shop: { id: 'shop1', status: 'APPROVED', accessReleased: true, enabledFeatures: { operations: {
+      settings: { openHour: 8, closeHour: 20 },
+      bookedServices: [{ appointmentId: 'a1', services: [{ id: 's1', name: 'Barba Premium', price: 60, durationMinutes: 35 }] }],
+    } } },
+  } });
+  const response = await result(env.actions.addCommandItem, form({ catalogItem: 'SERVICE:s2', quantity: '1' }));
+  assert.equal(response.searchParams.get('checkoutOk'), '1');
+  assert.equal(env.state.appointment.endsAt.toISOString(), new Date(start.getTime() + 80 * 60000).toISOString());
+  assert.equal(env.state.command.total, 140);
+  const booked = readWorkspace(env.state.shop.enabledFeatures).bookedServices.find(entry => entry.appointmentId === 'a1');
+  assert.equal(booked.services.reduce((sum, service) => sum + service.durationMinutes, 0), 80);
+  assert.deepEqual(booked.services.map(item => item.name), ['Barba Premium', 'Corte Premium']);
+  const removed = await result(env.actions.removeCommandItem, form({ itemId: 'added2' }));
+  assert.equal(removed.searchParams.get('checkoutOk'), '1');
+  assert.equal(env.state.appointment.endsAt.toISOString(), new Date(start.getTime() + 35 * 60000).toISOString());
+  assert.deepEqual(readWorkspace(env.state.shop.enabledFeatures).bookedServices[0].services.map(s => s.name), ['Barba Premium']);
+});
+
+test('horário ocupado impede acrescentar serviço e deixa a reserva anterior intacta', async () => {
+  const start = new Date('2026-10-15T12:00:00Z');
+  const env = environment({ conflict: true, state: {
+    services: [
+      { id: 's1', name: 'Barba', price: 40, durationMinutes: 30 },
+      { id: 's2', name: 'Corte', price: 55, durationMinutes: 45 },
+    ],
+    appointment: { id: 'a1', status: 'CONFIRMED', startsAt: start,
+      endsAt: new Date(start.getTime() + 30 * 60000), barberId: 'b1', serviceId: 's1' },
+    command: { id: 'c1', unitId: 'u1', barberShopId: 'shop1', appointmentId: 'a1', status: 'OPEN',
+      subtotal: 40, total: 40, discount: 0, items: [{ id: 'orig', kind: 'SERVICE', description: 'Barba', quantity: 1, unitPrice: 40, total: 40 }] },
+    shop: { id: 'shop1', status: 'APPROVED', accessReleased: true, enabledFeatures: { operations: {
+      settings: { openHour: 8, closeHour: 20 },
+      bookedServices: [{ appointmentId: 'a1', services: [{ id: 's1', name: 'Barba', price: 40, durationMinutes: 30 }] }],
+    } } },
+  } });
+  const response = await result(env.actions.addCommandItem, form({ catalogItem: 'SERVICE:s2', quantity: '1' }));
+  assert.match(response.searchParams.get('checkoutError'), /conflita com outro agendamento/);
+  assert.equal(env.state.command.items.length, 1);
+  assert.equal(env.state.command.total, 40);
+  assert.equal(env.state.appointment.endsAt.toISOString(), new Date(start.getTime() + 30 * 60000).toISOString());
 });
