@@ -40,6 +40,8 @@ export function CommandCheckout({
   const [fiscalOpen, setFiscalOpen] = useState(false);
   const [view, setView] = useState<Visibility>(DEFAULT_VIEW);
   const [showAdd, setShowAdd] = useState(false);
+  const [itemCategory, setItemCategory] = useState<"SERVICE" | "PRODUCT">("SERVICE");
+  const [selectedCatalogItem, setSelectedCatalogItem] = useState("");
   const [split, setSplit] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [amounts, setAmounts] = useState<Record<PaymentMethod, string>>(zeroAmounts);
@@ -162,11 +164,24 @@ export function CommandCheckout({
           </section>}
           {editable && showAdd && <form action={addCommandItem} className="checkout-add checkout-add-focused">
             {fields}
-            <label><span className="label">Serviço ou produto</span><select className="select" name="catalogItem" required defaultValue=""><option value="" disabled>Selecione</option>
-              {["SERVICE", "PRODUCT"].map(kind => <optgroup key={kind} label={kind === "SERVICE" ? "Serviços" : "Produtos"}>
-                {catalog.filter(item => item.kind === kind).map(item => <option key={item.id} value={kind + ":" + item.id}>{item.name} · {brl(item.price)}</option>)}
-              </optgroup>)}
-            </select></label>
+            <label><span className="label">Categoria</span>
+              <select className="select" name="catalogCategory" required value={itemCategory}
+                onChange={event => {
+                  setItemCategory(event.target.value as "SERVICE" | "PRODUCT");
+                  setSelectedCatalogItem("");
+                }}>
+                <option value="SERVICE">Serviços</option>
+                <option value="PRODUCT">Produtos</option>
+              </select>
+            </label>
+            <label className="checkout-item-select"><span className="label">Item da categoria</span>
+              <select className="select" name="catalogItem" required value={selectedCatalogItem}
+                onChange={event => setSelectedCatalogItem(event.target.value)}>
+                <option value="" disabled>Selecione um item</option>
+                {catalog.filter(item => item.kind === itemCategory).map(item =>
+                  <option key={item.id} value={item.kind + ":" + item.id}>{item.name} · {brl(item.price)}</option>)}
+              </select>
+            </label>
             <label><span className="label">Qtd.</span><input className="input" name="quantity" type="number" min="1" max="100" defaultValue="1" required /></label>
             <AgendaSubmit secondary><Plus size={16} /> Incluir</AgendaSubmit>
           </form>}
