@@ -197,13 +197,20 @@ export async function updateAppointmentStatus(formData: FormData) {
 
   const appointment = await prisma.appointment.findFirst({
     where: { id: appointmentId, barberShopId: shop.id },
-    include: { service: true, command: { select: { status: true } } },
+    include: { service: true, command: { select: { id: true, status: true } } },
   });
 
   if (action === "complete" && appointment?.command?.status === "OPEN") {
     // Closing the appointment without payment would leave its comanda open.
     // Checkout already finalizes both records atomically after receiving.
     redirect(agendaReturnHref(tenantCode, formData, { erro: "comanda-pendente" }));
+  }
+
+  // Cancelamento/falta também pode acontecer após abrir a comanda sem receber.
+  // Comanda já paga/encerrada nunca pode ser cancelada por este atalho.
+  if ((action === "cancel" || action === "no_show") && appointment?.command &&
+      appointment.command.status !== "OPEN") {
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-status" }));
   }
 
   if (
@@ -226,6 +233,16 @@ export async function updateAppointmentStatus(formData: FormData) {
 
       if (updated.count !== 1) throw new Error("Appointment state changed concurrently");
 
+      if ((action === "cancel" || action === "no_show") && appointment.command) {
+        // Cancela apenas uma comanda ainda ABERTA: sem baixa de estoque, financeiro
+        // ou pagamento. A transição e a auditoria pertencem à mesma transação.
+        const canceled = await tx.serviceCommand.updateMany({
+          where: { id: appointment.command.id, barberShopId: shop.id, status: "OPEN" },
+          data: { status: "CANCELED" },
+        });
+        if (canceled.count !== 1) throw new Error("Command changed or was paid concurrently");
+      }
+
       // Auditoria é persistida na mesma transação, sem apagar a reserva.
       await tx.adminAuditLog.create({
         data: {
@@ -245,6 +262,7 @@ export async function updateAppointmentStatus(formData: FormData) {
             actorUserId: viewer.type === "TENANT" ? viewer.userId : null,
             requestedBy: null, // Solicitante não informado; o executor autenticado permanece na auditoria.
             performedVia: "ACESSO_BARBEARIA",
+            canceledOpenCommandId: (action === "cancel" || action === "no_show") && appointment.command?.status === "OPEN" ? appointment.command.id : null,
           },
         },
       });
