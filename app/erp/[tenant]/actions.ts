@@ -582,6 +582,8 @@ export async function createCustomer(formData: FormData) {
   }
 
   const name = text(formData, "name", 120);
+  const cpf = validatedCpf(formData);
+  const address = text(formData, "address", 300);
   const email = text(formData, "email", 180).toLowerCase();
   const phone = text(formData, "phone", 40);
   const birthDate = dateAtNoon(text(formData, "birthDate", 10));
@@ -592,12 +594,15 @@ export async function createCustomer(formData: FormData) {
   const customerNotes = [discoverySource && sources[discoverySource] ? `Origem: ${sources[discoverySource]}` : "", notes].filter(Boolean).join("\n");
   const unit = await unitForShop(shop.id, unitId);
 
+  if (cpf === null) redirect(`${path}?erro=cliente#clientes`);
   if (name.length < 2) redirect(`${path}?erro=cliente#clientes`);
 
   try {
     await prisma.customer.create({
       data: {
         barberShopId: shop.id,
+        cpf: cpf || null,
+        address: address || null,
         unitId: unit?.id ?? null,
         name,
         email: email || null,
@@ -624,16 +629,18 @@ export async function updateCustomer(formData: FormData) {
   if (!allowed(viewer, OPERATION_ROLES)) redirect(`${path}?erro=permissao#clientes`);
   const id = text(formData, "customerId", 100);
   const name = text(formData, "name", 120);
+  const cpf = validatedCpf(formData);
+  const address = text(formData, "address", 300);
   const email = text(formData, "email", 180).toLowerCase();
   const phone = text(formData, "phone", 40);
   const notes = text(formData, "notes", 4000);
-  if (!id || name.length < 2 || (email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))) {
+  if (cpf === null || !id || name.length < 2 || (email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))) {
     redirect(`${path}?erro=cliente#clientes`);
   }
   try {
     const result = await prisma.customer.updateMany({
       where: { id, barberShopId: shop.id, active: true },
-      data: { name, email: email || null, phone: phone || null, whatsapp: phone || null,
+      data: { name, cpf: cpf || null, address: address || null, email: email || null, phone: phone || null, whatsapp: phone || null,
         birthDate: dateAtNoon(text(formData, "birthDate", 10)), notes: notes || null },
     });
     if (!result.count) redirect(`${path}?erro=cliente#clientes`);
