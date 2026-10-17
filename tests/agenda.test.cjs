@@ -794,3 +794,75 @@ test('cancelamento jamais anula comanda paga ou fechada', async () => {
   assert.equal(result.searchParams.get('erro'), 'comanda-pendente');
   assert.equal(commands.length, 0);
 });
+
+test('Opções mostra Cancelar e Cliente faltou mesmo com comanda OPEN, mas não quando paga', () => {
+  const command = { id: 'cmd1', status: 'OPEN', total: 95, items: [
+    { id: 'i1', description: 'Corte', quantity: 1, total: 95 },
+  ] };
+  const html = markup({ initialAppointmentId: 'a1',
+    appointments: [{ ...sample, status: 'SCHEDULED', command, customerPhone: '(11) 99999-9999' }] });
+  assert.match(html, /Cancelar e retirar da agenda/);
+  assert.match(html, /Cliente faltou/);
+  assert.match(html, /Enviar confirmação pelo WhatsApp/);
+  assert.match(html, /Cliente no local/);
+  const paid = markup({ initialAppointmentId: 'a1',
+    appointments: [{ ...sample, status: 'SCHEDULED', command: { ...command, status: 'CLOSED' } }] });
+  assert.doesNotMatch(paid, /name="action" value="cancel"/);
+  assert.doesNotMatch(paid, /name="action" value="no_show"/);
+});
+
+test('Cancelar e Cliente faltou liberam apenas comanda OPEN não paga, preservando auditoria', async () => {
+  for (const [action, status] of [['cancel', 'CANCELED'], ['no_show', 'NO_SHOW']]) {
+    const removed = [];
+    const appt = { id: 'a1', barberShopId: 'shop1', unitId: 'u1', customerId: 'c1',
+      startsAt: new Date(at('09:00')), status: 'SCHEDULED',
+      command: { id: 'cmd1', status: 'OPEN' } };
+    const env = environment({
+      features: { otherFeature: true, operations: {
+        serviceLines: [{ itemId: 'srv1', serviceId: 's1' }, { itemId: 'unrelated', serviceId: 's2' }],
+        productLines: [{ itemId: 'prod1', productId: 'p1' }],
+        commandPayments: [],
+      } },
+      prisma: {
+        appointment: { findFirst: async () => appt, updateMany: async q => {
+          env.saved.push(q); return { count: 1 };
+        } },
+        serviceCommand: {
+          findFirst: async () => ({
+            id: 'cmd1', barberShopId: 'shop1', status: 'OPEN', subtotal: 80, total: 80,
+            items: [{ id: 'srv1', description: 'Corte', kind: 'SERVICE', quantity: 1, total: 60 },
+              { id: 'prod1', description: 'Pomada', kind: 'PRODUCT', quantity: 1, total: 20 }],
+          }),
+          deleteMany: async q => { removed.push(q); return { count: 1 }; },
+        },
+      },
+    });
+    const url = await redirectOf(env.actions.updateAppointmentStatus,
+      form({ ...context, appointmentId: 'a1', action }));
+    assert.equal(url.searchParams.get('ok'), 'agenda-status');
+    assert.equal(env.saved.find(q => q.data?.status)?.data.status, status);
+    assert.equal(removed.length, 1);
+    assert.deepEqual(removed[0].where, { id: 'cmd1', barberShopId: 'shop1', status: 'OPEN' });
+    const audit = env.saved.find(q => q.audit)?.audit;
+    assert.equal(audit.action, action === 'cancel' ? 'APPOINTMENT_CANCELED' : 'APPOINTMENT_NO_SHOW');
+    assert.equal(audit.details.unpaidCommandCanceled.commandId, 'cmd1');
+    assert.equal(audit.details.unpaidCommandCanceled.items.length, 2);
+    const updatedWorkspace = workspace.readWorkspace(env.saved.find(q => q.data?.enabledFeatures).data.enabledFeatures);
+    assert.deepEqual(updatedWorkspace.productLines, []);
+    assert.deepEqual(updatedWorkspace.serviceLines, [{ itemId: 'unrelated', serviceId: 's2' }]);
+  }
+});
+
+test('Comanda paga não pode ser cancelada pela agenda', async () => {
+  let touched = false;
+  const env = environment({ prisma: {
+    appointment: { findFirst: async () => ({
+      id: 'a1', barberShopId: 'shop1', status: 'SCHEDULED',
+      command: { id: 'cmd1', status: 'CLOSED' },
+    }), updateMany: async () => { touched = true; return { count: 1 }; } },
+  } });
+  const url = await redirectOf(env.actions.updateAppointmentStatus,
+    form({ ...context, appointmentId: 'a1', action: 'cancel' }));
+  assert.equal(url.searchParams.get('erro'), 'comanda-pendente');
+  assert.equal(touched, false);
+});
