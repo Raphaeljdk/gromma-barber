@@ -9,6 +9,8 @@ import {
   MessageCircle,
   PackageSearch,
   Plus,
+  Pencil,
+  Trash2,
   ReceiptText,
   Star,
   Store,
@@ -30,7 +32,7 @@ import { CashRegister } from "@/components/cash-register";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
-import { createCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
+import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
 import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
@@ -1008,6 +1010,8 @@ export async function TenantERPView({
         <section id="clientes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "clientes")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Clientes</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "cliente" && <div className="notice erp-inline-notice success">Cliente cadastrado com sucesso.</div>}
+          {actionOk === "cliente-atualizado" && <div className="notice erp-inline-notice success">Cliente e prontuário atualizados.</div>}
+          {actionOk === "cliente-desativado" && <div className="notice erp-inline-notice success">Cliente desativado, com histórico preservado.</div>}
           {actionError === "cliente" && <div className="notice erp-inline-notice error-notice">Revise os dados do cliente e tente novamente.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {canOperate && (
@@ -1037,10 +1041,35 @@ export async function TenantERPView({
             autoSubmit
           />
           <div className="table-wrap"><table>
-            <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th></tr></thead>
+            <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>{customers.length ? customers.map((customer) => (
-              <tr key={customer.id}><td><strong>{customer.name}</strong></td><td>{customer.email ?? "—"}</td><td>{customer.phone ?? "—"}</td><td><span className="badge approved">Ativo</span></td></tr>
-            )) : <tr><td colSpan={4} className="muted">Nenhum cliente cadastrado.</td></tr>}</tbody>
+              <tr key={customer.id}>
+                <td><strong>{customer.name}</strong></td><td>{customer.email ?? "—"}</td><td>{customer.phone ?? "—"}</td>
+                <td><span className="badge approved">Ativo</span></td>
+                <td>
+                  {canOperate && <details className="erp-quick-create">
+                    <summary><Pencil size={15} /> Editar / Prontuário</summary>
+                    <form action={updateCustomer} className="erp-quick-form">
+                      <input type="hidden" name="tenantCode" value={tenantCode} />
+                      <input type="hidden" name="customerId" value={customer.id} />
+                      <label><span className="label">Nome</span><input className="input" name="name" defaultValue={customer.name} required maxLength={120} /></label>
+                      <label><span className="label">Telefone</span><input className="input" name="phone" defaultValue={customer.phone ?? ""} maxLength={40} /></label>
+                      <label><span className="label">E-mail</span><input className="input" type="email" name="email" defaultValue={customer.email ?? ""} maxLength={180} /></label>
+                      <label><span className="label">Nascimento</span><input className="input" type="date" name="birthDate" defaultValue={customer.birthDate?.toISOString().slice(0, 10) ?? ""} /></label>
+                      <label><span className="label">Prontuário do cliente — preferências, histórico de cortes e observações</span>
+                        <textarea className="input" name="notes" rows={5} maxLength={4000} defaultValue={customer.notes ?? ""} placeholder="Corte preferido, observações por atendimento..." />
+                      </label>
+                      <button className="btn" type="submit">Salvar alterações</button>
+                    </form>
+                    {canManage && <form action={deactivateCustomer}>
+                      <input type="hidden" name="tenantCode" value={tenantCode} />
+                      <input type="hidden" name="customerId" value={customer.id} />
+                      <button className="btn secondary" type="submit"><Trash2 size={14} /> Desativar cliente</button>
+                    </form>}
+                  </details>}
+                </td>
+              </tr>
+            )) : <tr><td colSpan={5} className="muted">Nenhum cliente cadastrado.</td></tr>}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/clientes`} searchParams={qs} param="clientesPage" page={clientesPage} total={customersTotal} pageSize={pageSize} hash="clientes" label="clientes" />
         </section>
