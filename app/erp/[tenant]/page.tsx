@@ -24,6 +24,7 @@ import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
 import { BackButton } from "@/components/back-button";
 import { ErpSidebar } from "@/components/erp-sidebar";
 import { CustomerPhotos } from "@/components/customer-photos";
+import { CustomerDeactivateButton } from "@/components/customer-deactivate-button";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
@@ -1080,7 +1081,7 @@ export async function TenantERPView({
           />
           <div className="erp-customer-list">{customers.length ? customers.map((customer) => (
               <article className="erp-customer-card" key={customer.id}>
-                <div className="erp-customer-card-head"><div><strong>{customer.name}</strong><span>{customer.email ?? "Sem e-mail"}</span><span>{customer.phone ?? "Sem telefone"}</span></div><span className="badge approved">Ativo</span></div>
+                <div className="erp-customer-card-head"><div><strong>{customer.name}</strong><span>{customer.email ?? "Sem e-mail"}</span><span>{customer.phone ?? "Sem telefone"}</span></div><div className="erp-customer-card-controls"><span className="badge approved">Ativo</span>{canManage && <form action={deactivateCustomer}><input type="hidden" name="tenantCode" value={tenantCode} /><input type="hidden" name="customerId" value={customer.id} /><CustomerDeactivateButton customerName={customer.name} /></form>}</div></div>
                 <div className="erp-customer-card-body">
                   {canOperate && <details className="erp-quick-create">
                     <summary><Pencil size={15} /> Abrir prontuário completo</summary>
@@ -1149,11 +1150,6 @@ export async function TenantERPView({
                       </section>
                     </div>
                     <CustomerPhotos tenantCode={tenantCode} customerId={customer.id} />
-                    {canManage && <form action={deactivateCustomer}>
-                      <input type="hidden" name="tenantCode" value={tenantCode} />
-                      <input type="hidden" name="customerId" value={customer.id} />
-                      <button className="btn secondary" type="submit"><Trash2 size={14} /> Desativar cliente</button>
-                    </form>}
                   </details>}
                 </div>
               </article>
