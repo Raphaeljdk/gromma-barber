@@ -666,3 +666,19 @@ test('rodapé segue ordem Opções, Fechar comanda, Salvar agendamento', () => {
   const actions = fs.readFileSync(path.resolve(root, 'app/erp/[tenant]/actions.ts'), 'utf8');
   assert.match(actions, /checkin:\s*\{ from: \["SCHEDULED", "CONFIRMED"\], to: "CHECKED_IN" \}/);
 });
+
+
+test('vídeo novo: Cadastrar cliente aparece ao lado da busca, não numa segunda linha', () => {
+  const code = fs.readFileSync(path.resolve(root, 'components/agenda-forms.tsx'), 'utf8');
+  const begin = code.indexOf('className="agenda-customer-search-heading"');
+  const end = code.indexOf('className="agenda-customer-searchbox"', begin);
+  const titleAndButton = code.slice(begin, end);
+  assert.ok(begin >= 0 && end > begin);
+  assert.match(titleAndButton, /Buscar cliente cadastrado/);
+  assert.match(titleAndButton, /\+ Cadastrar cliente/);
+  assert.equal((code.match(/>\+ Cadastrar cliente<\/button>/g) || []).length, 1);
+  assert.doesNotMatch(code, /Selecione um cliente ou cadastre um novo\./);
+  for (const field of ['Data de nascimento (opcional)', 'E-mail (opcional)', 'Como conheceu a barbearia? (opcional)']) {
+    assert.ok(code.includes(field), 'Campo não pode desaparecer: ' + field);
+  }
+});
