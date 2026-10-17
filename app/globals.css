@@ -8699,3 +8699,21 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
     top: calc(env(safe-area-inset-top, 0px) + 12px);
   }
 }
+
+
+/* Customer medical records are standalone cards, never expanded inside table cells. */
+.tenant-erp .erp-customer-list{display:grid;gap:12px;min-width:0;width:100%}
+.tenant-erp .erp-customer-card{min-width:0;width:100%;box-sizing:border-box;border:1px solid var(--border,rgba(140,125,95,.25));border-radius:16px;padding:16px;background:var(--card,rgba(255,255,255,.04));overflow:visible}
+.tenant-erp .erp-customer-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0}
+.tenant-erp .erp-customer-card-head>div{display:grid;gap:4px;min-width:0}
+.tenant-erp .erp-customer-card-head strong{font-size:1rem;overflow-wrap:anywhere}
+.tenant-erp .erp-customer-card-head span:not(.badge){font-size:.85rem;opacity:.78;overflow-wrap:anywhere}
+.tenant-erp .erp-customer-card-head>.badge{flex-shrink:0}
+.tenant-erp .erp-customer-card-body{min-width:0;margin-top:12px}
+.tenant-erp .erp-customer-card .erp-quick-create{display:block;position:static;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.tenant-erp .erp-customer-card .erp-quick-create>summary{display:flex;align-items:center;gap:8px;min-height:44px;width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
+.tenant-erp .erp-customer-card .erp-quick-form{position:static;width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.tenant-erp .erp-customer-card .erp-quick-form>label{min-width:0}
+.tenant-erp .erp-customer-card .erp-quick-form input,.tenant-erp .erp-customer-card .erp-quick-form textarea{max-width:100%;width:100%;box-sizing:border-box;min-width:0}
+.tenant-erp .erp-customer-card .erp-profile-sections{min-width:0;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:700px){.tenant-erp .erp-customer-card{padding:12px;border-radius:14px}.tenant-erp .erp-customer-card .erp-quick-form{grid-template-columns:minmax(0,1fr)}.tenant-erp .erp-customer-card-head{gap:8px}.tenant-erp .erp-customer-card .erp-profile-sections{display:grid;grid-template-columns:minmax(0,1fr)}}
