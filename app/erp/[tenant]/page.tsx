@@ -1037,6 +1037,7 @@ export async function TenantERPView({
             </form>
           </details>
           )}
+          {canManage && <div className="erp-quick-actions"><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/clientes/exportar?formato=xlsx`}>Exportar Excel</Link><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/clientes/exportar?formato=pdf`}>Exportar PDF</Link></div>}
           <div className="erp-kpi-row">
             <Link href={`/erp/${encodeURIComponent(tenantCode)}/clientes#clientes`}><article><span>Todos os clientes</span><strong>{customersAllTotal}</strong><small>Ver todos</small></article></Link>
             <Link href={`/erp/${encodeURIComponent(tenantCode)}/clientes?clientesPlano=com#clientes`}><article><span>Clientes com plano</span><strong>{activePlanCustomerIds.length}</strong><small>Filtrar assinantes ativos</small></article></Link>
