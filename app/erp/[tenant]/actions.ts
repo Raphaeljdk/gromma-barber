@@ -599,6 +599,50 @@ export async function createCustomer(formData: FormData) {
   redirect(`${path}?ok=cliente#clientes`);
 }
 
+/** Atualiza cadastro e prontuário sem trocar o vínculo dos atendimentos. */
+export async function updateCustomer(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  const path = `/erp/${encodeURIComponent(tenantCode)}/clientes`;
+  if (!allowed(viewer, OPERATION_ROLES)) redirect(`${path}?erro=permissao#clientes`);
+  const id = text(formData, "customerId", 100);
+  const name = text(formData, "name", 120);
+  const email = text(formData, "email", 180).toLowerCase();
+  const phone = text(formData, "phone", 40);
+  const notes = text(formData, "notes", 4000);
+  if (!id || name.length < 2 || (email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))) {
+    redirect(`${path}?erro=cliente#clientes`);
+  }
+  try {
+    const result = await prisma.customer.updateMany({
+      where: { id, barberShopId: shop.id, active: true },
+      data: { name, email: email || null, phone: phone || null, whatsapp: phone || null,
+        birthDate: dateAtNoon(text(formData, "birthDate", 10)), notes: notes || null },
+    });
+    if (!result.count) redirect(`${path}?erro=cliente#clientes`);
+  } catch (error) {
+    console.error("Failed to update customer", error);
+    redirect(`${path}?erro=cliente#clientes`);
+  }
+  revalidatePath(path);
+  redirect(`${path}?ok=cliente-atualizado#clientes`);
+}
+
+/** Exclusão lógica: preserva histórico de agenda, comandas e faturamento. */
+export async function deactivateCustomer(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  const path = `/erp/${encodeURIComponent(tenantCode)}/clientes`;
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao#clientes`);
+  const id = text(formData, "customerId", 100);
+  if (!id) redirect(`${path}?erro=cliente#clientes`);
+  const result = await prisma.customer.updateMany({
+    where: { id, barberShopId: shop.id, active: true },
+    data: { active: false },
+  });
+  if (!result.count) redirect(`${path}?erro=cliente#clientes`);
+  revalidatePath(path);
+  redirect(`${path}?ok=cliente-desativado#clientes`);
+}
+
 export async function createService(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}/servicos`;
