@@ -27,7 +27,7 @@ function zip(entries: { name: string; data: string }[]) {
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
     local.writeUInt16LE(20, 4);
-    local.writeUInt16LE(8, 6);
+    local.writeUInt16LE(0, 6);
     local.writeUInt32LE(crc, 14);
     local.writeUInt32LE(compressed.length, 18);
     local.writeUInt32LE(input.length, 22);
@@ -37,7 +37,7 @@ function zip(entries: { name: string; data: string }[]) {
     central.writeUInt32LE(0x02014b50, 0);
     central.writeUInt16LE(20, 4);
     central.writeUInt16LE(20, 6);
-    central.writeUInt16LE(8, 10);
+    central.writeUInt16LE(0, 10);
     central.writeUInt32LE(crc, 16);
     central.writeUInt32LE(compressed.length, 20);
     central.writeUInt32LE(input.length, 24);
