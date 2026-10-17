@@ -8111,3 +8111,15 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .agenda-dialog-checkout .checkout-payment-focused { padding:13px; }
 }
 @media (min-width:851px) { .agenda-mobile-swipe-hint { display:none; } }
+
+/* Off-canvas fechado também sai da navegação pelo teclado em telas móveis. */
+@media(max-width:850px) {
+  .tenant-erp .erp-sidebar:not(.is-mobile-open) {
+    visibility:hidden;
+    pointer-events:none;
+  }
+  .tenant-erp .erp-sidebar.is-mobile-open {
+    visibility:visible;
+    pointer-events:auto;
+  }
+}
