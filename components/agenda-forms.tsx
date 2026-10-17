@@ -167,6 +167,10 @@ export function AgendaAppointmentForm({
         <div className="agenda-customer-chooser">
           <div className="agenda-customer-search-heading">
             <label htmlFor="agenda-customer-search"><span className="label">Buscar cliente cadastrado</span></label>
+            <button type="button" className="agenda-walkin-btn" onClick={() => {
+              setRegistrationName(customerSearch && !/\d/.test(customerSearch) ? customerSearch : "");
+              setRegistrationOpen(true); setCustomerChoicesOpen(false); setRegistrationError("");
+            }}>+ Cadastrar cliente</button>
           </div>
           <input type="hidden" name="customerId" value={customerId} />
           <div className="agenda-customer-searchbox">
@@ -204,15 +208,9 @@ export function AgendaAppointmentForm({
               {visibleCustomers.length > 8 && <p className="agenda-form-hint">Mostrando 8 clientes. Digite mais letras para refinar.</p>}
             </div>}
           </div>
-          <div className="agenda-customer-choice-row" aria-live="polite">
-            {selectedCustomer
-              ? <div className="agenda-customer-picked"><span className="agenda-customer-picked-icon">{selectedCustomer.name.charAt(0).toUpperCase()}</span><span><strong>{selectedCustomer.name}</strong><small>{selectedCustomer.phone || "Sem telefone"} · Cadastro vinculado</small></span></div>
-              : <span className="agenda-form-hint">Selecione um cliente ou cadastre um novo.</span>}
-            <button type="button" className="agenda-walkin-btn" onClick={() => {
-              setRegistrationName(customerSearch && !/\d/.test(customerSearch) ? customerSearch : "");
-              setRegistrationOpen(true); setCustomerChoicesOpen(false); setRegistrationError("");
-            }}>+ Cadastrar cliente</button>
-          </div>
+          {selectedCustomer && <div className="agenda-customer-choice-row" aria-live="polite">
+            <div className="agenda-customer-picked"><span className="agenda-customer-picked-icon">{selectedCustomer.name.charAt(0).toUpperCase()}</span><span><strong>{selectedCustomer.name}</strong><small>{selectedCustomer.phone || "Sem telefone"} · Cadastro vinculado</small></span></div>
+          </div>}
           {customerChoiceMissing && <p role="status" className="agenda-form-hint agenda-customer-required">Selecione ou cadastre um cliente antes de confirmar.</p>}
           {registrationOpen && <div className="agenda-customer-registration-backdrop" role="presentation">
             <div role="dialog" aria-modal="true" aria-labelledby="agenda-new-customer-title" className="agenda-customer-registration"
