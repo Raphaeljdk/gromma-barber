@@ -1011,8 +1011,8 @@ export async function TenantERPView({
 
         </section>
 
-        <section id="clientes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "clientes")}>
-          <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Clientes</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+        <section id="clientes" className="demo-section erp-clients-workspace" hidden={Boolean(moduleId && moduleId !== "clientes")}>
+          <div className="section-head"><div><div className="eyebrow">Relacionamento e fidelização</div><h2>Clientes</h2><p className="muted">Cadastre, encontre e acompanhe seus clientes em um só lugar.</p></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "cliente" && <div className="notice erp-inline-notice success">Cliente cadastrado com sucesso.</div>}
           {actionOk === "cliente-atualizado" && <div className="notice erp-inline-notice success">Cliente e prontuário atualizados.</div>}
           {actionOk === "cliente-desativado" && <div className="notice erp-inline-notice success">Cliente desativado, com histórico preservado.</div>}
@@ -1020,7 +1020,7 @@ export async function TenantERPView({
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {canOperate && (
           <details className="erp-quick-create">
-            <summary><Plus size={18} /> Cadastrar novo cliente <small>Dados pessoais e prontuário</small></summary>
+            <summary><Plus size={18} /> Novo cliente <small>Cadastro rápido e prontuário</small></summary>
             <form action={createCustomer} className="erp-quick-form">
               <input type="hidden" name="tenantCode" value={tenantCode} />
               <label><span className="label">Nome</span><input className="input" name="name" required maxLength={120} placeholder="Nome completo" /></label>
@@ -1054,7 +1054,7 @@ export async function TenantERPView({
             autoSubmit
             selects={[{ param: "clientesPlano", value: clientesPlano, label: "Plano", options: [{ value: "com", label: "Com plano" }, { value: "sem", label: "Sem plano" }] }]}
           />
-          <div className="table-wrap"><table>
+          <div className="table-wrap erp-clients-table"><table>
             <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>{customers.length ? customers.map((customer) => (
               <tr key={customer.id}>
@@ -1062,7 +1062,7 @@ export async function TenantERPView({
                 <td><span className="badge approved">Ativo</span></td>
                 <td>
                   {canOperate && <details className="erp-quick-create">
-                    <summary><Pencil size={15} /> Editar / Prontuário</summary>
+                    <summary><Pencil size={15} /> Ver prontuário</summary>
                     <form action={updateCustomer} className="erp-quick-form">
                       <input type="hidden" name="tenantCode" value={tenantCode} />
                       <input type="hidden" name="customerId" value={customer.id} />
