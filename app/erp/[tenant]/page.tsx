@@ -402,7 +402,7 @@ export async function TenantERPView({
           orderBy: { startsAt: "desc" },
           skip: (agendaPage - 1) * pageSize,
           take: pageSize,
-          include: { customer: true, barber: true, service: true, unit: true },
+          include: { customer: { select: { id: true, barberShopId: true, unitId: true, name: true, email: true, phone: true, whatsapp: true, birthDate: true, notes: true, active: true, createdAt: true, updatedAt: true } }, barber: true, service: true, unit: true },
         })
       : Promise.resolve([]),
     needsAgendaList ? prisma.appointment.count({ where: appointmentWhere }) : Promise.resolve(0),
@@ -413,7 +413,7 @@ export async function TenantERPView({
           orderBy: { openedAt: "desc" },
           skip: (comandasPage - 1) * pageSize,
           take: pageSize,
-          include: { customer: true, unit: true, items: true, appointment: true },
+          include: { customer: { select: { id: true, barberShopId: true, unitId: true, name: true, email: true, phone: true, whatsapp: true, birthDate: true, notes: true, active: true, createdAt: true, updatedAt: true } }, unit: true, items: true, appointment: true },
         })
       : Promise.resolve([]),
     needsCommandList ? prisma.serviceCommand.count({ where: commandWhere }) : Promise.resolve(0),
@@ -459,7 +459,7 @@ export async function TenantERPView({
             startsAt: { gte: agendaRangeStart, lt: agendaRangeEnd },
           },
           orderBy: { startsAt: "asc" },
-          include: { customer: true, barber: true, service: true, unit: true, command: { include: { items: true } } },
+          include: { customer: { select: { id: true, barberShopId: true, unitId: true, name: true, email: true, phone: true, whatsapp: true, birthDate: true, notes: true, active: true, createdAt: true, updatedAt: true } }, barber: true, service: true, unit: true, command: { include: { items: true } } },
         })
       : Promise.resolve([]),
     needsRelationship
@@ -476,7 +476,7 @@ export async function TenantERPView({
           orderBy: { closedAt: "desc" },
           include: {
             appointment: { include: { barber: true, service: true } },
-            customer: true,
+            customer: { select: { id: true, barberShopId: true, unitId: true, name: true, email: true, phone: true, whatsapp: true, birthDate: true, notes: true, active: true, createdAt: true, updatedAt: true } },
             items: true,
           },
           take: 1000,
