@@ -346,3 +346,66 @@ test('horário ocupado impede acrescentar serviço e deixa a reserva anterior in
   assert.equal(env.state.command.total, 40);
   assert.equal(env.state.appointment.endsAt.toISOString(), new Date(start.getTime() + 30 * 60000).toISOString());
 });
+
+
+test('homologação: atendimento de 45 minutos soma serviço de 30 minutos e produto não ocupa agenda', async () => {
+  const start = new Date('2026-10-15T13:00:00Z'); // 10h em São Paulo
+  const originalEnd = new Date(start.getTime() + 45 * 60_000);
+  const expectedEnd = new Date(start.getTime() + 75 * 60_000);
+  const env = environment({ state: {
+    services: [
+      { id: 's1', name: 'Corte', price: 60, durationMinutes: 45 },
+      { id: 's2', name: 'Barba', price: 40, durationMinutes: 30 },
+    ],
+    products: [{ id: 'p1', name: 'Pomada', salePrice: 20 }],
+    appointment: { id: 'a1', status: 'CONFIRMED', startsAt: start,
+      endsAt: originalEnd, barberId: 'b1', serviceId: 's1' },
+    command: { id: 'c1', unitId: 'u1', barberShopId: 'shop1', appointmentId: 'a1',
+      status: 'OPEN', subtotal: 60, total: 60, discount: 0,
+      items: [{ id: 'original', kind: 'SERVICE', description: 'Corte',
+        quantity: 1, unitPrice: 60, total: 60 }] },
+    shop: { id: 'shop1', status: 'APPROVED', accessReleased: true, enabledFeatures: { operations: {
+      settings: { openHour: 8, closeHour: 20 },
+      bookedServices: [{ appointmentId: 'a1', services: [
+        { id: 's1', name: 'Corte', price: 60, durationMinutes: 45 },
+      ] }],
+    } } },
+  } });
+  const addService = await result(env.actions.addCommandItem,
+    form({ catalogItem: 'SERVICE:s2', quantity: '1' }));
+  assert.equal(addService.searchParams.get('checkoutOk'), '1');
+  assert.equal(env.state.appointment.endsAt.toISOString(), expectedEnd.toISOString());
+  assert.equal(env.state.command.total, 100);
+
+  const addProduct = await result(env.actions.addCommandItem,
+    form({ catalogItem: 'PRODUCT:p1', quantity: '1' }));
+  assert.equal(addProduct.searchParams.get('checkoutOk'), '1');
+  assert.equal(env.state.appointment.endsAt.toISOString(), expectedEnd.toISOString(),
+    'Produto não acrescenta minutos à agenda');
+  assert.equal(env.state.command.total, 120);
+  const booked = readWorkspace(env.state.shop.enabledFeatures)
+    .bookedServices.find(item => item.appointmentId === 'a1');
+  assert.deepEqual(booked.services.map(item => item.durationMinutes), [45, 30]);
+
+  const removeService = await result(env.actions.removeCommandItem,
+    form({ itemId: 'added2' }));
+  assert.equal(removeService.searchParams.get('checkoutOk'), '1');
+  assert.equal(env.state.appointment.endsAt.toISOString(), originalEnd.toISOString());
+  assert.equal(env.state.command.total, 80);
+  assert.equal(readWorkspace(env.state.shop.enabledFeatures)
+    .bookedServices.find(item => item.appointmentId === 'a1')
+    .services.reduce((total, item) => total + item.durationMinutes, 0), 45);
+});
+
+test('homologação mobile: seleção de categoria é independente e controles cabem em telas estreitas', () => {
+  const ui = fs.readFileSync(path.join(root, 'components/command-checkout.tsx'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'app/globals.css'), 'utf8');
+  assert.match(ui, /name="catalogCategory"/);
+  assert.match(ui, /name="catalogItem"/);
+  assert.match(ui, /setSelectedCatalogItem\(""\)/);
+  assert.match(ui, /catalog\.filter\(item => item\.kind === itemCategory\)/);
+  assert.match(css, /@media\(max-width:480px\)[\s\S]*?\.agenda-dialog-checkout \.checkout-add-focused/);
+  assert.match(css, /\.agenda-dialog-checkout \.checkout-add-focused > \.checkout-item-select\s*\{grid-column:1\/-1;\}/);
+  assert.match(css, /\.agenda-dialog #agenda-detail-settings\[popover\][\s\S]*?max-width:calc\(100vw - 24px\)/);
+  assert.match(css, /\.agenda-dialog #agenda-detail-settings\[popover\][\s\S]*?overscroll-behavior:contain/);
+});
