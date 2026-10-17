@@ -248,3 +248,30 @@ test('emissão fiscal futura não simula envio nem PDF válido', () => {
   assert.match(code, /Emissão fiscal ainda não configurada/);
   assert.match(code, /className="btn secondary" disabled/);
 });
+
+
+test('serviços lançados na comanda são expandidos na duração; produtos não contam', () => {
+  const catalog = [
+    { id: 's1', name: 'Barba Premium', price: 60, durationMinutes: 35 },
+    { id: 's2', name: 'Corte Premium', price: 80, durationMinutes: 45 },
+  ];
+  const services = money.servicesFromCommandLines([
+    { id: 'old', kind: 'SERVICE', description: 'Barba Premium', unitPrice: 60, quantity: 1 },
+    { id: 'new', kind: 'SERVICE', description: 'Corte Premium', unitPrice: 80, quantity: 2 },
+    { id: 'prod', kind: 'PRODUCT', description: 'Pomada', unitPrice: 40, quantity: 2 },
+  ], catalog, [{ itemId: 'new', serviceId: 's2' }], [{ id: 's1', name: 'Barba Premium', price: 60, durationMinutes: 35 }]);
+  assert.equal(services.reduce((sum, s) => sum + s.durationMinutes, 0), 125);
+  assert.deepEqual(services.map(s => s.name), ['Barba Premium','Corte Premium','Corte Premium']);
+  assert.throws(() => money.servicesFromCommandLines([
+    { id: 'unknown', kind: 'SERVICE', description: 'Serviço antigo', unitPrice: 5, quantity: 1 },
+  ], catalog, [], []), /duração/);
+});
+
+test('comanda oferece categoria antes de filtrar o item, não lista única', () => {
+  const code = fs.readFileSync(path.join(root,'components/command-checkout.tsx'), 'utf8');
+  const section = code.slice(code.indexOf('className="checkout-add checkout-add-focused"'),code.indexOf('className="checkout-split-toggle"'));
+  assert.ok(section.indexOf('>Categoria</span>') >= 0);
+  assert.ok(section.indexOf('>Item da categoria</span>') > section.indexOf('>Categoria</span>'));
+  assert.match(section, /catalog\.filter\(item => item\.kind === itemCategory\)/);
+  assert.match(section, /setSelectedCatalogItem\("")/);
+});
