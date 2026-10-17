@@ -682,3 +682,24 @@ test('vídeo novo: Cadastrar cliente aparece ao lado da busca, não numa segunda
     assert.ok(code.includes(field), 'Campo não pode desaparecer: ' + field);
   }
 });
+
+
+test('ERP móvel mantém acesso à agenda, painel, formulário e checkout sem depender de hover', () => {
+  const css = fs.readFileSync(path.resolve(root, 'app/globals.css'), 'utf8');
+  const agenda = fs.readFileSync(path.resolve(root, 'components/erp-agenda-board.tsx'), 'utf8');
+  const sidebar = fs.readFileSync(path.resolve(root, 'components/erp-sidebar.tsx'), 'utf8');
+  for (const expected of [
+    '.agenda-mobile-swipe-hint', '.agenda-calendar-shell',
+    '.agenda-lane-grid', '.agenda-dialog', '.agenda-dialog-head',
+    '.agenda-customer-registration', '.checkout-payment-column',
+    '.checkout-payment-shortcuts', '.erp-mobile-trigger',
+    '.erp-sidebar.is-mobile-open'
+  ]) assert.ok(css.includes(expected), 'Falta estilo móvel: ' + expected);
+  assert.match(agenda, /Deslize para os lados para ver outros profissionais/);
+  assert.match(agenda, /columns.length > 1/);
+  assert.match(sidebar, /aria-expanded=\{mobileOpen\}/);
+  assert.match(sidebar, /aria-controls="erp-mobile-navigation"/);
+  assert.ok(css.includes('env(safe-area-inset-bottom'), 'Respeitar área segura de iPhone');
+  assert.ok(css.includes('font-size:16px !important'), 'Evitar zoom ao focar campos no iPhone');
+  assert.ok(css.includes('overscroll-behavior:contain'), 'Permitir rolagem interna sem rolar toda a página');
+});
