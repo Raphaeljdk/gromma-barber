@@ -83,7 +83,7 @@ export function calculateAppliedItemDiscounts(items: CheckoutPricingLine[], disc
     let amount: number;
     if (d.kind === "FIXED") amount = cents(d.value);
     else {
-      if (!/^\\d{1,3}([.,]\\d{1,2})?$/.test(d.value)) throw new Error("Percentual inválido.");
+      if (!/^\d{1,3}([.,]\d{1,2})?$/.test(d.value)) throw new Error("Percentual inválido.");
       const rate = Math.round(Number(d.value.replace(",", ".")) * 100);
       if (rate <= 0 || rate > 10000) throw new Error("Percentual fora do limite.");
       amount = Math.round(base * rate / 10000);
