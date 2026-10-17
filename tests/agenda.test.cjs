@@ -703,3 +703,23 @@ test('ERP móvel mantém acesso à agenda, painel, formulário e checkout sem de
   assert.ok(css.includes('font-size:16px !important'), 'Evitar zoom ao focar campos no iPhone');
   assert.ok(css.includes('overscroll-behavior:contain'), 'Permitir rolagem interna sem rolar toda a página');
 });
+
+
+test('menu Opções usa top layer e não é cortado pelo scroll do modal', () => {
+  const html = markup({ initialAppointmentId: 'a1' });
+  assert.match(html, /id="agenda-detail-settings" popover="auto"/);
+  assert.match(html, /aria-controls="agenda-detail-settings"/);
+  const css = fs.readFileSync(path.resolve(root, 'app/globals.css'), 'utf8');
+  assert.match(css, /#agenda-detail-settings\[popover\]\s*\{[^}]*position:fixed/);
+  assert.match(css, /#agenda-detail-settings\[popover\]:not\(:popover-open\)/);
+  assert.match(css, /--agenda-options-height/);
+  const code = fs.readFileSync(path.resolve(root, 'components/erp-agenda-board.tsx'), 'utf8');
+  assert.match(code, /menu\.showPopover\(\)/);
+  assert.match(code, /menu\.hidePopover\(\)/);
+  assert.match(code, /rect\.top/);
+  assert.match(code, /rect\.bottom/);
+  assert.match(code, /addEventListener\("scroll", reposition, true\)/);
+  for (const label of ['Cancelar e retirar da agenda', 'Cliente faltou', 'Enviar confirmação pelo WhatsApp', 'Cliente no local']) {
+    assert.ok(code.includes(label), 'Opção preservada: ' + label);
+  }
+});
