@@ -8179,3 +8179,44 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .agenda-dialog-checkout .checkout-add-focused > label:first-of-type {grid-column:1/-1;}
   .agenda-dialog-checkout .checkout-add-focused > .checkout-item-select {grid-column:1/-1;}
 }
+
+
+/* ERP: navegação móvel no topo, sem sobrepor cartões ou barra do navegador. */
+@media (max-width: 850px) {
+  .tenant-erp .erp-mobile-trigger {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    right: 14px;
+    left: auto;
+    bottom: auto;
+    z-index: 55;
+    min-height: 44px;
+    min-width: 92px;
+    justify-content: center;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #292219, #16130f);
+    border: 1px solid rgba(218, 174, 91, .6);
+    color: #f3d594;
+    box-shadow: 0 8px 24px rgba(0,0,0,.28);
+    font-size: .82rem;
+  }
+  .tenant-erp .erp-mobile-trigger:focus-visible {
+    outline: 3px solid #e6b95f;
+    outline-offset: 3px;
+  }
+  .tenant-erp .erp-sidebar {
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  .tenant-erp .erp-main {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 520px) {
+  .tenant-erp .erp-mobile-trigger {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    right: 12px;
+    left: auto;
+    bottom: auto;
+  }
+}
