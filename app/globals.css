@@ -8220,3 +8220,46 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
     bottom: auto;
   }
 }
+
+
+/* Mobile ERP header: Caixa and Menu share one clear action row, no overlap. */
+@media (max-width: 850px) {
+  .tenant-erp .erp-main {
+    padding-top: calc(68px + env(safe-area-inset-top, 0px));
+  }
+  .tenant-erp .erp-mobile-trigger,
+  .tenant-erp .erp-floating-cash {
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    min-height: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    border-radius: 13px;
+    font-size: .79rem;
+    padding: 9px 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.3);
+    transform: none;
+    white-space: nowrap;
+  }
+  .tenant-erp .erp-mobile-trigger {
+    right: 12px;
+    left: auto;
+    min-width: 96px;
+    z-index: 56;
+  }
+  .tenant-erp .erp-floating-cash {
+    right: 120px;
+    left: auto;
+    z-index: 54;
+  }
+  .tenant-erp .erp-topbar {
+    padding-right: 0;
+    margin-top: 0;
+  }
+  .tenant-erp .erp-floating-cash:hover { transform: none; }
+}
+@media (max-width: 380px) {
+  .tenant-erp .erp-mobile-trigger { right: 10px; min-width: 88px; padding-inline: 10px; }
+  .tenant-erp .erp-floating-cash { right: 108px; padding-inline: 10px; }
+}
