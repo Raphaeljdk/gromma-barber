@@ -1546,17 +1546,21 @@ export function ErpAgendaBoard({
                   onToggle={event => setDetailOptionsOpen(event.currentTarget.matches(":popover-open"))}
                   className="agenda-detail-settings agenda-action-menu">
               <strong>Ações do agendamento</strong>
-              {canOperate && ["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status) && !detail.command && <form
+              {canOperate && ["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status) && (!detail.command || detail.command.status === "OPEN") && <form
                 action={updateAppointmentStatus} onSubmit={event => {
-                  if (!window.confirm("Excluir este agendamento da agenda? O registro será marcado como cancelado para preservar o histórico.")) event.preventDefault();
+                  if (!window.confirm(detail.command?.status === "OPEN"
+                    ? "Cancelar agendamento e comanda aberta, sem registrar pagamento? O histórico será preservado."
+                    : "Cancelar este agendamento e retirá-lo da agenda? O histórico será preservado.")) event.preventDefault();
                 }}>
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
                 <AgendaSubmit secondary name="action" value="cancel">Cancelar e retirar da agenda</AgendaSubmit>
               </form>}
-              {canOperate && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && !detail.command && <form
+              {canOperate && ["SCHEDULED", "CONFIRMED"].includes(detail.status) && (!detail.command || detail.command.status === "OPEN") && <form
                 action={updateAppointmentStatus} onSubmit={event => {
-                  if (!window.confirm("Marcar este cliente como faltante?")) event.preventDefault();
+                  if (!window.confirm(detail.command?.status === "OPEN"
+                    ? "Marcar cliente como faltante e cancelar a comanda aberta, sem receber pagamento?"
+                    : "Marcar este cliente como faltante?")) event.preventDefault();
                 }}>
                 <AgendaContextFields context={context} />
                 <input type="hidden" name="appointmentId" value={detail.id} />
