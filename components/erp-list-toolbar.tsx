@@ -1,3 +1,6 @@
+"use client";
+
+import { useRef } from "react";
 import Link from "next/link";
 import { Filter, Search, X } from "lucide-react";
 
@@ -26,6 +29,7 @@ type Props = {
     placeholder: string;
   };
   selects?: SelectField[];
+  autoSubmit?: boolean;
 };
 
 function firstValue(value: QueryValue) {
@@ -39,7 +43,16 @@ export function ErpListToolbar({
   hash,
   search,
   selects = [],
+  autoSubmit = false,
 }: Props) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function scheduleSubmit() {
+    if (!autoSubmit) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => formRef.current?.requestSubmit(), 350);
+  }
   const owned = new Set([
     pageParam,
     "ok",
@@ -62,7 +75,7 @@ export function ErpListToolbar({
   const clearHref = `${basePath}${clearQuery ? `?${clearQuery}` : ""}#${hash}`;
 
   return (
-    <form className="erp-list-toolbar" action={`${basePath}#${hash}`} method="get">
+    <form ref={formRef} className="erp-list-toolbar" action={`${basePath}#${hash}`} method="get">
       {preserved.map(([key, value]) =>
         value ? <input key={key} type="hidden" name={key} value={value} /> : null,
       )}
@@ -76,6 +89,7 @@ export function ErpListToolbar({
             defaultValue={search.value}
             placeholder={search.placeholder}
             autoComplete="off"
+            onChange={scheduleSubmit}
           />
         </label>
       )}
@@ -92,9 +106,9 @@ export function ErpListToolbar({
         </label>
       ))}
 
-      <button className="btn secondary erp-filter-submit" type="submit">
+      {!autoSubmit && <button className="btn secondary erp-filter-submit" type="submit">
         <Filter size={14} /> Filtrar
-      </button>
+      </button>}
 
       {hasFilters && (
         <Link className="erp-filter-clear" href={clearHref}>
