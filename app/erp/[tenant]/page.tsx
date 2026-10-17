@@ -1078,7 +1078,7 @@ export async function TenantERPView({
             autoSubmit
             selects={[{ param: "clientesPlano", value: clientesPlano, label: "Plano", options: [{ value: "com", label: "Com plano" }, { value: "sem", label: "Sem plano" }] }]}
           />
-          <div className="table-wrap"><table>
+          <div className="table-wrap erp-customer-records"><table>
             <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>{customers.length ? customers.map((customer) => (
               <tr key={customer.id}>
@@ -1086,7 +1086,7 @@ export async function TenantERPView({
                 <td><span className="badge approved">Ativo</span></td>
                 <td>
                   {canOperate && <details className="erp-quick-create">
-                    <summary><Pencil size={15} /> Editar / Prontuário</summary>
+                    <summary><Pencil size={15} /> Abrir prontuário completo</summary>
                     <form action={updateCustomer} className="erp-quick-form">
                       <input type="hidden" name="tenantCode" value={tenantCode} />
                       <input type="hidden" name="customerId" value={customer.id} />
