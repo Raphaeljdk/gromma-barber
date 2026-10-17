@@ -135,6 +135,7 @@ export type ErpWorkspace = {
   commandPayments: CommandPayment[];
   bookedServices: BookedServices[];
   productLines: { itemId: string; productId: string }[];
+  serviceLines: { itemId: string; serviceId: string }[];
   settings: OperationalSettings;
 };
 
@@ -155,6 +156,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   commandPayments: [],
   bookedServices: [],
   productLines: [],
+  serviceLines: [],
   settings: {
     openHour: 8,
     closeHour: 20,
@@ -200,6 +202,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     commandPayments: array<CommandPayment>(operations.commandPayments),
     bookedServices: array<BookedServices>(operations.bookedServices),
     productLines: array<{ itemId: string; productId: string }>(operations.productLines),
+    serviceLines: array<{ itemId: string; serviceId: string }>(operations.serviceLines),
     settings: {
       openHour: Number(settings.openHour ?? DEFAULT_WORKSPACE.settings.openHour),
       closeHour: Number(settings.closeHour ?? DEFAULT_WORKSPACE.settings.closeHour),

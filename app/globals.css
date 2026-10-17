@@ -8164,3 +8164,18 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
     margin:0 !important;
   }
 }
+
+/* Inclusão na comanda: filtros de categoria e item separados, tocáveis em mobile. */
+.checkout-add-focused { grid-template-columns:minmax(110px,.75fr) minmax(160px,1.7fr) minmax(72px,.4fr) auto; }
+.checkout-add-focused > label { min-width:0; }
+.checkout-add-focused > label :is(select,input) { width:100%;min-width:0;min-height:44px; }
+@media(max-width:850px) {
+  .agenda-dialog-checkout .checkout-add-focused {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+  .agenda-dialog-checkout .checkout-add-focused > .checkout-item-select {grid-column:1/-1;}
+  .agenda-dialog-checkout .checkout-add-focused > button {min-height:46px;}
+}
+@media(max-width:480px) {
+  .agenda-dialog-checkout .checkout-add-focused {grid-template-columns:minmax(0,1fr) 84px;}
+  .agenda-dialog-checkout .checkout-add-focused > label:first-of-type {grid-column:1/-1;}
+  .agenda-dialog-checkout .checkout-add-focused > .checkout-item-select {grid-column:1/-1;}
+}

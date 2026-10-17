@@ -110,3 +110,29 @@ export function calculateCheckoutPricing(
   if (totalCents <= 0) throw new Error("O total precisa ser maior que zero para registrar um recebimento.");
   return { subtotalCents, manualCents, couponCents, discountCents, totalCents, couponCode: code };
 }
+
+/** Reconciles the agenda's reserved service duration with the command's service lines.
+ * Product lines never occupy barber time. Legacy command items can be identified
+ * by their immutable item description and price, with the saved booking as fallback.
+ */
+export function servicesFromCommandLines(
+  items: { id: string; kind: string; description: string; unitPrice: number; quantity: number }[],
+  catalog: { id: string; name: string; price: number; durationMinutes: number }[],
+  lineLinks: { itemId: string; serviceId: string }[],
+  booked: BookedServices["services"],
+): BookedServices["services"] {
+  const result: BookedServices["services"] = [];
+  for (const line of items.filter(item => item.kind === "SERVICE")) {
+    if (!Number.isSafeInteger(line.quantity) || line.quantity < 1 || line.quantity > 100) throw new Error("Quantidade de serviço inválida.");
+    const ref = lineLinks.find(ref => ref.itemId === line.id);
+    const service = (ref ? catalog.find(service => service.id === ref.serviceId) : null)
+      ?? catalog.find(service => service.name === line.description && Math.round(service.price * 100) === Math.round(line.unitPrice * 100))
+      ?? booked.find(service => service.name === line.description && Math.round(service.price * 100) === Math.round(line.unitPrice * 100));
+    if (!service || !Number.isSafeInteger(service.durationMinutes) || service.durationMinutes <= 0)
+      throw new Error("Não foi possível identificar a duração deste serviço. Atualize o cadastro do serviço antes de alterar a comanda.");
+    for (let n = 0; n < line.quantity; n++) result.push({
+      id: service.id, name: line.description, price: line.unitPrice, durationMinutes: service.durationMinutes,
+    });
+  }
+  return result;
+}
