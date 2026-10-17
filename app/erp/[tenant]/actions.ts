@@ -197,8 +197,14 @@ export async function updateAppointmentStatus(formData: FormData) {
 
   const appointment = await prisma.appointment.findFirst({
     where: { id: appointmentId, barberShopId: shop.id },
-    include: { service: true, command: { select: { status: true } } },
+    include: { service: true, command: { select: { id: true, status: true } } },
   });
+
+  const isAbandonment = action === "cancel" || action === "no_show";
+  // Não permitir descartar uma comanda já paga ou encerrada.
+  if (isAbandonment && appointment?.command && appointment.command.status !== "OPEN") {
+    redirect(agendaReturnHref(tenantCode, formData, { erro: "comanda-pendente" }));
+  }
 
   if (action === "complete" && appointment?.command?.status === "OPEN") {
     // Closing the appointment without payment would leave its comanda open.
@@ -226,6 +232,22 @@ export async function updateAppointmentStatus(formData: FormData) {
 
       if (updated.count !== 1) throw new Error("Appointment state changed concurrently");
 
+      // Uma comanda aberta ainda não recebeu pagamento. Cancelá-la junto à
+      // reserva impede pendências financeiras ou reabertura acidental.
+      // O registro e os itens permanecem disponíveis no histórico/auditoria.
+      if (isAbandonment && appointment.command) {
+        const canceled = await tx.serviceCommand.updateMany({
+          where: {
+            id: appointment.command.id,
+            barberShopId: shop.id,
+            appointmentId: appointment.id,
+            status: "OPEN",
+          },
+          data: { status: "CANCELED", closedAt: new Date() },
+        });
+        if (canceled.count !== 1) throw new Error("Command was closed or modified concurrently");
+      }
+
       // Auditoria é persistida na mesma transação, sem apagar a reserva.
       await tx.adminAuditLog.create({
         data: {
@@ -240,6 +262,8 @@ export async function updateAppointmentStatus(formData: FormData) {
             previousStatus: appointment.status,
             newStatus: transition.to,
             operation: action,
+            commandId: isAbandonment ? appointment.command?.id ?? null : null,
+            commandDisposition: isAbandonment && appointment.command ? "CANCELED_WITH_APPOINTMENT" : null,
             actorType: viewer.type,
             actorRole: viewer.type === "TENANT" ? viewer.role : "ADMIN",
             actorUserId: viewer.type === "TENANT" ? viewer.userId : null,
