@@ -49,6 +49,7 @@ export function CommandCheckout({
   const [discountKind, setDiscountKind] = useState<"NONE" | "FIXED" | "PERCENT">("NONE");
   const [discountScope, setDiscountScope] = useState<"ORDER" | "ITEM">("ORDER");
   const [discountItemId, setDiscountItemId] = useState("");
+  const [itemDiscounts, setItemDiscounts] = useState<{ itemId: string; kind: "FIXED" | "PERCENT"; value: string }[]>([]);
   const [discountValue, setDiscountValue] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const viewKey = "gromma-checkout-view-v3:" + tenantCode;
@@ -74,7 +75,7 @@ export function CommandCheckout({
     pricing = calculateCheckoutPricing(
       command.items.map(item => ({ id: item.id, total: item.total })),
       Math.round(command.discount * 100),
-      { kind: discountKind, scope: discountScope, itemId: discountItemId, value: discountValue, couponCode },
+      { kind: itemDiscounts.length ? "NONE" : discountKind, scope: discountScope, itemId: discountItemId, value: itemDiscounts.length ? "" : discountValue, couponCode, itemDiscounts },
       coupons,
     );
   } catch (e) { pricingError = e instanceof Error ? e.message : "Desconto ou cupom inválido."; }
@@ -198,8 +199,8 @@ export function CommandCheckout({
               <input type="hidden" name="sessionId" value={session.id} />
               <input type="hidden" name="expectedTotal" value={totalCents} />
               <button type="button" className="checkout-split-toggle" aria-expanded={showDiscount}
-                onClick={() => { if (showDiscount) { setDiscountKind("NONE"); setDiscountScope("ORDER"); setDiscountItemId(""); setDiscountValue(""); setCouponCode(""); } setShowDiscount(!showDiscount); }}>Descontos e cupons <ChevronDown size={15}/></button>
-              {showDiscount && <div className="checkout-discount-panel">
+                onClick={() => { if (showDiscount) { setDiscountKind("NONE"); setDiscountScope("ORDER"); setDiscountItemId(""); setDiscountValue(""); setCouponCode(""); setItemDiscounts([]); } setShowDiscount(!showDiscount); }}>Descontos e cupons <ChevronDown size={15}/></button>
+              {showDiscount && <div className="checkout-discount-panel">\n                <input type="hidden" name="itemDiscounts" value={JSON.stringify(itemDiscounts)} />
                 <label><span className="label">Tipo de desconto</span>
                   <select className="select" name="discountKind" value={discountKind}
                     onChange={e => { setDiscountKind(e.target.value as "NONE" | "FIXED" | "PERCENT"); setDiscountValue(""); }}>
@@ -230,6 +231,23 @@ export function CommandCheckout({
                 {discountKind === "NONE" && <><input type="hidden" name="discountScope" value="ORDER" />
                   <input type="hidden" name="discountValue" value="" /></>}
                 {discountKind !== "NONE" && discountScope === "ORDER" && <input type="hidden" name="discountItemId" value="" />}
+                <div className="checkout-item-discounts">
+                  <strong>Descontos individuais</strong>
+                  <p className="muted small">Adicione descontos em diferentes itens antes de receber. Cada item pode ter seu próprio valor ou percentual.</p>
+                  {itemDiscounts.map((entry, index) => <div key={entry.itemId} className="checkout-item-discount-row">
+                    <span>{command.items.find(item => item.id === entry.itemId)?.description}</span>
+                    <select className="select" aria-label="Tipo de desconto do item" value={entry.kind} onChange={e => setItemDiscounts(current => current.map((item, i) => i === index ? { ...item, kind: e.target.value as "FIXED" | "PERCENT", value: "" } : item))}>
+                      <option value="FIXED">R$</option><option value="PERCENT">%</option>
+                    </select>
+                    <input className="input" aria-label="Valor do desconto do item" type="number" inputMode="decimal" min="0.01" max={entry.kind === "PERCENT" ? 100 : undefined} step=".01" value={entry.value} onChange={e => setItemDiscounts(current => current.map((item, i) => i === index ? { ...item, value: e.target.value } : item))} />
+                    <button className="btn secondary" type="button" onClick={() => setItemDiscounts(current => current.filter((_, i) => i !== index))}>Remover</button>
+                  </div>)}
+                  {discountKind === "NONE" && command.items.some(item => !itemDiscounts.some(entry => entry.itemId === item.id)) && <select className="select" aria-label="Adicionar desconto em outro item" value="" onChange={e => { if (e.target.value) setItemDiscounts(current => [...current, { itemId: e.target.value, kind: "FIXED", value: "" }]); }}>
+                    <option value="">+ Aplicar desconto em outro item</option>
+                    {command.items.filter(item => !itemDiscounts.some(entry => entry.itemId === item.id)).map(item => <option key={item.id} value={item.id}>{item.description} · {brl(item.total)}</option>)}
+                  </select>}
+                  {itemDiscounts.length > 0 && <small>Para descontos individuais, mantenha o tipo de desconto geral em "Sem desconto manual".</small>}
+                </div>
                 <label><span className="label">Cupom promocional (opcional)</span>
                   <input className="input" name="couponCode" list="gromma-checkout-coupons"
                     value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Código do cupom" maxLength={40} />

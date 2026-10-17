@@ -58,6 +58,7 @@ export type CheckoutCoupon = { code: string; kind: "PERCENT" | "FIXED"; value: n
 export type CheckoutDiscountInput = {
   kind: "NONE" | "PERCENT" | "FIXED"; scope: "ORDER" | "ITEM";
   itemId: string; value: string; couponCode: string;
+  itemDiscounts?: { itemId: string; kind: "PERCENT" | "FIXED"; value: string }[];
 };
 export type CheckoutPricingLine = { id: string; total: number };
 export function calculateCheckoutPricing(
@@ -88,6 +89,28 @@ export function calculateCheckoutPricing(
       manualCents = Math.round(baseCents * hundredths / 10000);
     }
     if (manualCents > baseCents) throw new Error("O desconto supera o valor do item ou da comanda.");
+  }
+  if (input.itemDiscounts?.length) {
+    if (input.kind !== "NONE") throw new Error("Escolha descontos individuais ou desconto geral.");
+    const seen = new Set<string>();
+    for (const entry of input.itemDiscounts) {
+      if (seen.has(entry.itemId)) throw new Error("Cada item pode receber apenas um desconto.");
+      seen.add(entry.itemId);
+      const item = items.find(line => line.id === entry.itemId);
+      if (!item) throw new Error("Item inválido para desconto.");
+      const itemCents = Math.round(item.total * 100);
+      let reduction: number;
+      if (entry.kind === "FIXED") reduction = cents(entry.value);
+      else if (entry.kind === "PERCENT") {
+        if (!/^\\d{1,3}([.,]\\d{1,2})?$/.test(entry.value)) throw new Error("Percentual inválido.");
+        const percentage = Math.round(Number(entry.value.replace(",", ".")) * 100);
+        if (percentage > 10000) throw new Error("Desconto máximo de 100% por item.");
+        reduction = Math.round(itemCents * percentage / 10000);
+      } else throw new Error("Tipo de desconto inválido.");
+      if (reduction > itemCents) throw new Error("Desconto maior que o valor do item.");
+      manualCents += reduction;
+    }
+    legacyCents = 0;
   }
   const code = input.couponCode.trim().toUpperCase();
   let couponCents = 0;
