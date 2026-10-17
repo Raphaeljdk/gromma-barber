@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { readWorkspace, writeWorkspace, workspaceId } from "@/lib/erp-workspace";
-import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayments, sessionTotals, calculateCheckoutPricing, type CheckoutDiscountInput } from "@/lib/checkout";
+import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace } from "@/lib/erp-workspace";
+import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayments, sessionTotals, calculateCheckoutPricing, servicesFromCommandLines, type CheckoutDiscountInput } from "@/lib/checkout";
+import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import type { Prisma } from "@prisma/client";
 
 const value = (f: FormData, key: string) => String(f.get(key) ?? "").trim().slice(0, 200);
@@ -65,40 +66,113 @@ export async function closeCash(form: FormData) {
     await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
   });
 }
+async function synchronizeCommandDuration(
+  tx: Prisma.TransactionClient, shopId: string, appointmentId: string,
+  items: { id: string; kind: string; description: string; unitPrice: unknown; quantity: unknown }[],
+  workspace: ErpWorkspace,
+) {
+  const appointment = await tx.appointment.findFirst({
+    where: { id: appointmentId, barberShopId: shopId },
+    select: { id: true, startsAt: true, endsAt: true, barberId: true, serviceId: true, status: true },
+  });
+  if (!appointment || ["CANCELED", "NO_SHOW", "COMPLETED"].includes(appointment.status))
+    throw new OperationError("Este agendamento não pode mais ter a duração alterada.");
+  const catalog = await tx.service.findMany({
+    where: { barberShopId: shopId },
+    select: { id: true, name: true, price: true, durationMinutes: true },
+  });
+  const previous = workspace.bookedServices.find(entry => entry.appointmentId === appointmentId)?.services ?? [];
+  let services;
+  try {
+    services = servicesFromCommandLines(
+      items.map(item => ({ id: item.id, kind: item.kind, description: item.description, unitPrice: Number(item.unitPrice), quantity: Number(item.quantity) })),
+      catalog.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })),
+      workspace.serviceLines, previous,
+    );
+  } catch (error) { throw new OperationError(error instanceof Error ? error.message : "Serviço inválido."); }
+  if (!services.length) throw new OperationError("Mantenha pelo menos um serviço no agendamento.");
+  const minutes = services.reduce((sum, item) => sum + item.durationMinutes, 0);
+  if (!Number.isSafeInteger(minutes) || minutes > 24 * 60) throw new OperationError("A duração do atendimento é muito longa.");
+  const endsAt = new Date(appointment.startsAt.getTime() + minutes * 60_000);
+  if (endsAt.getTime() > (appointment.endsAt?.getTime() ?? appointment.startsAt.getTime())) {
+    if (!withinAgendaHours(appointment.startsAt, endsAt, workspace.settings.openHour, workspace.settings.closeHour))
+      throw new OperationError("O serviço ultrapassa o horário da barbearia. Reagende o atendimento.");
+    if (appointment.barberId && hasAgendaBlock(workspace.agendaBlocks, appointment.barberId, appointment.startsAt, endsAt))
+      throw new OperationError("Há um horário bloqueado para o profissional. Reagende antes de incluir o serviço.");
+    if (appointment.barberId) {
+      const conflict = await tx.appointment.findFirst({
+        where: {
+          barberShopId: shopId, barberId: appointment.barberId,
+          id: { not: appointment.id },
+          status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] },
+          startsAt: { lt: endsAt },
+          OR: [{ endsAt: { gt: appointment.startsAt } }, { endsAt: null }],
+        },
+        select: { id: true },
+      });
+      if (conflict) throw new OperationError("O tempo adicional conflita com outro agendamento. Reagende antes de incluir o serviço.");
+    }
+  }
+  const updated = await tx.appointment.updateMany({
+    where: { id: appointment.id, barberShopId: shopId, status: appointment.status },
+    data: { endsAt, serviceId: services[0].id },
+  });
+  if (updated.count !== 1) throw new OperationError("O agendamento mudou. Atualize a página.");
+  workspace.bookedServices = workspace.bookedServices.filter(entry => entry.appointmentId !== appointmentId);
+  workspace.bookedServices.push({ appointmentId, services });
+}
+
 export async function addCommandItem(form: FormData) {
   return run(form, "comandas", async (tx, shopId) => {
-    const command = await tx.serviceCommand.findFirst({ where: { id: value(form, "commandId"), barberShopId: shopId, status: "OPEN" } });
+    const command = await tx.serviceCommand.findFirst({
+      where: { id: value(form, "commandId"), barberShopId: shopId, status: "OPEN" }, include: { items: true },
+    });
     if (!command) throw new OperationError("A comanda não está aberta.");
     const quantity = Number(value(form, "quantity"));
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) throw new OperationError("Informe uma quantidade entre 1 e 100.");
     const [kind, id] = value(form, "catalogItem").split(":");
+    if (!["SERVICE", "PRODUCT"].includes(kind) || !id) throw new OperationError("Selecione uma categoria e um item válido.");
     const service = kind === "SERVICE" ? await tx.service.findFirst({ where: { id, barberShopId: shopId, active: true } }) : null;
     const product = kind === "PRODUCT" ? await tx.product.findFirst({ where: { id, barberShopId: shopId, active: true } }) : null;
     const catalog = service || product;
     if (!catalog) throw new OperationError("Selecione um serviço ou produto ativo.");
     const price = cents(service ? service.price : product!.salePrice);
-    const item = await tx.commandItem.create({ data: { commandId: command.id, kind, description: catalog.name, quantity, unitPrice: price / 100, total: price * quantity / 100 } });
-    if (product) {
-      const { shop, workspace } = await configuration(tx, shopId);
-      workspace.productLines.push({ itemId: item.id, productId: product.id });
-      await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
+    const item = await tx.commandItem.create({ data: {
+      commandId: command.id, kind, description: catalog.name, quantity, unitPrice: price / 100, total: price * quantity / 100,
+    } });
+    const { shop, workspace } = await configuration(tx, shopId);
+    if (product) workspace.productLines.push({ itemId: item.id, productId: product.id });
+    if (service && command.appointmentId) workspace.serviceLines.push({ itemId: item.id, serviceId: service.id });
+    if (command.appointmentId && service) {
+      await synchronizeCommandDuration(tx, shopId, command.appointmentId, [...command.items, item], workspace);
     }
+    await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
     const subtotal = cents(command.subtotal) + price * quantity;
-    await tx.serviceCommand.update({ where: { id: command.id }, data: { subtotal: subtotal / 100, total: Math.max(0, subtotal - cents(command.discount)) / 100 } });
+    await tx.serviceCommand.update({ where: { id: command.id }, data: {
+      subtotal: subtotal / 100, total: Math.max(0, subtotal - cents(command.discount)) / 100,
+    } });
   });
 }
 export async function removeCommandItem(form: FormData) {
   return run(form, "comandas", async (tx, shopId) => {
-    const command = await tx.serviceCommand.findFirst({ where: { id: value(form, "commandId"), barberShopId: shopId, status: "OPEN" }, include: { items: true } });
+    const command = await tx.serviceCommand.findFirst({
+      where: { id: value(form, "commandId"), barberShopId: shopId, status: "OPEN" }, include: { items: true },
+    });
     const item = command?.items.find(i => i.id === value(form, "itemId"));
     if (!command || !item) throw new OperationError("Item indisponível nesta comanda aberta.");
     const subtotal = command.items.filter(i => i.id !== item.id).reduce((sum, i) => sum + cents(i.total), 0);
     if (subtotal < cents(command.discount)) throw new OperationError("O desconto da comanda supera o valor restante.");
-    await tx.commandItem.delete({ where: { id: item.id } });
     const { shop, workspace } = await configuration(tx, shopId);
     workspace.productLines = workspace.productLines.filter(line => line.itemId !== item.id);
+    workspace.serviceLines = workspace.serviceLines.filter(line => line.itemId !== item.id);
+    if (command.appointmentId && item.kind === "SERVICE") {
+      await synchronizeCommandDuration(tx, shopId, command.appointmentId, command.items.filter(i => i.id !== item.id), workspace);
+    }
+    await tx.commandItem.delete({ where: { id: item.id } });
     await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
-    await tx.serviceCommand.update({ where: { id: command.id }, data: { subtotal: subtotal / 100, total: (subtotal - cents(command.discount)) / 100 } });
+    await tx.serviceCommand.update({ where: { id: command.id }, data: {
+      subtotal: subtotal / 100, total: (subtotal - cents(command.discount)) / 100,
+    } });
   });
 }
 export async function checkoutCommand(form: FormData) {
