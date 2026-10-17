@@ -97,7 +97,7 @@ export function ErpListToolbar({
       {selects.map((field) => (
         <label className="erp-list-select" key={field.param}>
           <span>{field.label}</span>
-          <select name={field.param} defaultValue={field.value ?? ""}>
+          <select name={field.param} defaultValue={field.value ?? ""} onChange={scheduleSubmit}>
             <option value="">Todos</option>
             {field.options.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
