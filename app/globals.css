@@ -7920,3 +7920,206 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
 .checkout-discount-error{font-size:.74rem;color:#dc7474;margin:0}
 .checkout-registered-card-info{border:1px dashed var(--erp-border);padding:11px;background:transparent;color:var(--erp-muted);border-radius:9px;cursor:not-allowed;font-size:.74rem;opacity:.7}
 @media(max-width:550px){.agenda-command-bottom-actions > form,.agenda-command-bottom-actions > .btn{flex:1 1 100%}.agenda-bottom-options{flex:1 1 100%}.agenda-bottom-options > .btn{width:100%}.agenda-bottom-options .agenda-action-menu{left:0;right:auto;width:100%}.agenda-customer-search-heading .agenda-walkin-btn{min-width:0}}
+
+/* ===========================================================================
+   GROMMA Mobile: agenda, comandas e navegação otimizadas para uso com uma mão.
+   Escopo restrito ao ERP; desktop mantém grade, colunas e tema originais.
+   =========================================================================== */
+@media (max-width:850px) {
+  .tenant-erp,
+  .tenant-erp .demo-main,
+  .tenant-erp .erp-main,
+  .tenant-erp .demo-section,
+  .tenant-erp .erp-workspace-card,
+  .tenant-erp .agenda-workspace,
+  .tenant-erp .agenda-main-calendar { min-width:0; max-width:100%; }
+  .tenant-erp .erp-main {
+    overflow-x:clip;
+    padding-bottom:calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+  .tenant-erp .erp-mobile-trigger {
+    min-height:48px;
+    bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+    touch-action:manipulation;
+  }
+  .tenant-erp .erp-sidebar {
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:calc(26px + env(safe-area-inset-bottom, 0px));
+  }
+  .tenant-erp .erp-sidebar-head {
+    position:sticky;
+    top:-16px;
+    z-index:4;
+    padding-top:12px;
+    padding-bottom:12px;
+    background:var(--erp-panel);
+  }
+  .tenant-erp .erp-sidebar .erp-mobile-close { min-width:44px; min-height:44px; place-items:center; }
+  .tenant-erp .erp-sidebar .erp-nav-item,
+  .tenant-erp .erp-sidebar .erp-nav-subitem { min-height:46px; }
+  .tenant-erp :is(.btn,.erp-nav-item,.agenda-icon-button,.erp-mobile-trigger) { touch-action:manipulation; }
+  .tenant-erp :is(input,select,textarea) { max-width:100%; }
+  .tenant-erp .table-wrap,
+  .tenant-erp .erp-inner-table {
+    max-width:100%;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .tenant-erp :is(.erp-two-column-workspace,.erp-segment-grid,.erp-report-grid,.erp-coupon-grid) { min-width:0; }
+  .agenda-interactive .agenda-top-actions { align-items:flex-start; }
+  .agenda-interactive .agenda-unit-caption { overflow-wrap:anywhere; }
+  .agenda-interactive .agenda-action-buttons { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .agenda-interactive .agenda-action-buttons .btn { width:100%; min-width:0; min-height:44px; justify-content:center; }
+  .agenda-interactive .agenda-action-buttons .btn:last-child { grid-column:1/-1; }
+  .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .agenda-interactive .agenda-toolbar { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+  .agenda-interactive .agenda-toolbar > .btn { grid-column:2; grid-row:1; min-width:66px; }
+  .agenda-interactive .agenda-period-controls { grid-column:1; grid-row:1; width:100%; min-width:0; justify-content:flex-start; gap:5px; }
+  .agenda-interactive .agenda-period-controls > strong { flex-basis:100%; width:100%; margin:4px 0 0; font-size:.76rem; }
+  .agenda-interactive .agenda-view-tools { grid-column:1/-1; width:100%; margin:0; display:flex; justify-content:space-between; }
+  .agenda-interactive .agenda-view-switch { display:flex; flex:1; min-width:0; width:auto; }
+  .agenda-interactive .agenda-view-switch a { flex:1; min-height:44px; text-align:center; }
+  .agenda-interactive .agenda-information-toggle { width:44px; height:44px; flex:0 0 44px; }
+  .agenda-interactive .agenda-active-filters label { display:grid; gap:6px; width:100%; }
+  .agenda-interactive .agenda-active-filters select { min-height:44px; width:100%; }
+  .agenda-interactive .agenda-display-settings { min-width:0; }
+  .agenda-interactive .agenda-main-layout.with-panel { display:flex; flex-direction:column; }
+  .agenda-interactive .agenda-side-panel { width:100%; max-height:60dvh; overflow-y:auto; }
+  .agenda-interactive .agenda-calendar-shell {
+    max-width:100%;
+    max-height:65dvh;
+    overflow:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scroll-padding:70px 0 0 0;
+  }
+  .agenda-interactive .agenda-lane-grid {
+    grid-template-columns:56px repeat(var(--agenda-columns),minmax(205px,1fr));
+    min-width:max(100%,calc(56px + var(--agenda-columns) * 205px));
+  }
+  .agenda-interactive .agenda-time-column > span { padding-inline:3px; font-size:.63rem; }
+  .agenda-interactive .agenda-professional-head { padding:8px; border-left-width:2px; }
+  .agenda-interactive .agenda-professional-lane { border-left-width:2px; }
+  .agenda-interactive .agenda-time-header { padding:6px; }
+  .agenda-interactive .agenda-appointment { padding:6px; }
+  .agenda-mobile-swipe-hint { display:flex; align-items:center; gap:7px; margin:0 0 6px; color:var(--erp-muted); font-size:.7rem; }
+  .agenda-mobile-swipe-hint svg { color:var(--erp-gold); flex:none; }
+  .agenda-dialog {
+    position:fixed;
+    inset:0;
+    margin:0;
+    width:100%;
+    max-width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+    border:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .agenda-dialog .agenda-dialog-content {
+    min-height:100%;
+    padding:0 16px calc(28px + env(safe-area-inset-bottom,0px));
+  }
+  .agenda-dialog .agenda-dialog-head {
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:var(--erp-panel);
+    margin:0 -16px 16px;
+    padding:calc(12px + env(safe-area-inset-top,0px)) 16px 13px;
+    border-bottom:1px solid var(--erp-border);
+  }
+  .agenda-dialog .agenda-dialog-head h3 { font-size:1.05rem; line-height:1.3; }
+  .agenda-dialog .agenda-dialog-head .agenda-icon-button { width:44px; height:44px; flex-basis:44px; }
+  .agenda-dialog :is(input,textarea,select) { font-size:16px !important; }
+  .agenda-dialog .agenda-modal-form { min-width:0; }
+  .agenda-dialog .agenda-modal-form .grid { grid-template-columns:1fr; gap:12px; }
+  .agenda-dialog .agenda-booking-section { padding:13px; }
+  .agenda-dialog .agenda-booking-service-entry { grid-template-columns:1fr; }
+  .agenda-dialog .agenda-customer-search-heading { align-items:flex-start; gap:8px; }
+  .agenda-dialog .agenda-customer-search-heading .agenda-walkin-btn { min-height:44px; }
+  .agenda-dialog .agenda-booking-submit .btn { min-height:50px; }
+  .agenda-dialog .agenda-detail { gap:12px; }
+  .agenda-dialog .agenda-detail-grid-compact { grid-template-columns:1fr 1fr; gap:9px; }
+  .agenda-dialog .agenda-command-bottom-actions { display:grid; grid-template-columns:1fr; gap:9px; }
+  .agenda-dialog .agenda-command-bottom-actions > * { min-width:0; width:100%; }
+  .agenda-dialog .agenda-command-bottom-actions :is(a,button) { min-height:46px; }
+  .agenda-dialog .agenda-bottom-options .agenda-action-menu {
+    position:static;
+    width:100%;
+    max-width:100%;
+    margin-top:8px;
+    max-height:none;
+    box-shadow:none;
+  }
+  .agenda-dialog .agenda-previous-list article { grid-template-columns:80px minmax(0,1fr); }
+  .agenda-dialog .agenda-previous-list article small { grid-column:2; }
+  .agenda-dialog .agenda-customer-registration-backdrop { padding:10px; }
+  .agenda-dialog .agenda-customer-registration { width:100%; max-height:calc(100dvh - 20px); padding:16px; }
+  .agenda-dialog-checkout .checkout-workspace,
+  .agenda-dialog-checkout .checkout-workspace-focused { display:flex; flex-direction:column; gap:12px; }
+  .agenda-dialog-checkout :is(.checkout-detail-column,.checkout-payment-column) { width:100%; min-width:0; }
+  .agenda-dialog-checkout .checkout-payment-column { position:static; order:2; }
+  .agenda-dialog-checkout .checkout-detail-column { order:1; }
+  .agenda-dialog-checkout .checkout-compact-toolbar { gap:10px; }
+  .agenda-dialog-checkout .checkout-toolbar-actions { display:grid; grid-template-columns:1fr 1fr; gap:7px; width:100%; }
+  .agenda-dialog-checkout .checkout-toolbar-actions .btn { min-height:44px; min-width:0; justify-content:center; }
+  .agenda-dialog-checkout .checkout-payment-shortcuts button { min-height:49px; font-size:.86rem; }
+  .agenda-dialog-checkout .checkout-payment-values .input { min-height:46px; }
+  .agenda-dialog-checkout .checkout-payment-form > button[type="submit"] { min-height:52px; }
+  .agenda-dialog-checkout .checkout-section { padding:12px; }
+  .agenda-dialog-checkout .checkout-lines > div { min-width:0; overflow-wrap:anywhere; }
+}
+@media (max-width:540px) {
+  .tenant-erp .erp-main { padding-inline:12px; }
+  .tenant-erp .erp-topbar { gap:8px; }
+  .tenant-erp .erp-breadcrumbs { max-width:100%; flex-wrap:wrap; gap:4px; }
+  .tenant-erp .erp-enterprise-context { display:none; }
+  .tenant-erp .erp-hero-header.compact h1 { font-size:1.55rem; line-height:1.15; }
+  .tenant-erp .demo-section > .section-head { gap:8px; flex-wrap:wrap; }
+  .agenda-interactive .agenda-top-actions > div:first-child { min-width:0; }
+  .agenda-interactive .agenda-top-actions p { display:none; }
+  .agenda-interactive .agenda-action-buttons .btn { padding:9px 6px; font-size:.72rem; }
+  .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+  .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article { min-height:66px; padding:8px; }
+  .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article > a { padding:8px; min-height:66px; }
+  .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article strong { font-size:1.08rem; }
+  .agenda-interactive .agenda-toolbar { padding:9px; }
+  .agenda-interactive .agenda-period-controls .agenda-date-picker { flex:1; min-width:0; justify-content:center; }
+  .agenda-interactive .agenda-period-controls .agenda-date-picker input { width:112px; font-size:.78rem; }
+  .agenda-interactive .agenda-period-controls > a:not(.agenda-today) { flex:0 0 36px; }
+  .agenda-interactive .agenda-period-controls > strong { line-height:1.35; }
+  .agenda-interactive .agenda-display-settings { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .agenda-interactive .agenda-display-settings > label { min-width:0; }
+  .agenda-interactive .agenda-display-settings :is(select,input) { max-width:100%; }
+  .agenda-interactive .agenda-display-settings > label:last-child { grid-column:1/-1; }
+  .agenda-dialog .agenda-booking-section-heading h4 { font-size:.88rem; }
+  .agenda-dialog .agenda-customer-search-heading { display:grid; grid-template-columns:1fr auto; align-items:center; }
+  .agenda-dialog .agenda-customer-search-heading .agenda-walkin-btn { font-size:.72rem; padding:8px; }
+  .agenda-dialog .agenda-detail-grid-compact { gap:8px; }
+  .agenda-dialog-checkout .checkout-payment-values { gap:7px; }
+  .agenda-dialog-checkout .checkout-payment-shortcuts { gap:7px; }
+  .agenda-dialog-checkout .checkout-compact-total { padding:12px; }
+  .agenda-dialog-checkout .checkout-compact-total strong { font-size:1.32rem; }
+  .agenda-dialog-checkout .checkout-toolbar-actions { grid-template-columns:1fr; }
+  .agenda-dialog-checkout .checkout-payment-focused { padding:13px; }
+}
+@media (min-width:851px) { .agenda-mobile-swipe-hint { display:none; } }
+
+/* Off-canvas fechado também sai da navegação pelo teclado em telas móveis. */
+@media(max-width:850px) {
+  .tenant-erp .erp-sidebar:not(.is-mobile-open) {
+    visibility:hidden;
+    pointer-events:none;
+  }
+  .tenant-erp .erp-sidebar.is-mobile-open {
+    visibility:visible;
+    pointer-events:auto;
+  }
+}
