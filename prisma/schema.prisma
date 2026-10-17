@@ -179,6 +179,8 @@ model Customer {
   phone        String?
   whatsapp     String?
   birthDate    DateTime?
+  cpf          String?
+  address      String?
   notes        String?
   active       Boolean   @default(true)
   createdAt    DateTime  @default(now())

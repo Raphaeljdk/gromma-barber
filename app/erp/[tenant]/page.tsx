@@ -1031,6 +1031,7 @@ export async function TenantERPView({
                 <label><span className="label">Nascimento</span><input className="input" name="birthDate" type="date" /></label>
                 <label><span className="label">Unidade</span><select className="select" name="unitId"><option value="">Sem unidade específica</option>{shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
               </div>
+              <div className="grid grid-2"><label><span className="label">CPF (opcional)</span><input className="input" name="cpf" inputMode="numeric" maxLength={14} placeholder="000.000.000-00" /></label><label><span className="label">Endereço (opcional)</span><input className="input" name="address" maxLength={300} placeholder="Rua, número, bairro, cidade" /></label></div>
               <label><span className="label">Como conheceu a barbearia?</span><select className="select" name="discoverySource"><option value="">Não informado</option><option value="INDICACAO">Indicação</option><option value="INSTAGRAM">Instagram</option><option value="FACEBOOK">Facebook</option><option value="FACHADA">Fachada</option><option value="OUTRO">Outro</option></select></label>
               <label><span className="label">Prontuário e observações</span><textarea className="input" name="notes" rows={4} maxLength={4000} placeholder="Preferências e observações sobre o cliente" /></label>
               <button className="btn" type="submit">Salvar cliente</button>
@@ -1068,6 +1069,8 @@ export async function TenantERPView({
                       <label><span className="label">Telefone</span><input className="input" name="phone" defaultValue={customer.phone ?? ""} maxLength={40} /></label>
                       <label><span className="label">E-mail</span><input className="input" type="email" name="email" defaultValue={customer.email ?? ""} maxLength={180} /></label>
                       <label><span className="label">Nascimento</span><input className="input" type="date" name="birthDate" defaultValue={customer.birthDate?.toISOString().slice(0, 10) ?? ""} /></label>
+                      <label><span className="label">CPF (opcional)</span><input className="input" name="cpf" inputMode="numeric" maxLength={14} defaultValue={customer.cpf ?? ""} /></label>
+                      <label><span className="label">Endereço (opcional)</span><input className="input" name="address" maxLength={300} defaultValue={customer.address ?? ""} /></label>
                       <label><span className="label">Prontuário do cliente — preferências, histórico de cortes e observações</span>
                         <textarea className="input" name="notes" rows={5} maxLength={4000} defaultValue={customer.notes ?? ""} placeholder="Corte preferido, observações por atendimento..." />
                       </label>
