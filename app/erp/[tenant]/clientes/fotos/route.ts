@@ -37,6 +37,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   const valid = file.type === "image/jpeg" ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 : file.type === "image/png" ? bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71 : bytes[0] === 82 && bytes[1] === 73 && bytes[2] === 70 && bytes[3] === 70 && bytes[8] === 87 && bytes[9] === 69 && bytes[10] === 66 && bytes[11] === 80;
   if (!valid) return new Response("Arquivo inválido", { status: 400 });
   const ext = file.type === "image/jpeg" ? "jpg" : file.type === "image/png" ? "png" : "webp";
-  await put(`${auth.prefix}${crypto.randomUUID()}.${ext}`, bytes, { access: "private", contentType: file.type, addRandomSuffix: false });
+  await put(`${auth.prefix}${crypto.randomUUID()}.${ext}`, Buffer.from(bytes), { access: "private", contentType: file.type, addRandomSuffix: false });
   return Response.json({ ok: true });
 }
