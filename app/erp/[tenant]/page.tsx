@@ -384,6 +384,7 @@ export async function TenantERPView({
           orderBy: { createdAt: "desc" },
           skip: (clientesPage - 1) * pageSize,
           take: pageSize,
+          select: { id: true, barberShopId: true, unitId: true, name: true, email: true, phone: true, whatsapp: true, birthDate: true, notes: true, active: true, createdAt: true, updatedAt: true },
         })
       : Promise.resolve([]),
     needsCustomerList ? prisma.customer.count({ where: customerWhere }) : Promise.resolve(0),
@@ -1069,8 +1070,8 @@ export async function TenantERPView({
                       <label><span className="label">Telefone</span><input className="input" name="phone" defaultValue={customer.phone ?? ""} maxLength={40} /></label>
                       <label><span className="label">E-mail</span><input className="input" type="email" name="email" defaultValue={customer.email ?? ""} maxLength={180} /></label>
                       <label><span className="label">Nascimento</span><input className="input" type="date" name="birthDate" defaultValue={customer.birthDate?.toISOString().slice(0, 10) ?? ""} /></label>
-                      <label><span className="label">CPF (opcional)</span><input className="input" name="cpf" inputMode="numeric" maxLength={14} defaultValue={customer.cpf ?? ""} /></label>
-                      <label><span className="label">Endereço (opcional)</span><input className="input" name="address" maxLength={300} defaultValue={customer.address ?? ""} /></label>
+                      <label><span className="label">CPF (opcional)</span><input className="input" name="cpf" inputMode="numeric" maxLength={14} disabled placeholder="Aguardando migração do banco" /></label>
+                      <label><span className="label">Endereço (opcional)</span><input className="input" name="address" maxLength={300} disabled placeholder="Aguardando migração do banco" /></label>
                       <label><span className="label">Prontuário do cliente — preferências, histórico de cortes e observações</span>
                         <textarea className="input" name="notes" rows={5} maxLength={4000} defaultValue={customer.notes ?? ""} placeholder="Corte preferido, observações por atendimento..." />
                       </label>
