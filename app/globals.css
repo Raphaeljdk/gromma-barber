@@ -8284,3 +8284,59 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .erp-profile-panel { padding: 14px; }
   .erp-profile-facts { grid-template-columns: minmax(0,1fr); }
 }
+
+
+/* Customer records: expanding a profile must never squeeze it into the actions column. */
+.tenant-erp .erp-customer-records { overflow: visible; width: 100%; min-width: 0; }
+.tenant-erp .erp-customer-records table,
+.tenant-erp .erp-customer-records tbody { display: block; width: 100%; min-width: 0; }
+.tenant-erp .erp-customer-records thead { display: none; }
+.tenant-erp .erp-customer-records tbody > tr {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.35fr) minmax(130px, 1.25fr) minmax(110px, 1fr) minmax(72px, auto);
+  align-items: center;
+  gap: 10px 18px;
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid var(--erp-border, rgba(128,128,128,.25));
+  border-radius: 16px;
+  background: var(--erp-card, rgba(120,120,120,.04));
+}
+.tenant-erp .erp-customer-records td { min-width: 0; padding: 0; border: 0; overflow-wrap: anywhere; }
+.tenant-erp .erp-customer-records td:nth-child(5) { grid-column: 1 / -1; min-width: 0; }
+.tenant-erp .erp-customer-records td:nth-child(5) > details { width: 100%; min-width: 0; }
+.tenant-erp .erp-customer-records td:nth-child(5) > details > summary {
+  display: flex; align-items: center; gap: 8px; min-height: 44px;
+  width: 100%; box-sizing: border-box; padding: 10px 14px;
+  border-radius: 11px; cursor: pointer; font-weight: 700;
+}
+.tenant-erp .erp-customer-records td:nth-child(5) > details[open] {
+  padding: 16px; border-radius: 14px;
+  border: 1px solid var(--erp-border, rgba(128,128,128,.25));
+}
+.tenant-erp .erp-customer-records td:nth-child(5) > details[open] > summary { margin-bottom: 18px; }
+.tenant-erp .erp-customer-records .erp-quick-form {
+  display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px;
+  width: 100%; min-width: 0;
+}
+.tenant-erp .erp-customer-records .erp-quick-form label { min-width: 0; }
+.tenant-erp .erp-customer-records .erp-quick-form :is(input,textarea,select) {
+  display: block; width: 100%; min-width: 0; box-sizing: border-box;
+}
+.tenant-erp .erp-customer-records .erp-profile-sections {
+  display: grid; grid-template-columns: repeat(2, minmax(0,1fr));
+  align-items: start; gap: 14px; width: 100%; min-width: 0; margin-top: 24px;
+}
+.tenant-erp .erp-customer-records .erp-profile-panel { min-width: 0; }
+@media (max-width: 760px) {
+  .tenant-erp .erp-customer-records tbody > tr {
+    grid-template-columns: minmax(0,1fr) auto; gap: 8px 12px; padding: 14px;
+  }
+  .tenant-erp .erp-customer-records td:first-child { grid-column: 1; grid-row: 1; }
+  .tenant-erp .erp-customer-records td:nth-child(4) { grid-column: 2; grid-row: 1; }
+  .tenant-erp .erp-customer-records td:nth-child(2),
+  .tenant-erp .erp-customer-records td:nth-child(3) { grid-column: 1 / -1; }
+  .tenant-erp .erp-customer-records td:nth-child(5) > details[open] { padding: 12px; }
+  .tenant-erp .erp-customer-records .erp-quick-form,
+  .tenant-erp .erp-customer-records .erp-profile-sections { grid-template-columns: minmax(0,1fr); }
+}
