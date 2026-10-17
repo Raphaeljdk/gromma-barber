@@ -8688,3 +8688,14 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .tenant-erp .erp-floating-cash { right: 106px; padding-inline: 10px; }
   .tenant-erp .erp-topbar .erp-top-actions { gap: 6px; }
 }
+
+
+/* The shortcuts are siblings of the toolbar, not its children: anchor their
+   reserved mobile row to the viewport so they cannot drift into content. */
+@media (max-width:850px) {
+  .tenant-erp .erp-mobile-trigger,
+  .tenant-erp .erp-floating-cash {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+  }
+}
