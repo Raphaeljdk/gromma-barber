@@ -1078,13 +1078,10 @@ export async function TenantERPView({
             autoSubmit
             selects={[{ param: "clientesPlano", value: clientesPlano, label: "Plano", options: [{ value: "com", label: "Com plano" }, { value: "sem", label: "Sem plano" }] }]}
           />
-          <div className="table-wrap erp-customer-records"><table>
-            <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
-            <tbody>{customers.length ? customers.map((customer) => (
-              <tr key={customer.id}>
-                <td><strong>{customer.name}</strong></td><td>{customer.email ?? "—"}</td><td>{customer.phone ?? "—"}</td>
-                <td><span className="badge approved">Ativo</span></td>
-                <td>
+          <div className="erp-customer-list">{customers.length ? customers.map((customer) => (
+              <article className="erp-customer-card" key={customer.id}>
+                <div className="erp-customer-card-head"><div><strong>{customer.name}</strong><span>{customer.email ?? "Sem e-mail"}</span><span>{customer.phone ?? "Sem telefone"}</span></div><span className="badge approved">Ativo</span></div>
+                <div className="erp-customer-card-body">
                   {canOperate && <details className="erp-quick-create">
                     <summary><Pencil size={15} /> Abrir prontuário completo</summary>
                     <form action={updateCustomer} className="erp-quick-form">
@@ -1158,10 +1155,9 @@ export async function TenantERPView({
                       <button className="btn secondary" type="submit"><Trash2 size={14} /> Desativar cliente</button>
                     </form>}
                   </details>}
-                </td>
-              </tr>
-            )) : <tr><td colSpan={5} className="muted">Nenhum cliente cadastrado.</td></tr>}</tbody>
-          </table></div>
+                </div>
+              </article>
+            )) : <p className="muted">Nenhum cliente cadastrado.</p>}</div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/clientes`} searchParams={qs} param="clientesPage" page={clientesPage} total={customersTotal} pageSize={pageSize} hash="clientes" label="clientes" />
         </section>
 
