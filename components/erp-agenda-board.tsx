@@ -284,6 +284,46 @@ export function ErpAgendaBoard({
   // Use refreshed server data after status changes and command item mutations.
   const detail = selectedDetail ? appointments.find(item => item.id === selectedDetail.id) ?? null : null;
   const [detailOptionsOpen, setDetailOptionsOpen] = useState(false);
+  const optionsButtonRef = useRef<HTMLButtonElement>(null);
+  const optionsMenuRef = useRef<HTMLDivElement>(null);
+
+  // O modal tem rolagem própria. O popover nativo ocupa a camada superior,
+  // escapando do recorte de overflow do diálogo (inclusive no celular).
+  function positionOptionsMenu() {
+    const button = optionsButtonRef.current;
+    const menu = optionsMenuRef.current;
+    if (!button || !menu || !menu.matches(":popover-open")) return;
+    const rect = button.getBoundingClientRect();
+    const gap = 8;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const width = Math.min(360, Math.max(0, viewportWidth - 24));
+    const above = Math.max(0, rect.top - 12);
+    const below = Math.max(0, viewportHeight - rect.bottom - 12);
+    const preferAbove = above >= Math.min(menu.scrollHeight, 320) || above >= below;
+    const available = preferAbove ? above : below;
+    const height = Math.min(menu.scrollHeight, Math.max(100, available - gap));
+    const left = Math.min(Math.max(12, rect.left), Math.max(12, viewportWidth - width - 12));
+    const top = preferAbove
+      ? Math.max(12, rect.top - height - gap)
+      : Math.max(12, Math.min(rect.bottom + gap, viewportHeight - height - 12));
+    menu.style.setProperty("--agenda-options-left", left + "px");
+    menu.style.setProperty("--agenda-options-top", top + "px");
+    menu.style.setProperty("--agenda-options-height", height + "px");
+  }
+
+  useEffect(() => {
+    if (!detailOptionsOpen) return;
+    const reposition = () => positionOptionsMenu();
+    window.addEventListener("resize", reposition);
+    // Captura a rolagem do próprio dialog, não somente da janela.
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [detailOptionsOpen]);
+
 
   const context: AgendaContext = {
     tenantCode,
@@ -1492,12 +1532,19 @@ export function ErpAgendaBoard({
             </section>}
             <div className="agenda-command-bottom-actions">
               <div className="agenda-bottom-options">
-                <button type="button" className="btn secondary" aria-expanded={detailOptionsOpen}
-                  aria-controls="agenda-detail-settings" aria-haspopup="true"
-                  onClick={() => setDetailOptionsOpen(value => !value)}>
+                <button ref={optionsButtonRef} type="button" className="btn secondary" aria-expanded={detailOptionsOpen}
+                  aria-controls="agenda-detail-settings" aria-haspopup="menu"
+                  onClick={() => {
+                    const menu = optionsMenuRef.current;
+                    if (!menu) return;
+                    if (menu.matches(":popover-open")) menu.hidePopover();
+                    else { menu.showPopover(); positionOptionsMenu(); }
+                  }}>
                   <Settings2 size={16} /> Opções <ChevronDown size={14} />
                 </button>
-                {detailOptionsOpen && <div id="agenda-detail-settings" className="agenda-detail-settings agenda-action-menu">
+                <div ref={optionsMenuRef} id="agenda-detail-settings" popover="auto"
+                  onToggle={event => setDetailOptionsOpen(event.currentTarget.matches(":popover-open"))}
+                  className="agenda-detail-settings agenda-action-menu">
               <strong>Ações do agendamento</strong>
               {canOperate && ["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status) && !detail.command && <form
                 action={updateAppointmentStatus} onSubmit={event => {
@@ -1526,7 +1573,7 @@ export function ErpAgendaBoard({
               </form>}
               {!detail.customerPhone && <p className="agenda-form-hint">WhatsApp indisponível: cliente sem telefone cadastrado.</p>}
               {(!canOperate || !["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(detail.status)) && <p className="agenda-form-hint">Nenhuma alteração de status disponível para este atendimento.</p>}
-            </div>}
+            </div>
               </div>
               {detail.command?.status === "CLOSED" ? <span className="agenda-form-hint">Comanda fechada</span>
                 : ["CANCELED", "NO_SHOW"].includes(detail.status) ? <span className="agenda-form-hint">Atendimento encerrado sem cobrança.</span>
