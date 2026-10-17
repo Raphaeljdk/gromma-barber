@@ -573,6 +573,10 @@ export async function createCustomer(formData: FormData) {
   const phone = text(formData, "phone", 40);
   const birthDate = dateAtNoon(text(formData, "birthDate", 10));
   const unitId = text(formData, "unitId", 80);
+  const notes = text(formData, "notes", 4000);
+  const discoverySource = text(formData, "discoverySource", 32);
+  const sources: Record<string, string> = { INDICACAO: "Indicação", INSTAGRAM: "Instagram", FACEBOOK: "Facebook", FACHADA: "Fachada", OUTRO: "Outro" };
+  const customerNotes = [discoverySource && sources[discoverySource] ? `Origem: ${sources[discoverySource]}` : "", notes].filter(Boolean).join("\\n");
   const unit = await unitForShop(shop.id, unitId);
 
   if (name.length < 2) redirect(`${path}?erro=cliente#clientes`);
@@ -587,6 +591,7 @@ export async function createCustomer(formData: FormData) {
         phone: phone || null,
         whatsapp: phone || null,
         birthDate,
+        notes: customerNotes || null,
         active: true,
       },
     });

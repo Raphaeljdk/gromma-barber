@@ -196,6 +196,7 @@ export async function TenantERPView({
   };
 
   const clientesQ = valueOf("clientesQ").trim();
+  const clientesPlano = ["com", "sem"].includes(valueOf("clientesPlano")) ? valueOf("clientesPlano") : "";
   const servicosQ = valueOf("servicosQ").trim();
   const estoqueQ = valueOf("estoqueQ").trim();
   const equipeQ = valueOf("equipeQ").trim();
@@ -299,9 +300,11 @@ export async function TenantERPView({
     agendaRangeEnd.setTime(new Date(`${addAgendaDays(days[41], 1)}T00:00:00-03:00`).getTime());
   }
 
+  const activePlanCustomerIds = [...new Set(workspace.clubMembers.filter((member) => member.status === "ACTIVE").map((member) => member.customerId))];
   const customerWhere: Prisma.CustomerWhereInput = {
     barberShopId: shop.id,
     active: true,
+    ...(clientesPlano === "com" ? { id: { in: activePlanCustomerIds } } : clientesPlano === "sem" ? { id: { notIn: activePlanCustomerIds } } : {}),
     ...(clientesQ
       ? {
           OR: [
@@ -1016,7 +1019,7 @@ export async function TenantERPView({
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {canOperate && (
           <details className="erp-quick-create">
-            <summary><Plus size={15} /> Novo cliente <small>Cadastro rápido</small></summary>
+            <summary><Plus size={18} /> Cadastrar novo cliente <small>Dados pessoais e prontuário</small></summary>
             <form action={createCustomer} className="erp-quick-form">
               <input type="hidden" name="tenantCode" value={tenantCode} />
               <label><span className="label">Nome</span><input className="input" name="name" required maxLength={120} placeholder="Nome completo" /></label>
@@ -1028,10 +1031,17 @@ export async function TenantERPView({
                 <label><span className="label">Nascimento</span><input className="input" name="birthDate" type="date" /></label>
                 <label><span className="label">Unidade</span><select className="select" name="unitId"><option value="">Sem unidade específica</option>{shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
               </div>
+              <label><span className="label">Como conheceu a barbearia?</span><select className="select" name="discoverySource"><option value="">Não informado</option><option value="INDICACAO">Indicação</option><option value="INSTAGRAM">Instagram</option><option value="FACEBOOK">Facebook</option><option value="FACHADA">Fachada</option><option value="OUTRO">Outro</option></select></label>
+              <label><span className="label">Prontuário e observações</span><textarea className="input" name="notes" rows={4} maxLength={4000} placeholder="Preferências e observações sobre o cliente" /></label>
               <button className="btn" type="submit">Salvar cliente</button>
             </form>
           </details>
           )}
+          <div className="erp-kpi-row">
+            <Link href={`/erp/${encodeURIComponent(tenantCode)}/clientes#clientes`}><article><span>Todos os clientes</span><strong>{customersAllTotal}</strong><small>Ver todos</small></article></Link>
+            <Link href={`/erp/${encodeURIComponent(tenantCode)}/clientes?clientesPlano=com#clientes`}><article><span>Clientes com plano</span><strong>{activePlanCustomerIds.length}</strong><small>Filtrar assinantes ativos</small></article></Link>
+            <Link href={`/erp/${encodeURIComponent(tenantCode)}/clientes?clientesPlano=sem#clientes`}><article><span>Clientes sem plano</span><strong>{Math.max(0, customersAllTotal - activePlanCustomerIds.length)}</strong><small>Filtrar sem assinatura</small></article></Link>
+          </div>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/clientes`}
             searchParams={qs}
@@ -1039,6 +1049,7 @@ export async function TenantERPView({
             hash="clientes"
             search={{ param: "clientesQ", value: clientesQ, placeholder: "Buscar por nome, e-mail ou telefone" }}
             autoSubmit
+            selects={[{ param: "clientesPlano", value: clientesPlano, label: "Plano", options: [{ value: "com", label: "Com plano" }, { value: "sem", label: "Sem plano" }] }]}
           />
           <div className="table-wrap"><table>
             <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
