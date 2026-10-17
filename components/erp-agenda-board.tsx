@@ -816,9 +816,9 @@ export function ErpAgendaBoard({
         <div className="agenda-main-calendar">
           {view === "day" ? (
             <>
-            <p className="agenda-mobile-swipe-hint" role="note">
+            {columns.length > 1 && <p className="agenda-mobile-swipe-hint" role="note">
               <ArrowLeftRight size={15} aria-hidden="true" /> Deslize para os lados para ver outros profissionais.
-            </p>
+            </p>}
             <div
               className="agenda-calendar-shell"
               ref={calendarRef}
