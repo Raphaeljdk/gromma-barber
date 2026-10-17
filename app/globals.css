@@ -8606,3 +8606,85 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
     font-size: 16px;
   }
 }
+
+
+/* Mobile ERP navigation — compact, predictable two-row toolbar.
+   The menu/cash shortcuts sit in a reserved row instead of floating over
+   support, theme and the command search. */
+@media (max-width: 850px) {
+  .tenant-erp .erp-main {
+    padding-top: 0;
+    min-width: 0;
+  }
+  .tenant-erp .erp-topbar {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 16px;
+    padding: 70px 0 12px;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .tenant-erp .erp-topbar .erp-breadcrumbs { display: none; }
+  .tenant-erp .erp-topbar .erp-top-actions {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    order: 1;
+  }
+  .tenant-erp .erp-topbar .erp-top-actions > :first-child {
+    justify-self: start;
+  }
+  .tenant-erp .erp-topbar .erp-top-actions > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .tenant-erp .erp-topbar .erp-top-center {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    order: 2;
+  }
+  .tenant-erp .erp-topbar .erp-command-trigger {
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 12px;
+  }
+  .tenant-erp .erp-mobile-trigger,
+  .tenant-erp .erp-floating-cash {
+    position: absolute;
+    top: 12px;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    margin: 0;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.11);
+    transform: none;
+    font-size: .83rem;
+    white-space: nowrap;
+  }
+  .tenant-erp .erp-mobile-trigger {
+    right: 12px;
+    z-index: 56;
+  }
+  .tenant-erp .erp-floating-cash {
+    right: 118px;
+    z-index: 54;
+  }
+}
+@media (max-width: 390px) {
+  .tenant-erp .erp-mobile-trigger { right: 10px; padding-inline: 10px; min-width: 80px; }
+  .tenant-erp .erp-floating-cash { right: 106px; padding-inline: 10px; }
+  .tenant-erp .erp-topbar .erp-top-actions { gap: 6px; }
+}
