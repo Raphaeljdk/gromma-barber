@@ -723,3 +723,54 @@ test('menu Opções usa top layer e não é cortado pelo scroll do modal', () =>
     assert.ok(code.includes(label), 'Opção preservada: ' + label);
   }
 });
+
+
+test('menu Opções mostra Cancelar e Cliente faltou mesmo após abertura de comanda sem pagamento', () => {
+  const command = { id: 'cmd1', status: 'OPEN', total: 50, items: [] };
+  const html = markup({ initialAppointmentId: 'a1', appointments: [{ ...sample, status: 'CONFIRMED', command }] });
+  assert.match(html, /Cancelar e retirar da agenda/);
+  assert.match(html, /Cliente faltou/);
+  assert.match(html, /Enviar confirmação pelo WhatsApp|WhatsApp indisponível/);
+  assert.match(html, /Cliente no local/);
+  assert.match(html, /Fechar comanda/);
+  const canceled = markup({ initialAppointmentId: 'a1', appointments: [{ ...sample, status: 'CONFIRMED', command: { ...command, status: 'CLOSED' } }] });
+  assert.doesNotMatch(canceled, /Cancelar e retirar da agenda/);
+  assert.doesNotMatch(canceled, /Cliente faltou/);
+});
+
+test('cancelamento e ausência encerram comanda não paga e preservam a auditoria', async () => {
+  for (const [action, toStatus] of [['cancel', 'CANCELED'], ['no_show', 'NO_SHOW']]) {
+    const updates = [];
+    const appt = { id:'a1', barberShopId:'shop1', unitId:'u1', customerId:'c1',
+      startsAt:new Date(at('10:00')), status:'SCHEDULED', command:{id:'cmd1', status:'OPEN'} };
+    const env = environment({ prisma: {
+      appointment: { findFirst: async () => appt,
+        updateMany: async q => { updates.push({ model:'appointment', query:q }); return { count:1 }; } },
+      serviceCommand: { updateMany: async q => { updates.push({ model:'command', query:q }); return { count:1 }; } },
+    } });
+    const destination = await redirectOf(env.actions.updateAppointmentStatus,
+      form({ ...context, appointmentId:'a1', action }));
+    assert.equal(destination.searchParams.get('ok'), 'agenda-status');
+    assert.equal(updates.find(e => e.model === 'appointment').query.data.status, toStatus);
+    assert.deepEqual(updates.find(e => e.model === 'command').query.where,
+      { id:'cmd1', barberShopId:'shop1', status:'OPEN' });
+    assert.equal(updates.find(e => e.model === 'command').query.data.status, 'CANCELED');
+    const audit = env.saved.find(x => x.audit)?.audit;
+    assert.equal(audit.details.canceledOpenCommandId,'cmd1');
+    assert.equal(audit.details.newStatus,toStatus);
+    assert.equal(updates.some(e => e.model === 'payment'), false);
+  }
+});
+
+test('comanda paga ou encerrada bloqueia cancelamento sem afetar dinheiro e estoque', async () => {
+  for (const status of ['CLOSED','CANCELED']) {
+    let updated = false;
+    const env = environment({ prisma: {
+      appointment: { findFirst: async () => ({id:'a1',barberShopId:'shop1',status:'SCHEDULED',command:{id:'cmd1',status}}),
+        updateMany: async () => { updated = true; return {count:1}; } },
+    } });
+    const url = await redirectOf(env.actions.updateAppointmentStatus, form({...context,appointmentId:'a1',action:'cancel'}));
+    assert.equal(url.searchParams.get('erro'),'agenda-status');
+    assert.equal(updated,false);
+  }
+});
