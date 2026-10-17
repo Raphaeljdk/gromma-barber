@@ -516,6 +516,30 @@ export async function TenantERPView({
   ]) : [[], 0, []];
 
   const checkoutProducts = needsCommandList ? await prisma.product.findMany({ where: { barberShopId: shop.id, active: true }, select: { id: true, name: true, salePrice: true }, orderBy: { name: "asc" } }) : [];
+  // Históricos reais dos clientes da página atual, sem consultar outras empresas.
+  const profileCustomerIds = customers.map(customer => customer.id);
+  const [profileVisits, profileCommands] = profileCustomerIds.length ? await Promise.all([
+    prisma.appointment.findMany({
+      where: { barberShopId: shop.id, customerId: { in: profileCustomerIds } },
+      orderBy: { startsAt: "desc" },
+      take: 150,
+      select: {
+        id: true, customerId: true, startsAt: true, status: true,
+        barber: { select: { name: true } },
+        service: { select: { name: true } },
+      },
+    }),
+    prisma.serviceCommand.findMany({
+      where: { barberShopId: shop.id, customerId: { in: profileCustomerIds } },
+      orderBy: { openedAt: "desc" },
+      take: 150,
+      select: {
+        id: true, customerId: true, appointmentId: true, openedAt: true, status: true,
+        items: { select: { kind: true, description: true } },
+      },
+    }),
+  ]) : [[], []];
+  const profileCommandsByAppointment = new Map(profileCommands.filter(cmd => cmd.appointmentId).map(cmd => [cmd.appointmentId, cmd]));
   const commandHistories = await Promise.all([...new Set(commands.flatMap(c => c.customerId ? [c.customerId] : []))].map(async customerId => {
     const [history, visits] = await Promise.all([
       prisma.serviceCommand.findMany({ where: { barberShopId: shop.id, customerId, status: "CLOSED" }, include: { items: true }, orderBy: { closedAt: "desc" }, take: 11 }),
@@ -1077,6 +1101,56 @@ export async function TenantERPView({
                       </label>
                       <button className="btn" type="submit">Salvar alterações</button>
                     </form>
+                    <div className="erp-profile-sections">
+                      <section className="erp-profile-panel">
+                        <h3>Plano e assinatura</h3>
+                        {workspace.clubMembers.filter(member => member.customerId === customer.id).slice(0, 1).map(member => {
+                          const plan = workspace.clubPlans.find(entry => entry.id === member.planId);
+                          return <div key={member.id} className="erp-profile-facts">
+                            <div><small>Plano</small><strong>{plan?.name ?? "Plano não encontrado"}</strong></div>
+                            <div><small>Situação</small><strong>{member.status === "ACTIVE" ? "Ativo" : "Inativo"}</strong></div>
+                            <div><small>Início</small><strong>{new Date(member.startedAt).toLocaleDateString("pt-BR")}</strong></div>
+                            <div><small>Próxima cobrança</small><strong>{new Date(member.nextBillingAt).toLocaleDateString("pt-BR")}</strong></div>
+                            <div><small>Valor mensal</small><strong>{plan ? brl(plan.monthlyAmount) : "—"}</strong></div>
+                          </div>;
+                        })}
+                        {!workspace.clubMembers.some(member => member.customerId === customer.id) && <p className="muted">Cliente sem assinatura cadastrada.</p>}
+                        <p className="muted">O método de pagamento e o dia fixo de cobrança precisam ser configurados no módulo de assinaturas.</p>
+                      </section>
+                      <section className="erp-profile-panel">
+                        <h3>Histórico de visitas</h3>
+                        <div className="erp-profile-timeline">
+                          {profileVisits.filter(visit => visit.customerId === customer.id).slice(0, 12).map(visit => {
+                            const command = profileCommandsByAppointment.get(visit.id);
+                            const products = command?.items.filter(item => item.kind === "PRODUCT").map(item => item.description) ?? [];
+                            return <article key={visit.id}>
+                              <div><strong>{visit.startsAt.toLocaleDateString("pt-BR")}</strong><span className="badge">{STATUS_LABELS[visit.status] ?? visit.status}</span></div>
+                              <p><b>Profissional:</b> {visit.barber?.name ?? "Não informado"}</p>
+                              <p><b>Serviço:</b> {visit.service?.name ?? command?.items.filter(item => item.kind !== "PRODUCT").map(item => item.description).join(", ") ?? "Não informado"}</p>
+                              <p><b>Produtos:</b> {products.length ? products.join(", ") : "Nenhum registrado"}</p>
+                            </article>;
+                          })}
+                          {!profileVisits.some(visit => visit.customerId === customer.id) && <p className="muted">Nenhum agendamento registrado.</p>}
+                        </div>
+                      </section>
+                      <section className="erp-profile-panel">
+                        <h3>Histórico de planos</h3>
+                        {workspace.clubMembers.filter(member => member.customerId === customer.id).map(member => {
+                          const plan = workspace.clubPlans.find(entry => entry.id === member.planId);
+                          return <article className="erp-profile-plan" key={member.id}>
+                            <strong>{plan?.name ?? "Plano não encontrado"}</strong>
+                            <span>{member.status === "ACTIVE" ? "Ativo" : "Inativo"}</span>
+                            <span>{plan ? brl(plan.monthlyAmount) : "—"}</span>
+                            <small>Contratado em {new Date(member.startedAt).toLocaleDateString("pt-BR")}</small>
+                          </article>;
+                        })}
+                        {!workspace.clubMembers.some(member => member.customerId === customer.id) && <p className="muted">Sem histórico de planos.</p>}
+                      </section>
+                      <section className="erp-profile-panel">
+                        <h3>Cartões de pagamento</h3>
+                        <p className="muted">Nenhum cartão armazenado neste prontuário. O cadastro e a exclusão de cartões dependem de um gateway com tokenização segura; números completos e CVV não devem ser salvos no ERP.</p>
+                      </section>
+                    </div>
                     <CustomerPhotos tenantCode={tenantCode} customerId={customer.id} />
                     {canManage && <form action={deactivateCustomer}>
                       <input type="hidden" name="tenantCode" value={tenantCode} />
