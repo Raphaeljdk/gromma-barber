@@ -8340,3 +8340,12 @@ html[data-theme="light"] .erp-nav-subitem.active { color:#6b4b11; }
   .tenant-erp .erp-customer-records .erp-quick-form,
   .tenant-erp .erp-customer-records .erp-profile-sections { grid-template-columns: minmax(0,1fr); }
 }
+
+/* Checkout discounts: show before/after values clearly on mobile. */
+.checkout-lines .checkout-old-price { display:block; color:#9b8e7d; font-size:.79rem; font-weight:500; text-decoration:line-through; }
+.checkout-lines .checkout-new-price { display:block; color:var(--erp-gold,#b99756); font-size:1rem; font-weight:800; }
+.checkout-applied-discounts { display:grid; gap:8px; margin:12px 0; padding:12px; border:1px solid #b9975680; border-radius:12px; }
+.checkout-applied-discounts > div { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:.85rem; }
+.checkout-applied-discounts > div > span { min-width:0; overflow-wrap:anywhere; }
+.checkout-applied-discounts button { min-height:38px; min-width:40px; }
+@media(max-width:640px) { .checkout-discount-panel .btn { width:100%; min-height:44px; } }
