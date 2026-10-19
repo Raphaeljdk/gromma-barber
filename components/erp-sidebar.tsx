@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  Clock3,
   FolderOpen,
   type LucideIcon,
   FileText,
@@ -52,16 +51,20 @@ type Props = {
   logoutAction?: () => Promise<void>;
 };
 
-const NAV_GROUPS: readonly ErpNavigationSector[] = [
-  ...ERP_NAVIGATION.slice(0, -1),
-  {
-    id: "outros",
-    label: "Outros módulos atuais",
-    description: "Funcionalidades já existentes",
-    items: ERP_NAVIGATION_EXTRA,
-  },
-  ERP_NAVIGATION[ERP_NAVIGATION.length - 1],
-];
+const NAV_GROUPS: readonly ErpNavigationSector[] = ERP_NAVIGATION.map((sector) => {
+  const extraRoutes: Record<string, readonly string[]> = {
+    operacional: ["totem"],
+    gestao: ["gerencial", "alertas"],
+    marketing: ["mensagens"],
+    empresa: ["documentos", "treinamentos", "configuracoes"],
+  };
+  const extras = ERP_NAVIGATION_EXTRA.filter((item) =>
+    extraRoutes[sector.id]?.includes(item.route ?? "")
+  );
+  return extras.length
+    ? { ...sector, items: [...sector.items, { id: `${sector.id}-extras`, label: "Outras ferramentas", children: extras }] }
+    : sector;
+});
 
 const SECTOR_ICONS: Record<string, LucideIcon> = {
   operacional: LayoutDashboard,
@@ -70,7 +73,6 @@ const SECTOR_ICONS: Record<string, LucideIcon> = {
   relatorios: FileText,
   marketing: Tags,
   empresa: Building2,
-  outros: Settings2,
   financeiro: WalletCards,
 };
 
