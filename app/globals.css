@@ -8837,3 +8837,133 @@ html[data-theme="light"] .tenant-erp .erp-nav-sector-items { border-left-color: 
   .tenant-erp .erp-nav-sector-heading { min-height: 52px; }
   .tenant-erp .erp-nav-sector-items .erp-nav-item { min-height: 44px; }
 }
+
+
+/* Navegação oficial GROMMA: setores > módulos > subtelas (Out/2026). */
+.tenant-erp .erp-nav-plan-note {
+  margin: 1px 10px 8px;
+  color: var(--erp-muted, #9b968f);
+  font-size: .66rem;
+  line-height: 1.4;
+}
+.tenant-erp .erp-nav-tree-item, .tenant-erp .erp-nav-tree-row { min-width:0; }
+.tenant-erp .erp-nav-tree-row {
+  display:flex;
+  align-items:center;
+  gap:3px;
+  position:relative;
+}
+.tenant-erp .erp-nav-tree-row > .erp-nav-item {
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr) auto;
+  flex:1 1 0%;
+  min-width:0;
+  max-width:100%;
+  width:auto;
+  min-height:39px;
+  box-sizing:border-box;
+  font-weight:650;
+  text-decoration:none;
+}
+.tenant-erp .erp-nav-tree-row .erp-sidebar-label {
+  min-width:0;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.35;
+}
+.tenant-erp .erp-nav-tree-toggle {
+  width:32px;
+  min-width:32px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  color:var(--erp-muted);
+  border:1px solid transparent;
+  border-radius:9px;
+  background:transparent;
+}
+.tenant-erp .erp-nav-tree-toggle:hover,
+.tenant-erp .erp-nav-tree-toggle:focus-visible {
+  border-color:var(--erp-border-strong);
+  color:var(--erp-gold);
+  background:var(--erp-panel-2);
+}
+.tenant-erp .erp-nav-tree-toggle[aria-expanded="true"] svg,
+.tenant-erp .erp-nav-parent-button[aria-expanded="true"] + .erp-nav-tree-inline-chevron {
+  transform:rotate(180deg);
+}
+.tenant-erp .erp-nav-tree-inline-chevron {
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  pointer-events:none;
+  color:var(--erp-muted);
+  transition:transform .15s ease;
+}
+.tenant-erp .erp-nav-parent-button { padding-right:30px !important; cursor:pointer; }
+.tenant-erp .erp-nav-parent-button.has-active-child { color:var(--erp-gold); }
+.tenant-erp .erp-nav-tree-children {
+  display:grid;
+  gap:2px;
+  margin:2px 0 8px 16px;
+  padding-left:9px;
+  border-left:1px solid var(--erp-border);
+  min-width:0;
+}
+.tenant-erp .erp-nav-tree-children .erp-nav-tree-children {
+  margin-left:10px;
+  padding-left:8px;
+}
+.tenant-erp .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item {
+  grid-template-columns:12px minmax(0,1fr) auto;
+  min-height:36px;
+  padding:6px 6px;
+  font-size:.75rem;
+  font-weight:600;
+}
+.tenant-erp .erp-nav-depth-mark {
+  width:4px;
+  height:4px;
+  margin-inline:auto;
+  border-radius:50%;
+  background:currentColor;
+  opacity:.55;
+}
+.tenant-erp .erp-nav-planned {
+  opacity:.7;
+  cursor:default;
+  border-color:transparent;
+  background:transparent;
+}
+.tenant-erp .erp-nav-planned:hover { transform:none; border-color:transparent; background:transparent; }
+.tenant-erp .erp-nav-planned-tag {
+  font-size:.59rem;
+  line-height:1;
+  white-space:nowrap;
+  font-weight:600;
+  color:var(--erp-muted);
+  border:1px solid var(--erp-border);
+  border-radius:6px;
+  padding:4px 5px;
+}
+.tenant-erp .erp-nav-tree-item.is-nested .erp-nav-planned-tag { display:none; }
+.tenant-erp .erp-sidebar.is-collapsed .erp-nav-sector-heading {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr);
+  justify-items:center;
+  min-height:44px;
+  padding:8px;
+  gap:0;
+}
+.tenant-erp .erp-sidebar.is-collapsed .erp-nav-sector-copy,
+.tenant-erp .erp-sidebar.is-collapsed .erp-nav-sector-chevron,
+.tenant-erp .erp-sidebar.is-collapsed .erp-nav-plan-note,
+.tenant-erp .erp-sidebar.is-collapsed .erp-nav-sector-items { display:none !important; }
+@media(max-width:850px) {
+  .tenant-erp .erp-nav-tree-row > .erp-nav-item { min-height:44px; }
+  .tenant-erp .erp-nav-tree-toggle { width:40px; min-width:40px; height:44px; }
+  .tenant-erp .erp-nav-tree-children { margin-left:10px; padding-left:8px; }
+  .tenant-erp .erp-nav-tree-children .erp-nav-tree-children { margin-left:8px; padding-left:6px; }
+}
