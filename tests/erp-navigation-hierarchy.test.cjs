@@ -24,8 +24,6 @@ const EXPECTED = {
   },
   gestao: {
     auditoria: ["Estoque", "Agendamentos", "Batimento de caixa", "Produtividade"],
-  },
-  relatorios: {
     "relatorios-assinaturas": [
       "Troca de assinatura", "Cancelados por período", "Históricos de transações",
       "Quantidade de assinantes", "Vendas novas por período", "Vendas por origem", "Resgate de pontos",
@@ -59,7 +57,7 @@ function flatten(nodes) {
 
 test("sectors match the reference image in order", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "relatorios", "marketing", "empresa", "financeiro",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro",
   ]);
 });
 
