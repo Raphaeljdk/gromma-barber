@@ -104,7 +104,17 @@ export type WaitlistConfig = {
   createdAt: string;
 };
 
-export type AgendaBlock = { id: string; barberId: string; unitId: string; startsAt: string; endsAt: string; reason: string };
+export type AgendaBlock = {
+  id: string;
+  /** "*" means a shop-wide block for this branch, instead of a single professional. */
+  barberId: string;
+  unitId: string;
+  startsAt: string;
+  endsAt: string;
+  reason: string;
+  /** OPEN displays an informative opening period; CLOSED prevents appointments. */
+  status?: "OPEN" | "CLOSED";
+};
 
 export type OperationalSettings = {
   openHour: number;
