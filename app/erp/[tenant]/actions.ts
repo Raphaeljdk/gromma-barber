@@ -452,7 +452,7 @@ export async function createAppointment(formData: FormData) {
 
     const available: Array<{ id: string; load: number }> = [];
     for (const candidate of candidates) {
-      if (hasAgendaBlock(workspace.agendaBlocks, candidate.id, startsAt, endsAt)) continue;
+      if (hasAgendaBlock(workspace.agendaBlocks, candidate.id, startsAt, endsAt, unitId)) continue;
       const conflict = await prisma.appointment.findFirst({
         where: {
           barberShopId: shop.id,
@@ -505,8 +505,8 @@ export async function createAppointment(formData: FormData) {
       if (!fresh) throw new Error("Shop not found");
       const latest = readWorkspace(fresh.enabledFeatures);
       if (!withinAgendaHours(startsAt, endsAt, latest.settings.openHour, latest.settings.closeHour)) throw new Error("Outside business hours");
+      if (hasAgendaBlock(latest.agendaBlocks, barber?.id ?? "", startsAt, endsAt, unitId)) throw new Error("Blocked time");
       if (barber) {
-        if (hasAgendaBlock(latest.agendaBlocks, barber.id, startsAt, endsAt)) throw new Error("Blocked time");
         const occupied = await tx.appointment.findFirst({ where: { barberShopId: shop.id, barberId: barber.id, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] }, startsAt: { lt: endsAt }, OR: [{ endsAt: { gt: startsAt } }, { endsAt: null }] } });
         if (occupied) throw new Error("Schedule conflict");
       } else if (latest.settings.rotationEnabled) throw new Error("No professional available");

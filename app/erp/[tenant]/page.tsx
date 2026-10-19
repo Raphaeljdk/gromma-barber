@@ -32,6 +32,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
+import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
@@ -131,6 +132,9 @@ const AUDIENCE_LABELS: Record<string, string> = {
 const MODULE_TITLES: Record<string, string> = {
   dashboard: "Dashboard",
   agenda: "Agenda",
+  "agenda-feriados": "Cadastro de Feriados",
+  "clientes-bloqueados": "Clientes bloqueados",
+  "clientes-ranking": "Ranking de clientes",
   clientes: "Clientes",
   servicos: "Serviços",
   comandas: "Comandas",
@@ -898,6 +902,18 @@ export async function TenantERPView({
             {isPro && <span className="badge">Experiência Pro</span>}
           </div>
         </header>
+
+        {(["agenda-feriados", "clientes-bloqueados", "clientes-ranking"] as const).includes(activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking") && (
+          <ErpOperationalSubpage
+            section={activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking"}
+            tenantCode={tenantCode}
+            shopId={shop.id}
+            units={shop.units.map(unit => ({ id: unit.id, name: unit.name, active: unit.active }))}
+            blocks={workspace.agendaBlocks}
+            canManage={canManage}
+            query={qs}
+          />
+        )}
 
         <div className="erp-command-center" hidden={Boolean(moduleId && moduleId !== "dashboard")}>
           <article className="erp-command-card">

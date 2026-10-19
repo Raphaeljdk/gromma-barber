@@ -37,7 +37,7 @@ export async function rescheduleAppointment(f: FormData) {
         const end = new Date(start.getTime() + duration);
         const fresh = await tx.barberShop.findUniqueOrThrow({ where: { id: shop.id } });
         const ws = readWorkspace(fresh.enabledFeatures);
-        if (!withinAgendaHours(start, end, ws.settings.openHour, ws.settings.closeHour) || hasAgendaBlock(ws.agendaBlocks, barberId, start, end)) throw new Error("blocked");
+        if (!withinAgendaHours(start, end, ws.settings.openHour, ws.settings.closeHour) || hasAgendaBlock(ws.agendaBlocks, barberId, start, end, item.unitId)) throw new Error("blocked");
         const conflict = await tx.appointment.findFirst({ where: { id: { not: item.id }, barberShopId: shop.id, barberId, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] }, startsAt: { lt: end }, OR: [{ endsAt: { gt: start } }, { endsAt: null }] } });
         if (conflict) throw new Error("conflict");
         await tx.appointment.update({ where: { id: item.id }, data: { startsAt: start, endsAt: end, barberId } });
@@ -62,7 +62,7 @@ export async function saveAgendaBlock(f: FormData) {
         const conflict = await tx.appointment.findFirst({ where: { barberShopId: shop.id, barberId, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] }, startsAt: { lt: end }, OR: [{ endsAt: { gt: start } }, { endsAt: null }] } });
         const fresh = await tx.barberShop.findUniqueOrThrow({ where: { id: shop.id } });
         const ws = readWorkspace(fresh.enabledFeatures);
-        if (conflict || hasAgendaBlock(ws.agendaBlocks, barberId, start, end)) throw new Error("conflict");
+        if (conflict || hasAgendaBlock(ws.agendaBlocks, barberId, start, end, unitId)) throw new Error("conflict");
         ws.agendaBlocks.push({ id: workspaceId("block"), barberId, unitId, startsAt: start.toISOString(), endsAt: end.toISOString(), reason });
         await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, ws) } });
       }, { isolationLevel: "Serializable" });

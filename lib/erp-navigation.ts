@@ -27,11 +27,11 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     items: [
       { id: "dashboard", label: "Dashboard", route: "dashboard" },
       { id: "agenda", label: "Agenda", route: "agenda", children: [
-        { id: "agenda-feriados", label: "Cadastro de Feriados" },
+        { id: "agenda-feriados", label: "Cadastro de Feriados", route: "agenda-feriados" },
       ] },
       { id: "clientes", label: "Clientes", route: "clientes", children: [
-        { id: "clientes-bloqueados", label: "Clientes Bloqueados" },
-        { id: "clientes-ranking", label: "Ranking" },
+        { id: "clientes-bloqueados", label: "Clientes Bloqueados", route: "clientes-bloqueados" },
+        { id: "clientes-ranking", label: "Ranking", route: "clientes-ranking" },
       ] },
       { id: "caixa", label: "Caixa", route: "caixa", children: [
         { id: "comandas", label: "Comandas", route: "comandas" },

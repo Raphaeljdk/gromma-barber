@@ -8967,3 +8967,53 @@ html[data-theme="light"] .tenant-erp .erp-nav-sector-items { border-left-color: 
   .tenant-erp .erp-nav-tree-children { margin-left:10px; padding-left:8px; }
   .tenant-erp .erp-nav-tree-children .erp-nav-tree-children { margin-left:8px; padding-left:6px; }
 }
+
+
+/* Operational subpages: branch-wide closures, blocked customers and spending ranking. */
+.tenant-erp .erp-ops-subpage{min-width:0}
+.tenant-erp .erp-ops-subpage .section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.tenant-erp .erp-ops-subpage .section-head p{max-width:740px;margin:8px 0 0;line-height:1.5}
+.tenant-erp .erp-ops-grid{display:grid;grid-template-columns:minmax(280px, .8fr) minmax(0,1.2fr);gap:16px;align-items:start}
+.tenant-erp .erp-ops-form{display:grid;gap:14px;padding:22px;min-width:0}
+.tenant-erp .erp-ops-form h3,.tenant-erp .erp-ops-list h3,.tenant-erp .erp-ops-ranking h3{margin:0;font-size:1.05rem}
+.tenant-erp .erp-ops-form label,.tenant-erp .erp-ops-filter label{display:grid;gap:7px;min-width:0;font-size:.85rem;font-weight:680;color:var(--erp-text)}
+.tenant-erp .erp-ops-subpage :is(input,select){display:block;width:100%;min-height:44px;min-width:0;box-sizing:border-box;border:1px solid var(--erp-border);background:var(--erp-panel);color:var(--erp-text);border-radius:11px;padding:10px 12px;font-size:16px}
+.tenant-erp .erp-ops-subpage :is(input,select):focus-visible{outline:2px solid var(--erp-gold);outline-offset:2px}
+.tenant-erp .erp-ops-fields-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-width:0}
+.tenant-erp .erp-ops-help{font-size:.78rem;line-height:1.55}
+.tenant-erp .erp-ops-form .btn{min-height:44px}
+.tenant-erp .erp-ops-list{min-width:0;display:grid;gap:12px}
+.tenant-erp .erp-ops-list-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.tenant-erp .erp-ops-entry{min-width:0;padding:14px 0;border-top:1px solid var(--erp-border)}
+.tenant-erp .erp-ops-entry-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tenant-erp .erp-ops-entry p{margin:5px 0 4px;font-size:.9rem}
+.tenant-erp .erp-ops-entry-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tenant-erp .erp-ops-entry-actions form{margin:0}
+.tenant-erp .erp-ops-entry-actions button{min-height:40px}
+.tenant-erp .erp-ops-status{font-size:.7rem;padding:5px 9px;border-radius:99px;font-weight:750}
+.tenant-erp .erp-ops-status.closed{color:#c76c53;background:rgba(198,85,50,.10);border:1px solid rgba(198,85,50,.28)}
+.tenant-erp .erp-ops-status.open{color:#4a9d70;background:rgba(65,162,107,.10);border:1px solid rgba(65,162,107,.25)}
+.tenant-erp .erp-ops-filter{display:flex;gap:12px;align-items:end;flex-wrap:wrap;padding:16px;margin:0 0 18px}
+.tenant-erp .erp-ops-filter label{flex:1 1 210px}
+.tenant-erp .erp-ops-filter-rank label:first-child{flex:2 1 230px}
+.tenant-erp .erp-ops-filter .btn{min-height:44px}
+.tenant-erp .erp-ops-customer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:17px;min-width:0}
+.tenant-erp .erp-ops-customer-info{display:grid;gap:5px;min-width:0}
+.tenant-erp .erp-ops-customer-info span{overflow-wrap:anywhere;font-size:.83rem}
+.tenant-erp .erp-ops-customer button{min-height:44px}
+.tenant-erp .erp-ops-pagination{display:flex;gap:14px;align-items:center;justify-content:flex-end;flex-wrap:wrap;padding:14px 2px;color:var(--erp-muted);font-size:.82rem}
+.tenant-erp .erp-ops-pagination a{color:var(--erp-gold);text-decoration:underline}
+.tenant-erp .erp-ops-ranking{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:16px;align-items:start}
+.tenant-erp .erp-ops-ranking-table,.tenant-erp .erp-ops-history{display:grid;gap:10px;min-width:0;padding:16px}
+.tenant-erp .erp-ops-rank-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:62px;padding:12px;border:1px solid var(--erp-border);border-radius:12px;text-decoration:none;color:var(--erp-text);transition:border-color .16s,background .16s}
+.tenant-erp .erp-ops-rank-row:hover,.tenant-erp .erp-ops-rank-row.selected{border-color:var(--erp-gold);background:color-mix(in srgb,var(--erp-gold) 7%,transparent)}
+.tenant-erp .erp-ops-rank-pos{color:var(--erp-gold);font-weight:800}
+.tenant-erp .erp-ops-rank-name{display:grid;gap:4px;min-width:0}
+.tenant-erp .erp-ops-rank-name strong{overflow-wrap:anywhere}
+.tenant-erp .erp-ops-rank-name small{color:var(--erp-muted)}
+.tenant-erp .erp-ops-purchase{border-top:1px solid var(--erp-border);padding:14px 0;display:grid;gap:7px;min-width:0}
+.tenant-erp .erp-ops-purchase ul{display:grid;gap:8px;list-style:none;padding:0;margin:2px 0}
+.tenant-erp .erp-ops-purchase li{display:flex;justify-content:space-between;gap:8px;font-size:.83rem}
+.tenant-erp .erp-ops-purchase li span{overflow-wrap:anywhere}
+@media(max-width:950px){.tenant-erp .erp-ops-grid,.tenant-erp .erp-ops-ranking{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:540px){.tenant-erp .erp-ops-form,.tenant-erp .erp-ops-ranking-table,.tenant-erp .erp-ops-history{padding:14px}.tenant-erp .erp-ops-fields-two{gap:9px}.tenant-erp .erp-ops-filter{display:grid;grid-template-columns:minmax(0,1fr)}.tenant-erp .erp-ops-customer{align-items:stretch;flex-direction:column}.tenant-erp .erp-ops-customer button{width:100%}.tenant-erp .erp-ops-rank-row{grid-template-columns:32px minmax(0,1fr) auto;padding:10px;gap:7px}.tenant-erp .erp-ops-rank-row>strong{font-size:.82rem}}

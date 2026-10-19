@@ -37,7 +37,10 @@ type Props = {
 const MODULES = [
   { id: "dashboard", label: "Dashboard", group: "Operacional", icon: LayoutDashboard },
   { id: "agenda", label: "Agenda", group: "Operacional", icon: CalendarDays },
+  { id: "agenda-feriados", label: "Cadastro de Feriados", group: "Operacional", icon: CalendarDays },
   { id: "clientes", label: "Clientes", group: "Operacional", icon: Users },
+  { id: "clientes-bloqueados", label: "Clientes Bloqueados", group: "Operacional", icon: Users },
+  { id: "clientes-ranking", label: "Ranking", group: "Operacional", icon: Users },
   { id: "caixa", label: "Caixa", group: "Operacional", icon: ClipboardList },
   { id: "comandas", label: "Comandas", group: "Operacional", icon: ReceiptText },
   { id: "estoque", label: "Estoque", group: "Operacional", icon: PackageSearch },

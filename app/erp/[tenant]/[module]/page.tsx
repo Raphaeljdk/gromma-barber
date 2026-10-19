@@ -3,6 +3,9 @@ import { TenantERPView } from "../page";
 
 const MODULES = new Set([
   "agenda",
+  "agenda-feriados",
+  "clientes-bloqueados",
+  "clientes-ranking",
   "clientes",
   "servicos",
   "comandas",
