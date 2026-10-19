@@ -266,7 +266,7 @@ export function ErpSidebar({
 
         <nav className="erp-nav" aria-label="Módulos do ERP">
           {NAV_GROUPS.map((group) => {
-            const expanded = collapsed || (expandedGroups[group.id] ?? (group.id === activeGroup || group.id === "operacional"));
+            const expanded = collapsed || (expandedGroups[group.id] ?? (group.id === activeGroup || (!activeGroup && group.id === "operacional")));
             const SectorIcon = group.icon;
             return <div className={["erp-nav-group", "erp-nav-sector", expanded ? "is-expanded" : "", activeGroup === group.id ? "has-active-module" : ""].join(" ")} key={group.id}>
               <button
