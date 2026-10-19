@@ -60,7 +60,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     ],
   },
   {
-    id: "gestao", label: "Gestão", description: "Auditoria e produtividade",
+    id: "gestao", label: "Gestão", description: "Auditoria, relatórios e comissões",
     items: [
       { id: "auditoria", label: "Auditoria", route: "auditoria", adminOnly: true, children: [
         { id: "auditoria-estoque", label: "Estoque", adminOnly: true },
@@ -68,11 +68,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "auditoria-batimento", label: "Batimento de caixa", adminOnly: true },
         { id: "auditoria-produtividade", label: "Produtividade", adminOnly: true },
       ] },
-    ],
-  },
-  {
-    id: "relatorios", label: "Relatórios", description: "Indicadores e comissões",
-    items: [
       { id: "gerar-comissao", label: "Gerar comissão", route: "comissoes" },
       { id: "relatorios", label: "Relatórios", route: "relatorios", children: [
         { id: "relatorios-assinaturas", label: "Assinaturas", children: [

@@ -70,7 +70,6 @@ const SECTOR_ICONS: Record<string, LucideIcon> = {
   operacional: LayoutDashboard,
   assinaturas: BadgeDollarSign,
   gestao: ScrollText,
-  relatorios: FileText,
   marketing: Tags,
   empresa: Building2,
   financeiro: WalletCards,
