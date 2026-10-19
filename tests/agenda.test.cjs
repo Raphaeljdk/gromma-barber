@@ -794,3 +794,32 @@ test('cancelamento jamais anula comanda paga ou fechada', async () => {
   assert.equal(result.searchParams.get('erro'), 'comanda-pendente');
   assert.equal(commands.length, 0);
 });
+
+
+test('fechamento geral bloqueia somente a filial e horário afetados', () => {
+  const at = (time) => new Date(`2026-10-19T${time}:00-03:00`);
+  const periods = [
+    { id:'closure', barberId:'*', unitId:'unit-a', startsAt:at('09:00').toISOString(), endsAt:at('12:00').toISOString(), reason:'Feriado', status:'CLOSED' },
+    { id:'opening', barberId:'*', unitId:'unit-b', startsAt:at('09:00').toISOString(), endsAt:at('12:00').toISOString(), reason:'Aberto', status:'OPEN' },
+  ];
+  assert.equal(availability.hasAgendaBlock(periods, 'prof-a', at('10:00'), at('10:30'), 'unit-a'), true);
+  assert.equal(availability.hasAgendaBlock(periods, '', at('10:00'), at('10:30'), 'unit-a'), true);
+  assert.equal(availability.hasAgendaBlock(periods, 'prof-b', at('10:00'), at('10:30'), 'unit-b'), false);
+  assert.equal(availability.hasAgendaBlock(periods, 'prof-a', at('12:00'), at('12:30'), 'unit-a'), false);
+  assert.equal(availability.hasAgendaBlock(periods, 'prof-a', at('10:00'), at('10:30')), false);
+});
+
+test('subtelas de clientes usam exclusão lógica, reativação e comandas fechadas', () => {
+  const fs=require('node:fs'), path=require('node:path');
+  const root=path.resolve(__dirname,'..');
+  const ui=fs.readFileSync(path.join(root,'components/erp-operational-subpages.tsx'),'utf8');
+  const actions=fs.readFileSync(path.join(root,'app/erp/[tenant]/operational-actions.ts'),'utf8');
+  assert.match(ui, /active: false/);
+  assert.match(ui, /serviceCommand\.groupBy/);
+  assert.match(ui, /status: "CLOSED"/);
+  assert.match(ui, /closedAt: dates/);
+  assert.match(ui, /command\.items\.map/);
+  assert.match(actions, /active: true/);
+  assert.match(actions, /isolationLevel: "Serializable"/);
+  assert.match(actions, /status === "CLOSED"/);
+});
