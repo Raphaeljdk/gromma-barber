@@ -50,56 +50,82 @@ type Props = {
 
 const NAV_GROUPS = [
   {
-    label: "Operação",
+    id: "operacional",
+    label: "Operacional",
+    description: "Atendimento e rotina",
+    icon: LayoutDashboard,
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
       { id: "agenda", label: "Agenda", icon: CalendarDays },
       { id: "clientes", label: "Clientes", icon: Users },
-      { id: "servicos", label: "Serviços", icon: Store },
-    ],
-  },
-  {
-    label: "Comercial",
-    items: [
-      { id: "assinaturas", label: "Clube / Assinaturas", icon: BadgeDollarSign },
-      { id: "mensagens", label: "Mensagens", icon: MessageCircle },
-      { id: "promocoes", label: "Promoções / Cupons", icon: Tags },
-    ],
-  },
-  {
-    label: "Financeiro",
-    items: [
-      { id: "financeiro", label: "Financeiro", icon: WalletCards },
       { id: "caixa", label: "Caixa", icon: ClipboardList },
       { id: "estoque", label: "Estoque", icon: PackageSearch },
-      { id: "comissoes", label: "Comissões", icon: ScrollText },
-    ],
-  },
-  {
-    label: "Gestão",
-    items: [
-      { id: "equipe", label: "Profissionais", icon: UserRoundCog },
-      { id: "unidades", label: "Unidades", icon: Building2 },
-      { id: "relatorios", label: "Relatórios", icon: FileText },
-      { id: "gerencial", label: "Gerencial", icon: LayoutDashboard },
-      { id: "auditoria", label: "Auditoria", icon: ScrollText },
-    ],
-  },
-  {
-    label: "Experiência",
-    items: [
-      { id: "documentos", label: "Documentos", icon: FileText },
-      { id: "avaliacoes", label: "Avaliações", icon: Star },
-      { id: "alertas", label: "Alertas", icon: BellRing },
-      { id: "treinamentos", label: "Tutoriais / Cursos", icon: BookOpenCheck },
       { id: "totem", label: "Totem / Check-in", icon: Store, proOnly: true },
     ],
   },
   {
-    label: "Sistema",
+    id: "assinaturas",
+    label: "Assinaturas",
+    description: "Clube e recorrência",
+    icon: BadgeDollarSign,
     items: [
+      { id: "assinaturas", label: "Clube / Assinaturas", icon: BadgeDollarSign },
+    ],
+  },
+  {
+    id: "gestao",
+    label: "Gestão",
+    description: "Acompanhamento e controle",
+    icon: LayoutDashboard,
+    items: [
+      { id: "gerencial", label: "Gerencial", icon: LayoutDashboard },
+      { id: "auditoria", label: "Auditoria", icon: ScrollText },
+      { id: "alertas", label: "Alertas", icon: BellRing },
+    ],
+  },
+  {
+    id: "relatorios",
+    label: "Relatórios",
+    description: "Resultados e produtividade",
+    icon: FileText,
+    items: [
+      { id: "relatorios", label: "Relatórios", icon: FileText },
+      { id: "comissoes", label: "Comissões", icon: ScrollText },
+    ],
+  },
+  {
+    id: "marketing",
+    label: "Marketing e Promoções",
+    description: "Relacionamento e fidelização",
+    icon: Tags,
+    items: [
+      { id: "promocoes", label: "Promoções / Cupons", icon: Tags },
+      { id: "mensagens", label: "Mensagens", icon: MessageCircle },
+      { id: "avaliacoes", label: "Avaliações", icon: Star },
+    ],
+  },
+  {
+    id: "empresa",
+    label: "Empresa",
+    description: "Cadastros e configurações",
+    icon: Building2,
+    items: [
+      { id: "unidades", label: "Unidades / Filiais", icon: Building2 },
+      { id: "equipe", label: "Profissionais", icon: UserRoundCog },
+      { id: "servicos", label: "Serviços", icon: Store },
+      { id: "documentos", label: "Documentos", icon: FileText },
+      { id: "treinamentos", label: "Tutoriais / Cursos", icon: BookOpenCheck },
       { id: "configuracoes", label: "Configurações", icon: Settings2 },
-      { id: "plano", label: "Plano", icon: BadgeDollarSign },
+      { id: "plano", label: "Meu plano", icon: BadgeDollarSign },
+    ],
+  },
+  {
+    id: "financeiro",
+    label: "Financeiro",
+    description: "Receitas e despesas",
+    icon: WalletCards,
+    items: [
+      { id: "financeiro", label: "Financeiro", icon: WalletCards },
     ],
   },
 ] as const;
@@ -131,6 +157,7 @@ export function ErpSidebar({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cashOpenOverride, setCashOpenOverride] = useState<boolean | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const active = useMemo(() => {
     const base = `/erp/${encodeURIComponent(tenantCode)}`;
@@ -139,6 +166,9 @@ export function ErpSidebar({
     return segment || "dashboard";
   }, [pathname, tenantCode]);
 
+  const activeGroup = NAV_GROUPS.find((group) =>
+    group.items.some((item) => item.id === active || (item.id === "caixa" && active === "comandas"))
+  )?.id;
   const cashExpanded = cashOpenOverride ?? (active === "caixa" || active === "comandas");
 
   useEffect(() => {
@@ -235,10 +265,27 @@ export function ErpSidebar({
         </div>
 
         <nav className="erp-nav" aria-label="Módulos do ERP">
-          {NAV_GROUPS.map((group) => (
-            <div className="erp-nav-group" key={group.label}>
-              <span className="erp-nav-group-label">{group.label}</span>
-              {group.items.map((item) => {
+          {NAV_GROUPS.map((group) => {
+            const expanded = collapsed || (expandedGroups[group.id] ?? (group.id === activeGroup || group.id === "operacional"));
+            const SectorIcon = group.icon;
+            return <div className={["erp-nav-group", "erp-nav-sector", expanded ? "is-expanded" : "", activeGroup === group.id ? "has-active-module" : ""].join(" ")} key={group.id}>
+              <button
+                type="button"
+                className="erp-nav-sector-heading"
+                aria-controls={`erp-sector-${group.id}`}
+                aria-expanded={expanded}
+                onClick={() => setExpandedGroups((previous) => ({ ...previous, [group.id]: !expanded }))}
+                title={group.label}
+              >
+                <SectorIcon size={17} strokeWidth={1.8} aria-hidden="true" />
+                <span className="erp-nav-sector-copy">
+                  <strong>{group.label}</strong>
+                  <small>{group.description}</small>
+                </span>
+                <ChevronDown className="erp-nav-sector-chevron" size={16} aria-hidden="true" />
+              </button>
+              {expanded && <div className="erp-nav-sector-items" id={`erp-sector-${group.id}`}>
+                {group.items.map((item) => {
                 if (item.id === "auditoria" && !canManage) return null;
                 const Icon = item.icon;
                 const isActive = active === item.id;
@@ -296,9 +343,10 @@ export function ErpSidebar({
                   </Fragment>
                 );
                 return <Fragment key={item.id}>{link}</Fragment>;
-              })}
-            </div>
-          ))}
+                })}
+              </div>}
+            </div>;
+          })}
         </nav>
 
         <div className="erp-sidebar-bottom">
