@@ -33,6 +33,64 @@ type Props = {
 };
 
 const MODULES = [
+  { id: "dashboard", label: "Dashboard", group: "Operacional", icon: LayoutDashboard },
+  { id: "agenda", label: "Agenda", group: "Operacional", icon: CalendarDays },
+  { id: "clientes", label: "Clientes", group: "Operacional", icon: Users },
+  { id: "caixa", label: "Caixa", group: "Operacional", icon: ClipboardList },
+  { id: "comandas", label: "Comandas", group: "Operacional", icon: ReceiptText },
+  { id: "estoque", label: "Estoque", group: "Operacional", icon: PackageSearch },
+  { id: "totem", label: "Totem / Check-in", group: "Operacional", icon: Store, proOnly: true },
+  { id: "assinaturas", label: "Clube / Assinaturas", group: "Assinaturas", icon: BadgeDollarSign },
+  { id: "gerencial", label: "Gerencial", group: "Gestão", icon: LayoutDashboard },
+  { id: "relatorios", label: "Relatórios", group: "Relatórios", icon: FileText },
+  { id: "comissoes", label: "Comissões", group: "Relatórios", icon: ScrollText },
+  { id: "alertas", label: "Alertas", group: "Gestão", icon: BellRing },
+  { id: "promocoes", label: "Promoções / Cupons", group: "Marketing e Promoções", icon: Tags },
+  { id: "mensagens", label: "Mensagens", group: "Marketing e Promoções", icon: MessageCircle },
+  { id: "avaliacoes", label: "Avaliações", group: "Marketing e Promoções", icon: Star },
+  { id: "unidades", label: "Unidades / Filiais", group: "Empresa", icon: Building2 },
+  { id: "equipe", label: "Profissionais", group: "Empresa", icon: UserRoundCog },
+  { id: "servicos", label: "Serviços", group: "Empresa", icon: Store },
+  { id: "documentos", label: "Documentos", group: "Empresa", icon: FileText },
+  { id: "treinamentos", label: "Tutoriais / Cursos", group: "Empresa", icon: BookOpenCheck },
+  { id: "configuracoes", label: "Configurações", group: "Empresa", icon: Settings2 },
+  { id: "plano", label: "Meu plano", group: "Empresa", icon: BadgeDollarSign },
+  { id: "financeiro", label: "Financeiro", group: "Financeiro", icon: WalletCards },
+] as const;"use client";
+
+import {
+  BadgeDollarSign,
+  BellRing,
+  BookOpenCheck,
+  Building2,
+  CalendarDays,
+  ClipboardList,
+  FileText,
+  LayoutDashboard,
+  MessageCircle,
+  PackageSearch,
+  ReceiptText,
+  ScrollText,
+  Search,
+  Settings2,
+  Star,
+  Store,
+  Tags,
+  Users,
+  UserRoundCog,
+  WalletCards,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type Props = {
+  tenantCode: string;
+  planKey: "ESSENTIAL" | "PRO";
+  supportHref: string;
+};
+
+const MODULES = [
   { id: "dashboard", label: "Dashboard", group: "Operação", icon: LayoutDashboard },
   { id: "agenda", label: "Agenda", group: "Operação", icon: CalendarDays },
   { id: "clientes", label: "Clientes", group: "Operação", icon: Users },
