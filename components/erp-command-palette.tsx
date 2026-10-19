@@ -9,6 +9,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  type LucideIcon,
   MessageCircle,
   PackageSearch,
   ReceiptText,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ERP_NAVIGATION, type ErpNavigationNode } from "@/lib/erp-navigation";
 
 type Props = {
   tenantCode: string;
@@ -57,6 +59,29 @@ const MODULES = [
   { id: "plano", label: "Meu plano", group: "Empresa", icon: BadgeDollarSign },
   { id: "financeiro", label: "Financeiro", group: "Financeiro", icon: WalletCards },
 ] as const;
+
+type SearchModule = {
+  id: string;
+  label: string;
+  group: string;
+  icon: LucideIcon;
+  proOnly?: boolean;
+  pending?: boolean;
+};
+
+function plannedSearchNodes(nodes: readonly ErpNavigationNode[], group: string): SearchModule[] {
+  return nodes.flatMap((node) => [
+    ...(!node.route && !node.children?.length && !node.adminOnly
+      ? [{ id: node.id, label: node.label, group, icon: FileText, pending: true }]
+      : []),
+    ...plannedSearchNodes(node.children ?? [], group),
+  ]);
+}
+
+const SEARCH_MODULES: SearchModule[] = [
+  ...MODULES,
+  ...ERP_NAVIGATION.flatMap((sector) => plannedSearchNodes(sector.items, sector.label)),
+];
 
 function routeFor(tenantCode: string, id: string) {
   const base = `/erp/${encodeURIComponent(tenantCode)}`;
@@ -99,7 +124,7 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref }: Props) {
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return MODULES;
-    return MODULES.filter((item) =>
+    return SEARCH_MODULES.filter((item) =>
       `${item.label} ${item.group}`.toLowerCase().includes(normalized),
     );
   }, [query]);
@@ -146,17 +171,22 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref }: Props) {
             <div className="erp-command-results">
               {filtered.map((item) => {
                 const Icon = item.icon;
-                const locked = "proOnly" in item && item.proOnly && planKey !== "PRO";
+                const locked = Boolean("proOnly" in item && item.proOnly && planKey !== "PRO");
+                const pending = "pending" in item && Boolean(item.pending);
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => openModule(item.id, "proOnly" in item ? item.proOnly : false)}
+                    disabled={pending}
+                    title={pending ? "Funcionalidade prevista para implementação" : undefined}
+                    onClick={() => {
+                      if (!pending) openModule(item.id, "proOnly" in item ? item.proOnly : false);
+                    }}
                   >
                     <span className="erp-command-result-icon"><Icon size={18} /></span>
                     <span>
                       <strong>{item.label}</strong>
-                      <small>{locked ? "Disponível no plano Pro" : item.group}</small>
+                      <small>{pending ? `${item.group} · Previsto` : locked ? "Disponível no plano Pro" : item.group}</small>
                     </span>
                   </button>
                 );
