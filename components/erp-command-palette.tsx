@@ -56,64 +56,6 @@ const MODULES = [
   { id: "configuracoes", label: "Configurações", group: "Empresa", icon: Settings2 },
   { id: "plano", label: "Meu plano", group: "Empresa", icon: BadgeDollarSign },
   { id: "financeiro", label: "Financeiro", group: "Financeiro", icon: WalletCards },
-] as const;"use client";
-
-import {
-  BadgeDollarSign,
-  BellRing,
-  BookOpenCheck,
-  Building2,
-  CalendarDays,
-  ClipboardList,
-  FileText,
-  LayoutDashboard,
-  MessageCircle,
-  PackageSearch,
-  ReceiptText,
-  ScrollText,
-  Search,
-  Settings2,
-  Star,
-  Store,
-  Tags,
-  Users,
-  UserRoundCog,
-  WalletCards,
-  X,
-} from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-
-type Props = {
-  tenantCode: string;
-  planKey: "ESSENTIAL" | "PRO";
-  supportHref: string;
-};
-
-const MODULES = [
-  { id: "dashboard", label: "Dashboard", group: "Operação", icon: LayoutDashboard },
-  { id: "agenda", label: "Agenda", group: "Operação", icon: CalendarDays },
-  { id: "clientes", label: "Clientes", group: "Operação", icon: Users },
-  { id: "servicos", label: "Serviços", group: "Operação", icon: Store },
-  { id: "comandas", label: "Comandas", group: "Operação", icon: ReceiptText },
-  { id: "assinaturas", label: "Clube / Assinaturas", group: "Comercial", icon: BadgeDollarSign },
-  { id: "mensagens", label: "Mensagens", group: "Comercial", icon: MessageCircle },
-  { id: "promocoes", label: "Promoções / Cupons", group: "Comercial", icon: Tags },
-  { id: "financeiro", label: "Financeiro", group: "Financeiro", icon: WalletCards },
-  { id: "caixa", label: "Caixa", group: "Financeiro", icon: ClipboardList },
-  { id: "estoque", label: "Estoque", group: "Financeiro", icon: PackageSearch },
-  { id: "comissoes", label: "Comissões", group: "Financeiro", icon: ScrollText },
-  { id: "equipe", label: "Profissionais", group: "Gestão", icon: UserRoundCog },
-  { id: "unidades", label: "Unidades", group: "Gestão", icon: Building2 },
-  { id: "relatorios", label: "Relatórios", group: "Gestão", icon: FileText },
-  { id: "gerencial", label: "Gerencial", group: "Gestão", icon: LayoutDashboard },
-  { id: "documentos", label: "Documentos", group: "Experiência", icon: FileText },
-  { id: "avaliacoes", label: "Avaliações", group: "Experiência", icon: Star },
-  { id: "alertas", label: "Alertas", group: "Experiência", icon: BellRing },
-  { id: "treinamentos", label: "Tutoriais / Cursos", group: "Experiência", icon: BookOpenCheck },
-  { id: "totem", label: "Totem / Check-in", group: "Experiência", icon: Store, proOnly: true },
-  { id: "configuracoes", label: "Configurações", group: "Sistema", icon: Settings2 },
-  { id: "plano", label: "Plano", group: "Sistema", icon: BadgeDollarSign },
 ] as const;
 
 function routeFor(tenantCode: string, id: string) {
