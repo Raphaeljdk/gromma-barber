@@ -25,7 +25,7 @@ async function context(f: FormData) {
   return { shop, tenantCode };
 }
 
-function end(tenantCode: string, result: string, success: boolean) {
+function end(tenantCode: string, result: string, success: boolean): never {
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda-feriados`);
   redirect(`/erp/${encodeURIComponent(tenantCode)}/agenda-feriados?${success ? "ok" : "erro"}=${encodeURIComponent(result)}`);
