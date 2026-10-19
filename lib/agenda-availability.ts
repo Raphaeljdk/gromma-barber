@@ -7,8 +7,20 @@ export function parseAgendaInput(value: string) {
   if (hours > 23 || minutes > 59) return null;
   return new Date(`${value}:00-03:00`);
 }
-export function hasAgendaBlock(blocks: AgendaBlock[], barberId: string, start: Date, end: Date) {
-  return blocks.some(b => b.barberId === barberId && new Date(b.startsAt) < end && new Date(b.endsAt) > start);
+/** Accepts global branch closure ("*") as well as individual professional breaks. */
+export function hasAgendaBlock(
+  blocks: AgendaBlock[],
+  barberId: string,
+  start: Date,
+  end: Date,
+  unitId?: string,
+) {
+  return blocks.some(b =>
+    b.status !== "OPEN" &&
+    (b.barberId === barberId || (b.barberId === "*" && Boolean(unitId) && b.unitId === unitId)) &&
+    new Date(b.startsAt) < end &&
+    new Date(b.endsAt) > start
+  );
 }
 export function withinAgendaHours(start: Date, end: Date, open: number, close: number) {
   const last = new Date(end.getTime() - 1);
