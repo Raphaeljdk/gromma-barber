@@ -473,7 +473,7 @@ export function ErpAgendaBoard({
                 : new Date(item.startsAt).getTime() + slotMinutes * 60_000) >
                 start,
           );
-          return occupied || hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000)) || (now > 0 && start < now)
+          return occupied || hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000), selectedUnitId) || (now > 0 && start < now)
             ? null
             : {
                 professionalId: person.id,
@@ -623,7 +623,7 @@ export function ErpAgendaBoard({
     return Boolean(fitSlot.barberId) && possibleServices.some(service => {
       const end = new Date(start.getTime() + service.durationMinutes * 60000);
       return withinAgendaHours(start, end, openHour, closeHour) &&
-        !hasAgendaBlock(blocks, fitSlot.barberId, start, end) &&
+        !hasAgendaBlock(blocks, fitSlot.barberId, start, end, fitSlot.unitId) &&
         !appointments.some(a => a.barberId === fitSlot.barberId && !["CANCELED", "NO_SHOW"].includes(a.status) && new Date(a.startsAt) < end && (a.endsAt ? new Date(a.endsAt) : new Date(new Date(a.startsAt).getTime() + slotMinutes * 60000)) > start);
     });
   }) : [];
