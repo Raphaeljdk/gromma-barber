@@ -956,7 +956,7 @@ export function ErpAgendaBoard({
                               : new Date(item.startsAt).getTime() +
                                 slotMinutes * 60_000) > start,
                         );
-                      const blocked = hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000));
+                      const blocked = hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000), selectedUnitId);
                       const disabled =
                         !canOperate ||
                         !person.canSchedule ||
