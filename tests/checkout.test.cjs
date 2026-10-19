@@ -185,7 +185,7 @@ test('Comandas fica subordinada a Caixa no menu, sem aparecer em Operação', ()
   const iCaixa = html.indexOf('>Caixa</span>');
   const iComandas = html.indexOf('>Comandas</span>');
   assert.ok(iCaixa >= 0 && iComandas > iCaixa);
-  assert.match(html, /aria-controls="erp-nav-cash-children"/);
+  assert.match(html, /aria-controls="erp-nav-children-caixa"/);
   assert.match(html, /aria-expanded="true"/);
   assert.equal((html.match(/>Comandas<\/span>/g) || []).length, 1);
 });

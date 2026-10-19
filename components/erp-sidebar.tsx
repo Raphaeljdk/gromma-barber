@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  FolderOpen,
+  type LucideIcon,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -28,8 +30,9 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { ERP_NAVIGATION, ERP_NAVIGATION_EXTRA, type ErpNavigationNode, type ErpNavigationSector } from "@/lib/erp-navigation";
 
 type Props = {
   business: string;
@@ -48,87 +51,45 @@ type Props = {
   logoutAction?: () => Promise<void>;
 };
 
-const NAV_GROUPS = [
-  {
-    id: "operacional",
-    label: "Operacional",
-    description: "Atendimento e rotina",
-    icon: LayoutDashboard,
-    items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { id: "agenda", label: "Agenda", icon: CalendarDays },
-      { id: "clientes", label: "Clientes", icon: Users },
-      { id: "caixa", label: "Caixa", icon: ClipboardList },
-      { id: "estoque", label: "Estoque", icon: PackageSearch },
-      { id: "totem", label: "Totem / Check-in", icon: Store, proOnly: true },
-    ],
-  },
-  {
-    id: "assinaturas",
-    label: "Assinaturas",
-    description: "Clube e recorrência",
-    icon: BadgeDollarSign,
-    items: [
-      { id: "assinaturas", label: "Clube / Assinaturas", icon: BadgeDollarSign },
-    ],
-  },
-  {
-    id: "gestao",
-    label: "Gestão",
-    description: "Acompanhamento e controle",
-    icon: LayoutDashboard,
-    items: [
-      { id: "gerencial", label: "Gerencial", icon: LayoutDashboard },
-      { id: "auditoria", label: "Auditoria", icon: ScrollText },
-      { id: "alertas", label: "Alertas", icon: BellRing },
-    ],
-  },
-  {
-    id: "relatorios",
-    label: "Relatórios",
-    description: "Resultados e produtividade",
-    icon: FileText,
-    items: [
-      { id: "relatorios", label: "Relatórios", icon: FileText },
-      { id: "comissoes", label: "Comissões", icon: ScrollText },
-    ],
-  },
-  {
-    id: "marketing",
-    label: "Marketing e Promoções",
-    description: "Relacionamento e fidelização",
-    icon: Tags,
-    items: [
-      { id: "promocoes", label: "Promoções / Cupons", icon: Tags },
-      { id: "mensagens", label: "Mensagens", icon: MessageCircle },
-      { id: "avaliacoes", label: "Avaliações", icon: Star },
-    ],
-  },
-  {
-    id: "empresa",
-    label: "Empresa",
-    description: "Cadastros e configurações",
-    icon: Building2,
-    items: [
-      { id: "unidades", label: "Unidades / Filiais", icon: Building2 },
-      { id: "equipe", label: "Profissionais", icon: UserRoundCog },
-      { id: "servicos", label: "Serviços", icon: Store },
-      { id: "documentos", label: "Documentos", icon: FileText },
-      { id: "treinamentos", label: "Tutoriais / Cursos", icon: BookOpenCheck },
-      { id: "configuracoes", label: "Configurações", icon: Settings2 },
-      { id: "plano", label: "Meu plano", icon: BadgeDollarSign },
-    ],
-  },
-  {
-    id: "financeiro",
-    label: "Financeiro",
-    description: "Receitas e despesas",
-    icon: WalletCards,
-    items: [
-      { id: "financeiro", label: "Financeiro", icon: WalletCards },
-    ],
-  },
-] as const;
+const NAV_GROUPS: readonly ErpNavigationSector[] = ERP_NAVIGATION.map((sector) => {
+  const extraRoutes: Record<string, readonly string[]> = {
+    operacional: ["totem"],
+    gestao: ["gerencial", "alertas"],
+    marketing: ["mensagens"],
+    empresa: ["documentos", "treinamentos", "configuracoes"],
+  };
+  const extras = ERP_NAVIGATION_EXTRA.filter((item) =>
+    extraRoutes[sector.id]?.includes(item.route ?? "")
+  );
+  return extras.length
+    ? { ...sector, items: [...sector.items, { id: `${sector.id}-extras`, label: "Outras ferramentas", children: extras }] }
+    : sector;
+});
+
+const SECTOR_ICONS: Record<string, LucideIcon> = {
+  operacional: LayoutDashboard,
+  assinaturas: BadgeDollarSign,
+  gestao: ScrollText,
+  relatorios: FileText,
+  marketing: Tags,
+  empresa: Building2,
+  financeiro: WalletCards,
+};
+
+const MODULE_ICONS: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard, agenda: CalendarDays, clientes: Users,
+  caixa: ClipboardList, comandas: ReceiptText, estoque: PackageSearch,
+  assinaturas: BadgeDollarSign, gerencial: LayoutDashboard, auditoria: ScrollText,
+  relatorios: FileText, comissoes: ScrollText, promocoes: Tags, mensagens: MessageCircle,
+  avaliacoes: Star, unidades: Building2, equipe: UserRoundCog, servicos: Store,
+  documentos: FileText, treinamentos: BookOpenCheck, configuracoes: Settings2,
+  plano: BadgeDollarSign, financeiro: WalletCards, alertas: BellRing, totem: Store,
+};
+
+function itemIncludesRoute(node: ErpNavigationNode, route: string): boolean {
+  return node.route === route || Boolean(node.children?.some((child) => itemIncludesRoute(child, route)));
+}
+
 
 function routeFor(tenantCode: string, id: string) {
   const base = `/erp/${encodeURIComponent(tenantCode)}`;
@@ -156,8 +117,8 @@ export function ErpSidebar({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [cashOpenOverride, setCashOpenOverride] = useState<boolean | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
 
   const active = useMemo(() => {
     const base = `/erp/${encodeURIComponent(tenantCode)}`;
@@ -167,9 +128,8 @@ export function ErpSidebar({
   }, [pathname, tenantCode]);
 
   const activeGroup = NAV_GROUPS.find((group) =>
-    group.items.some((item) => item.id === active || (item.id === "caixa" && active === "comandas"))
+    group.items.some((item) => itemIncludesRoute(item, active))
   )?.id;
-  const cashExpanded = cashOpenOverride ?? (active === "caixa" || active === "comandas");
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -181,6 +141,66 @@ export function ErpSidebar({
   function goBack() {
     if (window.history.length > 1) router.back();
     else router.push("/login");
+  }
+
+  function renderNavItem(item: ErpNavigationNode, depth = 0): React.ReactNode {
+    if (item.adminOnly && !canManage) return null;
+
+    const visibleChildren = item.children?.filter((child) => !child.adminOnly || canManage) ?? [];
+    const hasChildren = visibleChildren.length > 0;
+    const activeItem = item.route === active;
+    const activeInside = hasChildren && visibleChildren.some((child) => itemIncludesRoute(child, active));
+    const expanded = expandedNodes[item.id] ?? (activeInside || activeItem && hasChildren);
+    const isLocked = Boolean(item.proOnly && planKey !== "PRO");
+    const Icon = MODULE_ICONS[item.route ?? ""] ?? (hasChildren ? FolderOpen : FileText);
+    const labelContent = <>
+      {depth === 0 ? <span className="erp-nav-icon"><Icon size={18} strokeWidth={1.9} /></span> : <span className="erp-nav-depth-mark" aria-hidden="true" />}
+      <span className="erp-sidebar-label">{item.label}</span>
+    </>;
+
+    const toggleChildren = () => setExpandedNodes((current) => ({ ...current, [item.id]: !expanded }));
+    return <div className={["erp-nav-tree-item", depth ? "is-nested" : "", hasChildren ? "has-children" : "", expanded ? "is-expanded" : ""].join(" ")} key={item.id}>
+      <div className="erp-nav-tree-row" style={{ ["--erp-depth" as string]: depth }}>
+        {item.route ? (
+          <Link
+            href={routeFor(tenantCode, isLocked ? "plano" : item.route)}
+            className={["erp-nav-item", activeItem ? "active" : "", isLocked ? "locked" : ""].join(" ")}
+            onClick={() => setMobileOpen(false)}
+            aria-current={activeItem ? "page" : undefined}
+            title={collapsed ? item.label : undefined}
+          >
+            {labelContent}
+            {isLocked ? <span className="erp-nav-plan-tag">PRO</span> : activeItem ? <span className="erp-nav-active-dot" /> : null}
+          </Link>
+        ) : hasChildren ? (
+          <button type="button" className={["erp-nav-item", "erp-nav-parent-button", activeInside ? "has-active-child" : ""].join(" ")}
+            aria-expanded={expanded} aria-controls={`erp-nav-children-${item.id}`}
+            onClick={toggleChildren}>
+            {labelContent}
+          </button>
+        ) : (
+          <span className="erp-nav-item erp-nav-planned" title="Funcionalidade prevista para implementação">
+            {labelContent}
+            <span className="erp-nav-planned-tag">Previsto</span>
+          </span>
+        )}
+        {hasChildren && item.route && (
+          <button type="button" className="erp-nav-tree-toggle"
+            aria-label={expanded ? `Recolher ${item.label}` : `Expandir ${item.label}`}
+            aria-controls={`erp-nav-children-${item.id}`}
+            aria-expanded={expanded}
+            onClick={toggleChildren}><ChevronDown size={16} aria-hidden="true" /></button>
+        )}
+        {hasChildren && !item.route && (
+          <ChevronDown className="erp-nav-tree-inline-chevron" size={15} aria-hidden="true" />
+        )}
+      </div>
+      {hasChildren && expanded && (
+        <div className="erp-nav-tree-children" id={`erp-nav-children-${item.id}`}>
+          {visibleChildren.map((child) => renderNavItem(child, depth + 1))}
+        </div>
+      )}
+    </div>;
   }
 
   return (
@@ -265,16 +285,20 @@ export function ErpSidebar({
         </div>
 
         <nav className="erp-nav" aria-label="Módulos do ERP">
+          <p className="erp-nav-plan-note">Em cinza: funcionalidades previstas para as próximas etapas.</p>
           {NAV_GROUPS.map((group) => {
-            const expanded = collapsed || (expandedGroups[group.id] ?? (group.id === activeGroup || (!activeGroup && group.id === "operacional")));
-            const SectorIcon = group.icon;
+            const expanded = !collapsed && (expandedGroups[group.id] ?? (group.id === activeGroup || (!activeGroup && group.id === "operacional")));
+            const SectorIcon = SECTOR_ICONS[group.id] ?? LayoutDashboard;
             return <div className={["erp-nav-group", "erp-nav-sector", expanded ? "is-expanded" : "", activeGroup === group.id ? "has-active-module" : ""].join(" ")} key={group.id}>
               <button
                 type="button"
                 className="erp-nav-sector-heading"
                 aria-controls={`erp-sector-${group.id}`}
                 aria-expanded={expanded}
-                onClick={() => setExpandedGroups((previous) => ({ ...previous, [group.id]: !expanded }))}
+                onClick={() => {
+                  if (collapsed) setCollapsed(false);
+                  setExpandedGroups((previous) => ({ ...previous, [group.id]: !expanded }));
+                }}
                 title={group.label}
               >
                 <SectorIcon size={17} strokeWidth={1.8} aria-hidden="true" />
@@ -285,65 +309,7 @@ export function ErpSidebar({
                 <ChevronDown className="erp-nav-sector-chevron" size={16} aria-hidden="true" />
               </button>
               {expanded && <div className="erp-nav-sector-items" id={`erp-sector-${group.id}`}>
-                {group.items.map((item) => {
-                if (item.id === "auditoria" && !canManage) return null;
-                const Icon = item.icon;
-                const isActive = active === item.id;
-                const isLocked = "proOnly" in item && item.proOnly && planKey !== "PRO";
-                const href = isLocked
-                  ? routeFor(tenantCode, "plano")
-                  : routeFor(tenantCode, item.id);
-
-                const link = (
-                  <Link
-                    href={href}
-                    className={[
-                      "erp-nav-item",
-                      isActive ? "active" : "",
-                      isLocked ? "locked" : "",
-                    ].join(" ")}
-                    onClick={() => setMobileOpen(false)}
-                    aria-current={isActive ? "page" : undefined}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <span className="erp-nav-icon">
-                      <Icon size={18} strokeWidth={1.9} />
-                    </span>
-                    <span className="erp-sidebar-label">{item.label}</span>
-                    {isLocked ? (
-                      <span className="erp-nav-plan-tag">PRO</span>
-                    ) : isActive ? (
-                      <span className="erp-nav-active-dot" />
-                    ) : null}
-                  </Link>
-                );
-                if (item.id === "caixa") return (
-                  <Fragment key={item.id}>
-                    <div className={["erp-nav-cash-parent", active === "comandas" ? "has-active-child" : ""].join(" ")}>
-                      {link}
-                      <button type="button" className="erp-nav-cash-toggle"
-                        aria-label={cashExpanded ? "Recolher submenu de Caixa" : "Expandir submenu de Caixa"}
-                        aria-expanded={cashExpanded} aria-controls="erp-nav-cash-children"
-                        title="Expandir ou recolher comandas do caixa"
-                        onClick={() => setCashOpenOverride(!cashExpanded)}>
-                        <ChevronDown size={17} aria-hidden="true" />
-                      </button>
-                    </div>
-                    {cashExpanded && <div id="erp-nav-cash-children" className="erp-nav-cash-children">
-                      <Link href={routeFor(tenantCode, "comandas")}
-                        className={["erp-nav-subitem", active === "comandas" ? "active" : ""].join(" ")}
-                        aria-current={active === "comandas" ? "page" : undefined}
-                        onClick={() => setMobileOpen(false)}
-                        title={collapsed ? "Comandas" : undefined}>
-                        <ReceiptText size={16} strokeWidth={1.9} />
-                        <span className="erp-sidebar-label">Comandas</span>
-                        {active === "comandas" && <span className="erp-nav-active-dot" />}
-                      </Link>
-                    </div>}
-                  </Fragment>
-                );
-                return <Fragment key={item.id}>{link}</Fragment>;
-                })}
+                {group.items.map((item) => renderNavItem(item))}
               </div>}
             </div>;
           })}
