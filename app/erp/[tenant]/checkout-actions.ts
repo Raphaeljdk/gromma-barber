@@ -4,7 +4,7 @@ import { requireTenantAccess } from "@/lib/tenant-auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace } from "@/lib/erp-workspace";
-import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayments, sessionTotals, calculateCheckoutPricing, parseAppliedItemDiscounts, servicesFromCommandLines, type CheckoutDiscountInput } from "@/lib/checkout";
+import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayments, sessionTotals, calculateCheckoutPricing, parseAppliedItemDiscounts, servicesFromCommandLines, canReopenCommand, type CheckoutDiscountInput } from "@/lib/checkout";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import type { Prisma } from "@prisma/client";
 
@@ -229,5 +229,133 @@ export async function checkoutCommand(form: FormData) {
       manualDiscountCents: pricing.manualCents });
     await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
     if (command.appointmentId) await tx.appointment.updateMany({ where: { id: command.appointmentId, barberShopId: shopId, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] } }, data: { status: "COMPLETED" } });
+  });
+}
+
+/**
+ * Retorna a comanda fechada ao estado OPEN para corrigir recebimentos lançados
+ * no meio de pagamento errado. NÃO faz estorno com adquirente/maquininha.
+ *
+ * A operação só é possível enquanto o mesmo caixa que recebeu a venda
+ * continua aberto. Financeiro, estoque, recibo e auditoria são atualizados
+ * juntos numa transação serializável; não há saldo duplicado.
+ */
+export async function reopenCommand(form: FormData) {
+  const tenantCode = value(form, "tenantCode").toUpperCase();
+  const viewer = await requireTenantAccess(tenantCode);
+  const path = `/erp/${encodeURIComponent(tenantCode)}/comandas`;
+  if (viewer.type !== "ADMIN" && !["OWNER", "MANAGER"].includes(viewer.role))
+    redirect(`${path}?checkoutError=${encodeURIComponent("Somente a gestão pode reabrir comandas.")}&commandId=${encodeURIComponent(value(form, "commandId"))}`);
+
+  return run(form, "comandas", async (tx, shopId, actor) => {
+    const id = value(form, "commandId");
+    const command = await tx.serviceCommand.findFirst({
+      where: { id, barberShopId: shopId, status: "CLOSED" },
+      include: { items: true },
+    });
+    if (!command) throw new OperationError("Esta comanda não está fechada ou já foi reaberta.");
+
+    const { shop, workspace } = await configuration(tx, shopId);
+    const payments = workspace.commandPayments.filter(payment => payment.commandId === command.id);
+    if (payments.length !== 1)
+      throw new OperationError("Recebimento anterior não localizado ou inconsistente. Solicite conferência do financeiro.");
+    const payment = payments[0];
+    if (!canReopenCommand(command.status, command.unitId, payment, workspace.cashSessions))
+      throw new OperationError("Este caixa já foi fechado. Só é possível reabrir a comanda antes de fechar o caixa original.");
+
+    // No instante do checkout, as entradas foram gravadas com o mesmo timestamp
+    // do recibo. Exigimos correspondência exata para não apagar receitas alheias.
+    const previousPaymentAt = new Date(payment.paidAt);
+    if (Number.isNaN(previousPaymentAt.getTime()))
+      throw new OperationError("Data do recebimento anterior inválida.");
+    const expected = PAYMENT_METHODS.filter(method => payment.amounts[method] > 0).map(method => ({
+      description: `Comanda ${command.id.slice(-6).toUpperCase()} · ${PAYMENT_LABELS[method]}`,
+      amountCents: payment.amounts[method],
+    }));
+    const financial = await tx.financialEntry.findMany({
+      where: {
+        barberShopId: shopId,
+        unitId: command.unitId,
+        type: "RECEIVABLE",
+        category: "Comandas",
+        status: "PAID",
+        paidAt: previousPaymentAt,
+        description: { in: expected.map(entry => entry.description) },
+      },
+      select: { id: true, description: true, amount: true },
+    });
+    if (financial.length !== expected.length || expected.some(entry =>
+      financial.filter(item => item.description === entry.description && cents(item.amount) === entry.amountCents).length !== 1))
+      throw new OperationError("O lançamento financeiro foi alterado. Confira com a gestão antes de reabrir.");
+
+    // Cada produto foi baixado no checkout anterior. O movimento inverso fica
+    // registrado, permitindo um novo checkout sem subtrair estoque duas vezes.
+    const products = new Map<string, number>();
+    for (const item of command.items.filter(item => item.kind === "PRODUCT")) {
+      const line = workspace.productLines.find(link => link.itemId === item.id);
+      if (!line) throw new OperationError("Vínculo de estoque não encontrado para esta comanda.");
+      const quantity = Number(item.quantity);
+      if (!Number.isFinite(quantity) || quantity <= 0)
+        throw new OperationError("Quantidade de produto inválida.");
+      products.set(line.productId, (products.get(line.productId) ?? 0) + quantity);
+    }
+    for (const [productId, quantity] of products) {
+      const previousMovement = await tx.stockMovement.findFirst({
+        where: {
+          barberShopId: shopId, unitId: command.unitId, productId,
+          type: "OUT", reason: `Checkout ${command.id}`,
+          quantity,
+        },
+        select: { id: true },
+      });
+      if (!previousMovement)
+        throw new OperationError("Baixa de estoque anterior não localizada. Confira com a gestão antes de reabrir.");
+    }
+
+    const updated = await tx.serviceCommand.updateMany({
+      where: { id: command.id, barberShopId: shopId, status: "CLOSED", updatedAt: command.updatedAt },
+      data: { status: "OPEN", closedAt: null },
+    });
+    if (updated.count !== 1) throw new OperationError("A comanda foi alterada. Atualize e tente novamente.");
+
+    const deleted = await tx.financialEntry.deleteMany({
+      where: { id: { in: financial.map(entry => entry.id) }, barberShopId: shopId },
+    });
+    if (deleted.count !== expected.length)
+      throw new OperationError("O financeiro mudou durante a reabertura. Atualize a página.");
+
+    for (const [productId, quantity] of products) {
+      await tx.stockMovement.create({
+        data: {
+          barberShopId: shopId, unitId: command.unitId, productId,
+          type: "IN", quantity,
+          reason: `Reabertura ${command.id} · recibo ${payment.id}`,
+        },
+      });
+    }
+    workspace.commandPayments = workspace.commandPayments.filter(item => item.id !== payment.id);
+    await tx.barberShop.update({
+      where: { id: shopId },
+      data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) },
+    });
+    await tx.adminAuditLog.create({
+      data: {
+        barberShopId: shopId,
+        adminEmail: viewer.email || actor,
+        action: "COMMAND_REOPENED",
+        details: {
+          commandId: command.id,
+          unitId: command.unitId,
+          cashSessionId: payment.sessionId,
+          paymentId: payment.id,
+          originalClosedAt: command.closedAt?.toISOString() ?? null,
+          originalAmounts: payment.amounts,
+          restoredProducts: [...products].map(([productId, quantity]) => ({ productId, quantity })),
+          actor,
+        },
+      },
+    });
+    // A prestação do serviço já foi realizada: não reabrimos o agendamento.
+    // Apenas a comanda/recebimento passa a poder ser corrigida.
   });
 }
