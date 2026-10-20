@@ -9017,3 +9017,41 @@ html[data-theme="light"] .tenant-erp .erp-nav-sector-items { border-left-color: 
 .tenant-erp .erp-ops-purchase li span{overflow-wrap:anywhere}
 @media(max-width:950px){.tenant-erp .erp-ops-grid,.tenant-erp .erp-ops-ranking{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:540px){.tenant-erp .erp-ops-form,.tenant-erp .erp-ops-ranking-table,.tenant-erp .erp-ops-history{padding:14px}.tenant-erp .erp-ops-fields-two{gap:9px}.tenant-erp .erp-ops-filter{display:grid;grid-template-columns:minmax(0,1fr)}.tenant-erp .erp-ops-customer{align-items:stretch;flex-direction:column}.tenant-erp .erp-ops-customer button{width:100%}.tenant-erp .erp-ops-rank-row{grid-template-columns:32px minmax(0,1fr) auto;padding:10px;gap:7px}.tenant-erp .erp-ops-rank-row>strong{font-size:.82rem}}
+
+
+/* Comanda fechada: reabertura visível somente na aba Comandas e com caixa original aberto. */
+.agenda-dialog-checkout .checkout-toolbar-actions form {
+  display:flex;
+  align-items:stretch;
+  margin:0;
+  min-width:0;
+}
+.agenda-dialog-checkout .checkout-toolbar-actions form > .checkout-reopen-action {
+  width:100%;
+  min-height:42px;
+  gap:7px;
+  white-space:normal;
+  text-align:center;
+}
+.agenda-dialog-checkout .checkout-reopen-action:not(:disabled) {
+  border-color:color-mix(in srgb, var(--erp-gold, #c89b54) 50%, var(--erp-border));
+  color:var(--erp-text);
+}
+.agenda-dialog-checkout .checkout-reopen-action:disabled {
+  opacity:.58;
+  cursor:not-allowed;
+}
+.agenda-dialog-checkout .checkout-reopen-notice {
+  margin:9px 0 14px;
+  padding:10px 13px;
+  border-radius:10px;
+  border:1px solid var(--erp-border);
+  color:var(--erp-muted);
+  background:var(--erp-panel-2);
+  font-size:.77rem;
+  line-height:1.48;
+}
+@media(max-width:850px) {
+  .agenda-dialog-checkout .checkout-toolbar-actions form { width:100%; }
+  .agenda-dialog-checkout .checkout-toolbar-actions .checkout-reopen-action { min-height:44px; }
+}
