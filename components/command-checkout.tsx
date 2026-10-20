@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, CreditCard, Plus, ReceiptText, Settings2, Trash2, Wallet } from "lucide-react";
+import { Check, ChevronDown, CreditCard, Plus, ReceiptText, RotateCcw, Trash2, Wallet } from "lucide-react";
 import { AgendaDialog, AgendaSubmit } from "./agenda-dialog";
-import { addCommandItem, removeCommandItem, checkoutCommand } from "@/app/erp/[tenant]/checkout-actions";
-import { PAYMENT_METHODS, PAYMENT_LABELS, calculateCheckoutPricing, calculateAppliedItemDiscounts, type AppliedItemDiscount, type CheckoutCoupon, type CashSession, type CommandPayment, type PaymentMethod } from "@/lib/checkout";
+import { addCommandItem, removeCommandItem, checkoutCommand, reopenCommand } from "@/app/erp/[tenant]/checkout-actions";
+import { PAYMENT_METHODS, PAYMENT_LABELS, calculateCheckoutPricing, calculateAppliedItemDiscounts, canReopenCommand, type AppliedItemDiscount, type CheckoutCoupon, type CashSession, type CommandPayment, type PaymentMethod } from "@/lib/checkout";
 import { brl } from "@/lib/plans";
 
 type Line = { id: string; description: string; quantity: number; total: number; kind: string };
@@ -16,29 +16,18 @@ export type CommandView = {
   lastVisit: string | null; visits: number;
 };
 type CatalogItem = { id: string; name: string; price: number; kind: string };
-type DetailKey = "items" | "notes" | "details";
-type Visibility = Record<DetailKey, boolean>;
-
-const DEFAULT_VIEW: Visibility = { items: true, notes: false, details: false };
-const VISIBILITY_OPTIONS: { key: DetailKey; label: string }[] = [
-  { key: "items", label: "Itens da comanda" },
-  { key: "notes", label: "Observações do cliente" },
-  { key: "details", label: "Detalhar valores" },
-];
 const date = (v: string) => new Date(v).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 const zeroAmounts = (): Record<PaymentMethod, string> => ({ CASH: "", DEBIT: "", CREDIT: "", PIX: "" });
 
 export function CommandCheckout({
-  tenantCode, command, catalog, session, payment, canOperate, error, coupons = [], autoOpen = false,
+  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false,
 }: {
   tenantCode: string; command: CommandView; catalog: CatalogItem[];
-  session?: CashSession; payment?: CommandPayment; canOperate: boolean; coupons?: CheckoutCoupon[];
+  session?: CashSession; payment?: CommandPayment; canOperate: boolean; allowReopen?: boolean; coupons?: CheckoutCoupon[];
   error?: string; autoOpen?: boolean;
 }) {
   const [open, setOpen] = useState(autoOpen);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [fiscalOpen, setFiscalOpen] = useState(false);
-  const [view, setView] = useState<Visibility>(DEFAULT_VIEW);
   const [showAdd, setShowAdd] = useState(false);
   const [itemCategory, setItemCategory] = useState<"SERVICE" | "PRODUCT">("SERVICE");
   const [selectedCatalogItem, setSelectedCatalogItem] = useState("");
@@ -53,23 +42,6 @@ export function CommandCheckout({
   const [couponCode, setCouponCode] = useState("");
   const [appliedItemDiscounts, setAppliedItemDiscounts] = useState<AppliedItemDiscount[]>([]);
   const [discountFeedback, setDiscountFeedback] = useState("");
-  const viewKey = "gromma-checkout-view-v3:" + tenantCode;
-
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(viewKey) || "null");
-      if (stored && typeof stored === "object") {
-        setView(Object.fromEntries(VISIBILITY_OPTIONS.map(({ key }) => [key, typeof stored[key] === "boolean" ? stored[key] : DEFAULT_VIEW[key]])) as Visibility);
-      }
-    } catch { /* Preferências do navegador não interferem no fechamento. */ }
-  }, [viewKey]);
-
-  function changeView(key: DetailKey, checked: boolean) {
-    const next = { ...view, [key]: checked };
-    setView(next);
-    try { localStorage.setItem(viewKey, JSON.stringify(next)); } catch { /* Mantém a preferência apenas nesta sessão. */ }
-  }
-
   let pricingError = "";
   let pricing = { totalCents: Math.round(command.total * 100), discountCents: Math.round(command.discount * 100), subtotalCents: Math.round(command.subtotal * 100), couponCents: 0, manualCents: 0 };
   try {
@@ -92,6 +64,7 @@ export function CommandCheckout({
   }, 0);
   const editable = canOperate && command.status === "OPEN";
   const paid = command.status === "CLOSED";
+  const mayReopen = Boolean(allowReopen && canReopenCommand(command.status, session?.unitId ?? "", payment, session ? [session] : []));
   const ready = editable && Boolean(session) && !pricingError && !invalidAmounts && (selectedMethod !== null || split) && sum === totalCents;
   const fields = <><input type="hidden" name="tenantCode" value={tenantCode} /><input type="hidden" name="commandId" value={command.id} /></>;
   const cleanedNotes = command.notes.replaceAll("[GROMMA:RECOMPRA]", "").trim();
@@ -134,12 +107,23 @@ export function CommandCheckout({
           {command.plan && <span>Plano: {command.plan}</span>}
         </div>
         <div className="checkout-toolbar-actions">
-          {editable && <button type="button" className="btn secondary checkout-compact-action" onClick={() => { setShowAdd(v => !v); if (!view.items) changeView("items", true); }} aria-expanded={showAdd}><Plus size={15} /> {showAdd ? "Fechar inclusão" : "Adicionar item"}</button>}
+          {editable && <button type="button" className="btn secondary checkout-compact-action" onClick={() => setShowAdd(v => !v)} aria-expanded={showAdd}><Plus size={15} /> {showAdd ? "Fechar inclusão" : "Adicionar item"}</button>}
           <button type="button" className="btn secondary checkout-compact-action" aria-expanded={fiscalOpen}
             aria-controls={"checkout-fiscal-" + command.id} onClick={() => setFiscalOpen(v => !v)}>
             <ReceiptText size={16}/> Emitir Nota Fiscal <ChevronDown size={14}/>
           </button>
-          <button type="button" className="btn secondary checkout-compact-action" onClick={() => setSettingsOpen(v => !v)} aria-expanded={settingsOpen} aria-controls={"checkout-options-" + command.id}><Settings2 size={16} /> Opções <ChevronDown size={14} /></button>
+          {paid && allowReopen && <form action={reopenCommand}
+            onSubmit={(event) => {
+              if (!window.confirm("Reabrir esta comanda? O pagamento anterior será removido do caixa no sistema, os lançamentos financeiros serão desfeitos e o estoque será ajustado. Nenhum estorno será enviado à operadora de cartão."))
+                event.preventDefault();
+            }}>
+            <input type="hidden" name="tenantCode" value={tenantCode} />
+            <input type="hidden" name="commandId" value={command.id} />
+            <button type="submit" className="btn secondary checkout-compact-action checkout-reopen-action"
+              disabled={!mayReopen} title={mayReopen ? "Voltar a comanda para aberto e corrigir o recebimento" : "O caixa original foi fechado ou não é possível localizar o recebimento anterior."}>
+              <RotateCcw size={16} /> Reabrir comanda
+            </button>
+          </form>}
         </div>
       </div>
       {fiscalOpen && <div id={"checkout-fiscal-" + command.id} className="checkout-fiscal-panel" role="region" aria-label="Emissão fiscal" style={{ display: "grid", gap: 10, padding: 14, marginBottom: 12, borderRadius: 12, border: "1px solid var(--erp-border-strong)", background: "var(--erp-panel-2)" }}>
@@ -154,21 +138,16 @@ export function CommandCheckout({
             title="Disponível quando houver NFS-e emitida e PDF fornecido pelo emissor">Baixar PDF para imprimir</button>
         </div>
       </div>}
-      {settingsOpen && <div id={"checkout-options-" + command.id} className="checkout-visibility-panel" aria-label="Personalizar comanda">
-        <div><strong>Informações visíveis</strong><small>Escolha o que precisa aparecer. Preferência salva neste navegador.</small></div>
-        <div className="checkout-visibility-options">{VISIBILITY_OPTIONS.map(option =>
-          <label key={option.key}><input type="checkbox" checked={view[option.key]} onChange={event => changeView(option.key, event.target.checked)} /><span>{option.label}</span></label>
-        )}</div>
-      </div>}
+      {paid && allowReopen && !mayReopen && <p className="checkout-reopen-notice" role="note">Reabertura indisponível: o caixa em que a comanda foi recebida já está fechado, ou o recebimento não pode ser localizado.</p>}
       <div className="checkout-workspace checkout-workspace-focused">
         <main className="checkout-detail-column">
           {error && <div role="alert" className="notice error-notice">{error}</div>}
           <div className="checkout-compact-total">
             <span>{paid ? "Total recebido" : "Valor da comanda"}</span>
             <strong>{brl(paid ? command.total : totalCents / 100)}</strong>
-            {(view.details || (!paid && pricing.discountCents > 0)) && <small>Subtotal: {brl(command.subtotal)} · Desconto: {brl(paid ? command.discount : pricing.discountCents / 100)}</small>}
+            {(paid || pricing.discountCents > 0) && <small>Subtotal: {brl(command.subtotal)} · Desconto: {brl(paid ? command.discount : pricing.discountCents / 100)}</small>}
           </div>
-          {view.items && <section className="checkout-section">
+          {<section className="checkout-section">
             <header className="checkout-section-head"><h4><ReceiptText size={18} /> Itens da comanda</h4><span className="checkout-muted-count">{command.items.length}</span></header>
             <div className="checkout-lines">{command.items.length ? command.items.map(item => <div key={item.id}>
               <span><strong>{item.description}</strong><small>{item.kind === "PRODUCT" ? "Produto" : "Serviço"} · {item.quantity} un.</small></span>
@@ -199,7 +178,7 @@ export function CommandCheckout({
             <label><span className="label">Qtd.</span><input className="input" name="quantity" type="number" min="1" max="100" defaultValue="1" required /></label>
             <AgendaSubmit secondary><Plus size={16} /> Incluir</AgendaSubmit>
           </form>}
-          {view.notes && <section className="checkout-section">
+          {<section className="checkout-section">
             <header className="checkout-section-head"><h4>Observações</h4></header>
             <p className="checkout-notes">{cleanedNotes || "Nenhuma observação cadastrada."}</p>
           </section>}
