@@ -33,12 +33,12 @@ const money = load('lib/checkout.ts');
 const { readWorkspace } = load('lib/erp-workspace.ts');
 const form = (values = {}) => { const f = new FormData(); for (const [key, value] of Object.entries({ tenantCode: 'GROMMA', commandId: 'c1', expectedTotal: '10000', sessionId: 's1', PIX: '100', ...values })) f.set(key, String(value)); return f; };
 function environment(options = {}) {
-  const state = { shop: { id: 'shop1', status: 'APPROVED', accessReleased: true, enabledFeatures: { operations: { cashSessions: [{ id: 's1', unitId: 'u1', unitName: 'Centro', openingCents: 2000, openedAt: '2026-10-13T10:00:00Z', openedBy: 'u' }], commandPayments: [], productLines: [{ itemId: 'i1', productId: 'p1' }] } } }, command: { id: 'c1', unitId: 'u1', barberShopId: 'shop1', customer: { name: 'Cliente' }, status: 'OPEN', total: 100, subtotal: 100, discount: 0, updatedAt: new Date(), items: [{ id: 'i1', kind: 'PRODUCT', total: 100, quantity: 2 }] }, entries: [], stock: [], ...options.state };
+  const state = { shop: { id: 'shop1', status: 'APPROVED', accessReleased: true, enabledFeatures: { operations: { cashSessions: [{ id: 's1', unitId: 'u1', unitName: 'Centro', openingCents: 2000, openedAt: '2026-10-13T10:00:00Z', openedBy: 'u' }], commandPayments: [], productLines: [{ itemId: 'i1', productId: 'p1' }] } } }, command: { id: 'c1', unitId: 'u1', barberShopId: 'shop1', customer: { name: 'Cliente' }, status: 'OPEN', total: 100, subtotal: 100, discount: 0, updatedAt: new Date(), items: [{ id: 'i1', kind: 'PRODUCT', total: 100, quantity: 2 }] }, entries: [], stock: [], auditLogs: [], ...options.state };
   const writes = [];
   const tx = {
     barberShop: { findUnique: async () => state.shop, findUniqueOrThrow: async () => state.shop, update: async q => { writes.push('workspace'); Object.assign(state.shop, q.data); } },
     barberShopUnit: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return { id: 'u1', name: 'Centro' }; } },
-    serviceCommand: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return state.command?.status === 'OPEN' ? state.command : null; }, updateMany: async q => { writes.push('command'); Object.assign(state.command, q.data); return { count: 1 }; },
+    serviceCommand: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return state.command?.status === q.where.status ? state.command : null; }, updateMany: async q => { writes.push('command'); Object.assign(state.command, q.data); return { count: 1 }; },
       update: async q => { writes.push('command'); Object.assign(state.command, q.data); return state.command; } },
     commandItem: {
       create: async q => { const item = { id: 'added' + (state.command.items.length + 1), ...q.data }; state.command.items.push(item); writes.push('item'); return item; },
@@ -54,8 +54,23 @@ function environment(options = {}) {
     },
     product: { findFirst: async q => (state.products ?? []).find(product => product.id === q.where.id) ?? null },
 
-    stockMovement: { groupBy: async q => { assert.equal(q.where.unitId, 'u1'); assert.equal(q.where.barberShopId, 'shop1'); return [{ type: 'IN', _sum: { quantity: options.stock ?? 3 } }]; }, create: async q => { writes.push('stock'); state.stock.push(q.data); } },
-    financialEntry: { create: async q => { writes.push('finance'); state.entries.push(q.data); } },
+    stockMovement: { groupBy: async q => { assert.equal(q.where.unitId, 'u1'); assert.equal(q.where.barberShopId, 'shop1'); return [{ type: 'IN', _sum: { quantity: options.stock ?? 3 } }]; }, create: async q => { writes.push('stock'); state.stock.push(q.data); }, findFirst: async q => state.stock.find(x => x.type === q.where.type && x.reason === q.where.reason && x.unitId === q.where.unitId && x.productId === q.where.productId && Number(x.quantity) === Number(q.where.quantity)) ?? null },
+    financialEntry: {
+      create: async q => { writes.push('finance'); state.entries.push({ id: 'fin-' + (state.entries.length + 1), ...q.data }); },
+      findMany: async q => state.entries.filter(e =>
+        e.barberShopId === q.where.barberShopId && e.unitId === q.where.unitId &&
+        e.type === q.where.type && e.status === q.where.status &&
+        e.category === q.where.category &&
+        new Date(e.paidAt).getTime() === new Date(q.where.paidAt).getTime() &&
+        q.where.description.in.includes(e.description)),
+      deleteMany: async q => {
+        const old = state.entries.length;
+        state.entries = state.entries.filter(e => !q.where.id.in.includes(e.id));
+        writes.push('reverse-finance');
+        return { count: old - state.entries.length };
+      },
+    },
+    adminAuditLog: { create: async q => { state.auditLogs.push(q.data); writes.push('audit'); } },
   };
   const prisma = { $transaction: async (fn, config) => { assert.equal(config.isolationLevel, 'Serializable'); const snapshot = structuredClone(state); try { return await fn(tx); } catch (e) { Object.assign(state, snapshot); throw e; } } };
   const actions = load('app/erp/[tenant]/checkout-actions.ts', { '@/lib/prisma': { prisma }, '@/lib/tenant-auth': { requireTenantAccess: async () => options.viewer || { type: 'TENANT', barberShopId: 'shop1', role: 'OWNER', userId: 'operator1' } }, 'next/cache': { revalidatePath: () => {} }, 'next/navigation': { redirect: url => { throw Object.assign(new Error('redirect'), { redirect: url }); } } });
@@ -129,7 +144,7 @@ test('WhatsApp normaliza telefone e abre mensagem sem envio automático', () => 
 test('interface da comanda oferece recebimento rápido e últimas compras', () => {
   const { CommandCheckout } = load('components/command-checkout.tsx', {
     'next/link': { __esModule: true, default: ({ children, ...props }) => React.createElement('a', props, children) },
-    '@/app/erp/[tenant]/checkout-actions': { addCommandItem() {}, removeCommandItem() {}, checkoutCommand() {} },
+    '@/app/erp/[tenant]/checkout-actions': { addCommandItem() {}, removeCommandItem() {}, checkoutCommand() {}, reopenCommand() {} },
   });
   const html = renderToStaticMarkup(React.createElement(CommandCheckout, {
     tenantCode: 'GROMMA', canOperate: true, autoOpen: true,
@@ -142,8 +157,9 @@ test('interface da comanda oferece recebimento rápido e últimas compras', () =
     catalog: [{ id: 'p1', name: 'Pomada', price: 35, kind: 'PRODUCT' }],
     session: { id: 's1', unitId: 'u1', unitName: 'Matriz', openedAt: '2026-10-13T10:00:00Z', openedBy: 'gerente', openingCents: 0 },
   }));
-  for (const item of ['Opções', 'Adicionar item', 'Receber e fechar', 'Dividir pagamento', 'Dinheiro', 'Débito', 'Crédito', 'Pix'])
+  for (const item of ['Adicionar item', 'Receber e fechar', 'Dividir pagamento', 'Dinheiro', 'Débito', 'Crédito', 'Pix'])
     assert.match(html, new RegExp(item));
+  assert.doesNotMatch(html, /Opções/); // Resumo completo sem seletor de visibilidade.
   assert.doesNotMatch(html, /Adicionar novamente/); // Compras anteriores ficam ocultas por padrão.
   assert.match(html, /Descontos e cupons/);
   assert.match(html, /Emitir Nota Fiscal/);
@@ -408,4 +424,99 @@ test('homologação mobile: seleção de categoria é independente e controles c
   assert.match(css, /\.agenda-dialog-checkout \.checkout-add-focused > \.checkout-item-select\s*\{grid-column:1\/-1;\}/);
   assert.match(css, /\.agenda-dialog #agenda-detail-settings\[popover\][\s\S]*?max-width:calc\(100vw - 24px\)/);
   assert.match(css, /\.agenda-dialog #agenda-detail-settings\[popover\][\s\S]*?overscroll-behavior:contain/);
+});
+
+
+test('comanda paga pode ser reaberta e recebida em outro meio sem duplicar financeiro e estoque', async () => {
+  const env = environment();
+  const first = await result(env.actions.checkoutCommand, form({ PIX: '0', DEBIT: '100' }));
+  assert.equal(first.searchParams.get('checkoutOk'), '1');
+  assert.equal(env.state.entries.length, 1);
+  const closedPayment = readWorkspace(env.state.shop.enabledFeatures).commandPayments[0];
+  assert.deepEqual(closedPayment.amounts, { CASH: 0, DEBIT: 10000, CREDIT: 0, PIX: 0 });
+
+  const reopened = await result(env.actions.reopenCommand, form());
+  assert.equal(reopened.searchParams.get('checkoutOk'), '1');
+  assert.equal(reopened.searchParams.get('commandId'), 'c1');
+  assert.equal(env.state.command.status, 'OPEN');
+  assert.equal(env.state.command.closedAt, null);
+  assert.equal(env.state.entries.length, 0);
+  assert.equal(readWorkspace(env.state.shop.enabledFeatures).commandPayments.length, 0);
+  assert.equal(env.state.stock.filter(item => item.type === 'OUT').length, 1);
+  assert.equal(env.state.stock.filter(item => item.type === 'IN').length, 1);
+  assert.equal(env.state.stock[1].reason.includes(closedPayment.id), true);
+  assert.equal(env.state.auditLogs.length, 1);
+  assert.equal(env.state.auditLogs[0].action, 'COMMAND_REOPENED');
+  assert.equal(env.state.auditLogs[0].details.commandId, 'c1');
+
+  const second = await result(env.actions.checkoutCommand, form({ PIX: '0', CREDIT: '100' }));
+  assert.equal(second.searchParams.get('checkoutOk'), '1');
+  assert.deepEqual(env.state.entries.map(e => [e.description, e.amount]), [['Comanda C1 · Crédito', 100]]);
+  assert.equal(env.state.command.status, 'CLOSED');
+  assert.equal(env.state.stock.filter(item => item.type === 'OUT').length, 2);
+  assert.equal(env.state.stock.filter(item => item.type === 'IN').length, 1);
+  assert.equal(readWorkspace(env.state.shop.enabledFeatures).commandPayments.length, 1);
+});
+
+test('caixa original fechado impede reabrir até quando há novo caixa aberto na mesma unidade', async () => {
+  for (const withNewCash of [false, true]) {
+    const env = environment();
+    assert.equal((await result(env.actions.checkoutCommand, form())).searchParams.get('checkoutOk'), '1');
+    env.state.shop.enabledFeatures.operations.cashSessions[0].closedAt = new Date().toISOString();
+    if (withNewCash) env.state.shop.enabledFeatures.operations.cashSessions.push({
+      id: 's2', unitId: 'u1', openedAt: new Date().toISOString(), openedBy: 'u', openingCents: 0,
+    });
+    const r = await result(env.actions.reopenCommand, form());
+    assert.match(r.searchParams.get('checkoutError'), /caixa original/);
+    assert.equal(env.state.command.status, 'CLOSED');
+    assert.equal(env.state.entries.length, 1);
+    assert.equal(env.state.stock.length, 1);
+    assert.equal(env.state.auditLogs.length, 0);
+  }
+});
+
+test('reabertura só para gestão e nunca quando lançamento financeiro foi modificado', async () => {
+  const env = environment({ viewer: { type: 'TENANT', barberShopId: 'shop1', role: 'BARBER', userId: 'barber1' } });
+  assert.equal((await result(env.actions.checkoutCommand, form())).searchParams.get('checkoutOk'), '1');
+  const denied = await result(env.actions.reopenCommand, form());
+  assert.match(denied.searchParams.get('checkoutError'), /Somente a gestão/);
+  assert.equal(env.state.command.status, 'CLOSED');
+
+  const manager = environment();
+  assert.equal((await result(manager.actions.checkoutCommand, form())).searchParams.get('checkoutOk'), '1');
+  manager.state.entries[0].amount = 99;
+  const blocked = await result(manager.actions.reopenCommand, form());
+  assert.match(blocked.searchParams.get('checkoutError'), /lançamento financeiro foi alterado/);
+  assert.equal(manager.state.command.status, 'CLOSED');
+  assert.equal(manager.state.stock.length, 1);
+  assert.equal(readWorkspace(manager.state.shop.enabledFeatures).commandPayments.length, 1);
+});
+
+test('comanda fechada tem Reabrir em destaque e sem Opções, indisponível após fechar caixa', () => {
+  const { CommandCheckout } = load('components/command-checkout.tsx', {
+    'next/link': { __esModule: true, default: ({ children, ...props }) => React.createElement('a', props, children) },
+    '@/app/erp/[tenant]/checkout-actions': {
+      addCommandItem() {}, removeCommandItem() {}, checkoutCommand() {}, reopenCommand() {},
+    },
+  });
+  const command = {
+    id: 'c1', customerName: 'Cliente', unitName: 'Centro', status: 'CLOSED', total: 100,
+    subtotal: 100, discount: 0, notes: 'Observação da comanda', plan: '',
+    visits: 1, lastVisit: null,
+    items: [{ id: 'i1', description: 'Corte', kind: 'SERVICE', quantity: 1, total: 100 }],
+    history: [],
+  };
+  const payment = { id: 'p1', sessionId: 's1', amounts: { CASH: 0, DEBIT: 10000, CREDIT: 0, PIX: 0 } };
+  const session = { id: 's1', unitId: 'u1', openedAt: '2026-10-19T12:00:00Z', openedBy: 'teste', openingCents: 0 };
+  const props = { command, payment, tenantCode: 'GROMMA', canOperate: true, allowReopen: true, autoOpen: true };
+  const html = renderToStaticMarkup(React.createElement(CommandCheckout, { ...props, session }));
+  assert.match(html, /Reabrir comanda/);
+  assert.match(html, /Observação da comanda/);
+  assert.match(html, /Subtotal:/);
+  assert.doesNotMatch(html, />Opções</);
+  const blocked = renderToStaticMarkup(React.createElement(CommandCheckout, { ...props }));
+  assert.match(blocked, /Reabertura indisponível/);
+  assert.match(blocked, /disabled=""/);
+  const inAgenda = renderToStaticMarkup(React.createElement(CommandCheckout, { ...props, session, allowReopen: false }));
+  assert.doesNotMatch(inAgenda, /Reabrir comanda/);
 });
