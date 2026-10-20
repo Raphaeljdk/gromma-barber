@@ -3,6 +3,21 @@ export type PaymentMethod = typeof PAYMENT_METHODS[number];
 export const PAYMENT_LABELS: Record<PaymentMethod, string> = { CASH: "Dinheiro", DEBIT: "Débito", CREDIT: "Crédito", PIX: "Pix" };
 export type CashSession = { id: string; unitId: string; unitName: string; openedAt: string; openedBy: string; openingCents: number; closedAt?: string; closedBy?: string; counted?: Record<PaymentMethod, number>; note?: string };
 export type CommandPayment = { id: string; commandId: string; sessionId: string; customerName: string; paidAt: string; amounts: Record<PaymentMethod, number>; couponCode?: string; discountCents?: number; manualDiscountCents?: number };
+/** A reabertura é permitida somente no caixa ORIGINAL ainda aberto. */
+export function canReopenCommand(
+  status: string,
+  unitId: string,
+  payment: CommandPayment | undefined,
+  sessions: CashSession[],
+) {
+  return status === "CLOSED" && Boolean(payment) &&
+    sessions.some(session =>
+      session.id === payment?.sessionId &&
+      session.unitId === unitId &&
+      !session.closedAt
+    );
+}
+
 export type BookedServices = { appointmentId: string; services: { id: string; name: string; price: number; durationMinutes: number }[] };
 export function cents(value: unknown): number {
   const raw = String(value ?? "").trim().replace(",", ".");
