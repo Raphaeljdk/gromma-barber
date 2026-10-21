@@ -9055,3 +9055,81 @@ html[data-theme="light"] .tenant-erp .erp-nav-sector-items { border-left-color: 
   .agenda-dialog-checkout .checkout-toolbar-actions form { width:100%; }
   .agenda-dialog-checkout .checkout-toolbar-actions .checkout-reopen-action { min-height:44px; }
 }
+
+
+/* Caixa: arquivo histórico, detalhe de fechamento e conciliação visual. */
+.tenant-erp .cash-history-page { min-width: 0; }
+.tenant-erp .cash-history-page .section-head { display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin:0 0 18px; }
+.tenant-erp .cash-history-header h2 { margin:.25rem 0; }
+.tenant-erp .cash-history-header p { max-width:700px;line-height:1.5;margin:.4rem 0 0; }
+.tenant-erp .cash-history-topline { display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px; }
+.tenant-erp .cash-history-filters { display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:17px;padding:16px; }
+.tenant-erp .cash-history-filters label { display:grid;gap:5px;font-weight:700;font-size:.78rem;flex:1 1 175px;min-width:150px; }
+.tenant-erp .cash-history-filters input, .tenant-erp .cash-history-filters select, .tenant-erp .erp-list-date input {
+  min-height:42px;width:100%;max-width:100%;box-sizing:border-box; padding:9px 10px;border-radius:10px;
+  color:var(--erp-text);background:var(--erp-panel);border:1px solid var(--erp-border);font-size:16px;
+}
+.tenant-erp .cash-history-filters .btn { min-height:42px; }
+.tenant-erp .cash-history-summary { display:flex;align-items:center;gap:9px;color:var(--erp-muted);font-size:.83rem;margin-bottom:13px; }
+.tenant-erp .cash-history-summary strong { color:var(--erp-text); }
+.tenant-erp .cash-history-cards { display:grid;gap:10px; }
+.tenant-erp .cash-history-card { display:grid;grid-template-columns:minmax(0,1.25fr) minmax(150px,.7fr) auto;gap:16px;align-items:center;min-width:0;padding:17px 18px; }
+.tenant-erp .cash-history-card-main { display:grid;gap:5px;min-width:0; }
+.tenant-erp .cash-history-date { display:inline-flex;align-items:center;gap:7px;font-size:.77rem;font-weight:750;color:var(--erp-gold); }
+.tenant-erp .cash-history-card-main > strong { font-size:.98rem;overflow-wrap:anywhere; }
+.tenant-erp .cash-history-card-main small,.tenant-erp .cash-history-receipt-head small { font-size:.73rem;color:var(--erp-muted);line-height:1.4; }
+.tenant-erp .cash-history-card-stats { display:grid;gap:7px;justify-items:start; }
+.tenant-erp .cash-history-card-stats span { display:flex;align-items:center;gap:5px;color:var(--erp-muted);font-size:.77rem; }
+.tenant-erp .cash-history-card-stats > strong { font-size:1.05rem; }
+.tenant-erp .cash-history-view { display:inline-flex;align-items:center;gap:7px;min-height:42px;white-space:nowrap; }
+.tenant-erp .cash-history-total { display:flex;flex-wrap:wrap;gap:22px;justify-content:space-between;padding:20px;margin:0 0 14px; }
+.tenant-erp .cash-history-total > div { display:grid;gap:5px; }
+.tenant-erp .cash-history-total span { color:var(--erp-muted);font-size:.78rem; }
+.tenant-erp .cash-history-total strong { color:var(--erp-gold);font-size:1.7rem;line-height:1.2; }
+.tenant-erp .cash-history-total small { color:var(--erp-muted);font-size:.72rem; }
+.tenant-erp .cash-history-kpis { display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px; }
+.tenant-erp .cash-history-kpi { display:grid;gap:9px;min-width:0;padding:15px 13px; }
+.tenant-erp .cash-history-kpi span { color:var(--erp-muted);font-size:.8rem;font-weight:700; }
+.tenant-erp .cash-history-kpi strong { font-size:1.12rem;overflow-wrap:anywhere; }
+.tenant-erp .cash-history-kpi small { font-size:.67rem;line-height:1.35;color:var(--erp-muted); }
+.tenant-erp .cash-history-metadata { display:flex;gap:10px 20px;flex-wrap:wrap;color:var(--erp-muted);font-size:.77rem;margin:0 0 18px; }
+.tenant-erp .cash-history-metadata strong { color:var(--erp-text); }
+.tenant-erp .cash-history-list { padding:18px 20px; }
+.tenant-erp .cash-history-list-title { display:flex;gap:10px;justify-content:space-between;align-items:start; }
+.tenant-erp .cash-history-list-title h3 { font-size:1.08rem;margin:0 0 4px; }
+.tenant-erp .cash-history-list-title p { font-size:.77rem;line-height:1.4;margin:0; }
+.tenant-erp .cash-history-receipt { display:grid;gap:10px;padding:15px 0;border-bottom:1px solid var(--erp-border);min-width:0; }
+.tenant-erp .cash-history-receipt:last-child { border-bottom:0; }
+.tenant-erp .cash-history-receipt-head { display:flex;justify-content:space-between;gap:16px;align-items:start; }
+.tenant-erp .cash-history-receipt-head > div { display:grid;gap:5px;min-width:0; }
+.tenant-erp .cash-history-receipt-head strong { overflow-wrap:anywhere; }
+.tenant-erp .cash-history-payment-tags { display:flex;gap:6px;flex-wrap:wrap; }
+.tenant-erp .cash-history-payment-tags > span { font-size:.69rem;color:var(--erp-muted);border:1px solid var(--erp-border);padding:5px 9px;border-radius:99px; }
+.tenant-erp .cash-history-items { display:grid;gap:6px;padding:8px 11px;border-radius:10px;background:var(--erp-panel-2); }
+.tenant-erp .cash-history-items > div { display:flex;justify-content:space-between;gap:12px;font-size:.76rem; }
+.tenant-erp .cash-history-items span { overflow-wrap:anywhere; }
+.tenant-erp .cash-history-receipt-link { display:inline-flex;align-items:center;gap:5px;font-size:.78rem;font-weight:750;color:var(--erp-gold);text-decoration:none; }
+.tenant-erp .cash-history-receipt-link:hover { text-decoration:underline; }
+.tenant-erp .cash-history-pagination { display:flex;justify-content:flex-end;align-items:center;gap:15px;flex-wrap:wrap;margin:15px 0;font-size:.83rem;color:var(--erp-muted); }
+.tenant-erp .cash-history-pagination a { color:var(--erp-gold);text-decoration:underline; }
+.tenant-erp .cash-history-caption { font-size:.73rem;line-height:1.4;margin-top:14px; }
+.tenant-erp .erp-list-date { min-width:148px; }
+.tenant-erp .erp-list-date input { min-height:39px; }
+@media(max-width:1150px) { .tenant-erp .cash-history-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:750px) {
+  .tenant-erp .cash-history-card { grid-template-columns:minmax(0,1fr) auto;gap:12px; }
+  .tenant-erp .cash-history-card-stats { grid-column:1;grid-row:2; }
+  .tenant-erp .cash-history-view { grid-column:2;grid-row:1 / span 2; }
+  .tenant-erp .cash-history-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:480px) {
+  .tenant-erp .cash-history-card { grid-template-columns:minmax(0,1fr);padding:15px; }
+  .tenant-erp .cash-history-card-stats,.tenant-erp .cash-history-view { grid-column:1;grid-row:auto; }
+  .tenant-erp .cash-history-view { justify-content:center;width:100%; }
+  .tenant-erp .cash-history-total { padding:15px;gap:16px; }
+  .tenant-erp .cash-history-total strong { font-size:1.45rem; }
+  .tenant-erp .cash-history-list { padding:13px; }
+  .tenant-erp .cash-history-kpi { padding:12px; }
+  .tenant-erp .cash-history-kpi strong { font-size:1rem; }
+  .tenant-erp .cash-history-filters label { flex:1 1 100%; }
+}
