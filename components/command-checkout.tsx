@@ -17,7 +17,7 @@ export type CommandView = {
 };
 type CatalogItem = { id: string; name: string; price: number; kind: string };
 const date = (v: string) => new Date(v).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-const zeroAmounts = (): Record<PaymentMethod, string> => ({ CASH: "", DEBIT: "", CREDIT: "", PIX: "" });
+const zeroAmounts = (): Record<PaymentMethod, string> => ({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", TRANSFER: "" });
 
 export function CommandCheckout({
   tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false,
@@ -84,7 +84,7 @@ export function CommandCheckout({
   function receiveAll(method: PaymentMethod) {
     setSelectedMethod(method);
     setSplit(false);
-    setAmounts({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", [method]: (totalCents / 100).toFixed(2) });
+    setAmounts({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", TRANSFER: "", [method]: (totalCents / 100).toFixed(2) });
   }
   function toggleSplit() {
     setSplit(previous => !previous);
