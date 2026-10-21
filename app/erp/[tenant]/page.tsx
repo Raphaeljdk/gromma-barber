@@ -31,6 +31,7 @@ import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
+import { CashHistory } from "@/components/cash-history";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
 import { readWorkspace } from "@/lib/erp-workspace";
@@ -143,6 +144,7 @@ const MODULE_TITLES: Record<string, string> = {
   promocoes: "Promoções / Cupons",
   financeiro: "Financeiro",
   caixa: "Caixa",
+  "caixa-historico": "Histórico de caixas",
   estoque: "Estoque",
   comissoes: "Comissões",
   equipe: "Profissionais",
@@ -210,6 +212,9 @@ export async function TenantERPView({
   const financeiroQ = valueOf("financeiroQ").trim();
   const agendaStatus = allowedValue(valueOf("agendaStatus"), APPOINTMENT_STATUSES);
   const comandaStatus = allowedValue(valueOf("comandaStatus"), COMMAND_STATUSES);
+  const comandaDe = isAgendaDate(valueOf("comandaDe")) ? valueOf("comandaDe") : "";
+  const comandaAte = isAgendaDate(valueOf("comandaAte")) ? valueOf("comandaAte") : "";
+  const invalidCommandPeriod = Boolean(comandaDe && comandaAte && comandaDe > comandaAte);
   const financeiroTipo = allowedValue(valueOf("financeiroTipo"), FINANCIAL_TYPES);
   const financeiroStatus = allowedValue(valueOf("financeiroStatus"), FINANCIAL_STATUSES);
   const agendaDateRaw = valueOf("agendaDate");
@@ -329,6 +334,10 @@ export async function TenantERPView({
     barberShopId: shop.id,
     ...(valueOf("commandId") ? { id: valueOf("commandId").slice(0, 100) } : {}),
     ...(comandaStatus ? { status: comandaStatus } : {}),
+    ...((comandaDe || comandaAte) ? { openedAt: {
+      ...(comandaDe ? { gte: new Date(`${comandaDe}T00:00:00-03:00`) } : {}),
+      ...(comandaAte ? { lt: new Date(`${addAgendaDays(comandaAte, 1)}T00:00:00-03:00`) } : {}),
+    } } : {}),
   };
   const productWhere: Prisma.ProductWhereInput = {
     barberShopId: shop.id,
@@ -1215,12 +1224,14 @@ export async function TenantERPView({
           {actionOk === "comanda" && <div className="notice erp-inline-notice success">Comanda fechada e financeiro atualizado.</div>}
           {actionError === "comanda" && <div className="notice erp-inline-notice error-notice">Não foi possível fechar a comanda.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
+          {invalidCommandPeriod && <div className="notice error-notice" role="alert">A data inicial não pode ser posterior à data final.</div>}
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`}
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`
             searchParams={qs}
             pageParam="comandasPage"
             hash="comandas"
             selects={[{ param: "comandaStatus", value: comandaStatus, label: "Status", options: COMMAND_STATUS_OPTIONS }]}
+            dateFields={[{ param: "comandaDe", value: comandaDe, label: "Abertura de" }, { param: "comandaAte", value: comandaAte, label: "Abertura até" }]}
           />
           <div className="table-wrap"><table>
             <thead><tr><th>Abertura</th><th>Cliente</th><th>Unidade</th><th>Itens</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
@@ -1579,6 +1590,14 @@ export async function TenantERPView({
             <article className="card demo-metric"><span className="small muted">Comandas abertas</span><strong>{openCommands}</strong><small>impacto operacional</small></article>
           </div>
         </section>
+
+        {activeModule === "caixa-historico" && (
+          (canOperate || canFinance) ? (
+            <CashHistory shopId={shop.id} tenantCode={tenantCode}
+              sessions={workspace.cashSessions} payments={workspace.commandPayments}
+              units={shop.units.map(unit => ({ id: unit.id, name: unit.name }))} query={qs} />
+          ) : <section className="demo-section"><p className="notice">Seu perfil não possui permissão para visualizar o histórico de caixas.</p></section>
+        )}
 
         <section id="estoque" className="demo-section" hidden={Boolean(moduleId && moduleId !== "estoque")}>
           <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
