@@ -42,6 +42,7 @@ const MODULES = [
   { id: "clientes-bloqueados", label: "Clientes Bloqueados", group: "Operacional", icon: Users },
   { id: "clientes-ranking", label: "Ranking", group: "Operacional", icon: Users },
   { id: "caixa", label: "Caixa", group: "Operacional", icon: ClipboardList },
+  { id: "caixa-historico", label: "Histórico de caixas", group: "Operacional", icon: ClipboardList },
   { id: "comandas", label: "Comandas", group: "Operacional", icon: ReceiptText },
   { id: "estoque", label: "Estoque", group: "Operacional", icon: PackageSearch },
   { id: "totem", label: "Totem / Check-in", group: "Operacional", icon: Store, proOnly: true },
