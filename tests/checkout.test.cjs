@@ -565,10 +565,10 @@ test('histórico exibe caixas encerrados e cada comanda do recibo correspondente
   const listHtml = renderToStaticMarkup(listing);
   assert.match(listHtml, /Histórico de caixas/);
   assert.match(listHtml, /Ver caixa/);
-  assert.match(listHtml, /2 caixas fechados encontrados/);
+  assert.match(listHtml, /<strong>2<\/strong> caixas fechados encontrados/);
   assert.doesNotMatch(listHtml, /open1/);
   const filtered = renderToStaticMarkup(await CashHistory({ ...base, query:{cashStart:'2026-10-18',cashEnd:'2026-10-18'} }));
-  assert.match(filtered, /1 caixas fechados encontrados/);
+  assert.match(filtered, /<strong>1<\/strong> caixas fechados encontrados/);
   const detail = renderToStaticMarkup(await CashHistory({ ...base, query:{cashId:'closed1'} }));
   for (const t of ['Total recebido no caixa','Pix','Débito','Crédito','Transferência','Corte premium','Cliente A','Ver comanda','Fechado']) assert.match(detail,new RegExp(t));
   assert.match(detail, /R\\$\\s*50,00/);
