@@ -35,7 +35,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
       ] },
       { id: "caixa", label: "Caixa", route: "caixa", children: [
         { id: "comandas", label: "Comandas", route: "comandas" },
-        { id: "caixa-historico", label: "Histórico de caixas" },
+        { id: "caixa-historico", label: "Histórico de caixas", route: "caixa-historico" },
       ] },
       { id: "estoque", label: "Estoque", route: "estoque", children: [
         { id: "estoque-movimentacao", label: "Entrada e Saída", route: "estoque" },

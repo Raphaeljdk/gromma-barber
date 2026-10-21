@@ -18,6 +18,8 @@ type SelectField = {
   options: SelectOption[];
 };
 
+type DateField = { param: string; value?: string; label: string };
+
 type Props = {
   basePath: string;
   searchParams: Record<string, QueryValue>;
@@ -29,6 +31,7 @@ type Props = {
     placeholder: string;
   };
   selects?: SelectField[];
+  dateFields?: DateField[];
   autoSubmit?: boolean;
 };
 
@@ -43,6 +46,7 @@ export function ErpListToolbar({
   hash,
   search,
   selects = [],
+  dateFields = [],
   autoSubmit = false,
 }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -59,13 +63,14 @@ export function ErpListToolbar({
     "erro",
     search?.param ?? "",
     ...selects.map((field) => field.param),
+    ...dateFields.map((field) => field.param),
   ]);
 
   const preserved = Object.entries(searchParams)
     .map(([key, value]) => [key, firstValue(value)] as const)
     .filter(([key, value]) => !owned.has(key) && Boolean(value));
 
-  const hasFilters = Boolean(search?.value) || selects.some((field) => Boolean(field.value));
+  const hasFilters = Boolean(search?.value) || selects.some((field) => Boolean(field.value)) || dateFields.some((field) => Boolean(field.value));
 
   const clearParams = new URLSearchParams();
   preserved.forEach(([key, value]) => {
@@ -103,6 +108,13 @@ export function ErpListToolbar({
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+        </label>
+      ))}
+
+      {dateFields.map((field) => (
+        <label className="erp-list-select erp-list-date" key={field.param}>
+          <span>{field.label}</span>
+          <input type="date" name={field.param} defaultValue={field.value ?? ""} onChange={scheduleSubmit} />
         </label>
       ))}
 

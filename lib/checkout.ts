@@ -1,6 +1,6 @@
-export const PAYMENT_METHODS = ["CASH", "DEBIT", "CREDIT", "PIX"] as const;
+export const PAYMENT_METHODS = ["CASH", "DEBIT", "CREDIT", "PIX", "TRANSFER"] as const;
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
-export const PAYMENT_LABELS: Record<PaymentMethod, string> = { CASH: "Dinheiro", DEBIT: "Débito", CREDIT: "Crédito", PIX: "Pix" };
+export const PAYMENT_LABELS: Record<PaymentMethod, string> = { CASH: "Dinheiro", DEBIT: "Débito", CREDIT: "Crédito", PIX: "Pix", TRANSFER: "Transferência" };
 export type CashSession = { id: string; unitId: string; unitName: string; openedAt: string; openedBy: string; openingCents: number; closedAt?: string; closedBy?: string; counted?: Record<PaymentMethod, number>; note?: string };
 export type CommandPayment = { id: string; commandId: string; sessionId: string; customerName: string; paidAt: string; amounts: Record<PaymentMethod, number>; couponCode?: string; discountCents?: number; manualDiscountCents?: number };
 /** A reabertura é permitida somente no caixa ORIGINAL ainda aberto. */
@@ -31,9 +31,22 @@ export function paymentAmounts(form: FormData): Record<PaymentMethod, number> {
 export function validatePayments(amounts: Record<PaymentMethod, number>, total: number) {
   if (PAYMENT_METHODS.reduce((sum, method) => sum + amounts[method], 0) !== total) throw new Error("A soma dos pagamentos deve ser igual ao total da comanda.");
 }
+/** Valor de pagamentos por forma, sem incluir o fundo de abertura.
+ * Os recibos anteriores à criação de Transferência não possuem essa chave. */
+export function sessionRevenueTotals(sessionId: string, payments: CommandPayment[]): Record<PaymentMethod, number> {
+  const totals = Object.fromEntries(PAYMENT_METHODS.map(method => [method, 0])) as Record<PaymentMethod, number>;
+  for (const payment of payments) {
+    if (payment.sessionId !== sessionId) continue;
+    for (const method of PAYMENT_METHODS) {
+      const amount = payment.amounts?.[method] ?? 0;
+      if (Number.isFinite(amount) && amount >= 0) totals[method] += amount;
+    }
+  }
+  return totals;
+}
 export function sessionTotals(session: CashSession, payments: CommandPayment[]): Record<PaymentMethod, number> {
-  const totals = { CASH: session.openingCents, DEBIT: 0, CREDIT: 0, PIX: 0 };
-  for (const payment of payments) if (payment.sessionId === session.id) for (const method of PAYMENT_METHODS) totals[method] += payment.amounts[method];
+  const totals = sessionRevenueTotals(session.id, payments);
+  totals.CASH += session.openingCents;
   return totals;
 }
 export function whatsappWaitlist(phone: string, name: string, service: string) {
