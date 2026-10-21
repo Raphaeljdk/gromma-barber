@@ -1226,7 +1226,7 @@ export async function TenantERPView({
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {invalidCommandPeriod && <div className="notice error-notice" role="alert">A data inicial não pode ser posterior à data final.</div>}
           <ErpListToolbar
-            basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`
+            basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`}
             searchParams={qs}
             pageParam="comandasPage"
             hash="comandas"
