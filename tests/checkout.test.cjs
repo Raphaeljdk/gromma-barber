@@ -132,7 +132,7 @@ test('fechamento exige nova conferência após checkout concorrente e motivo da 
 });
 test('conciliação separa dinheiro do fundo e meios eletrônicos', () => {
   const totals = money.sessionTotals({ id: 's1', openingCents: 2000 }, [{ sessionId: 's1', amounts: { CASH: 1000, DEBIT: 3000, CREDIT: 4000, PIX: 5000 } }, { sessionId: 'other', amounts: { CASH: 99999 } }]);
-  assert.deepEqual(totals, { CASH: 3000, DEBIT: 3000, CREDIT: 4000, PIX: 5000 });
+  assert.deepEqual(totals, { CASH: 3000, DEBIT: 3000, CREDIT: 4000, PIX: 5000, TRANSFER: 0 });
 });
 test('WhatsApp normaliza telefone e abre mensagem sem envio automático', () => {
   const url = new URL(money.whatsappWaitlist('(11) 99999-1234', 'João', 'Corte e barba'));
@@ -433,7 +433,7 @@ test('comanda paga pode ser reaberta e recebida em outro meio sem duplicar finan
   assert.equal(first.searchParams.get('checkoutOk'), '1');
   assert.equal(env.state.entries.length, 1);
   const closedPayment = readWorkspace(env.state.shop.enabledFeatures).commandPayments[0];
-  assert.deepEqual(closedPayment.amounts, { CASH: 0, DEBIT: 10000, CREDIT: 0, PIX: 0 });
+  assert.deepEqual(closedPayment.amounts, { CASH: 0, DEBIT: 10000, CREDIT: 0, PIX: 0, TRANSFER: 0 });
 
   const reopened = await result(env.actions.reopenCommand, form());
   assert.equal(reopened.searchParams.get('checkoutOk'), '1');
@@ -519,4 +519,58 @@ test('comanda fechada tem Reabrir em destaque e sem Opções, indisponível apó
   assert.match(blocked, /disabled=""/);
   const inAgenda = renderToStaticMarkup(React.createElement(CommandCheckout, { ...props, session, allowReopen: false }));
   assert.doesNotMatch(inAgenda, /Reabrir comanda/);
+});
+
+test('Transferência fica separada de Pix e é conciliada em caixas novos sem perder registros antigos', async () => {
+  const env = environment();
+  const url = await result(env.actions.checkoutCommand, form({ PIX: '0', TRANSFER: '100' }));
+  assert.equal(url.searchParams.get('checkoutOk'), '1');
+  assert.equal(env.state.entries.length, 1);
+  assert.match(env.state.entries[0].description, /Transferência/);
+  const ws = readWorkspace(env.state.shop.enabledFeatures);
+  assert.equal(ws.commandPayments[0].amounts.TRANSFER, 10000);
+  assert.equal(ws.commandPayments[0].amounts.PIX, 0);
+  const totals = money.sessionRevenueTotals('s1', ws.commandPayments);
+  assert.equal(totals.TRANSFER, 10000);
+  assert.equal(totals.PIX, 0);
+  const historic = [{ sessionId:'s1', amounts:{ CASH:0, DEBIT:1000, CREDIT:0, PIX:2000 } }];
+  assert.deepEqual(money.sessionRevenueTotals('s1',historic), { CASH:0, DEBIT:1000, CREDIT:0, PIX:2000, TRANSFER:0 });
+  assert.equal(money.sessionTotals({ id:'s1',openingCents:1500 },historic).CASH,1500);
+});
+
+test('histórico exibe caixas encerrados e cada comanda do recibo correspondente', async () => {
+  const { CashHistory } = load('components/cash-history.tsx', {
+    '@/lib/prisma': { prisma: { serviceCommand: { findMany: async q => {
+      assert.equal(q.where.barberShopId, 'shop1');
+      assert.deepEqual(q.where.id.in, ['c1']);
+      return [{ id:'c1', status:'CLOSED', openedAt:new Date('2026-10-18T10:00:00Z'),
+        closedAt:new Date('2026-10-18T15:00:00Z'), total:50,
+        items:[{ id:'item1', description:'Corte premium',quantity:1,total:50,kind:'SERVICE' }] }];
+    } } } },
+    'next/link': { __esModule: true, default: ({ children, ...props }) => React.createElement('a',props,children) },
+  });
+  const sessions = [
+    { id:'closed1',unitId:'u1',unitName:'Matriz',openedAt:'2026-10-18T11:00:00Z',
+      closedAt:'2026-10-18T21:00:00Z',openedBy:'Operador',closedBy:'Gerente',openingCents:2000 },
+    { id:'closed2',unitId:'u1',unitName:'Matriz',openedAt:'2026-10-17T11:00:00Z',
+      closedAt:'2026-10-17T21:00:00Z',openedBy:'Operador',closedBy:'Gerente',openingCents:0 },
+    { id:'open1',unitId:'u1',unitName:'Matriz',openedAt:'2026-10-19T11:00:00Z',
+      openedBy:'Operador',openingCents:0 },
+  ];
+  const payments = [{ id:'payment1', commandId:'c1',sessionId:'closed1',
+    customerName:'Cliente A',paidAt:'2026-10-18T15:00:00Z',
+    amounts:{ CASH:0,DEBIT:0,CREDIT:0,PIX:4000,TRANSFER:1000 } }];
+  const base = {shopId:'shop1',tenantCode:'GROMMA',sessions,payments,units:[{id:'u1',name:'Matriz'}]};
+  const listing = await CashHistory({ ...base, query:{} });
+  const listHtml = renderToStaticMarkup(listing);
+  assert.match(listHtml, /Histórico de caixas/);
+  assert.match(listHtml, /Ver caixa/);
+  assert.match(listHtml, /2 caixas fechados encontrados/);
+  assert.doesNotMatch(listHtml, /open1/);
+  const filtered = renderToStaticMarkup(await CashHistory({ ...base, query:{cashStart:'2026-10-18',cashEnd:'2026-10-18'} }));
+  assert.match(filtered, /1 caixas fechados encontrados/);
+  const detail = renderToStaticMarkup(await CashHistory({ ...base, query:{cashId:'closed1'} }));
+  for (const t of ['Total recebido no caixa','Pix','Débito','Crédito','Transferência','Corte premium','Cliente A','Ver comanda','Fechado']) assert.match(detail,new RegExp(t));
+  assert.match(detail, /R\\$\\s*50,00/);
+  assert.doesNotMatch(detail, /Reabrir comanda/);
 });
