@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace, writeWorkspace } from "@/lib/erp-workspace";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
+import { parseCountMilli, stockBalanceMilli } from "@/lib/stock-balance";
 
 const OPERATION_ROLES = ["OWNER", "MANAGER", "RECEPTIONIST", "BARBER"];
 const MANAGEMENT_ROLES = ["OWNER", "MANAGER"];
@@ -801,6 +802,89 @@ export async function createStockMovement(formData: FormData) {
   revalidatePath(path);
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/alertas`);
   redirect(`${path}?ok=movimento#estoque`);
+}
+
+
+/**
+ * Registra a contagem física em uma unidade sem reescrever movimentos antigos.
+ * O saldo esperado protege contra uma tela desatualizada. Ajustes negativos
+ * são gravados como ADJUSTMENT com quantidade assinada, preservando auditoria.
+ */
+export async function confirmStockCount(formData: FormData) {
+  const { tenantCode, viewer, shop } = await context(formData);
+  const path = "/erp/" + encodeURIComponent(tenantCode) + "/estoque-balanco";
+  const productId = text(formData, "productId", 80);
+  const unitId = text(formData, "unitId", 80);
+  const filterUnit = text(formData, "stockUnit", 80);
+  const filterSearch = text(formData, "stockQ", 100);
+  const filterPage = text(formData, "stockPage", 8);
+  const resultParams = new URLSearchParams();
+  if (filterUnit) resultParams.set("stockUnit", filterUnit);
+  if (filterSearch) resultParams.set("stockQ", filterSearch);
+  if (/^[1-9]\d{0,5}$/.test(filterPage)) resultParams.set("stockPage", filterPage);
+  const target = (result: string) => {
+    resultParams.set("balancoResult", result);
+    return path + "?" + resultParams.toString();
+  };
+
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(target("permissao"));
+
+  const countedMilli = parseCountMilli(formData.get("count"));
+  const expectedRaw = text(formData, "expectedMilli", 20);
+  const expectedMilli = Number(expectedRaw);
+  if (countedMilli === null || !/^-?\d+$/.test(expectedRaw) || !Number.isSafeInteger(expectedMilli)
+      || Math.abs(expectedMilli) > 9999999999 || !productId || !unitId) {
+    redirect(target("invalido"));
+  }
+
+  let result = "salvo";
+  try {
+    await prisma.$transaction(async (tx) => {
+      const [product, unit] = await Promise.all([
+        tx.product.findFirst({ where: { id: productId, barberShopId: shop.id, active: true }, select: { id: true } }),
+        tx.barberShopUnit.findFirst({ where: { id: unitId, barberShopId: shop.id, active: true }, select: { id: true } }),
+      ]);
+      if (!product || !unit) throw new Error("INVALID_STOCK_COUNT");
+
+      const balances = await tx.stockMovement.groupBy({
+        by: ["type"],
+        where: { barberShopId: shop.id, unitId: unit.id, productId: product.id },
+        _sum: { quantity: true },
+      });
+      const currentMilli = stockBalanceMilli(balances);
+      if (currentMilli !== expectedMilli) throw new Error("STALE_STOCK_COUNT");
+      const differenceMilli = countedMilli - currentMilli;
+
+      if (differenceMilli !== 0) {
+        await tx.stockMovement.create({ data: {
+          barberShopId: shop.id,
+          unitId: unit.id,
+          productId: product.id,
+          type: "ADJUSTMENT",
+          quantity: differenceMilli / 1000,
+          reason: "Balanço físico: sistema " + currentMilli / 1000 + ", contado " + countedMilli / 1000,
+        } });
+      }
+      await tx.adminAuditLog.create({ data: {
+        barberShopId: shop.id,
+        action: "STOCK_COUNT_CONFIRMED",
+        adminEmail: viewer.email,
+        details: { unitId: unit.id, productId: product.id, expectedMilli, countedMilli, differenceMilli, actorId: viewer.type === "TENANT" ? viewer.userId : null },
+      } });
+    }, { isolationLevel: "Serializable" });
+  } catch (error) {
+    if (error instanceof Error && error.message === "STALE_STOCK_COUNT") result = "desatualizado";
+    else if (error instanceof Error && error.message === "INVALID_STOCK_COUNT") result = "invalido";
+    else {
+      result = "erro";
+      console.error("Failed to confirm physical stock count", error);
+    }
+  }
+
+  revalidatePath(path);
+  revalidatePath("/erp/" + encodeURIComponent(tenantCode) + "/estoque");
+  revalidatePath("/erp/" + encodeURIComponent(tenantCode) + "/alertas");
+  redirect(target(result));
 }
 
 export async function createProduct(formData: FormData) {

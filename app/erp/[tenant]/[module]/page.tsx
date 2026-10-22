@@ -16,6 +16,7 @@ const MODULES = new Set([
   "caixa",
   "caixa-historico",
   "estoque",
+  "estoque-balanco",
   "comissoes",
   "equipe",
   "unidades",
