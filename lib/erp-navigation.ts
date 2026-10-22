@@ -39,6 +39,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
       ] },
       { id: "estoque", label: "Estoque", route: "estoque", children: [
         { id: "estoque-movimentacao", label: "Entrada e Saída", route: "estoque" },
+        { id: "estoque-balanco", label: "Balanço", route: "estoque-balanco" },
       ] },
     ],
   },

@@ -45,6 +45,7 @@ const MODULES = [
   { id: "caixa-historico", label: "Histórico de caixas", group: "Operacional", icon: ClipboardList },
   { id: "comandas", label: "Comandas", group: "Operacional", icon: ReceiptText },
   { id: "estoque", label: "Estoque", group: "Operacional", icon: PackageSearch },
+  { id: "estoque-balanco", label: "Balanço de estoque", group: "Operacional", icon: PackageSearch },
   { id: "totem", label: "Totem / Check-in", group: "Operacional", icon: Store, proOnly: true },
   { id: "assinaturas", label: "Clube / Assinaturas", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "gerencial", label: "Gerencial", group: "Gestão", icon: LayoutDashboard },

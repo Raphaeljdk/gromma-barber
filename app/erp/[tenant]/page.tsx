@@ -32,6 +32,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
 import { CashHistory } from "@/components/cash-history";
+import { StockBalance } from "@/components/stock-balance";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
 import { readWorkspace } from "@/lib/erp-workspace";
@@ -146,6 +147,7 @@ const MODULE_TITLES: Record<string, string> = {
   caixa: "Caixa",
   "caixa-historico": "Histórico de caixas",
   estoque: "Estoque",
+  "estoque-balanco": "Balanço de estoque",
   comissoes: "Comissões",
   equipe: "Profissionais",
   unidades: "Unidades",
@@ -1599,8 +1601,12 @@ export async function TenantERPView({
           ) : <section className="demo-section"><p className="notice">Seu perfil não possui permissão para visualizar o histórico de caixas.</p></section>
         )}
 
+        {activeModule === "estoque-balanco" && <StockBalance shopId={shop.id} tenantCode={tenantCode}
+          units={shop.units.filter(unit => unit.active).map(unit => ({ id: unit.id, name: unit.name }))}
+          canManage={canManage} query={qs} />}
+
         <section id="estoque" className="demo-section" hidden={Boolean(moduleId && moduleId !== "estoque")}>
-          <div className="section-head"><div><div className="eyebrow">Estoque</div><h2>Produtos</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head"><div><div className="eyebrow">Estoque / Entrada e saída</div><h2>Produtos</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/estoque-balanco`}>Balanço físico →</Link></div>
           {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
           {actionOk === "movimento" && <div className="notice erp-inline-notice success">Movimentação de estoque registrada.</div>}
           {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}
