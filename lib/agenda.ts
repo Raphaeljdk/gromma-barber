@@ -85,6 +85,7 @@ export function agendaReturnHref(
       0,
       80,
     ),
+    agendaProfessionals: String(form.get("agendaProfessionals") ?? "").slice(0, 1500),
     agendaClient: ["with-plan", "without-plan", "on-site"].includes(client)
       ? client
       : "",
