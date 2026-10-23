@@ -6,6 +6,7 @@ const MODULES = new Set([
   "agenda-feriados",
   "clientes-bloqueados",
   "clientes-ranking",
+  "clientes-historico-compras",
   "clientes",
   "servicos",
   "comandas",
