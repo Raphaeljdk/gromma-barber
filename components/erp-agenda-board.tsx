@@ -278,12 +278,12 @@ export function ErpAgendaBoard({
   // Instant client-side filtering keeps the dropdown open through consecutive taps.
   // The URL is synchronized without a server navigation or a full board remount.
   const [peopleSelection, setPeopleSelection] = useState(() => ({
-    unitIds: selectedUnitIds.length ? selectedUnitIds : availableUnitIds,
+    unitIds: selectedUnitIds.length ? selectedUnitIds : selectedUnitId ? [selectedUnitId] : availableUnitIds,
     professionalIds: selectedProfessionalIds.length
       ? selectedProfessionalIds
       : selectedProfessionalId ? [selectedProfessionalId] : [
         ...professionals.filter(person => !person.unitId ||
-          (selectedUnitIds.length ? selectedUnitIds : availableUnitIds).includes(person.unitId)).map(person => person.id),
+          (selectedUnitIds.length ? selectedUnitIds : selectedUnitId ? [selectedUnitId] : availableUnitIds).includes(person.unitId)).map(person => person.id),
         "unassigned",
       ],
   }));
