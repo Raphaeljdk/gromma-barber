@@ -882,7 +882,7 @@ export function ErpAgendaBoard({
                   const booked = displayedDayAppointments.filter(item => (item.barberId ?? "unassigned") === person.id);
                   const totalMinutes = booked.reduce((sum, item) => sum + Math.max(0,
                     (new Date(item.endsAt ?? item.startsAt).getTime() - new Date(item.startsAt).getTime()) / 60000), 0);
-                  const occupancy = Math.min(100, Math.round(totalMinutes / Math.max(1, (endHour - startHour) * 60) * 100));
+                  const occupancy = Math.min(100, Math.round(totalMinutes / Math.max(1, (closeHour - openHour) * 60) * 100));
                   return (
                   <div key={person.id}
                     className={`agenda-professional-head${draggedId === person.id ? " is-dragging" : ""}${dropId === person.id ? " is-drop-target" : ""}`}
