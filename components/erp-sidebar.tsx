@@ -47,6 +47,8 @@ type Props = {
   email: string;
   viewerType: "TENANT" | "ADMIN";
   canManage: boolean;
+  isOwner: boolean;
+  notificationCount: number;
   supportHref: string;
   logoutAction?: () => Promise<void>;
 };
@@ -109,6 +111,8 @@ export function ErpSidebar({
   email,
   viewerType,
   canManage,
+  isOwner,
+  notificationCount,
   supportHref,
   logoutAction,
 }: Props) {
@@ -143,9 +147,9 @@ export function ErpSidebar({
   }
 
   function renderNavItem(item: ErpNavigationNode, depth = 0): React.ReactNode {
-    if (item.adminOnly && !canManage) return null;
+    if ((item.adminOnly && !canManage) || (item.ownerOnly && !isOwner)) return null;
 
-    const visibleChildren = item.children?.filter((child) => !child.adminOnly || canManage) ?? [];
+    const visibleChildren = item.children?.filter((child) => (!child.adminOnly || canManage) && (!child.ownerOnly || isOwner)) ?? [];
     const hasChildren = visibleChildren.length > 0;
     const activeItem = item.route === active;
     const activeInside = hasChildren && visibleChildren.some((child) => itemIncludesRoute(child, active));
@@ -273,6 +277,10 @@ export function ErpSidebar({
         </div>
 
         <div className="erp-sidebar-shortcuts">
+          {isOwner && <Link href={routeFor(tenantCode, "notificacoes")} title="Notificações de solicitações de compra" onClick={() => setMobileOpen(false)}>
+            <BellRing size={16} />
+            <span className="erp-sidebar-label">Notificações {notificationCount > 0 ? "(" + notificationCount + ")" : ""}</span>
+          </Link>}
           <button type="button" onClick={goBack} title="Voltar">
             <ChevronLeft size={16} />
             <span className="erp-sidebar-label">Voltar</span>
