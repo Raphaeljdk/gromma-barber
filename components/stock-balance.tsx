@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardCheck, PackageSearch } from "lucide-react";
+import { ClipboardCheck, PackageSearch, ShoppingCart } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { brl } from "@/lib/plans";
 import { formatQuantityMilli, stockBalanceMilli } from "@/lib/stock-balance";
@@ -70,15 +70,16 @@ export async function StockBalance({ shopId, tenantCode, units, canManage, query
         <h2>Balanço de estoque</h2>
         <p className="muted">Compare o estoque registrado com a contagem física da unidade. Cada produto é conferido separadamente.</p>
       </div>
+      <Link className="btn secondary" href={"/erp/" + encodeURIComponent(tenantCode) + "/estoque-compras"}><ShoppingCart size={16}/> Solicitar compra</Link>
       <Link className="btn secondary" href={"/erp/" + encodeURIComponent(tenantCode) + "/estoque"}>
         <PackageSearch size={16}/> Entrada e saída
       </Link>
     </header>
     {!unit ? <div className="notice">Cadastre uma unidade ativa para fazer o balanço de estoque.</div> : <>
-      {result === "salvo" && <p className="notice success" role="status">Conferência registrada. O saldo e o histórico de ajustes foram atualizados.</p>}
-      {result === "desatualizado" && <p className="notice error-notice" role="alert">O estoque mudou durante a conferência. A contagem não foi aplicada; atualize os números e confira novamente.</p>}
+      {result === "salvo" && <p className="notice success" role="status">Conferência registrada na auditoria. O estoque permanece inalterado.</p>}
+      {result === "desatualizado" && <p className="notice error-notice" role="alert">O estoque mudou durante a conferência. Atualize os números antes de registrar.</p>}
       {result === "invalido" && <p className="notice error-notice" role="alert">Confira o produto, a unidade e a quantidade física informada.</p>}
-      {result === "permissao" && <p className="notice error-notice" role="alert">Somente a gestão pode confirmar ajustes no estoque.</p>}
+      {result === "permissao" && <p className="notice error-notice" role="alert">Somente a gestão pode registrar a conferência.</p>}
       {result === "erro" && <p className="notice error-notice" role="alert">Não foi possível registrar a conferência. Nenhuma alteração foi aplicada; tente novamente.</p>}
       <form action={"/erp/" + encodeURIComponent(tenantCode) + "/estoque-balanco"} method="get" className="stock-balance-filters card">
         <label><span className="label">Unidade</span><select className="select" name="stockUnit" defaultValue={unit.id}>
@@ -123,7 +124,7 @@ export async function StockBalance({ shopId, tenantCode, units, canManage, query
         </table>
       </div>
       <div className="stock-balance-footer">
-        <p className="muted">Ao conferir, a diferença é registrada como ajuste auditável. Movimentações novas impedem a aplicação de uma contagem desatualizada.</p>
+        <p className="muted">A conferência registra a divergência na auditoria sem alterar o saldo disponível. Apenas entradas, saídas e ajustes manuais mudam o estoque.</p>
         {pages > 1 && <nav aria-label="Páginas do balanço" className="cash-history-pagination">
           {page > 1 && <Link href={href(tenantCode, { ...filter, stockPage: page - 1 })}>Anterior</Link>}
           <span>Página {page} de {pages}</span>
