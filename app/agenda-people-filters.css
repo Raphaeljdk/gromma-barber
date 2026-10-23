@@ -132,10 +132,10 @@ html[data-theme="light"] .tenant-erp .agenda-multifilter-popover {
 html[data-theme="light"] .tenant-erp .agenda-multifilter-row:hover,
 html[data-theme="light"] .tenant-erp .agenda-multifilter-row:has(input:checked) {background:#f8f0de;}
 html[data-theme="light"] .tenant-erp .agenda-multifilter-row.is-all {color:#80591f;}
-html[data-theme="light"] @media(max-width:650px) {
+@media(max-width:650px) {
   .tenant-erp .agenda-multifilter-toolbar {gap:6px;flex-wrap:wrap;}
   .tenant-erp .agenda-multifilter-trigger {min-height:42px;padding:9px;font-size:.75rem;gap:6px;}
-    .tenant-erp .agenda-multifilter-popover,
+  .tenant-erp .agenda-multifilter-popover,
   .tenant-erp .agenda-multifilter-popover.is-professionals {
     left:0;width:min(330px,calc(100vw - 34px));
   }
