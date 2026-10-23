@@ -7,7 +7,7 @@ import { deleteHolidayPeriod, reactivateCustomer, saveHolidayPeriod, setHolidayP
 
 type Query = Record<string, string | string[] | undefined>;
 type Props = {
-  section: "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking" | "clientes-historico-compras";
+  section: "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking";
   tenantCode: string;
   shopId: string;
   units: { id: string; name: string; active: boolean }[];
