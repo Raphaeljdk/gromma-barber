@@ -57,7 +57,7 @@ function flatten(nodes) {
 
 test("sectors match the reference image in order", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro", "totem",
   ]);
 });
 
@@ -100,7 +100,8 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
   for (const item of all) if (item.route) assert.ok(existing.has(item.route), item.id + " has invalid route");
   assert.ok(all.find(item => item.id === "auditoria").adminOnly, "auditoria must remain management-only");
   assert.ok(all.find(item => item.id === "extra-totem").proOnly, "totem must respect plan");
-  assert.equal(ERP_NAVIGATION.at(-1).id, "financeiro", "Financeiro remains the last sector");
+  assert.equal(ERP_NAVIGATION.at(-2).id, "financeiro", "Financeiro must be before Totem");
+  assert.equal(ERP_NAVIGATION.at(-1).id, "totem", "Totem / Check-in is the final standalone item");
 });
 
 test("sidebar renders every hierarchy level without pretending unimplemented pages exist", () => {
