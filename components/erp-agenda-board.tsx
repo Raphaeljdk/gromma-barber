@@ -821,25 +821,65 @@ export function ErpAgendaBoard({
             {panelOpen ? <PanelRightClose size={19} /> : <PanelRightOpen size={19} />}
           </button>
         </div>
+        <div className="agenda-toolbar-inline-filters" role="group" aria-label="Filtros e opções da agenda">
+          <AgendaPeopleFilters
+            key={selectedUnitParam + ":" + selectedProfessionalParam}
+            units={units}
+            professionals={professionals}
+            selectedUnitIds={selectedUnits}
+            selectedProfessionalIds={selectedProfessionals}
+            onApply={applyPeopleFilters}
+          />
+          <details className="agenda-display-panel">
+            <summary className="agenda-display-trigger">
+              <Settings2 size={15} aria-hidden="true" />
+              <span>Exibição</span>
+              <ChevronDown size={15} className="agenda-display-chevron" aria-hidden="true" />
+            </summary>
+            <div className="agenda-display-popup" aria-label="Opções de visualização da agenda">
+              <div className="agenda-display-settings">
+                <label>
+                  Visualização
+                  <select
+                    value={preferences.compact ? "compact" : "expanded"}
+                    onChange={event => savePreferences({ compact: event.target.value === "compact" })}
+                  >
+                    <option value="expanded">Ampliada</option>
+                    <option value="compact">Compacta</option>
+                  </select>
+                </label>
+                <label>
+                  Largura das colunas
+                  <select
+                    value={columnWidth}
+                    onChange={event => savePreferences({ width: Number(event.target.value) })}
+                  >
+                    <option value={224}>Estreita</option>
+                    <option value={280}>Normal</option>
+                    <option value={340}>Larga</option>
+                  </select>
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(preferences.hideEmpty)}
+                    onChange={event => savePreferences({ hideEmpty: event.target.checked })}
+                  />
+                  Ocultar profissionais sem atendimento no dia
+                </label>
+              </div>
+              {view === "day" && (
+                <p className="agenda-order-hint">
+                  Arraste o cabeçalho para organizar os profissionais. Pelo teclado, foque o ícone e use as setas ← →.
+                </p>
+              )}
+            </div>
+          </details>
+        </div>
       </div>
-      <AgendaPeopleFilters
-        key={selectedUnitParam + ":" + selectedProfessionalParam}
-        units={units}
-        professionals={professionals}
-        selectedUnitIds={selectedUnits}
-        selectedProfessionalIds={selectedProfessionals}
-        onApply={applyPeopleFilters}
-      />
-      <div className="agenda-active-filters">
-        <span className="agenda-people-filter-summary">
-          Exibindo {selectedUnits.length} de {units.length} unidade(s) e {selectedProfessionals.length} de {availableProfessionalIds.length} grupo(s) de profissionais
-        </span>
-        {selectedClientFilter && (
-          <Link
-            prefetch={false}
-            className="agenda-filter-chip"
-            href={href({ agendaClient: "" })}
-          >
+      {selectedClientFilter && (
+        <div className="agenda-active-filters">
+          <Link prefetch={false} className="agenda-filter-chip" href={href({ agendaClient: "" })}>
             {selectedClientFilter === "with-plan"
               ? "Com plano"
               : selectedClientFilter === "without-plan"
@@ -848,8 +888,6 @@ export function ErpAgendaBoard({
             <X size={14} />
             <span className="agenda-sr-only">Remover filtro</span>
           </Link>
-        )}
-        {(!allProfessionalsSelected || !allUnitsSelected || selectedClientFilter) && (
           <Link
             prefetch={false}
             href={href({
@@ -862,14 +900,8 @@ export function ErpAgendaBoard({
           >
             Limpar filtros
           </Link>
-        )}
-      </div>
-      {view === "day" && <p className="agenda-order-hint">Arraste o cabeçalho para organizar os profissionais. Pelo teclado, foque o ícone e use as setas ← →.</p>}
-      <div className="agenda-display-settings">
-        <label>Visualização <select value={preferences.compact ? "compact" : "expanded"} onChange={e => savePreferences({ compact: e.target.value === "compact" })}><option value="expanded">Ampliada</option><option value="compact">Compacta</option></select></label>
-        <label>Largura das colunas <select value={columnWidth} onChange={e => savePreferences({ width: Number(e.target.value) })}><option value={224}>Estreita</option><option value={280}>Normal</option><option value={340}>Larga</option></select></label>
-        <label><input type="checkbox" checked={Boolean(preferences.hideEmpty)} onChange={e => savePreferences({ hideEmpty: e.target.checked })} /> Ocultar profissionais sem atendimento no dia</label>
-      </div>
+        </div>
+      )}
       <span className="agenda-sr-only" role="status">{orderMessage}</span>
       <div className={`agenda-main-layout${panelOpen ? " with-panel" : ""}`}>
         <div className="agenda-main-calendar">
