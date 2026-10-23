@@ -7,7 +7,8 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties }
 import { rescheduleAppointment, saveAgendaBlock, removeAgendaBlock } from "@/app/erp/[tenant]/agenda-actions";
 import { addCommandItem, removeCommandItem } from "@/app/erp/[tenant]/checkout-actions";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
-import { serializeAgendaUnits, toggleAgendaUnit } from "@/lib/agenda-unit-selection";
+import { serializeAgendaUnits } from "@/lib/agenda-unit-selection";
+import { AgendaPeopleFilters } from "./agenda-people-filters";
 import type { AgendaBlock } from "@/lib/erp-workspace";
 import {
   ArrowLeftRight,
@@ -100,6 +101,7 @@ type Props = {
   selectedProfessionalId?: string;
   selectedUnitId?: string;
   selectedUnitIds?: string[];
+  selectedProfessionalIds?: string[];
   selectedClientFilter: AgendaClientFilter;
   settings: OperationalSettings;
   waitlist: Array<WaitlistConfig & { serviceName: string }>;
@@ -242,6 +244,7 @@ export function ErpAgendaBoard({
   selectedProfessionalId = "",
   selectedUnitId = "",
   selectedUnitIds = [],
+  selectedProfessionalIds = [],
   selectedClientFilter,
   settings,
   waitlist,
@@ -277,6 +280,16 @@ export function ErpAgendaBoard({
     : availableUnitIds;
   const selectedUnitSet = new Set(selectedUnits);
   const selectedUnitParam = serializeAgendaUnits(selectedUnits, availableUnitIds);
+  const availableProfessionalIds = [
+    ...professionals.filter(person => !person.unitId || selectedUnitSet.has(person.unitId)).map(person => person.id),
+    "unassigned",
+  ];
+  const selectedProfessionals = selectedProfessionalIds.length
+    ? availableProfessionalIds.filter(id => selectedProfessionalIds.includes(id))
+    : selectedProfessionalId ? [selectedProfessionalId] : availableProfessionalIds;
+  const selectedProfessionalSet = new Set(selectedProfessionals);
+  const selectedProfessionalParam = serializeAgendaUnits(selectedProfessionals, availableProfessionalIds);
+  const allProfessionalsSelected = selectedProfessionals.length === availableProfessionalIds.length;
   const allUnitsSelected = selectedUnits.length === availableUnitIds.length;
   const orderKey = `gromma:agenda-order:${tenantCode}:${selectedUnitParam || "all"}`;
   const orderSnapshot = useSyncExternalStore(subscribeToOrder, () => readOrder(orderKey), () => "[]");
@@ -340,6 +353,7 @@ export function ErpAgendaBoard({
     agendaDate: selectedDate,
     agendaView: view,
     agendaProfessional: selectedProfessionalId,
+    agendaProfessionals: selectedProfessionalParam,
     agendaUnit: selectedUnitId,
     agendaUnits: selectedUnitParam,
     agendaClient: selectedClientFilter,
@@ -349,17 +363,23 @@ export function ErpAgendaBoard({
       agendaDate: selectedDate,
       agendaView: view,
       agendaProfessional: selectedProfessionalId,
+      agendaProfessionals: selectedProfessionalParam,
       agendaUnit: selectedUnitId,
       agendaUnits: selectedUnitParam,
       agendaClient: selectedClientFilter,
       ...changes,
     });
-  const selectUnits = (ids: string[]) => {
-    const encoded = serializeAgendaUnits(ids, availableUnitIds);
+  const applyPeopleFilters = (unitsToShow: string[], professionalsToShow: string[]) => {
+    const unitValue = serializeAgendaUnits(unitsToShow, availableUnitIds);
+    const professionalValue = serializeAgendaUnits(
+      professionalsToShow,
+      [...professionals.filter(person => !person.unitId || unitsToShow.includes(person.unitId)).map(person => person.id), "unassigned"],
+    );
     router.push(href({
-      agendaUnits: encoded,
-      agendaUnit: ids.length === 1 ? ids[0] : "",
-      agendaProfessional: "",
+      agendaUnit: unitsToShow.length === 1 ? unitsToShow[0] : "",
+      agendaUnits: unitValue,
+      agendaProfessional: professionalsToShow.length === 1 ? professionalsToShow[0] : "",
+      agendaProfessionals: professionalValue,
     }), { scroll: false });
   };
   const slotMinutes = [15, 20, 30, 45, 60].includes(settings.slotMinutes)
@@ -373,11 +393,7 @@ export function ErpAgendaBoard({
     : 20;
   const unitAppointments = appointments.filter(
     (item) =>
-      selectedUnitSet.has(item.unitId) &&
-      (!selectedProfessionalId ||
-        (selectedProfessionalId === "unassigned"
-          ? !item.barberId
-          : item.barberId === selectedProfessionalId)),
+      selectedUnitSet.has(item.unitId) && selectedProfessionalSet.has(item.barberId ?? "unassigned"),
   );
   const dayAppointments = unitAppointments.filter(
     (item) => item.status !== "CANCELED" && agendaDateKey(item.startsAt) === selectedDate,
@@ -392,8 +408,7 @@ export function ErpAgendaBoard({
   );
   const activeProfessionals = professionals.filter(
     (person) =>
-      (!person.unitId || selectedUnitSet.has(person.unitId)) &&
-      (!selectedProfessionalId || person.id === selectedProfessionalId),
+      (!person.unitId || selectedUnitSet.has(person.unitId)) && selectedProfessionalSet.has(person.id),
   );
   let columns = activeProfessionals.map((person) => ({
     ...person,
@@ -408,7 +423,7 @@ export function ErpAgendaBoard({
         canSchedule: false,
       });
   }
-  if (!selectedProfessionalId || selectedProfessionalId === "unassigned")
+  if (selectedProfessionalSet.has("unassigned"))
     columns.push({
       id: "unassigned",
       name: "Sem preferência",
@@ -583,10 +598,7 @@ export function ErpAgendaBoard({
   const visibleWaitlist = waitlist.filter(
     (item) =>
       (!item.unitId || selectedUnitSet.has(item.unitId)) &&
-      (!selectedProfessionalId ||
-        (selectedProfessionalId === "unassigned"
-          ? !item.barberId
-          : !item.barberId || item.barberId === selectedProfessionalId)),
+      (!item.barberId || selectedProfessionalSet.has(item.barberId)),
   );
   const weekday = new Date(`${selectedDate}T12:00:00-03:00`).getUTCDay();
   const weekStart = addAgendaDays(
@@ -810,46 +822,18 @@ export function ErpAgendaBoard({
           </button>
         </div>
       </div>
-      <fieldset className="agenda-unit-checkbox-panel" aria-label="Unidades exibidas na agenda">
-        <legend>Unidades da agenda <small>({selectedUnits.length} de {units.length})</small></legend>
-        <div className="agenda-unit-checkbox-options">
-          <button type="button" className={allUnitsSelected ? "agenda-unit-all active" : "agenda-unit-all"}
-            aria-pressed={allUnitsSelected} onClick={() => selectUnits(availableUnitIds)}>
-            Todas as unidades
-          </button>
-          {units.map(unit => <label className="agenda-unit-checkbox" key={unit.id}>
-            <input type="checkbox" checked={selectedUnitSet.has(unit.id)}
-              onChange={() => selectUnits(toggleAgendaUnit(selectedUnits, unit.id, availableUnitIds))}/>
-            <span>{unit.name}</span>
-          </label>)}
-        </div>
-        <small className="agenda-unit-help">Combine filiais para visualizar todos os profissionais e agendamentos na mesma agenda.</small>
-      </fieldset>
+      <AgendaPeopleFilters
+        key={selectedUnitParam + ":" + selectedProfessionalParam}
+        units={units}
+        professionals={professionals}
+        selectedUnitIds={selectedUnits}
+        selectedProfessionalIds={selectedProfessionals}
+        onApply={applyPeopleFilters}
+      />
       <div className="agenda-active-filters">
-        <label>
-          <span>Profissional</span>
-          <select
-            value={selectedProfessionalId}
-            onChange={(event) =>
-              router.push(href({ agendaProfessional: event.target.value }), {
-                scroll: false,
-              })
-            }
-          >
-            <option value="">Todos os profissionais</option>
-            <option value="unassigned">Sem preferência</option>
-            {professionals
-              .filter(
-                (person) =>
-                  !person.unitId || selectedUnitSet.has(person.unitId),
-              )
-              .map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                </option>
-              ))}
-          </select>
-        </label>
+        <span className="agenda-people-filter-summary">
+          Exibindo {selectedUnits.length} de {units.length} unidade(s) e {selectedProfessionals.length} de {availableProfessionalIds.length} grupo(s) de profissionais
+        </span>
         {selectedClientFilter && (
           <Link
             prefetch={false}
@@ -865,13 +849,14 @@ export function ErpAgendaBoard({
             <span className="agenda-sr-only">Remover filtro</span>
           </Link>
         )}
-        {(selectedProfessionalId || !allUnitsSelected || selectedClientFilter) && (
+        {(!allProfessionalsSelected || !allUnitsSelected || selectedClientFilter) && (
           <Link
             prefetch={false}
             href={href({
               agendaUnit: "",
               agendaUnits: "",
               agendaProfessional: "",
+              agendaProfessionals: "",
               agendaClient: "",
             })}
           >
@@ -1521,7 +1506,7 @@ export function ErpAgendaBoard({
                 <input type="hidden" name="commandId" value={detail.command.id} />
                 <input type="hidden" name="agendaReturn" value="1" />
                 <input type="hidden" name="appointmentId" value={detail.id} />
-                {["agendaView", "agendaUnit", "agendaUnits", "agendaProfessional", "agendaClient"].map(key => <input key={key} type="hidden" name={key} value={context[key as keyof AgendaContext]} />)}
+                {["agendaView", "agendaUnit", "agendaUnits", "agendaProfessional", "agendaProfessionals", "agendaClient"].map(key => <input key={key} type="hidden" name={key} value={context[key as keyof AgendaContext]} />)}
                 <input type="hidden" name="agendaDate" value={selectedDate} />
                 <input type="hidden" name="quantity" value="1" />
                 <label><span className="label">Inserir serviço</span><select className="select" name="catalogItem" defaultValue="" required>
@@ -1539,7 +1524,7 @@ export function ErpAgendaBoard({
                     <input type="hidden" name="itemId" value={item.id} />
                     <input type="hidden" name="agendaReturn" value="1" />
                     <input type="hidden" name="appointmentId" value={detail.id} />
-                    {["agendaView", "agendaUnit", "agendaProfessional", "agendaClient"].map(key => <input key={key} type="hidden" name={key} value={context[key as keyof AgendaContext]} />)}
+                    {["agendaView", "agendaUnit", "agendaUnits", "agendaProfessional", "agendaProfessionals", "agendaClient"].map(key => <input key={key} type="hidden" name={key} value={context[key as keyof AgendaContext]} />)}
                 <input type="hidden" name="agendaDate" value={selectedDate} />
                     <AgendaSubmit secondary>Excluir</AgendaSubmit>
                   </form>}
