@@ -43,13 +43,23 @@ test("agenda conserva filtro na navegação sem misturar unidade da operação",
   const types = read("lib/agenda-types.ts");
   assert.match(board, /agendaUnits: selectedUnitParam/);
   assert.match(board, /selectedUnitSet\.has\(item\.unitId\)/);
-  assert.match(board, /toggleAgendaUnit\(selectedUnits, unit\.id, availableUnitIds\)/);
-  assert.match(board, /checked=\{selectedUnitSet\.has\(unit\.id\)\}/);
+  assert.match(board, /<AgendaPeopleFilters/);
+  assert.match(board, /onApply=\{applyPeopleFilters\}/);
+  assert.match(board, /agendaProfessionals: selectedProfessionalParam/);
+  assert.match(board, /selectedProfessionalSet\.has\(item\.barberId \?\? "unassigned"\)/);
+  const filters = read("components/agenda-people-filters.tsx");
+  assert.match(filters, /setDraftUnitIds\(next\)/);
+  assert.match(filters, /checked=\{draftUnitIds\.includes\(unit\.id\)\}/);
+  assert.match(filters, /Aplicar filtros/);
+  assert.match(filters, /Todos os profissionais/);
   assert.match(board, /unitId: selectedUnitId \|\| person\.unitId \|\| ""/);
   assert.match(page, /agendaSelectedUnitIds = parseAgendaUnits/);
   assert.match(page, /selectedUnitIds=\{agendaSelectedUnitIds\}/);
+  assert.match(page, /selectedProfessionalIds=\{agendaSelectedProfessionalIds\}/);
   assert.match(href, /form\.get\("agendaUnits"\)/);
+  assert.match(href, /form\.get\("agendaProfessionals"\)/);
   assert.match(types, /agendaUnits: string/);
+  assert.match(types, /agendaProfessionals: string/);
 });
 
 test("filtro de compras diferencia itens existentes e categorias", () => {
