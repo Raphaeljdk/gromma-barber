@@ -57,6 +57,7 @@ export type AgendaContext = {
   agendaUnit: string;
   agendaUnits: string;
   agendaProfessional: string;
+  agendaProfessionals: string;
   agendaClient: AgendaClientFilter;
 };
 export type AgendaDraft = {
