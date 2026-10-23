@@ -68,9 +68,9 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     items: [
       { id: "auditoria", label: "Auditoria", route: "auditoria", adminOnly: true, children: [
         { id: "auditoria-estoque", label: "Estoque", route: "auditoria-estoque", adminOnly: true },
-        { id: "auditoria-agendamentos", label: "Agendamentos", adminOnly: true },
-        { id: "auditoria-batimento", label: "Batimento de caixa", adminOnly: true },
-        { id: "auditoria-produtividade", label: "Produtividade", adminOnly: true },
+        { id: "auditoria-agendamentos", label: "Agendamentos", route: "auditoria-agendamentos", adminOnly: true },
+        { id: "auditoria-fechamento-caixa", label: "Fechamento de caixa", route: "auditoria-fechamento-caixa", adminOnly: true },
+        { id: "auditoria-produtividade", label: "Produtividade", route: "auditoria-produtividade", adminOnly: true },
       ] },
       { id: "notificacoes", label: "Notificações", route: "notificacoes", ownerOnly: true },
       { id: "gerar-comissao", label: "Gerar comissão", route: "comissoes" },
