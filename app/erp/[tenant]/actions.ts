@@ -820,7 +820,7 @@ export async function confirmStockCount(formData: FormData) {
   const resultParams = new URLSearchParams();
   if (filterUnit) resultParams.set("stockUnit", filterUnit);
   if (filterSearch) resultParams.set("stockQ", filterSearch);
-  if (/^[1-9]\\d{0,5}$/.test(filterPage)) resultParams.set("stockPage", filterPage);
+  if (/^[1-9]\d{0,5}$/.test(filterPage)) resultParams.set("stockPage", filterPage);
   const target = (result: string) => {
     resultParams.set("balancoResult", result);
     return path + "?" + resultParams.toString();
@@ -830,7 +830,7 @@ export async function confirmStockCount(formData: FormData) {
   const countedMilli = parseCountMilli(formData.get("count"));
   const expectedRaw = text(formData, "expectedMilli", 20);
   const expectedMilli = Number(expectedRaw);
-  if (countedMilli === null || !/^-?\\d+$/.test(expectedRaw) || !Number.isSafeInteger(expectedMilli)
+  if (countedMilli === null || !/^-?\d+$/.test(expectedRaw) || !Number.isSafeInteger(expectedMilli)
       || Math.abs(expectedMilli) > 9999999999 || !productId || !unitId) {
     redirect(target("invalido"));
   }
