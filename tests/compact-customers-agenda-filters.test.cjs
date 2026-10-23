@@ -53,8 +53,9 @@ test("CSS da lista e filtros é responsivo e mantém temas claro e escuro", () =
   assert.match(css, /erp-customer-entry\[open\]/);
   assert.match(css, /html\[data-theme="light"\]/);
   const filtersCss = read("app/agenda-people-filters.css");
-  assert.match(filtersCss, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(filtersCss, /@media\(max-width:700px\)/);
+  assert.match(filtersCss, /agenda-multifilter-toolbar/);
+  assert.match(filtersCss, /agenda-multifilter-popover/);
+  assert.match(filtersCss, /@media\(max-width:650px\)/);
   const layout = read("app/layout.tsx");
   assert.match(layout, /customer-directory\.css/);
   assert.match(layout, /agenda-people-filters\.css/);
@@ -66,9 +67,31 @@ test("agenda aplica seleção local somente ao confirmar e preserva seleção na
   assert.match(filters, /setDraftUnitIds\(next\)/);
   assert.match(filters, /setDraftProfessionalIds\(/);
   assert.match(filters, /disabled=\{invalid \|\| !dirty\}/);
-  assert.match(filters, /onClick=\{\(\) => onApply\(draftUnitIds, effectiveProfessionals\)\}/);
+  assert.match(filters, /onApply\(draftUnitIds, effectiveProfessionals\)/);
+  assert.match(filters, /onClick=\{applyFilters\}/);
   assert.match(board, /const applyPeopleFilters =/);
   assert.match(board, /agendaProfessionals: professionalValue/);
   assert.match(board, /selectedProfessionalSet\.has\(person\.id\)/);
   assert.match(board, /agendaProfessional: ""/);
+});
+
+test("dropdowns compactos seguem referência: botões de Unidades e Profissionais com listas", () => {
+  const filters = read("components/agenda-people-filters.tsx");
+  const css = read("app/agenda-people-filters.css");
+  assert.match(filters, /aria-haspopup="true"/);
+  assert.match(filters, /aria-expanded=\{openUnits\}/);
+  assert.match(filters, /aria-expanded=\{openProfessionals\}/);
+  assert.match(filters, /agenda-multifilter-toolbar/);
+  assert.match(filters, /agenda-multifilter-popover/);
+  assert.match(filters, /<span>Unidades<\/span>/);
+  assert.match(filters, /<span>Profissionais<\/span>/);
+  assert.match(filters, /<span>Todas as unidades<\/span>/);
+  assert.match(filters, /<span>Todos os profissionais<\/span>/);
+  assert.match(filters, /setOpenFilter\(current => current === "units" \? null : "units"\)/);
+  assert.match(filters, /setOpenFilter\(current => current === "professionals" \? null : "professionals"\)/);
+  assert.match(filters, /document\.addEventListener\("pointerdown", handleOutside\)/);
+  assert.match(filters, /document\.addEventListener\("keydown", handleEscape\)/);
+  assert.match(css, /\.agenda-multifilter-popover\.is-professionals/);
+  assert.match(css, /@media\(max-width:650px\)/);
+  assert.doesNotMatch(filters, /<fieldset className="agenda-multifilter-list"/);
 });
