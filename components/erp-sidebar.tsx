@@ -55,7 +55,6 @@ type Props = {
 
 const NAV_GROUPS: readonly ErpNavigationSector[] = ERP_NAVIGATION.map((sector) => {
   const extraRoutes: Record<string, readonly string[]> = {
-    operacional: ["totem"],
     gestao: ["gerencial", "alertas"],
     marketing: ["mensagens"],
     empresa: ["documentos", "treinamentos", "configuracoes"],
@@ -63,9 +62,9 @@ const NAV_GROUPS: readonly ErpNavigationSector[] = ERP_NAVIGATION.map((sector) =
   const extras = ERP_NAVIGATION_EXTRA.filter((item) =>
     extraRoutes[sector.id]?.includes(item.route ?? "")
   );
-  return extras.length
-    ? { ...sector, items: [...sector.items, { id: `${sector.id}-extras`, label: "Outras ferramentas", children: extras }] }
-    : sector;
+  // Keep every existing module reachable, but remove the nested
+  // "Outras ferramentas" section: extras are now direct sector links.
+  return extras.length ? { ...sector, items: [...sector.items, ...extras] } : sector;
 });
 
 const SECTOR_ICONS: Record<string, LucideIcon> = {
@@ -75,6 +74,7 @@ const SECTOR_ICONS: Record<string, LucideIcon> = {
   marketing: Tags,
   empresa: Building2,
   financeiro: WalletCards,
+  totem: Store,
 };
 
 const MODULE_ICONS: Record<string, LucideIcon> = {
@@ -294,6 +294,11 @@ export function ErpSidebar({
         <nav className="erp-nav" aria-label="Módulos do ERP">
           <p className="erp-nav-plan-note">Em cinza: funcionalidades previstas para as próximas etapas.</p>
           {NAV_GROUPS.map((group) => {
+            // A single permanent link below Financeiro, not a new expandable
+            // menu section. Respect the existing PRO permission in renderNavItem.
+            if (group.id === "totem") return <div className="erp-nav-standalone" key={group.id}>
+              {group.items.map(item => renderNavItem(item))}
+            </div>;
             const expanded = !collapsed && (expandedGroups[group.id] ?? (group.id === activeGroup || (!activeGroup && group.id === "operacional")));
             const SectorIcon = SECTOR_ICONS[group.id] ?? LayoutDashboard;
             return <div className={["erp-nav-group", "erp-nav-sector", expanded ? "is-expanded" : "", activeGroup === group.id ? "has-active-module" : ""].join(" ")} key={group.id}>

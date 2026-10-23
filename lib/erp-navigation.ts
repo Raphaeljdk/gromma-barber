@@ -158,6 +158,12 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
       { id: "financeiro-atual", label: "Financeiro atual", route: "financeiro" },
     ],
   },
+  {
+    id: "totem", label: "Totem / Check-in", description: "Etapa futura",
+    items: [
+      { id: "extra-totem", label: "Totem / Check-in", route: "totem", proOnly: true },
+    ],
+  },
 ] as const satisfies readonly ErpNavigationSector[];
 
 /* Preserva acesso aos módulos atuais que não são itens explícitos da imagem. */
@@ -168,5 +174,4 @@ export const ERP_NAVIGATION_EXTRA: readonly ErpNavigationNode[] = [
   { id: "extra-documentos", label: "Documentos", route: "documentos" },
   { id: "extra-treinamentos", label: "Tutoriais / Cursos", route: "treinamentos" },
   { id: "extra-configuracoes", label: "Configurações", route: "configuracoes" },
-  { id: "extra-totem", label: "Totem / Check-in", route: "totem", proOnly: true },
 ];
