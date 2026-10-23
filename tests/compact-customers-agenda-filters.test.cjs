@@ -61,17 +61,18 @@ test("CSS da lista e filtros é responsivo e mantém temas claro e escuro", () =
   assert.match(layout, /agenda-people-filters\.css/);
 });
 
-test("agenda aplica seleção local somente ao confirmar e preserva seleção na URL", () => {
+test("agenda atualiza no clique sem botão Aplicar e mantém seleção na URL", () => {
   const filters = read("components/agenda-people-filters.tsx");
   const board = read("components/erp-agenda-board.tsx");
-  assert.match(filters, /setDraftUnitIds\(next\)/);
-  assert.match(filters, /setDraftProfessionalIds\(/);
-  assert.match(filters, /disabled=\{invalid \|\| !dirty\}/);
-  assert.match(filters, /onApply\(draftUnitIds, effectiveProfessionals\)/);
-  assert.match(filters, /onClick=\{applyFilters\}/);
-  assert.match(board, /const applyPeopleFilters =/);
-  assert.match(board, /agendaProfessionals: professionalValue/);
-  assert.match(board, /selectedProfessionalSet\.has\(person\.id\)/);
+  assert.match(filters, /onChange\(next, wasAll \|\| !retained.length \? nextAllowed : retained\)/);
+  assert.match(filters, /onChange\(selectedUnitIds, toggleAgendaUnit\(/);
+  assert.doesNotMatch(filters, /Aplicar filtros|Filtros não aplicados|onClick=\{applyFilters\}/);
+  assert.match(board, /const updatePeopleFilters =/);
+  assert.match(board, /setPeopleSelection\(\{ unitIds: finalUnits, professionalIds: finalPros \}\)/);
+  assert.match(board, /window\.history\.replaceState\(/);
+  assert.match(board, /agendaProfessionals: serializeAgendaUnits\(finalPros, nextAllowed\)/);
+  assert.match(board, /onChange=\{updatePeopleFilters\}/);
+  assert.doesNotMatch(board, /key=\{selectedUnitParam \+ ":" \+ selectedProfessionalParam\}/);
   assert.match(board, /agendaProfessional: ""/);
 });
 

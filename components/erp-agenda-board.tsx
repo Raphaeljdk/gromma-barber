@@ -275,22 +275,32 @@ export function ErpAgendaBoard({
   const [blockUnit, setBlockUnit] = useState(selectedUnitId || units[0]?.id || "");
   const [fitSlot, setFitSlot] = useState<{ startsAt: string; barberId: string; unitId: string } | null>(null);
   const availableUnitIds = units.map(unit => unit.id);
-  const selectedUnits = selectedUnitIds.length
-    ? availableUnitIds.filter(id => selectedUnitIds.includes(id))
-    : availableUnitIds;
+  // Instant client-side filtering keeps the dropdown open through consecutive taps.
+  // The URL is synchronized without a server navigation or a full board remount.
+  const [peopleSelection, setPeopleSelection] = useState(() => ({
+    unitIds: selectedUnitIds.length ? selectedUnitIds : selectedUnitId ? [selectedUnitId] : availableUnitIds,
+    professionalIds: selectedProfessionalIds.length
+      ? selectedProfessionalIds
+      : selectedProfessionalId ? [selectedProfessionalId] : [
+        ...professionals.filter(person => !person.unitId ||
+          (selectedUnitIds.length ? selectedUnitIds : selectedUnitId ? [selectedUnitId] : availableUnitIds).includes(person.unitId)).map(person => person.id),
+        "unassigned",
+      ],
+  }));
+  const selectedUnits = availableUnitIds.filter(id => peopleSelection.unitIds.includes(id));
   const selectedUnitSet = new Set(selectedUnits);
   const selectedUnitParam = serializeAgendaUnits(selectedUnits, availableUnitIds);
   const availableProfessionalIds = [
     ...professionals.filter(person => !person.unitId || selectedUnitSet.has(person.unitId)).map(person => person.id),
     "unassigned",
   ];
-  const selectedProfessionals = selectedProfessionalIds.length
-    ? availableProfessionalIds.filter(id => selectedProfessionalIds.includes(id))
-    : selectedProfessionalId ? [selectedProfessionalId] : availableProfessionalIds;
+  const selectedProfessionals = availableProfessionalIds.filter(id => peopleSelection.professionalIds.includes(id));
   const selectedProfessionalSet = new Set(selectedProfessionals);
   const selectedProfessionalParam = serializeAgendaUnits(selectedProfessionals, availableProfessionalIds);
   const allProfessionalsSelected = selectedProfessionals.length === availableProfessionalIds.length;
   const allUnitsSelected = selectedUnits.length === availableUnitIds.length;
+  const effectiveSelectedUnitId = selectedUnits.length === 1 ? selectedUnits[0] : "";
+  const effectiveSelectedProfessionalId = selectedProfessionals.length === 1 ? selectedProfessionals[0] : "";
   const orderKey = `gromma:agenda-order:${tenantCode}:${selectedUnitParam || "all"}`;
   const orderSnapshot = useSyncExternalStore(subscribeToOrder, () => readOrder(orderKey), () => "[]");
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -352,9 +362,9 @@ export function ErpAgendaBoard({
     tenantCode,
     agendaDate: selectedDate,
     agendaView: view,
-    agendaProfessional: selectedProfessionalId,
+    agendaProfessional: effectiveSelectedProfessionalId,
     agendaProfessionals: selectedProfessionalParam,
-    agendaUnit: selectedUnitId,
+    agendaUnit: effectiveSelectedUnitId,
     agendaUnits: selectedUnitParam,
     agendaClient: selectedClientFilter,
   };
@@ -362,25 +372,41 @@ export function ErpAgendaBoard({
     agendaHref(tenantCode, {
       agendaDate: selectedDate,
       agendaView: view,
-      agendaProfessional: selectedProfessionalId,
+      agendaProfessional: effectiveSelectedProfessionalId,
       agendaProfessionals: selectedProfessionalParam,
-      agendaUnit: selectedUnitId,
+      agendaUnit: effectiveSelectedUnitId,
       agendaUnits: selectedUnitParam,
       agendaClient: selectedClientFilter,
       ...changes,
     });
-  const applyPeopleFilters = (unitsToShow: string[], professionalsToShow: string[]) => {
-    const unitValue = serializeAgendaUnits(unitsToShow, availableUnitIds);
-    const professionalValue = serializeAgendaUnits(
-      professionalsToShow,
-      [...professionals.filter(person => !person.unitId || unitsToShow.includes(person.unitId)).map(person => person.id), "unassigned"],
-    );
-    router.push(href({
-      agendaUnit: unitsToShow.length === 1 ? unitsToShow[0] : "",
-      agendaUnits: unitValue,
-      agendaProfessional: professionalsToShow.length === 1 ? professionalsToShow[0] : "",
-      agendaProfessionals: professionalValue,
-    }), { scroll: false });
+  const updatePeopleFilters = (unitsToShow: string[], professionalsToShow: string[]) => {
+    const nextUnits = availableUnitIds.filter(id => unitsToShow.includes(id));
+    const finalUnits = nextUnits.length ? nextUnits : availableUnitIds;
+    const nextAllowed = [
+      ...professionals.filter(person => !person.unitId || finalUnits.includes(person.unitId)).map(person => person.id),
+      "unassigned",
+    ];
+    const nextPros = nextAllowed.filter(id => professionalsToShow.includes(id));
+    const finalPros = nextPros.length ? nextPros : nextAllowed;
+
+    // The current calendar updates immediately — no Apply button, no loading state.
+    setPeopleSelection({ unitIds: finalUnits, professionalIds: finalPros });
+    setBlockUnit(current => finalUnits.includes(current) ? current : finalUnits[0] || "");
+
+    // Preserve date, view, client filters and other current query parameters.
+    // Next.js supports native History API URL updates without fetching a new RSC page.
+    const url = new URL(window.location.href);
+    const nextFilters: Record<string, string> = {
+      agendaUnit: finalUnits.length === 1 ? finalUnits[0] : "",
+      agendaUnits: serializeAgendaUnits(finalUnits, availableUnitIds),
+      agendaProfessional: finalPros.length === 1 ? finalPros[0] : "",
+      agendaProfessionals: serializeAgendaUnits(finalPros, nextAllowed),
+    };
+    for (const [key, value] of Object.entries(nextFilters)) {
+      if (value) url.searchParams.set(key, value);
+      else url.searchParams.delete(key);
+    }
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
   };
   const slotMinutes = [15, 20, 30, 45, 60].includes(settings.slotMinutes)
     ? settings.slotMinutes
@@ -508,13 +534,13 @@ export function ErpAgendaBoard({
                 : new Date(item.startsAt).getTime() + slotMinutes * 60_000) >
                 start,
           );
-          return occupied || hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000), person.unitId || selectedUnitId) || (now > 0 && start < now)
+          return occupied || hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000), person.unitId || effectiveSelectedUnitId) || (now > 0 && start < now)
             ? null
             : {
                 professionalId: person.id,
                 professional: person.name,
                 time: timeLabel(minutes),
-                unitId: selectedUnitId || person.unitId || "",
+                unitId: person.unitId || effectiveSelectedUnitId || "",
               };
         },
       ).filter((slot) => slot !== null),
@@ -624,8 +650,8 @@ export function ErpAgendaBoard({
       : addAgendaDays(selectedDate, view === "week" ? 7 : 1);
   const newAppointment = (
     startsAt = `${selectedDate}T${timeLabel(openHour * 60)}`,
-    barberId = selectedProfessionalId,
-    unitId = selectedUnitId,
+    barberId = effectiveSelectedProfessionalId,
+    unitId = effectiveSelectedUnitId,
   ) => {
     if (canOperate)
       setDraft({
@@ -823,12 +849,11 @@ export function ErpAgendaBoard({
         </div>
         <div className="agenda-toolbar-inline-filters" role="group" aria-label="Filtros e opções da agenda">
           <AgendaPeopleFilters
-            key={selectedUnitParam + ":" + selectedProfessionalParam}
             units={units}
             professionals={professionals}
             selectedUnitIds={selectedUnits}
             selectedProfessionalIds={selectedProfessionals}
-            onApply={applyPeopleFilters}
+            onChange={updatePeopleFilters}
           />
           <details className="agenda-display-panel">
             <summary className="agenda-display-trigger">
@@ -1010,7 +1035,7 @@ export function ErpAgendaBoard({
                               : new Date(item.startsAt).getTime() +
                                 slotMinutes * 60_000) > start,
                         );
-                      const blocked = hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000), person.unitId || selectedUnitId);
+                      const blocked = hasAgendaBlock(blocks, person.id, new Date(start), new Date(start + slotMinutes * 60000), person.unitId || effectiveSelectedUnitId);
                       const disabled =
                         !canOperate ||
                         !person.canSchedule ||
@@ -1039,7 +1064,7 @@ export function ErpAgendaBoard({
                               startsAt:
                               `${selectedDate}T${timeLabel(minutes)}`,
                               barberId: person.id === "unassigned" ? "" : person.id,
-                              unitId: selectedUnitId || person.unitId || "",
+                              unitId: person.unitId || effectiveSelectedUnitId || "",
                             }); }}
                         >
                           <Plus size={15} />
