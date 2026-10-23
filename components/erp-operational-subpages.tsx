@@ -146,18 +146,21 @@ export async function ErpOperationalSubpage({ section, tenantCode, shopId, units
         <button className="btn secondary" type="submit">Pesquisar</button>
         {name && <Link href={`${base}/clientes-bloqueados`} className="btn secondary">Limpar</Link>}
       </form>
-      <div className="erp-ops-list">
-        {customers.length === 0 && <div className="card"><p className="muted">Nenhum cliente bloqueado encontrado.</p></div>}
-        {customers.map(customer => <article className="card erp-ops-customer" key={customer.id}>
-          <div className="erp-ops-customer-info">
+      <div className="erp-customer-directory erp-blocked-directory" role="list" aria-label="Lista de clientes bloqueados">
+        {!customers.length && <p className="muted erp-customer-directory-empty">Nenhum cliente bloqueado encontrado.</p>}
+        {customers.map(customer => <article className="erp-customer-blocked-row" role="listitem" key={customer.id}>
+          <span className="erp-customer-entry-avatar is-blocked" aria-hidden="true">{customer.name.trim().slice(0,1).toLocaleUpperCase("pt-BR")}</span>
+          <div className="erp-customer-entry-identity">
             <strong>{customer.name}</strong>
-            <span>{customer.phone || "Sem telefone"} · {customer.email || "Sem e-mail"}</span>
-            <small className="muted">Cadastro desativado · atualização em {monthDay(customer.updatedAt.toISOString())}</small>
+            <span className="erp-customer-entry-mobile-contact">{customer.phone || "Sem telefone"}</span>
           </div>
+          <span className="erp-customer-entry-phone">{customer.phone || "Sem telefone"}</span>
+          <span className="erp-customer-entry-email">{customer.email || "Sem e-mail"}</span>
+          <span className="erp-customer-blocked-date" title="Data da última atualização">Bloqueado · {monthDay(customer.updatedAt.toISOString())}</span>
           <form action={reactivateCustomer}>
             <input type="hidden" name="tenantCode" value={tenantCode} />
             <input type="hidden" name="customerId" value={customer.id} />
-            <button type="submit" className="btn primary">Reativar</button>
+            <button type="submit" className="btn secondary">Reativar</button>
           </form>
         </article>)}
       </div>
