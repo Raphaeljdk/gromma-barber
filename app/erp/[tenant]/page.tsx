@@ -897,10 +897,10 @@ export async function TenantERPView({
             <ErpCommandPalette tenantCode={tenantCode} planKey={planKey} supportHref={supportHref} isOwner={isOwner} canManage={canManage} />
           </div>
           <div className="erp-top-actions">
-            {isOwner && <InventoryNotificationBell tenantCode={tenantCode} notices={inventoryNotices} />}
             <BackButton fallback="/login" label="Voltar" />
             <a href={supportHref} className="nav-quiet-link">Suporte</a>
             <ThemeToggle />
+            {isOwner && <InventoryNotificationBell tenantCode={tenantCode} notices={inventoryNotices} />}
           </div>
         </div>
 
