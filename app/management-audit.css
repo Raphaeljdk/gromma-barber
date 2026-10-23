@@ -1,0 +1,88 @@
+/* GROMMA / Gestão — painéis de auditoria, caixa e produtividade */
+.tenant-erp .mgmt-audit {min-width:0}
+.tenant-erp .mgmt-audit-filters {
+  display:flex;align-items:end;gap:12px;flex-wrap:wrap;
+  padding:16px;margin:0 0 16px;
+}
+.tenant-erp .mgmt-audit-filters label {display:grid;min-width:150px;flex:1 1 150px;gap:6px;font-size:.79rem;font-weight:650;color:var(--erp-text,#e8dcc6);}
+.tenant-erp .mgmt-audit-filters label:first-child {flex:1.3 1 190px;}
+.tenant-erp .mgmt-audit-filters input,
+.tenant-erp .mgmt-audit-filters select {
+  display:block;width:100%;min-width:0;height:42px;border-radius:9px;
+  border:1px solid var(--erp-border,#4d4133);
+  background:var(--erp-panel,#1b1a17);color:var(--erp-text,#eee4d3);
+  padding:8px 11px;font:inherit;color-scheme:dark;
+}
+.tenant-erp .mgmt-audit-filters button {min-height:42px;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;}
+.tenant-erp .mgmt-audit-results {margin:12px 0 17px;padding:0;min-width:0;overflow:hidden;}
+.tenant-erp .mgmt-audit-heading {display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:17px 18px;border-bottom:1px solid var(--erp-border,#3d362b);}
+.tenant-erp .mgmt-audit-heading h3 {font-size:1.01rem;margin:0;}
+.tenant-erp .mgmt-audit-heading small {font-size:.77rem;color:var(--erp-muted,#bcaa94);}
+.tenant-erp .mgmt-audit-table-scroll {overflow:auto;max-width:100%;}
+.tenant-erp .mgmt-audit-table-scroll table {border-collapse:collapse;width:100%;min-width:660px;}
+.tenant-erp .mgmt-audit-table-scroll th {text-align:left;font-size:.74rem;color:var(--erp-muted,#c4b49b);white-space:nowrap;}
+.tenant-erp .mgmt-audit-table-scroll td {font-size:.78rem;vertical-align:middle;}
+.tenant-erp .mgmt-audit-table-scroll td strong,
+.tenant-erp .mgmt-audit-table-scroll td small {display:block;}
+.tenant-erp .mgmt-audit-table-scroll td small {margin-top:5px;color:var(--erp-muted,#a99b87);}
+.tenant-erp .mgmt-audit-table-scroll td .btn {display:inline-flex;align-items:center;gap:5px;min-height:34px;padding:6px 9px;white-space:nowrap;font-size:.73rem;}
+.tenant-erp .mgmt-audit-status {display:inline-flex;padding:5px 9px;border:1px solid #6d5b42;border-radius:999px;font-size:.73rem;font-weight:700;white-space:nowrap;}
+.tenant-erp .mgmt-audit-status.is-completed {color:#83d2a4;background:rgba(33,126,71,.12);border-color:rgba(89,186,122,.35);}
+.tenant-erp .mgmt-audit-status.is-canceled {color:#ebaba0;background:rgba(155,51,39,.12);border-color:rgba(208,101,91,.38);}
+.tenant-erp .mgmt-audit-pagination {display:flex;gap:18px;justify-content:center;align-items:center;margin:12px 0 20px;font-size:.8rem;}
+.tenant-erp .mgmt-audit-pagination a {color:var(--erp-gold,#e6ba72);}
+.tenant-erp .mgmt-audit-timeline {margin:16px 0;min-width:0;padding:0;scroll-margin-top:30px;}
+.tenant-erp .mgmt-audit-events {list-style:none;margin:0;padding:14px 20px;}
+.tenant-erp .mgmt-audit-events li {position:relative;display:grid;gap:6px;min-width:0;margin-left:10px;padding:0 0 20px 20px;border-left:1px solid #827049;}
+.tenant-erp .mgmt-audit-events li:last-child {border-left-color:transparent;}
+.tenant-erp .mgmt-audit-events li::before {content:"";position:absolute;top:1px;left:-5px;width:9px;height:9px;border-radius:50%;background:#b99255;border:2px solid var(--erp-panel,#1b1a17);}
+.tenant-erp .mgmt-audit-events time {font-size:.76rem;color:var(--erp-muted,#bbae99);}
+.tenant-erp .mgmt-audit-events strong {font-size:.9rem;}
+.tenant-erp .mgmt-audit-events span,.tenant-erp .mgmt-audit-events small {font-size:.78rem;overflow-wrap:anywhere;}
+.tenant-erp .mgmt-audit-timeline>p {padding:0 20px 18px;margin:0;}
+.tenant-erp .mgmt-audit-kpis {display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0 16px;}
+.tenant-erp .mgmt-audit-kpis article {min-width:0;display:grid;gap:6px;padding:16px;border:1px solid var(--erp-border,#433a2d);border-radius:13px;background:var(--erp-panel,#1c1a16);}
+.tenant-erp .mgmt-audit-kpis small {font-size:.74rem;color:var(--erp-muted,#b9ae9d);}
+.tenant-erp .mgmt-audit-kpis strong {font-size:1.2rem;font-weight:770;color:var(--erp-gold,#e3bd79);overflow-wrap:anywhere;}
+.tenant-erp .mgmt-heatmap-legend {display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 18px;font-size:.72rem;color:var(--erp-muted,#b0a18f);}
+.tenant-erp .mgmt-heat {background:rgba(166,133,68,.10);border:1px solid var(--erp-border,#3e3427);}
+.tenant-erp .mgmt-heat.low {background:#78603d;color:#fff3de;}
+.tenant-erp .mgmt-heat.medium {background:#ad8139;color:#15100b;}
+.tenant-erp .mgmt-heat.high {background:#f0bb61;color:#1d150d;font-weight:750;}
+.tenant-erp .mgmt-heat.no-capacity {background:repeating-linear-gradient(45deg,rgba(115,111,107,.25),rgba(115,111,107,.25) 4px,rgba(50,49,48,.12) 4px,rgba(50,49,48,.12) 8px);color:var(--erp-muted,#bbae98);}
+.tenant-erp .mgmt-heatmap-legend .mgmt-heat {width:17px;height:15px;border-radius:4px;display:inline-block;}
+.tenant-erp .mgmt-heatmap-scroll {overflow:auto;max-width:100%;overscroll-behavior-x:contain;scrollbar-width:thin;}
+.tenant-erp .mgmt-heatmap {border-collapse:separate;border-spacing:3px;min-width:max-content;width:100%;font-size:.69rem;}
+.tenant-erp .mgmt-heatmap th,.tenant-erp .mgmt-heatmap td {padding:8px 5px;text-align:center;white-space:nowrap;}
+.tenant-erp .mgmt-heatmap thead th {font-size:.7rem;color:var(--erp-muted,#bdb2a1);}
+.tenant-erp .mgmt-heatmap th:first-child {position:sticky;left:0;z-index:2;background:var(--erp-panel,#181613);min-width:150px;text-align:left;padding:8px 10px;}
+.tenant-erp .mgmt-heatmap th:first-child strong,.tenant-erp .mgmt-heatmap th:first-child small {display:block;font-size:.75rem;}
+.tenant-erp .mgmt-heatmap th:first-child small {font-size:.66rem;color:var(--erp-muted,#b5a997);margin-top:3px;}
+.tenant-erp .mgmt-heatmap td.mgmt-heat {min-width:49px;border-radius:6px;}
+.tenant-erp .mgmt-heat-total {font-weight:800;color:var(--erp-gold,#dfb46a);min-width:56px;}
+html[data-theme="light"] .tenant-erp .mgmt-audit-filters input,
+html[data-theme="light"] .tenant-erp .mgmt-audit-filters select {color-scheme:light;background:#fffdf6;border-color:#d9c9b0;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.low {background:#f5d9a9;color:#38270f;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.medium {background:#e9b86c;color:#35250f;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.high {background:#b9802f;color:#fff;}
+html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-completed {color:#216c43;}
+html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-canceled {color:#a13b31;}
+@media(max-width:660px) {
+  .tenant-erp .mgmt-audit-filters {padding:12px;gap:9px;}
+  .tenant-erp .mgmt-audit-filters label {flex:1 1 120px;min-width:0;}
+  .tenant-erp .mgmt-audit-filters label:first-child {flex-basis:100%;}
+  .tenant-erp .mgmt-audit-filters button {width:100%;justify-content:center;}
+  .tenant-erp .mgmt-audit-kpis {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .tenant-erp .mgmt-audit-heading {padding:13px;}
+  .tenant-erp .mgmt-audit-table-scroll {overflow:visible;}
+  .tenant-erp .mgmt-audit-table-scroll table,.tenant-erp .mgmt-audit-table-scroll tbody,
+  .tenant-erp .mgmt-audit-table-scroll tr,.tenant-erp .mgmt-audit-table-scroll td {display:block;min-width:0;width:100%;}
+  .tenant-erp .mgmt-audit-table-scroll thead {display:none;}
+  .tenant-erp .mgmt-audit-table-scroll tr {padding:9px 13px;border-bottom:1px solid var(--erp-border,#413b33);}
+  .tenant-erp .mgmt-audit-table-scroll td {display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;align-items:start;padding:6px 0;overflow-wrap:anywhere;}
+  .tenant-erp .mgmt-audit-table-scroll td::before {content:attr(data-label);font-size:.73rem;font-weight:700;color:var(--erp-muted,#b3a38e);}
+  .tenant-erp .mgmt-audit-table-scroll td[colspan] {display:block;}
+  .tenant-erp .mgmt-audit-table-scroll td[colspan]::before {display:none;}
+  .tenant-erp .mgmt-audit-events {padding:12px;}
+  .tenant-erp .mgmt-heatmap-scroll {overflow:auto;}
+}
