@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardAlert, PackageMinus, ShoppingCart, CheckCheck } from "lucide-react";
+import { ClipboardCheck, PackageMinus, ShoppingCart, CheckCheck } from "lucide-react";
 import { brl } from "@/lib/plans";
 import { formatQuantityMilli } from "@/lib/stock-balance";
 import { decideStockPurchase, markInventoryNotificationRead } from "@/app/erp/[tenant]/inventory-actions";
@@ -14,7 +14,7 @@ const types = [
   { id: "divergencias", label: "Divergências" },
   { id: "historico", label: "Histórico" },
 ] as const;
-const icons = { compra: ShoppingCart, estoque: PackageMinus, divergencia: ClipboardAlert };
+const icons = { compra: ShoppingCart, estoque: PackageMinus, divergencia: ClipboardCheck };
 const quantity = (milli: number | undefined) => formatQuantityMilli(milli ?? 0);
 const date = (iso: string) => new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 function category(kind: InventoryNoticeKind) {
