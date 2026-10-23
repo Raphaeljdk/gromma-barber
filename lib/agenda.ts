@@ -80,6 +80,7 @@ export function agendaReturnHref(
     agendaDate: isAgendaDate(date) ? date : agendaDateKey(new Date()),
     agendaView: ["day", "week", "month"].includes(view) ? view : "day",
     agendaUnit: String(form.get("agendaUnit") ?? "").slice(0, 80),
+    agendaUnits: String(form.get("agendaUnits") ?? "").slice(0, 1200),
     agendaProfessional: String(form.get("agendaProfessional") ?? "").slice(
       0,
       80,

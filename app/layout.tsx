@@ -1,5 +1,6 @@
 import "./globals.css";
 import "./inventory-notifications.css";
+import "./agenda-multiunit-history.css";
 
 export const metadata = {
   title: "GROMMA BARBER",

@@ -55,6 +55,7 @@ export type AgendaContext = {
   agendaDate: string;
   agendaView: AgendaView;
   agendaUnit: string;
+  agendaUnits: string;
   agendaProfessional: string;
   agendaClient: AgendaClientFilter;
 };

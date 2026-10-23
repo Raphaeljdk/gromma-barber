@@ -1,0 +1,150 @@
+/* GROMMA — filtro simultâneo de unidades da agenda e histórico de compras */
+.agenda-unit-checkbox-panel {
+  min-width:0;
+  padding:14px 16px 12px;
+  margin:12px 0 13px;
+  border:1px solid var(--gromma-border, #353027);
+  border-radius:14px;
+  background:var(--gromma-panel, #151411);
+}
+.agenda-unit-checkbox-panel legend {
+  padding:0 7px;
+  font-weight:750;
+  font-size:.84rem;
+  color:var(--gold-2,#ebc57d);
+}
+.agenda-unit-checkbox-panel legend small {font-weight:500; color:var(--muted,#a7a093);}
+.agenda-unit-checkbox-options {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.agenda-unit-checkbox,.agenda-unit-all {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:8px 12px;
+  border-radius:11px;
+  border:1px solid #4c4334;
+  background:#211d17;
+  color:#e1d6c2;
+  font-size:.77rem;
+  font-weight:650;
+  cursor:pointer;
+  transition: border-color .15s ease, background .15s ease;
+  max-width:100%;
+}
+.agenda-unit-checkbox:hover,.agenda-unit-all:hover {border-color:#ab8650; background:#2a2318;}
+.agenda-unit-checkbox:focus-within,.agenda-unit-all:focus-visible {
+  outline:2px solid var(--gold-2,#f1cf80);
+  outline-offset:2px;
+}
+.agenda-unit-checkbox:has(input:checked),.agenda-unit-all.active {
+  border-color:#b28a42;
+  background:#342a19;
+  color:#f4db9c;
+}
+.agenda-unit-checkbox input {
+  width:16px;
+  height:16px;
+  margin:0;
+  flex:none;
+  accent-color:#d7a84d;
+}
+.agenda-unit-checkbox span {
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+.agenda-unit-help {display:block;margin-top:9px;color:#afa69a;line-height:1.4;font-size:.72rem;}
+.agenda-unit-side-summary {display:grid;gap:7px;padding:12px 14px;border-radius:12px;background:rgba(175,135,63,.08);border:1px solid #50422d;}
+.agenda-unit-side-summary strong {font-size:.86rem;color:var(--gold-2,#f1cf80);}
+.agenda-unit-side-summary span {color:#e1d8c8;font-size:.84rem;}
+.agenda-unit-side-summary small {color:#b6aa99;line-height:1.45;}
+.agenda-professional-unit {display:block;color:#c8a565!important;font-size:.7rem;line-height:1.3;}
+
+/* Histórico de compras com linhas independentes do Ranking. */
+.erp-purchase-history {min-width:0;}
+.erp-purchase-filters {display:grid;gap:14px;padding:18px;}
+.erp-purchase-filter-top {display:grid;grid-template-columns:minmax(180px,2fr) repeat(2,minmax(138px,1fr));gap:12px;align-items:end;}
+.erp-purchase-filter-top label {min-width:0;display:grid;gap:7px;color:#d6c8b4;font-size:.8rem;font-weight:700;}
+.erp-purchase-filter-top input {
+  width:100%;
+  min-width:0;
+  min-height:42px;
+  padding:9px 11px;
+  border-radius:10px;
+  border:1px solid #453f35;
+  background:#171614;
+  color:#f0e7d9;
+  color-scheme:dark;
+}
+.erp-purchase-filter-top input:focus-visible {outline:2px solid var(--gold-2,#d7a84d);outline-offset:1px;}
+.erp-purchase-categories {min-width:0;padding:12px;border-radius:12px;border:1px solid #37322a;}
+.erp-purchase-categories legend {padding:0 6px;color:#dec693;font-size:.81rem;font-weight:650;}
+.erp-purchase-checkboxes {display:flex;gap:8px;flex-wrap:wrap;}
+.erp-purchase-checkbox {display:inline-flex;gap:9px;align-items:center;cursor:pointer;padding:9px 12px;border-radius:9px;
+  border:1px solid #4a4133;background:#211e18;color:#e7d9bf;font-size:.82rem;}
+.erp-purchase-checkbox:has(input:checked) {background:#302719;border-color:#b18d55;color:#f0dbaa;}
+.erp-purchase-checkbox input {margin:0;width:16px;height:16px;accent-color:#cc9d48;}
+.erp-purchase-filter-actions {display:flex;gap:9px;flex-wrap:wrap;}
+.erp-purchase-summary {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:16px 0;}
+.erp-purchase-summary > div {border:1px solid #363026;border-radius:13px;background:#171612;display:grid;gap:8px;padding:16px;min-width:0;}
+.erp-purchase-summary small {font-size:.77rem;line-height:1.3;color:#b3a899;}
+.erp-purchase-summary strong {font-size:1.2rem;overflow-wrap:anywhere;color:#e4c17a;}
+.erp-purchase-results {min-width:0;padding:0;overflow:hidden;}
+.erp-purchase-results-head {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;}
+.erp-purchase-results-head h3 {margin:0;font-size:1rem;}
+.erp-purchase-table-wrap {overflow:auto;max-width:100%;}
+.erp-purchase-table-wrap table {width:100%;min-width:850px;border-collapse:collapse;}
+.erp-purchase-table-wrap th {white-space:nowrap;text-align:left;font-size:.75rem;}
+.erp-purchase-table-wrap td {font-size:.78rem;vertical-align:top;}
+.erp-purchase-table-wrap td strong {display:block;white-space:normal;line-height:1.3;}
+.erp-purchase-table-wrap td small {display:block;color:#a9a092;font-size:.71rem;margin-top:5px;white-space:normal;}
+.erp-purchase-history .erp-ops-pagination {display:flex;gap:16px;align-items:center;justify-content:center;margin:18px 0;}
+html[data-theme="light"] .agenda-unit-checkbox-panel,
+html[data-theme="light"] .erp-purchase-summary > div {background:#fffdf8;border-color:#e0d3bd;}
+html[data-theme="light"] .agenda-unit-checkbox-panel legend,
+html[data-theme="light"] .erp-purchase-categories legend {color:#79551e;}
+html[data-theme="light"] .agenda-unit-checkbox,
+html[data-theme="light"] .agenda-unit-all,
+html[data-theme="light"] .erp-purchase-checkbox {background:#fffaf0;color:#5c4935;border-color:#d9c8aa;}
+html[data-theme="light"] .agenda-unit-checkbox:has(input:checked),
+html[data-theme="light"] .agenda-unit-all.active,
+html[data-theme="light"] .erp-purchase-checkbox:has(input:checked) {background:#f5e7c7;color:#593d16;border-color:#ad8448;}
+html[data-theme="light"] .agenda-unit-help,
+html[data-theme="light"] .agenda-unit-side-summary small {color:#706253;}
+html[data-theme="light"] .agenda-unit-side-summary {background:#f9efdd;border-color:#ddc7a4;}
+html[data-theme="light"] .agenda-unit-side-summary span,
+html[data-theme="light"] .erp-purchase-filter-top label {color:#544737;}
+html[data-theme="light"] .erp-purchase-filter-top input {background:#fffcf6;color:#29251c;color-scheme:light;border-color:#d8cbb8;}
+html[data-theme="light"] .erp-purchase-categories {border-color:#e3d4bd;}
+html[data-theme="light"] .erp-purchase-summary small {color:#655c4f;}
+html[data-theme="light"] .erp-purchase-summary strong {color:#825b1f;}
+@media (max-width:850px) {
+  .erp-purchase-filter-top {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .erp-purchase-filter-top label:first-child {grid-column:1/-1;}
+}
+@media (max-width:620px) {
+  .agenda-unit-checkbox-panel {margin:10px 0;padding:12px 10px;}
+  .agenda-unit-checkbox-options {flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding:4px 1px 8px;}
+  .agenda-unit-checkbox,.agenda-unit-all {flex:none;white-space:nowrap;max-width:min(260px,85vw);}
+  .agenda-unit-checkbox span {overflow:hidden;text-overflow:ellipsis;}
+  .erp-purchase-filter-top {grid-template-columns:1fr;}
+  .erp-purchase-filter-top label:first-child {grid-column:auto;}
+  .erp-purchase-summary {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .erp-purchase-summary > div:last-child {grid-column:1/-1;}
+  .erp-purchase-results-head {flex-wrap:wrap;}
+  .erp-purchase-table-wrap {overflow:visible;}
+  .erp-purchase-table-wrap table,.erp-purchase-table-wrap tbody,.erp-purchase-table-wrap tr,.erp-purchase-table-wrap td {display:block;min-width:0;width:100%;}
+  .erp-purchase-table-wrap thead {display:none;}
+  .erp-purchase-table-wrap tr {padding:13px 16px;border-top:1px solid #393229;}
+  .erp-purchase-table-wrap td {display:grid;grid-template-columns:100px minmax(0,1fr);gap:10px;align-items:start;padding:7px 0;overflow-wrap:anywhere;}
+  .erp-purchase-table-wrap td::before {content:attr(data-label);color:#ad9d84;font-size:.74rem;font-weight:700;}
+  .erp-purchase-table-wrap td[colspan] {display:block;}
+  .erp-purchase-table-wrap td[colspan]::before {display:none;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .agenda-unit-checkbox,.agenda-unit-all {transition:none;}
+}
