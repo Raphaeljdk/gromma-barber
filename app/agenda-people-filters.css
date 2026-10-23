@@ -334,7 +334,8 @@ html[data-theme="light"] .tenant-erp .agenda-display-panel[open] > .agenda-displ
   }
   .tenant-erp .agenda-display-popup {
     right:auto;
-    left:max(-200px,calc(100% - min(320px,100vw - 30px)));
+    left:auto;
+    right:0;
     padding:12px;
   }
   /* Indicadores preservados em uma única linha rolável, sem ocupar quatro
