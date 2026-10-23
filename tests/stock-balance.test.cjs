@@ -42,13 +42,13 @@ test("conferência registra divergência auditável sem ajustar automaticamente 
   const section = actions.split("export async function confirmStockCount(formData: FormData) {")[1]?.split("export async function createProduct(")[0];
   assert.ok(section, "action should exist");
   assert.match(section, /MANAGEMENT_ROLES/);
-  assert.match(section, /barberShopId: shop\\.id, active: true/);
-  assert.match(section, /stockBalanceMilli\\(balances\\)/);
+  assert.match(section, /barberShopId: shop\.id, active: true/);
+  assert.match(section, /stockBalanceMilli\(balances\)/);
   assert.match(section, /currentMilli !== expectedMilli/);
   assert.match(section, /isolationLevel: "Serializable"/);
   assert.match(section, /action: "STOCK_COUNT_RECORDED"/);
   assert.match(section, /stockChanged: false/);
-  assert.doesNotMatch(section, /tx\\.stockMovement\\.create/);
+  assert.doesNotMatch(section, /tx\.stockMovement\.create/);
 });
 
 test("balanço é uma subaba real com rota e campo de contagem física vazio", () => {
