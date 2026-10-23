@@ -1,6 +1,8 @@
 import "./globals.css";
 import "./inventory-notifications.css";
 import "./agenda-multiunit-history.css";
+import "./customer-directory.css";
+import "./agenda-people-filters.css";
 
 export const metadata = {
   title: "GROMMA BARBER",

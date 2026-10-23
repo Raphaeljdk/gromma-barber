@@ -1,0 +1,88 @@
+/* Agenda GROMMA — filtros de unidades e profissionais em listas compactas com aplicação explícita. */
+.tenant-erp .agenda-multifilter-panel {
+  display:grid;gap:11px;min-width:0;
+  margin:10px 0 12px;
+  padding:13px 15px;
+  border:1px solid var(--erp-border,#373229);
+  border-radius:14px;
+  background:var(--erp-panel,#161511);
+}
+.tenant-erp .agenda-multifilter-lists {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  min-width:0;
+}
+.tenant-erp .agenda-multifilter-list {
+  min-width:0;
+  margin:0;
+  padding:9px 10px 10px;
+  border:1px solid var(--erp-border,#41382e);
+  border-radius:12px;
+  background:var(--erp-panel-2,#1e1b16);
+}
+.tenant-erp .agenda-multifilter-list legend {
+  padding:0 5px;
+  font-size:.83rem;
+  font-weight:750;
+  color:var(--erp-text,#f2e7d2);
+}
+.tenant-erp .agenda-multifilter-list legend small {color:var(--erp-muted,#baa994);font-weight:500;}
+.tenant-erp .agenda-multifilter-options {
+  display:grid;
+  gap:3px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  max-height:170px;
+  min-width:0;
+  scrollbar-width:thin;
+  overscroll-behavior:contain;
+}
+.tenant-erp .agenda-multifilter-row {
+  display:grid;
+  align-items:center;
+  grid-template-columns:17px minmax(0,1fr) auto;
+  gap:10px;
+  padding:8px 9px;
+  min-height:37px;
+  border-radius:8px;
+  color:var(--erp-text,#eee5d5);
+  cursor:pointer;
+  font-size:.79rem;
+  font-weight:550;
+  transition:background-color .12s ease;
+}
+.tenant-erp .agenda-multifilter-row:hover,
+.tenant-erp .agenda-multifilter-row:focus-within {background:rgba(200,156,84,.13);}
+.tenant-erp .agenda-multifilter-row:has(input:checked) {background:rgba(194,146,63,.09);}
+.tenant-erp .agenda-multifilter-row.is-all {font-weight:750;color:var(--gold-2,#e2bd73);border-bottom:1px solid var(--erp-border,#3e382d);border-radius:0;margin-bottom:3px;}
+.tenant-erp .agenda-multifilter-row input {margin:0;width:16px;height:16px;accent-color:#d8a54f;cursor:pointer;}
+.tenant-erp .agenda-multifilter-row>span {min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.tenant-erp .agenda-multifilter-row>small {max-width:130px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--erp-muted,#b2a794);font-size:.67rem;}
+.tenant-erp .agenda-multifilter-footer {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.tenant-erp .agenda-multifilter-status {margin:0;flex:1 1 260px;color:var(--erp-muted,#b6aa98);font-size:.74rem;line-height:1.35;}
+.tenant-erp .agenda-multifilter-status[role="alert"] {color:#e6a19c;}
+.tenant-erp .agenda-multifilter-actions {display:flex;gap:9px;align-items:center;}
+.tenant-erp .agenda-multifilter-actions button {min-height:38px;padding:8px 12px;font-size:.79rem;}
+.tenant-erp .agenda-multifilter-actions button:disabled {opacity:.5;cursor:not-allowed;}
+.tenant-erp .agenda-people-filter-summary {color:var(--erp-muted,#b0a494);font-size:.75rem;line-height:1.4;}
+html[data-theme="light"] .tenant-erp .agenda-multifilter-list {background:#fffaf1;}
+html[data-theme="light"] .tenant-erp .agenda-multifilter-row.is-all {color:#80591f;}
+html[data-theme="light"] .tenant-erp .agenda-multifilter-row:hover,
+html[data-theme="light"] .tenant-erp .agenda-multifilter-row:has(input:checked) {background:#f5eacf;}
+@media(max-width:700px) {
+  .tenant-erp .agenda-multifilter-panel {padding:11px 10px;border-radius:11px;}
+  .tenant-erp .agenda-multifilter-lists {gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));}
+  .tenant-erp .agenda-multifilter-list {padding:7px 5px;min-width:0;}
+  .tenant-erp .agenda-multifilter-options {max-height:160px;}
+  .tenant-erp .agenda-multifilter-row {grid-template-columns:16px minmax(0,1fr);gap:7px;padding:8px 5px;font-size:.73rem;}
+  .tenant-erp .agenda-multifilter-row>small {display:none;}
+  .tenant-erp .agenda-multifilter-footer {align-items:stretch;}
+  .tenant-erp .agenda-multifilter-actions {justify-content:flex-end;width:100%;}
+  .tenant-erp .agenda-multifilter-actions button {flex:1;max-width:210px;}
+}
+@media(max-width:355px) {
+  .tenant-erp .agenda-multifilter-lists {grid-template-columns:minmax(0,1fr);}
+  .tenant-erp .agenda-multifilter-options {max-height:126px;}
+}
+@media(prefers-reduced-motion:reduce) {.tenant-erp .agenda-multifilter-row {transition:none;}}
