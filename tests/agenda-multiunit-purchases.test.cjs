@@ -44,13 +44,13 @@ test("agenda conserva filtro na navegação sem misturar unidade da operação",
   assert.match(board, /agendaUnits: selectedUnitParam/);
   assert.match(board, /selectedUnitSet\.has\(item\.unitId\)/);
   assert.match(board, /<AgendaPeopleFilters/);
-  assert.match(board, /onApply=\{applyPeopleFilters\}/);
+  assert.match(board, /onChange=\{updatePeopleFilters\}/);
   assert.match(board, /agendaProfessionals: selectedProfessionalParam/);
   assert.match(board, /selectedProfessionalSet\.has\(item\.barberId \?\? "unassigned"\)/);
   const filters = read("components/agenda-people-filters.tsx");
-  assert.match(filters, /setDraftUnitIds\(next\)/);
-  assert.match(filters, /checked=\{draftUnitIds\.includes\(unit\.id\)\}/);
-  assert.match(filters, /Aplicar filtros/);
+  assert.match(filters, /onChange\(next, wasAll \|\| !retained.length \? nextAllowed : retained\)/);
+  assert.match(filters, /checked=\{selectedUnitIds\.includes\(unit\.id\)\}/);
+  assert.doesNotMatch(filters, /Aplicar filtros/);
   assert.match(filters, /Todos os profissionais/);
   assert.match(board, /unitId: selectedUnitId \|\| person\.unitId \|\| ""/);
   assert.match(page, /agendaSelectedUnitIds = parseAgendaUnits/);
