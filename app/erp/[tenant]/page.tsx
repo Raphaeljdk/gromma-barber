@@ -10,6 +10,7 @@ import {
   PackageSearch,
   Plus,
   Pencil,
+  ChevronDown,
   Trash2,
   ReceiptText,
   Star,
@@ -1155,12 +1156,25 @@ export async function TenantERPView({
             autoSubmit
             selects={[{ param: "clientesPlano", value: clientesPlano, label: "Plano", options: [{ value: "com", label: "Com plano" }, { value: "sem", label: "Sem plano" }] }]}
           />
-          <div className="erp-customer-list">{customers.length ? customers.map((customer) => (
-              <article className="erp-customer-card" key={customer.id}>
-                <div className="erp-customer-card-head"><div><strong>{customer.name}</strong><span>{customer.email ?? "Sem e-mail"}</span><span>{customer.phone ?? "Sem telefone"}</span></div><div className="erp-customer-card-controls"><span className="badge approved">Ativo</span>{canManage && <form action={deactivateCustomer}><input type="hidden" name="tenantCode" value={tenantCode} /><input type="hidden" name="customerId" value={customer.id} /><CustomerDeactivateButton customerName={customer.name} /></form>}</div></div>
-                <div className="erp-customer-card-body">
-                  {canOperate && <details className="erp-quick-create">
-                    <summary><Pencil size={15} /> Abrir prontuário completo</summary>
+          <div className="erp-customer-directory" role="list" aria-label="Lista de clientes ativos">
+            {customers.length ? customers.map(customer => (
+              <details className="erp-customer-entry" name="erp-customer-prontuario" role="listitem" key={customer.id}>
+                <summary className="erp-customer-entry-summary">
+                  <span className="erp-customer-entry-avatar" aria-hidden="true">{customer.name.trim().slice(0,1).toLocaleUpperCase("pt-BR")}</span>
+                  <span className="erp-customer-entry-identity">
+                    <strong>{customer.name}</strong>
+                    <span className="erp-customer-entry-mobile-contact">{customer.phone || "Sem telefone"}</span>
+                  </span>
+                  <span className="erp-customer-entry-phone">{customer.phone || "Sem telefone"}</span>
+                  <span className="erp-customer-entry-email">{customer.email || "Sem e-mail"}</span>
+                  <span className="erp-customer-entry-tag">Ativo</span>
+                  <span className="erp-customer-entry-open"><Pencil size={15} aria-hidden="true"/><span>Prontuário</span><ChevronDown size={15} className="erp-customer-entry-chevron" aria-hidden="true"/></span>
+                </summary>
+                <div className="erp-customer-entry-detail">
+                  {canOperate ? <>
+                    <div className="erp-customer-entry-detail-head">
+                      <div><h3>Prontuário de {customer.name}</h3><small>Informações, planos, visitas e histórico preservados</small></div>
+                    </div>
                     <form action={updateCustomer} className="erp-quick-form">
                       <input type="hidden" name="tenantCode" value={tenantCode} />
                       <input type="hidden" name="customerId" value={customer.id} />
@@ -1226,10 +1240,16 @@ export async function TenantERPView({
                       </section>
                     </div>
                     <CustomerPhotos tenantCode={tenantCode} customerId={customer.id} />
-                  </details>}
+                  </> : <p className="muted">Seu perfil não possui acesso para editar o prontuário.</p>}
+                  {canManage && <form action={deactivateCustomer} className="erp-customer-entry-deactivate">
+                    <input type="hidden" name="tenantCode" value={tenantCode} />
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <CustomerDeactivateButton customerName={customer.name} />
+                  </form>}
                 </div>
-              </article>
-            )) : <p className="muted">Nenhum cliente cadastrado.</p>}</div>
+              </details>
+            )) : <p className="muted erp-customer-directory-empty">Nenhum cliente cadastrado.</p>}
+          </div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/clientes`} searchParams={qs} param="clientesPage" page={clientesPage} total={customersTotal} pageSize={pageSize} hash="clientes" label="clientes" />
         </section>
 
