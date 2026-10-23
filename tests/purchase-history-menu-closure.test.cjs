@@ -22,7 +22,7 @@ test("Historico tem dois menus com clique simples e nenhum checkbox de categoria
   ]) assert.ok(selectors.includes(item), item + " not found");
   assert.doesNotMatch(selectors, /type="checkbox"/);
   assert.match(selectors, /setCategory\(next\)/);
-  assert.match(selectors, /setItem\("")/);
+  assert.ok(selectors.includes('setItem("")'));
   assert.match(selectors, /choices\.filter\(choice => !category \|\| choice\.category === category\)/);
   assert.match(history, /prisma\.service\.findMany/);
   assert.match(history, /prisma\.product\.findMany/);
