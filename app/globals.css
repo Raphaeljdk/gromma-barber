@@ -9176,3 +9176,15 @@ html[data-theme="light"] .tenant-erp .erp-nav-sector-items { border-left-color: 
   .stock-balance-confirm { width: 100%; }
   .stock-balance-guide { font-size: .82rem; }
 }
+
+/* Ocupação diária do profissional na agenda */
+.agenda-professional-head .agenda-occupancy-avatar {
+  --occupancy:0%;
+  display:grid;place-items:center;flex:none;width:46px;height:46px;
+  padding:3px;border-radius:50%;background:conic-gradient(var(--gold) var(--occupancy),#3b3832 0);
+}
+.agenda-professional-head .agenda-occupancy-avatar > span {
+  display:grid;place-items:center;width:100%;height:100%;border-radius:50%;
+  background:#1c1a17;color:#f2e2bf;font-weight:750;font-size:.95rem;
+}
+html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > span {background:#fff9ed;color:#6e4b18;}

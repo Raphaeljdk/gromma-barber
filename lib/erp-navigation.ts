@@ -33,6 +33,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
       { id: "clientes", label: "Clientes", route: "clientes", children: [
         { id: "clientes-bloqueados", label: "Clientes Bloqueados", route: "clientes-bloqueados" },
         { id: "clientes-ranking", label: "Ranking", route: "clientes-ranking" },
+        { id: "clientes-historico-compras", label: "Histórico de compras", route: "clientes-historico-compras" },
       ] },
       { id: "caixa", label: "Caixa", route: "caixa", children: [
         { id: "comandas", label: "Comandas", route: "comandas" },

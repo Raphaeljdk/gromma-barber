@@ -934,9 +934,9 @@ export async function TenantERPView({
           </div>
         </header>
 
-        {(["agenda-feriados", "clientes-bloqueados", "clientes-ranking"] as const).includes(activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking") && (
+        {(["agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras"] as const).includes(activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking" | "clientes-historico-compras") && (
           <ErpOperationalSubpage
-            section={activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking"}
+            section={activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking" | "clientes-historico-compras"}
             tenantCode={tenantCode}
             shopId={shop.id}
             units={shop.units.map(unit => ({ id: unit.id, name: unit.name, active: unit.active }))}
