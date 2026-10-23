@@ -219,7 +219,7 @@ export async function ErpOperationalSubpage({ section, tenantCode, shopId, units
   const qs = {q,de:from,ate:to,pagina:page,cliente:selectedCustomer?.id};
   return <section className="demo-section erp-ops-subpage" id="clientes-ranking">
     <div className="section-head">
-      <div><div className="eyebrow">Operacional · Clientes</div><h2>{section === "clientes-historico-compras" ? "Histórico de compras" : "Ranking de gastos dos clientes"}</h2>
+      <div><div className="eyebrow">Operacional · Clientes</div><h2>Ranking de gastos dos clientes</h2>
         <p className="muted">Ordenação pelos valores finais das comandas fechadas no período. Comandas abertas ou canceladas não entram no ranking.</p>
       </div>
       <Link className="btn secondary" href={`${base}/clientes`}>Voltar aos clientes</Link>
