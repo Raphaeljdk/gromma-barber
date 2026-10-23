@@ -32,6 +32,8 @@ type Props = {
   tenantCode: string;
   planKey: "ESSENTIAL" | "PRO";
   supportHref: string;
+  isOwner: boolean;
+  canManage: boolean;
 };
 
 const MODULES = [
@@ -46,9 +48,12 @@ const MODULES = [
   { id: "comandas", label: "Comandas", group: "Operacional", icon: ReceiptText },
   { id: "estoque", label: "Estoque", group: "Operacional", icon: PackageSearch },
   { id: "estoque-balanco", label: "Balanço de estoque", group: "Operacional", icon: PackageSearch },
+  { id: "estoque-compras", label: "Solicitação de compra", group: "Operacional", icon: PackageSearch, adminOnly: true },
   { id: "totem", label: "Totem / Check-in", group: "Operacional", icon: Store, proOnly: true },
   { id: "assinaturas", label: "Clube / Assinaturas", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "gerencial", label: "Gerencial", group: "Gestão", icon: LayoutDashboard },
+  { id: "auditoria-estoque", label: "Auditoria de estoque", group: "Gestão", icon: ScrollText, adminOnly: true },
+  { id: "notificacoes", label: "Notificações de compra", group: "Gestão", icon: BellRing, ownerOnly: true },
   { id: "relatorios", label: "Relatórios", group: "Gestão", icon: FileText },
   { id: "comissoes", label: "Comissões", group: "Gestão", icon: ScrollText },
   { id: "alertas", label: "Alertas", group: "Gestão", icon: BellRing },
@@ -71,6 +76,8 @@ type SearchModule = {
   group: string;
   icon: LucideIcon;
   proOnly?: boolean;
+  adminOnly?: boolean;
+  ownerOnly?: boolean;
   pending?: boolean;
 };
 
@@ -94,7 +101,7 @@ function routeFor(tenantCode: string, id: string) {
   return `${base}/${id}`;
 }
 
-export function ErpCommandPalette({ tenantCode, planKey, supportHref }: Props) {
+export function ErpCommandPalette({ tenantCode, planKey, supportHref, isOwner, canManage }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -128,11 +135,15 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref }: Props) {
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return MODULES;
-    return SEARCH_MODULES.filter((item) =>
+    const accessible = SEARCH_MODULES.filter((item) =>
+      (!("ownerOnly" in item) || !item.ownerOnly || isOwner) &&
+      (!("adminOnly" in item) || !item.adminOnly || canManage)
+    );
+    if (!normalized) return accessible.filter(item => MODULES.some(module => module.id === item.id));
+    return accessible.filter((item) =>
       `${item.label} ${item.group}`.toLowerCase().includes(normalized),
     );
-  }, [query]);
+  }, [query, isOwner, canManage]);
 
   function openModule(id: string, proOnly?: boolean) {
     setOpen(false);
