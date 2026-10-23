@@ -463,13 +463,15 @@ export function ErpAgendaBoard({
     if (Array.isArray(value)) orderedIds = value.filter((id): id is string => typeof id === "string");
   } catch { /* Ignore malformed browser preferences. */ }
   columns.sort((a, b) => {
+    if (a.id === "unassigned") return b.id === "unassigned" ? 0 : 1;
+    if (b.id === "unassigned") return -1;
     const indexA = orderedIds.indexOf(a.id);
     const indexB = orderedIds.indexOf(b.id);
     return (indexA < 0 ? Number.MAX_SAFE_INTEGER : indexA) - (indexB < 0 ? Number.MAX_SAFE_INTEGER : indexB);
   });
   if (preferences.hideEmpty) columns = columns.filter(person => dayAppointments.some(item => (item.barberId || "unassigned") === person.id) || blocks.some(block => block.barberId === person.id && block.startsAt.slice(0, 10) <= selectedDate && block.endsAt.slice(0, 10) >= selectedDate));
   function moveProfessional(from: string, to: string) {
-    if (from === to) return;
+    if (from === to || from === "unassigned" || to === "unassigned") return;
     const ids = columns.map((person) => person.id);
     const source = ids.indexOf(from);
     const target = ids.indexOf(to);
@@ -962,7 +964,7 @@ export function ErpAgendaBoard({
                   return (
                   <div key={person.id}
                     className={`agenda-professional-head${draggedId === person.id ? " is-dragging" : ""}${dropId === person.id ? " is-drop-target" : ""}`}
-                    draggable={columns.length > 1}
+                    draggable={person.id !== "unassigned" && columns.length > 1}
                     onDragStart={(event) => { setDraggedId(person.id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", person.id); }}
                     onDragOver={(event) => { if (draggedId) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropId(person.id); } }}
                     onDrop={(event) => { event.preventDefault(); if (draggedId) moveProfessional(draggedId, person.id); setDraggedId(null); setDropId(null); }}
