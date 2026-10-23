@@ -37,9 +37,9 @@ test("lista de filtros abre e fecha no mesmo botão sem navegação a cada toque
   const filters = read("components/agenda-people-filters.tsx");
   assert.match(filters, /current === "units" \? null : "units"/);
   assert.match(filters, /current === "professionals" \? null : "professionals"/);
-  assert.match(filters, /setDraftUnitIds\(next\)/);
-  assert.match(filters, /setDraftProfessionalIds\(/);
-  assert.match(filters, /onClick=\{applyFilters\}/);
+  assert.match(filters, /toggleAgendaUnit\(selectedUnitIds, unitId, allUnits\)/);
+  assert.match(filters, /onChange\(selectedUnitIds, toggleAgendaUnit\(/);
+  assert.doesNotMatch(filters, /onClick=\{applyFilters\}/);
   assert.match(filters, /aria-expanded=\{openUnits\}/);
   assert.match(filters, /aria-expanded=\{openProfessionals\}/);
 });
