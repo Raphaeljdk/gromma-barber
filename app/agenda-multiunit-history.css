@@ -148,3 +148,68 @@ html[data-theme="light"] .erp-purchase-summary strong {color:#825b1f;}
 @media (prefers-reduced-motion:reduce) {
   .agenda-unit-checkbox,.agenda-unit-all {transition:none;}
 }
+
+
+/* Histórico de compras — dois filtros suspensos iguais aos da agenda. */
+.tenant-erp .erp-purchase-selectors {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr)) auto;
+  align-items:end;
+  gap:11px;
+  min-width:0;
+  position:relative;
+  z-index:12;
+}
+.tenant-erp .erp-purchase-select {position:relative;min-width:0;display:grid;gap:7px;}
+.tenant-erp .erp-purchase-select-label {font-size:.8rem;font-weight:700;color:var(--erp-text,#e9dfcb);}
+.tenant-erp .erp-purchase-select-trigger {
+  display:flex;align-items:center;gap:9px;min-height:42px;
+  width:100%;padding:8px 12px;
+  background:var(--erp-panel,#181713);border:1px solid var(--erp-border,#453c2e);
+  color:var(--erp-text,#f1e4cf);
+  border-radius:10px;text-align:left;cursor:pointer;
+  font-size:.8rem;
+}
+.tenant-erp .erp-purchase-select-trigger:hover,
+.tenant-erp .erp-purchase-select-trigger.is-open {border-color:var(--erp-gold,#b68e4d);background:var(--erp-panel-2,#262115);}
+.tenant-erp .erp-purchase-select-trigger:focus-visible,
+.tenant-erp .erp-purchase-select-option:focus-visible {outline:2px solid var(--erp-gold,#e0bd78);outline-offset:2px;}
+.tenant-erp .erp-purchase-select-trigger>span {flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.tenant-erp .erp-purchase-select-trigger>svg:last-child {flex:none;}
+.tenant-erp .erp-purchase-select-list {
+  position:absolute;z-index:75;top:calc(100% + 5px);left:0;
+  width:100%;min-width:min(210px,85vw);max-height:260px;overflow:auto;
+  padding:6px;
+  border:1px solid var(--erp-border,#4b3b29);
+  border-radius:11px;
+  background:var(--erp-panel,#171511);
+  box-shadow:0 16px 44px #0005;
+  overscroll-behavior:contain;
+}
+.tenant-erp .erp-purchase-select-option {
+  display:block;width:100%;text-align:left;min-height:36px;padding:9px 11px;
+  border:0;border-radius:7px;background:transparent;color:var(--erp-text,#e8dfcd);
+  font-size:.79rem;line-height:1.35;cursor:pointer;overflow-wrap:anywhere;
+}
+.tenant-erp .erp-purchase-select-option:hover,
+.tenant-erp .erp-purchase-select-option.is-selected {background:color-mix(in srgb,var(--erp-gold,#c29c58) 17%,transparent);}
+.tenant-erp .erp-purchase-select-option.is-selected {font-weight:750;color:var(--erp-gold,#ecd093);}
+.tenant-erp .erp-purchase-select-empty {display:block;padding:12px;color:var(--erp-muted,#ad9e8d);font-size:.77rem;}
+.tenant-erp .erp-purchase-select-reset {
+  align-self:end;display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:8px;
+  border:1px solid var(--erp-border,#42392b);border-radius:10px;
+  background:transparent;color:var(--erp-muted,#c1b199);font-size:.75rem;cursor:pointer;
+}
+.tenant-erp .erp-purchase-select-reset:hover {background:var(--erp-panel-2,#262015);}
+html[data-theme="light"] .tenant-erp .erp-purchase-select-trigger,
+html[data-theme="light"] .tenant-erp .erp-purchase-select-list {background:#fffdf7;border-color:#d9cbb7;}
+html[data-theme="light"] .tenant-erp .erp-purchase-select-option.is-selected {color:#795217;}
+@media(max-width:700px) {
+  .tenant-erp .erp-purchase-selectors {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .tenant-erp .erp-purchase-select-trigger {padding:8px;gap:6px;min-height:44px;}
+  .tenant-erp .erp-purchase-select-reset {grid-column:1/-1;justify-self:start;min-height:32px;}
+}
+@media(max-width:380px) {
+  .tenant-erp .erp-purchase-selectors {grid-template-columns:minmax(0,1fr);}
+  .tenant-erp .erp-purchase-select-reset {grid-column:1;}
+}
