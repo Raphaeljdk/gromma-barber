@@ -33,6 +33,9 @@ import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
 import { CashHistory } from "@/components/cash-history";
 import { StockBalance } from "@/components/stock-balance";
+import { StockAudit } from "@/components/stock-audit";
+import { StockPurchases } from "@/components/stock-purchases";
+import { StockNotifications } from "@/components/stock-notifications";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
 import { readWorkspace } from "@/lib/erp-workspace";
@@ -148,6 +151,9 @@ const MODULE_TITLES: Record<string, string> = {
   "caixa-historico": "Histórico de caixas",
   estoque: "Estoque",
   "estoque-balanco": "Balanço de estoque",
+  "estoque-compras": "Solicitação de compra",
+  "auditoria-estoque": "Auditoria de estoque",
+  notificacoes: "Notificações de compra",
   comissoes: "Comissões",
   equipe: "Profissionais",
   unidades: "Unidades",
@@ -675,6 +681,16 @@ export async function TenantERPView({
   const canOperate = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "RECEPTIONIST", "BARBER"].includes(viewerRole);
   const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
+  const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
+  const purchaseEvents = isOwner ? await prisma.adminAuditLog.findMany({
+    where: { barberShopId: shop.id, action: { in: ["STOCK_PURCHASE_REQUESTED", "STOCK_PURCHASE_READ"] } },
+    select: { id: true, action: true, details: true },
+  }) : [];
+  const readRequestIds = new Set(purchaseEvents.filter(e => e.action === "STOCK_PURCHASE_READ").map(e => {
+    const d = e.details && typeof e.details === "object" && !Array.isArray(e.details) ? e.details as Record<string, unknown> : {};
+    return String(d.requestId ?? "");
+  }));
+  const notificationCount = purchaseEvents.filter(e => e.action === "STOCK_PURCHASE_REQUESTED" && !readRequestIds.has(e.id)).length;
 
   const receivables = Number(receivableAggregate._sum.amount ?? 0);
   const payables = Number(payableAggregate._sum.amount ?? 0);
@@ -859,6 +875,8 @@ export async function TenantERPView({
         email={viewer.email}
         viewerType={viewer.type}
         canManage={auditCanView}
+        isOwner={isOwner}
+        notificationCount={notificationCount}
         supportHref={supportHref}
         logoutAction={viewer.type === "TENANT" ? logoutTenant : undefined}
       />
@@ -875,7 +893,7 @@ export async function TenantERPView({
             <strong>{activeModuleTitle}</strong>
           </div>
           <div className="erp-top-center">
-            <ErpCommandPalette tenantCode={tenantCode} planKey={planKey} supportHref={supportHref} />
+            <ErpCommandPalette tenantCode={tenantCode} planKey={planKey} supportHref={supportHref} isOwner={isOwner} canManage={canManage} />
           </div>
           <div className="erp-top-actions">
             <BackButton fallback="/login" label="Voltar" />
@@ -1601,12 +1619,17 @@ export async function TenantERPView({
           ) : <section className="demo-section"><p className="notice">Seu perfil não possui permissão para visualizar o histórico de caixas.</p></section>
         )}
 
+        {activeModule === "auditoria-estoque" && <StockAudit shopId={shop.id} tenantCode={tenantCode} canManage={auditCanView} query={qs} />}
+        {activeModule === "notificacoes" && <StockNotifications shopId={shop.id} tenantCode={tenantCode} isOwner={isOwner} query={qs} />}
+        {activeModule === "estoque-compras" && <StockPurchases shopId={shop.id} tenantCode={tenantCode}
+          units={shop.units.filter(unit => unit.active).map(unit => ({ id: unit.id, name: unit.name }))}
+          canManage={canManage} query={qs} />}
         {activeModule === "estoque-balanco" && <StockBalance shopId={shop.id} tenantCode={tenantCode}
           units={shop.units.filter(unit => unit.active).map(unit => ({ id: unit.id, name: unit.name }))}
           canManage={canManage} query={qs} />}
 
         <section id="estoque" className="demo-section" hidden={Boolean(moduleId && moduleId !== "estoque")}>
-          <div className="section-head"><div><div className="eyebrow">Estoque / Entrada e saída</div><h2>Produtos</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/estoque-balanco`}>Balanço físico →</Link></div>
+          <div className="section-head"><div><div className="eyebrow">Estoque / Entrada e saída</div><h2>Produtos</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/estoque-balanco`}>Balanço físico →</Link><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/estoque-compras`}>Solicitar compra →</Link></div>
           {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
           {actionOk === "movimento" && <div className="notice erp-inline-notice success">Movimentação de estoque registrada.</div>}
           {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}

@@ -37,7 +37,7 @@ test("saldo de inventário soma entradas e ajustes assinados e subtrai saídas",
   assert.equal(stockBalanceMilli([]), 0);
 });
 
-test("conferência exige saldo original, transação serializável, unidade válida e auditoria", () => {
+test("conferência registra divergência auditável sem ajustar automaticamente o estoque", () => {
   const actions = fs.readFileSync(path.join(root, "app/erp/[tenant]/actions.ts"), "utf8");
   const section = actions.split("export async function confirmStockCount(formData: FormData) {")[1]?.split("export async function createProduct(")[0];
   assert.ok(section, "action should exist");
@@ -46,9 +46,9 @@ test("conferência exige saldo original, transação serializável, unidade vál
   assert.match(section, /stockBalanceMilli\(balances\)/);
   assert.match(section, /currentMilli !== expectedMilli/);
   assert.match(section, /isolationLevel: "Serializable"/);
-  assert.match(section, /quantity: differenceMilli \/ 1000/);
-  assert.match(section, /action: "STOCK_COUNT_CONFIRMED"/);
-  assert.match(section, /if \(differenceMilli !== 0\)/);
+  assert.match(section, /action: "STOCK_COUNT_RECORDED"/);
+  assert.match(section, /stockChanged: false/);
+  assert.doesNotMatch(section, /tx\.stockMovement\.create/);
 });
 
 test("balanço é uma subaba real com rota e campo de contagem física vazio", () => {

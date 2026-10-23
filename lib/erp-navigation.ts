@@ -11,6 +11,7 @@ export type ErpNavigationNode = {
   route?: string;
   proOnly?: boolean;
   adminOnly?: boolean;
+  ownerOnly?: boolean;
   children?: readonly ErpNavigationNode[];
 };
 
@@ -40,6 +41,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
       { id: "estoque", label: "Estoque", route: "estoque", children: [
         { id: "estoque-movimentacao", label: "Entrada e Saída", route: "estoque" },
         { id: "estoque-balanco", label: "Balanço", route: "estoque-balanco" },
+        { id: "estoque-compras", label: "Solicitar compra", route: "estoque-compras" },
       ] },
     ],
   },
@@ -64,11 +66,12 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     id: "gestao", label: "Gestão", description: "Auditoria, relatórios e comissões",
     items: [
       { id: "auditoria", label: "Auditoria", route: "auditoria", adminOnly: true, children: [
-        { id: "auditoria-estoque", label: "Estoque", adminOnly: true },
+        { id: "auditoria-estoque", label: "Estoque", route: "auditoria-estoque", adminOnly: true },
         { id: "auditoria-agendamentos", label: "Agendamentos", adminOnly: true },
         { id: "auditoria-batimento", label: "Batimento de caixa", adminOnly: true },
         { id: "auditoria-produtividade", label: "Produtividade", adminOnly: true },
       ] },
+      { id: "notificacoes", label: "Notificações de compra", route: "notificacoes", ownerOnly: true },
       { id: "gerar-comissao", label: "Gerar comissão", route: "comissoes" },
       { id: "relatorios", label: "Relatórios", route: "relatorios", children: [
         { id: "relatorios-assinaturas", label: "Assinaturas", children: [
