@@ -79,10 +79,6 @@ export function AgendaPeopleFilters({
     if (!allProfessionalsChecked) onChange(selectedUnitIds, permittedProfessionals);
   }
 
-  function resetFilters() {
-    onChange(allUnits, availableProfessionals(allUnits, professionals));
-  }
-
   const openUnits = openFilter === "units";
   const openProfessionals = openFilter === "professionals";
 
@@ -107,10 +103,6 @@ export function AgendaPeopleFilters({
         <span>Profissionais</span>
         {!allProfessionalsChecked && <span className="agenda-multifilter-count">{effectiveProfessionals.length}</span>}
         <ChevronDown size={15} className="agenda-multifilter-chevron" aria-hidden="true"/>
-      </button>
-      <button type="button" className="agenda-multifilter-clear" onClick={resetFilters}
-        disabled={allUnitsChecked && allProfessionalsChecked}>
-        <X size={14} aria-hidden="true"/> Limpar
       </button>
     </div>
 
