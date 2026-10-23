@@ -35,9 +35,9 @@ test("new sector hierarchy preserves access to existing ERP modules", () => {
   assert.match(sidebar, /renderNavItem\(child, depth \+ 1\)/, "must render grandchildren");
 });
 
-test("six sectors follow the feedback: Relatórios belongs inside Gestão", () => {
+test("Totem is the final sector: Relatórios belongs inside Gestão", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro", "totem",
   ]);
   assert.match(sidebar, /aria-expanded=\{expanded\}/);
   assert.match(sidebar, /ERP_NAVIGATION\.map\(/);
