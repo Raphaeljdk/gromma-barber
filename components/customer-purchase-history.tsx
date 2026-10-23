@@ -25,10 +25,6 @@ function categoryWhere(categories: readonly PurchaseCategory[]): Prisma.CommandI
   const regular = categories.includes("PRODUCT");
   const drinks = categories.includes("BEVERAGE");
   if (regular && drinks) return { kind: { in: service ? ["SERVICE", "PRODUCT"] : ["PRODUCT"] } };
-  const beverageText: Prisma.StringFilter = {
-    contains: "", mode: "insensitive",
-  };
-  void beverageText;
   const isBeverage = BEVERAGE_TERMS.map(term => ({
     description: { contains: term, mode: "insensitive" as const },
   }));
