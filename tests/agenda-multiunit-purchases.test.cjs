@@ -52,7 +52,7 @@ test("agenda conserva filtro na navegação sem misturar unidade da operação",
   assert.match(filters, /checked=\{selectedUnitIds\.includes\(unit\.id\)\}/);
   assert.doesNotMatch(filters, /Aplicar filtros/);
   assert.match(filters, /Todos os profissionais/);
-  assert.match(board, /unitId: selectedUnitId \|\| person\.unitId \|\| ""/);
+  assert.match(board, /unitId: person\.unitId \|\| effectiveSelectedUnitId \|\| ""/);
   assert.match(page, /agendaSelectedUnitIds = parseAgendaUnits/);
   assert.match(page, /selectedUnitIds=\{agendaSelectedUnitIds\}/);
   assert.match(page, /selectedProfessionalIds=\{agendaSelectedProfessionalIds\}/);
