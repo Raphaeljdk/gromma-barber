@@ -966,7 +966,7 @@ export function ErpAgendaBoard({
                     className={`agenda-professional-head${draggedId === person.id ? " is-dragging" : ""}${dropId === person.id ? " is-drop-target" : ""}`}
                     draggable={person.id !== "unassigned" && columns.length > 1}
                     onDragStart={(event) => { setDraggedId(person.id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", person.id); }}
-                    onDragOver={(event) => { if (draggedId) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropId(person.id); } }}
+                    onDragOver={(event) => { if (draggedId && person.id !== "unassigned") { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropId(person.id); } }}
                     onDrop={(event) => { event.preventDefault(); if (draggedId) moveProfessional(draggedId, person.id); setDraggedId(null); setDropId(null); }}
                     onDragEnd={() => { setDraggedId(null); setDropId(null); }}
                   >
@@ -988,6 +988,7 @@ export function ErpAgendaBoard({
                         {!person.canSchedule ? " · indisponível" : ""}
                       </small>
                     </div>
+                    {person.id !== "unassigned" && (
                     <button type="button" className="agenda-drag-handle" aria-label={`Mover ${person.name}. Use as setas esquerda e direita.`}
                       title="Arraste para reorganizar ou use as setas do teclado"
                       onKeyDown={(event) => {
@@ -996,6 +997,7 @@ export function ErpAgendaBoard({
                         const target = columns[columns.findIndex((item) => item.id === person.id) + (event.key === "ArrowLeft" ? -1 : 1)];
                         if (target) moveProfessional(person.id, target.id);
                       }}><GripVertical size={18} /></button>
+                    )}
                   </div>
                 );})}
                 {!columns.length && (
