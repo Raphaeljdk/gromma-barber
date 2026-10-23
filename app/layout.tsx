@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./inventory-notifications.css";
 
 export const metadata = {
   title: "GROMMA BARBER",
