@@ -36,6 +36,8 @@ import { StockBalance } from "@/components/stock-balance";
 import { StockAudit } from "@/components/stock-audit";
 import { StockPurchases } from "@/components/stock-purchases";
 import { StockNotifications } from "@/components/stock-notifications";
+import { InventoryNotificationBell } from "@/components/inventory-notification-bell";
+import { loadInventoryNotifications } from "@/lib/inventory-notifications";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
 import { readWorkspace } from "@/lib/erp-workspace";
@@ -153,7 +155,7 @@ const MODULE_TITLES: Record<string, string> = {
   "estoque-balanco": "Balanço de estoque",
   "estoque-compras": "Solicitação de compra",
   "auditoria-estoque": "Auditoria de estoque",
-  notificacoes: "Notificações de compra",
+  notificacoes: "Notificações",
   comissoes: "Comissões",
   equipe: "Profissionais",
   unidades: "Unidades",
@@ -682,15 +684,14 @@ export async function TenantERPView({
   const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
   const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
-  const purchaseEvents = isOwner ? await prisma.adminAuditLog.findMany({
-    where: { barberShopId: shop.id, action: { in: ["STOCK_PURCHASE_REQUESTED", "STOCK_PURCHASE_READ"] } },
-    select: { id: true, action: true, details: true },
-  }) : [];
-  const readRequestIds = new Set(purchaseEvents.filter(e => e.action === "STOCK_PURCHASE_READ").map(e => {
-    const d = e.details && typeof e.details === "object" && !Array.isArray(e.details) ? e.details as Record<string, unknown> : {};
-    return String(d.requestId ?? "");
-  }));
-  const notificationCount = purchaseEvents.filter(e => e.action === "STOCK_PURCHASE_REQUESTED" && !readRequestIds.has(e.id)).length;
+  const inventoryNotices = isOwner
+    ? await loadInventoryNotifications(shop.id, tenantCode, shop.units.map(unit => ({
+      id: unit.id, name: unit.name, active: unit.active,
+    })))
+    : [];
+  const notificationCount = inventoryNotices.filter(notice => !notice.read).length;
+  const pendingPurchaseCount = inventoryNotices.filter(notice =>
+    notice.kind === "compra" && notice.purchaseStatus === "PENDENTE").length;
 
   const receivables = Number(receivableAggregate._sum.amount ?? 0);
   const payables = Number(payableAggregate._sum.amount ?? 0);
@@ -896,6 +897,7 @@ export async function TenantERPView({
             <ErpCommandPalette tenantCode={tenantCode} planKey={planKey} supportHref={supportHref} isOwner={isOwner} canManage={canManage} />
           </div>
           <div className="erp-top-actions">
+            {isOwner && <InventoryNotificationBell tenantCode={tenantCode} notices={inventoryNotices} />}
             <BackButton fallback="/login" label="Voltar" />
             <a href={supportHref} className="nav-quiet-link">Suporte</a>
             <ThemeToggle />
@@ -961,6 +963,10 @@ export async function TenantERPView({
             <Store size={19} />
             <div><span>Produtos / Serviços</span><strong>{shop.services.length} serviços · {productsAllTotal} produtos</strong></div>
           </Link>
+          {isOwner && <Link className="erp-command-card" href={`/erp/${encodeURIComponent(tenantCode)}/notificacoes?tipo=compras`}>
+            <BellRing size={19} />
+            <div><span>Solicitações de compra</span><strong>{pendingPurchaseCount} pendente(s) · {notificationCount} notificação(ões) nova(s)</strong></div>
+          </Link>}
           {isPro ? (
             <Link className="erp-command-card pro" href={`/erp/${encodeURIComponent(tenantCode)}/totem`}>
               <Store size={19} />
@@ -1620,7 +1626,7 @@ export async function TenantERPView({
         )}
 
         {activeModule === "auditoria-estoque" && <StockAudit shopId={shop.id} tenantCode={tenantCode} canManage={auditCanView} query={qs} />}
-        {activeModule === "notificacoes" && <StockNotifications shopId={shop.id} tenantCode={tenantCode} isOwner={isOwner} query={qs} />}
+        {activeModule === "notificacoes" && <StockNotifications tenantCode={tenantCode} isOwner={isOwner} query={qs} notices={inventoryNotices} />}
         {activeModule === "estoque-compras" && <StockPurchases shopId={shop.id} tenantCode={tenantCode}
           units={shop.units.filter(unit => unit.active).map(unit => ({ id: unit.id, name: unit.name }))}
           canManage={canManage} query={qs} />}
