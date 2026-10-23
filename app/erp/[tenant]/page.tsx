@@ -530,6 +530,22 @@ export async function TenantERPView({
       : Promise.resolve([]),
   ]);
 
+  const stockSalesItems = activeModule === "estoque" ? await prisma.commandItem.findMany({
+    where: { kind: "PRODUCT", command: { barberShopId: shop.id, status: "CLOSED" } },
+    select: { description: true, quantity: true },
+    take: 10000,
+    orderBy: { createdAt: "desc" },
+  }) : [];
+  const soldByName = new Map<string, number>();
+  for (const item of stockSalesItems) {
+    const key = item.description.trim().toLocaleLowerCase("pt-BR");
+    soldByName.set(key, (soldByName.get(key) ?? 0) + Number(item.quantity));
+  }
+  const stockSalesRanking = stockProductDirectory
+    .map(product => ({ ...product, quantity: soldByName.get(product.name.trim().toLocaleLowerCase("pt-BR")) ?? 0 }))
+    .filter(product => product.quantity > 0)
+    .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name, "pt-BR"));
+  const stockSalesLeast = [...stockSalesRanking].sort((a, b) => a.quantity - b.quantity || a.name.localeCompare(b.name, "pt-BR"));
   const auditCanView = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewer.role);
   const auditPage = Math.min(pageOf("auditoriaPage"), 1000);
   const auditWhere: Prisma.AdminAuditLogWhereInput = { barberShopId: shop.id, action: { startsWith: "APPOINTMENT_" } };
@@ -1634,6 +1650,7 @@ export async function TenantERPView({
           units={shop.units.filter(unit => unit.active).map(unit => ({ id: unit.id, name: unit.name }))}
           canManage={canManage} query={qs} />}
 
+        {/* Ranking por itens de produto em comandas fechadas; somente dados reais deste tenant. */}
         <section id="estoque" className="demo-section" hidden={Boolean(moduleId && moduleId !== "estoque")}>
           <div className="section-head"><div><div className="eyebrow">Estoque / Entrada e saída</div><h2>Produtos</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/estoque-balanco`}>Balanço físico →</Link><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/estoque-compras`}>Solicitar compra →</Link></div>
           {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
@@ -1660,24 +1677,17 @@ export async function TenantERPView({
             </form>
           </details>
           )}
-          {canManage && productsAllTotal > 0 && (
-            <details className="erp-quick-create">
-              <summary><Plus size={15} /> Movimentar estoque <small>Entrada, saída ou ajuste</small></summary>
-              <form action={createStockMovement} className="erp-quick-form">
-                <input type="hidden" name="tenantCode" value={tenantCode} />
-                <div className="grid grid-2">
-                  <label><span className="label">Produto</span><select className="select" name="productId" required defaultValue=""><option value="" disabled>Selecione</option>{stockProductDirectory.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ""}</option>)}</select></label>
-                  <label><span className="label">Unidade</span><select className="select" name="unitId" required defaultValue=""><option value="" disabled>Selecione</option>{shop.units.filter((unit) => unit.active).map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
-                </div>
-                <div className="grid grid-3">
-                  <label><span className="label">Movimento</span><select className="select" name="type"><option value="IN">Entrada</option><option value="OUT">Saída</option><option value="ADJUSTMENT">Ajuste (+)</option></select></label>
-                  <label><span className="label">Quantidade</span><input className="input" name="quantity" type="number" min="0.001" step="0.001" required /></label>
-                  <label><span className="label">Motivo</span><input className="input" name="reason" maxLength={180} placeholder="Compra, consumo, inventário..." /></label>
-                </div>
-                <button className="btn secondary" type="submit">Registrar movimento</button>
-              </form>
-            </details>
-          )}
+          <div className="erp-kpi-row" aria-label="Resumo de estoque">
+            <article><span>Produtos cadastrados</span><strong>{productsAllTotal}</strong><small>Catálogo ativo</small></article>
+            <article><span>Estoque mínimo</span><strong>{lowStockProducts.length}</strong><small>Produtos no limite ou abaixo</small></article>
+            <article><span>Mais vendidos</span><strong>{stockSalesRanking[0]?.name ?? "—"}</strong><small>{stockSalesRanking[0] ? stockSalesRanking[0].quantity.toLocaleString("pt-BR") + " un. vendidas" : "Sem vendas registradas"}</small></article>
+            <article><span>Menos vendidos</span><strong>{stockSalesLeast[0]?.name ?? "—"}</strong><small>{stockSalesLeast[0] ? stockSalesLeast[0].quantity.toLocaleString("pt-BR") + " un. vendidas" : "Sem vendas registradas"}</small></article>
+          </div>
+          <div className="grid grid-2">
+            <article className="card"><h3>Mais vendidos</h3>{stockSalesRanking.length ? <ol>{stockSalesRanking.slice(0,5).map(item => <li key={item.id}>{item.name} — <strong>{item.quantity.toLocaleString("pt-BR")} un.</strong></li>)}</ol> : <p className="muted">Nenhuma venda de produto encontrada.</p>}</article>
+            <article className="card"><h3>Menos vendidos</h3>{stockSalesLeast.length ? <ol>{stockSalesLeast.slice(0,5).map(item => <li key={item.id}>{item.name} — <strong>{item.quantity.toLocaleString("pt-BR")} un.</strong></li>)}</ol> : <p className="muted">Nenhuma venda de produto encontrada.</p>}</article>
+          </div>
+          <p className="muted small">Ranking baseado nos produtos identificados nas comandas fechadas; itens sem correspondência exata com o cadastro não são contabilizados.</p>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`}
             searchParams={qs}
