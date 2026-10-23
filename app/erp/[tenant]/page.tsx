@@ -35,6 +35,9 @@ import { CashRegister } from "@/components/cash-register";
 import { CashHistory } from "@/components/cash-history";
 import { StockBalance } from "@/components/stock-balance";
 import { StockAudit } from "@/components/stock-audit";
+import { AppointmentManagementAudit } from "@/components/management-appointment-audit";
+import { ManagementCashClosing } from "@/components/management-cash-closing";
+import { ManagementProductivity } from "@/components/management-productivity";
 import { StockPurchases } from "@/components/stock-purchases";
 import { StockNotifications } from "@/components/stock-notifications";
 import { InventoryNotificationBell } from "@/components/inventory-notification-bell";
@@ -159,6 +162,9 @@ const MODULE_TITLES: Record<string, string> = {
   "estoque-balanco": "Balanço de estoque",
   "estoque-compras": "Solicitação de compra",
   "auditoria-estoque": "Auditoria de estoque",
+  "auditoria-agendamentos": "Auditoria de agendamentos",
+  "auditoria-fechamento-caixa": "Fechamento de caixa",
+  "auditoria-produtividade": "Produtividade",
   notificacoes: "Notificações",
   comissoes: "Comissões",
   equipe: "Profissionais",
@@ -1682,6 +1688,18 @@ export async function TenantERPView({
         )}
 
         {activeModule === "auditoria-estoque" && <StockAudit shopId={shop.id} tenantCode={tenantCode} canManage={auditCanView} query={qs} />}
+        {activeModule === "auditoria-agendamentos" && <AppointmentManagementAudit
+          shopId={shop.id} tenantCode={tenantCode} query={qs} canManage={auditCanView}/>}
+        {activeModule === "auditoria-fechamento-caixa" && <ManagementCashClosing
+          shopId={shop.id} tenantCode={tenantCode} query={qs} canManage={auditCanView}
+          sessions={workspace.cashSessions} payments={workspace.commandPayments}
+          units={shop.units.map(unit=>({id:unit.id,name:unit.name}))}/>}
+        {activeModule === "auditoria-produtividade" && <ManagementProductivity
+          shopId={shop.id} tenantCode={tenantCode} query={qs} canManage={auditCanView}
+          units={shop.units.map(unit=>({id:unit.id,name:unit.name,active:unit.active}))}
+          professionals={shop.users.map(user=>({id:user.id,name:user.name,unitId:user.unitId,role:user.role}))}
+          blocks={workspace.agendaBlocks} settings={workspace.settings}/>}
+
         {activeModule === "notificacoes" && <StockNotifications tenantCode={tenantCode} isOwner={isOwner} query={qs} notices={inventoryNotices} />}
         {activeModule === "estoque-compras" && <StockPurchases shopId={shop.id} tenantCode={tenantCode}
           units={shop.units.filter(unit => unit.active).map(unit => ({ id: unit.id, name: unit.name }))}

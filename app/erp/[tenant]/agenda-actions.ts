@@ -14,7 +14,7 @@ async function access(f: FormData) {
   const viewer = await requireTenantAccess(tenantCode);
   const shop = await prisma.barberShop.findUnique({ where: { tenantCode } });
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased || (viewer.type !== "ADMIN" && (viewer.barberShopId !== shop.id || !["OWNER", "MANAGER", "RECEPTIONIST", "BARBER"].includes(viewer.role)))) redirect(agendaReturnHref(tenantCode, f, { erro: "permissao" }));
-  return { shop, tenantCode };
+  return { shop, tenantCode, viewer };
 }
 function finish(tenantCode: string, f: FormData, ok: boolean) {
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
@@ -22,7 +22,7 @@ function finish(tenantCode: string, f: FormData, ok: boolean) {
 }
 
 export async function rescheduleAppointment(f: FormData) {
-  const { shop, tenantCode } = await access(f);
+  const { shop, tenantCode, viewer } = await access(f);
   const start = parseAgendaInput(text(f, "startsAt"));
   const barberId = text(f, "barberId");
   let ok = false;
@@ -41,6 +41,21 @@ export async function rescheduleAppointment(f: FormData) {
         const conflict = await tx.appointment.findFirst({ where: { id: { not: item.id }, barberShopId: shop.id, barberId, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] }, startsAt: { lt: end }, OR: [{ endsAt: { gt: start } }, { endsAt: null }] } });
         if (conflict) throw new Error("conflict");
         await tx.appointment.update({ where: { id: item.id }, data: { startsAt: start, endsAt: end, barberId } });
+        await tx.adminAuditLog.create({
+          data:{
+            barberShopId:shop.id,action:"APPOINTMENT_RESCHEDULED",
+            adminEmail:viewer.email||"acesso autenticado",
+            details:{
+              appointmentId:item.id,customerId:item.customerId,unitId:item.unitId,
+              previousStartsAt:item.startsAt.toISOString(),
+              newStartsAt:start.toISOString(),
+              previousBarberId:item.barberId,newBarberId:barberId,
+              actorRole:viewer.type==="TENANT"?viewer.role:"ADMIN",
+              actorUserId:viewer.type==="TENANT"?viewer.userId:null,
+              performedVia:"ACESSO_BARBEARIA",
+            },
+          },
+        });
       }, { isolationLevel: "Serializable" });
       ok = true;
     } catch { /* Keep the original appointment on conflict or concurrent changes. */ }

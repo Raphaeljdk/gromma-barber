@@ -23,7 +23,7 @@ const EXPECTED = {
     estoque: ["Entrada e Saída", "Balanço", "Solicitar compra"],
   },
   gestao: {
-    auditoria: ["Estoque", "Agendamentos", "Batimento de caixa", "Produtividade"],
+    auditoria: ["Estoque", "Agendamentos", "Fechamento de caixa", "Produtividade"],
     "relatorios-assinaturas": [
       "Troca de assinatura", "Cancelados por período", "Históricos de transações",
       "Quantidade de assinantes", "Vendas novas por período", "Vendas por origem", "Resgate de pontos",
@@ -92,7 +92,7 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
     "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
     "servicos", "unidades", "plano", "configuracoes", "financeiro", "gerencial",
     "alertas", "mensagens", "documentos", "treinamentos", "totem",
-    "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "notificacoes",
+    "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "auditoria-agendamentos", "auditoria-fechamento-caixa", "auditoria-produtividade", "notificacoes",
   ]);
   const all = [...ERP_NAVIGATION.flatMap(group => flatten(group.items)), ...flatten(ERP_NAVIGATION_EXTRA)];
   const ids = all.map(item => item.id);
