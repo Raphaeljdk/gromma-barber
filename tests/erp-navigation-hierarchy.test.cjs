@@ -18,7 +18,7 @@ const { ERP_NAVIGATION, ERP_NAVIGATION_EXTRA } = moduleObj.exports;
 const EXPECTED = {
   operacional: {
     agenda: ["Cadastro de Feriados"],
-    clientes: ["Clientes Bloqueados", "Ranking"],
+    clientes: ["Clientes Bloqueados", "Ranking", "Histórico de compras"],
     caixa: ["Comandas", "Histórico de caixas"],
     estoque: ["Entrada e Saída", "Balanço", "Solicitar compra"],
   },
