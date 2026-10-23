@@ -893,7 +893,7 @@ export async function TenantERPView({
             <strong>{activeModuleTitle}</strong>
           </div>
           <div className="erp-top-center">
-            <ErpCommandPalette tenantCode={tenantCode} planKey={planKey} supportHref={supportHref} />
+            <ErpCommandPalette tenantCode={tenantCode} planKey={planKey} supportHref={supportHref} isOwner={isOwner} canManage={canManage} />
           </div>
           <div className="erp-top-actions">
             <BackButton fallback="/login" label="Voltar" />
