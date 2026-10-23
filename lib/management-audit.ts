@@ -72,7 +72,7 @@ export function subtractIntervals(base: MinuteInterval[], excluded: MinuteInterv
 /** Exact overlap of occupancy with available intervals, deduplicated. */
 export function occupancyMinutes(bookings: MinuteInterval[], available: MinuteInterval[]) {
   return intervalMinutes(bookings.flatMap(booking=>available.flatMap(slot=>{
-    const part=intersect(booking,slot);
+    const part=intersect(booking,slot.start,slot.end);
     return part?[part]:[];
   })));
 }
