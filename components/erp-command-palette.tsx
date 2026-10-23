@@ -53,7 +53,7 @@ const MODULES = [
   { id: "assinaturas", label: "Clube / Assinaturas", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "gerencial", label: "Gerencial", group: "Gestão", icon: LayoutDashboard },
   { id: "auditoria-estoque", label: "Auditoria de estoque", group: "Gestão", icon: ScrollText, adminOnly: true },
-  { id: "notificacoes", label: "Notificações de compra", group: "Gestão", icon: BellRing, ownerOnly: true },
+  { id: "notificacoes", label: "Notificações", group: "Gestão", icon: BellRing, ownerOnly: true },
   { id: "relatorios", label: "Relatórios", group: "Gestão", icon: FileText },
   { id: "comissoes", label: "Comissões", group: "Gestão", icon: ScrollText },
   { id: "alertas", label: "Alertas", group: "Gestão", icon: BellRing },

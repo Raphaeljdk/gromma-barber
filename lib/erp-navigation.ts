@@ -71,7 +71,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "auditoria-batimento", label: "Batimento de caixa", adminOnly: true },
         { id: "auditoria-produtividade", label: "Produtividade", adminOnly: true },
       ] },
-      { id: "notificacoes", label: "Notificações de compra", route: "notificacoes", ownerOnly: true },
+      { id: "notificacoes", label: "Notificações", route: "notificacoes", ownerOnly: true },
       { id: "gerar-comissao", label: "Gerar comissão", route: "comissoes" },
       { id: "relatorios", label: "Relatórios", route: "relatorios", children: [
         { id: "relatorios-assinaturas", label: "Assinaturas", children: [
