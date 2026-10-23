@@ -313,7 +313,7 @@ test('múltiplos serviços reservam a duração combinada e salvam todos os iten
   assert.equal(result.searchParams.get('ok'), 'agenda');
   const created = env.saved.find(q => q.data.startsAt);
   assert.equal(created.data.endsAt - created.data.startsAt, 50 * 60000);
-  const settings = env.saved.find(q => q.data.enabledFeatures).data.enabledFeatures;
+  const settings = env.saved.find(q => q.data?.enabledFeatures).data.enabledFeatures;
   assert.deepEqual(workspace.readWorkspace(settings).bookedServices[0].services.map(s => s.name), ['Corte', 'Barba']);
 });
 
