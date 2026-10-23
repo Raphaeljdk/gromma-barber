@@ -40,6 +40,8 @@ import { InventoryNotificationBell } from "@/components/inventory-notification-b
 import { loadInventoryNotifications } from "@/lib/inventory-notifications";
 import { ErpAgendaBoard } from "@/components/erp-agenda-board";
 import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
+import { CustomerPurchaseHistory } from "@/components/customer-purchase-history";
+import { parseAgendaUnits } from "@/lib/agenda-unit-selection";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
@@ -142,6 +144,7 @@ const MODULE_TITLES: Record<string, string> = {
   "agenda-feriados": "Cadastro de Feriados",
   "clientes-bloqueados": "Clientes bloqueados",
   "clientes-ranking": "Ranking de clientes",
+  "clientes-historico-compras": "Histórico de compras",
   clientes: "Clientes",
   servicos: "Serviços",
   comandas: "Comandas",
@@ -299,6 +302,8 @@ export async function TenantERPView({
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
 
   const workspace = readWorkspace(shop.enabledFeatures);
+  const activeAgendaUnitIds = shop.units.filter(unit => unit.active).map(unit => unit.id);
+  const agendaSelectedUnitIds = parseAgendaUnits(valueOf("agendaUnits"), activeAgendaUnitIds, agendaUnit);
   const agendaAnchorDate = new Date(`${agendaDate}T00:00:00-03:00`);
   const agendaRangeStart = new Date(agendaAnchorDate);
   if (agendaView === "week") {
@@ -950,9 +955,9 @@ export async function TenantERPView({
           </div>
         </header>
 
-        {(["agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras"] as const).includes(activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking" | "clientes-historico-compras") && (
+        {(["agenda-feriados", "clientes-bloqueados", "clientes-ranking"] as const).includes(activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking") && (
           <ErpOperationalSubpage
-            section={activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking" | "clientes-historico-compras"}
+            section={activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking"}
             tenantCode={tenantCode}
             shopId={shop.id}
             units={shop.units.map(unit => ({ id: unit.id, name: unit.name, active: unit.active }))}
@@ -961,6 +966,9 @@ export async function TenantERPView({
             query={qs}
           />
         )}
+
+        {activeModule === "clientes-historico-compras" && <CustomerPurchaseHistory
+          shopId={shop.id} tenantCode={tenantCode} query={qs} canManage={canManage} />}
 
         <div className="erp-command-center" hidden={Boolean(moduleId && moduleId !== "dashboard")}>
           <article className="erp-command-card">
@@ -1037,7 +1045,7 @@ export async function TenantERPView({
           </div>
 
           <ErpAgendaBoard
-            key={`${agendaDate}:${agendaView}:${agendaUnit}:${actionOk}:${actionError}:${agendaQuickOpen}:${agendaDraftStart}:${agendaDraftBarberId}:${valueOf("appointmentId")}:${workspace.agendaBlocks.map(b => b.id).join(",")}:${waitlist.map(w => w.id).join(",")}:${agendaBoardAppointments.map((item) => `${item.id}:${item.status}:${item.updatedAt.getTime()}`).join(",")}`}
+            key={`${agendaDate}:${agendaView}:${agendaUnit}:${agendaSelectedUnitIds.join(",")}:${actionOk}:${actionError}:${agendaQuickOpen}:${agendaDraftStart}:${agendaDraftBarberId}:${valueOf("appointmentId")}:${workspace.agendaBlocks.map(b => b.id).join(",")}:${waitlist.map(w => w.id).join(",")}:${agendaBoardAppointments.map((item) => `${item.id}:${item.status}:${item.updatedAt.getTime()}`).join(",")}`}
             tenantCode={tenantCode}
             selectedDate={agendaDate}
             view={agendaView}
@@ -1070,7 +1078,8 @@ export async function TenantERPView({
             }))}
             units={shop.units.filter((unit) => unit.active).map((unit) => ({ id: unit.id, name: unit.name }))}
             selectedProfessionalId={agendaProfessional || undefined}
-            selectedUnitId={agendaUnit || undefined}
+            selectedUnitId={agendaSelectedUnitIds.length === 1 ? agendaSelectedUnitIds[0] : ""}
+            selectedUnitIds={agendaSelectedUnitIds}
             selectedClientFilter={agendaClient}
             canOperate={canOperate}
             customers={appointmentCustomers.map((item) => ({ id: item.id, name: item.name, phone: item.phone }))}
