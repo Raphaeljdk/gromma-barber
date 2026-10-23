@@ -305,6 +305,16 @@ export async function TenantERPView({
   const workspace = readWorkspace(shop.enabledFeatures);
   const activeAgendaUnitIds = shop.units.filter(unit => unit.active).map(unit => unit.id);
   const agendaSelectedUnitIds = parseAgendaUnits(valueOf("agendaUnits"), activeAgendaUnitIds, agendaUnit);
+  const agendaAvailableProfessionalIds = [
+    ...shop.users.filter(user =>
+      ["OWNER", "MANAGER", "BARBER"].includes(user.role) &&
+      (!user.unitId || agendaSelectedUnitIds.includes(user.unitId)),
+    ).map(user => user.id),
+    "unassigned",
+  ];
+  const agendaSelectedProfessionalIds = parseAgendaUnits(
+    valueOf("agendaProfessionals"), agendaAvailableProfessionalIds, agendaProfessional,
+  );
   const agendaAnchorDate = new Date(`${agendaDate}T00:00:00-03:00`);
   const agendaRangeStart = new Date(agendaAnchorDate);
   if (agendaView === "week") {
@@ -1046,7 +1056,7 @@ export async function TenantERPView({
           </div>
 
           <ErpAgendaBoard
-            key={`${agendaDate}:${agendaView}:${agendaUnit}:${agendaSelectedUnitIds.join(",")}:${actionOk}:${actionError}:${agendaQuickOpen}:${agendaDraftStart}:${agendaDraftBarberId}:${valueOf("appointmentId")}:${workspace.agendaBlocks.map(b => b.id).join(",")}:${waitlist.map(w => w.id).join(",")}:${agendaBoardAppointments.map((item) => `${item.id}:${item.status}:${item.updatedAt.getTime()}`).join(",")}`}
+            key={`${agendaDate}:${agendaView}:${agendaUnit}:${agendaSelectedUnitIds.join(",")}:${agendaSelectedProfessionalIds.join(",")}:${actionOk}:${actionError}:${agendaQuickOpen}:${agendaDraftStart}:${agendaDraftBarberId}:${valueOf("appointmentId")}:${workspace.agendaBlocks.map(b => b.id).join(",")}:${waitlist.map(w => w.id).join(",")}:${agendaBoardAppointments.map((item) => `${item.id}:${item.status}:${item.updatedAt.getTime()}`).join(",")}`}
             tenantCode={tenantCode}
             selectedDate={agendaDate}
             view={agendaView}
@@ -1078,7 +1088,8 @@ export async function TenantERPView({
               unitName: item.unit.name,
             }))}
             units={shop.units.filter((unit) => unit.active).map((unit) => ({ id: unit.id, name: unit.name }))}
-            selectedProfessionalId={agendaProfessional || undefined}
+            selectedProfessionalId={agendaSelectedProfessionalIds.length === 1 ? agendaSelectedProfessionalIds[0] : ""}
+            selectedProfessionalIds={agendaSelectedProfessionalIds}
             selectedUnitId={agendaSelectedUnitIds.length === 1 ? agendaSelectedUnitIds[0] : ""}
             selectedUnitIds={agendaSelectedUnitIds}
             selectedClientFilter={agendaClient}
