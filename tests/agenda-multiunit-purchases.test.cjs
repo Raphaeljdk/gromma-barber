@@ -72,11 +72,11 @@ test("filtro de compras diferencia itens existentes e categorias", () => {
   assert.match(history, /kind: "PRODUCT"/);
   assert.match(history, /status: "CLOSED"/);
   assert.match(history, /barberShopId: shopId/);
-  assert.match(history, /name="tipos"/);
+  assert.match(read("components/purchase-history-selectors.tsx"), /name="categoria"/);
   assert.match(history, /name="q"/);
   assert.match(history, /name="de"/);
   assert.match(history, /name="ate"/);
-  assert.match(history, /categoryWhere\(selected\)/);
+  assert.match(history, /categoryWhere/);
   assert.match(history, /pageSize \+ 1/);
 });
 
