@@ -1272,7 +1272,7 @@ export function ErpAgendaBoard({
               <span>{activeUnit}</span>
               <small>Marque e desmarque unidades no seletor acima da agenda, sem alterar os agendamentos existentes.</small>
             </div>
-
+          </div>
           <section className="agenda-side-card">
             <div className="agenda-side-head">
               <span>Próximos horários livres</span>
