@@ -176,7 +176,7 @@ export async function removeCommandItem(form: FormData) {
   });
 }
 export async function checkoutCommand(form: FormData) {
-  return run(form, "comandas", async (tx, shopId) => {
+  return run(form, "comandas", async (tx, shopId, actor) => {
     const command = await tx.serviceCommand.findFirst({ where: { id: value(form, "commandId"), barberShopId: shopId, status: "OPEN" }, include: { items: true, customer: true } });
     if (!command) throw new OperationError("Esta comanda já foi fechada ou não existe.");
     const { shop, workspace } = await configuration(tx, shopId);
@@ -228,7 +228,32 @@ export async function checkoutCommand(form: FormData) {
       couponCode: pricing.couponCode || undefined, discountCents: pricing.discountCents,
       manualDiscountCents: pricing.manualCents });
     await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
-    if (command.appointmentId) await tx.appointment.updateMany({ where: { id: command.appointmentId, barberShopId: shopId, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] } }, data: { status: "COMPLETED" } });
+    if (command.appointmentId) {
+      const appointment=await tx.appointment.findFirst({
+        where:{id:command.appointmentId,barberShopId:shopId},
+        select:{id:true,status:true,startsAt:true,customerId:true,unitId:true},
+      });
+      const finished=await tx.appointment.updateMany({
+        where:{id:command.appointmentId,barberShopId:shopId,status:{in:["SCHEDULED","CONFIRMED","CHECKED_IN","IN_SERVICE"]}},
+        data:{status:"COMPLETED"},
+      });
+      if(finished.count===1&&appointment){
+        await tx.adminAuditLog.create({
+          data:{
+            barberShopId:shopId,action:"APPOINTMENT_COMPLETED",
+            adminEmail:actor,
+            details:{
+              appointmentId:appointment.id,customerId:appointment.customerId,
+              unitId:appointment.unitId,scheduledAt:appointment.startsAt.toISOString(),
+              previousStatus:appointment.status,newStatus:"COMPLETED",
+              commandId:command.id,actorRole:actor==="Administrador"?"ADMIN":"COLABORADOR",
+              actorUserId:actor==="Administrador"?null:actor,
+              performedVia:"CHECKOUT",
+            },
+          },
+        });
+      }
+    }
   });
 }
 
