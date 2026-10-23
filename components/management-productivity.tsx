@@ -22,7 +22,11 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
   const view=rawView==="day"||rawView==="week"?"day"===rawView?"day":"week":"month";
   const selectedPro=read(query,"profissional");
   const activeUnits=units.filter(unit=>unit.active);
-  const allPros=professionals.filter(person=>["OWNER","MANAGER","BARBER"].includes(person.role));
+  const allPros=await prisma.shopUser.findMany({
+    where:{barberShopId:shopId,role:{in:["OWNER","MANAGER","BARBER"]}},
+    select:{id:true,name:true,unitId:true,role:true},
+    orderBy:{name:"asc"},
+  });
   const people=selectedPro&&allPros.some(p=>p.id===selectedPro)?allPros.filter(p=>p.id===selectedPro):allPros;
   // A professional not tied to a single unit is shown separately per shop unit.
   const rows=people.flatMap(person=>
@@ -31,10 +35,8 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
   const date=new Date(day+"T12:00:00-03:00");
   const weekDay=date.getUTCDay();
   const first=view==="month"?day.slice(0,7)+"-01":view==="week"?addAgendaDays(day,-(weekDay===0?6:weekDay-1)):day;
-  const count=view==="month"?
-    new Date(Date.parse(first+"T12:00:00-03:00")+36*86_400_000).getUTCDate()>0
-      ? Number(addAgendaDays(addAgendaDays(first,32).slice(0,7)+"-01",-1).slice(-2))
-      : 31
+  const count=view==="month"
+    ? Number(addAgendaDays(addAgendaDays(first,32).slice(0,7)+"-01",-1).slice(-2))
     :view==="week"?7:1;
   const days=Array.from({length:count},(_,i)=>addAgendaDays(first,i));
   const openHour=Math.max(0,Math.min(23,Math.floor(settings.openHour)));
@@ -50,7 +52,7 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
       barberShopId:shopId,
       barberId:{in:people.map(p=>p.id)},
       status:{notIn:["CANCELED","NO_SHOW"]},
-      startsAt:{lt:end},
+      startsAt:{gte:new Date(start.getTime()-86_400_000),lt:end},
       OR:[{endsAt:{gt:start}},{endsAt:null}],
     },
     select:{
@@ -65,7 +67,7 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
     const cells=columns.map(col=>{
       const dayInfo=availableForProfessional(col.day,openHour,closeHour,blocks,professional.id,unit.id);
       const base=col.hour>=0?
-        intersect({start:dayInfo.base.start+col.hour*0,end:dayInfo.base.end},
+        intersect(dayInfo.base,
           dayInfo.base.start+(col.hour-openHour)*3_600_000,
           dayInfo.base.start+(col.hour-openHour+1)*3_600_000):
         dayInfo.base;
