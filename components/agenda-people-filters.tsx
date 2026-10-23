@@ -114,6 +114,10 @@ export function AgendaPeopleFilters({
       </button>
     </div>
 
+    <span className="agenda-sr-only" role="status" aria-live="polite">
+      Agenda filtrada: {selectedUnitIds.length} unidade(s) e {effectiveProfessionals.length} profissional(is).
+    </span>
+
     {openFilter && <div
       id={openUnits ? "agenda-filter-units" : "agenda-filter-professionals"}
       className={"agenda-multifilter-popover" + (openProfessionals ? " is-professionals" : "")}
@@ -154,11 +158,7 @@ export function AgendaPeopleFilters({
           </label>
         </>}
       </div>
-      <div className="agenda-multifilter-popover-footer">
-        <p className="agenda-multifilter-status" role="status" aria-live="polite">
-          A agenda atualiza automaticamente a cada seleção.
-        </p>
-      </div>
+
     </div>}
   </div>;
 }
