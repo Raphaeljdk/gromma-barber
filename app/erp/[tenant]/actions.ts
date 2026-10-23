@@ -546,6 +546,20 @@ export async function createAppointment(formData: FormData) {
         notes: notes || null,
       },
       });
+      await tx.adminAuditLog.create({
+        data:{
+          barberShopId:shop.id,action:"APPOINTMENT_CREATED",
+          adminEmail:viewer.email||"acesso autenticado",
+          details:{
+            appointmentId:createdAppointment.id,customerId:bookedCustomerId,
+            scheduledAt:startsAt.toISOString(),newStatus:createdAppointment.status,
+            unitId:unit.id,barberId:barber?.id??null,
+            actorRole:viewer.type==="TENANT"?viewer.role:"ADMIN",
+            actorUserId:viewer.type==="TENANT"?viewer.userId:null,
+            performedVia:"ACESSO_BARBEARIA",
+          },
+        },
+      });
       if (extraIds.length) latest.bookedServices.push({ appointmentId: createdAppointment.id, services: selectedServices.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })) });
       if (waiting) latest.waitlist = latest.waitlist.filter(item => item.id !== waiting.id);
       if (waiting || extraIds.length) {
