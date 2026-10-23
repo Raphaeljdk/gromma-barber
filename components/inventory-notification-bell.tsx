@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CheckCheck, ClipboardAlert, PackageMinus, ShoppingCart, X } from "lucide-react";
+import { Bell, CheckCheck, ClipboardCheck, PackageMinus, ShoppingCart, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { InventoryNotice } from "@/lib/inventory-notifications";
 
 type Props = { tenantCode: string; notices: InventoryNotice[] };
-const icons = { compra: ShoppingCart, estoque: PackageMinus, divergencia: ClipboardAlert };
+const icons = { compra: ShoppingCart, estoque: PackageMinus, divergencia: ClipboardCheck };
 const labels = { compra: "Compras", estoque: "Estoque baixo", divergencia: "Divergências" };
 
 export function InventoryNotificationBell({ tenantCode, notices }: Props) {
