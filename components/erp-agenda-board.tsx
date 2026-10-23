@@ -393,7 +393,7 @@ export function ErpAgendaBoard({
     : 20;
   const unitAppointments = appointments.filter(
     (item) =>
-      selectedUnitSet.has(item.unitId) && selectedProfessionalSet.has(item.barberId ?? "unassigned"),
+      selectedUnitSet.has(item.unitId) && (allProfessionalsSelected || selectedProfessionalSet.has(item.barberId ?? "unassigned")),
   );
   const dayAppointments = unitAppointments.filter(
     (item) => item.status !== "CANCELED" && agendaDateKey(item.startsAt) === selectedDate,
