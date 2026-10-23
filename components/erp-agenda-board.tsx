@@ -878,7 +878,12 @@ export function ErpAgendaBoard({
               >
                 {selectedDate === nowDate && <div id="agenda-now" className="agenda-now-line" style={{ top: 64 + nowTop }}><span>{agendaTime(new Date(now))}</span></div>}
                 <div className="agenda-time-header">Horário</div>
-                {columns.map((person) => (
+                {columns.map((person) => {
+                  const booked = displayedDayAppointments.filter(item => (item.barberId ?? "unassigned") === person.id);
+                  const totalMinutes = booked.reduce((sum, item) => sum + Math.max(0,
+                    (new Date(item.endsAt ?? item.startsAt).getTime() - new Date(item.startsAt).getTime()) / 60000), 0);
+                  const occupancy = Math.min(100, Math.round(totalMinutes / Math.max(1, (endHour - startHour) * 60) * 100));
+                  return (
                   <div key={person.id}
                     className={`agenda-professional-head${draggedId === person.id ? " is-dragging" : ""}${dropId === person.id ? " is-drop-target" : ""}`}
                     draggable={columns.length > 1}
@@ -887,12 +892,8 @@ export function ErpAgendaBoard({
                     onDrop={(event) => { event.preventDefault(); if (draggedId) moveProfessional(draggedId, person.id); setDraggedId(null); setDropId(null); }}
                     onDragEnd={() => { setDraggedId(null); setDropId(null); }}
                   >
-                    <span>
-                      {person.id === "unassigned" ? (
-                        <Users size={16} />
-                      ) : (
-                        person.name.slice(0, 1).toUpperCase()
-                      )}
+                    <span className="agenda-occupancy-avatar" style={{ "--occupancy": occupancy + "%" } as CSSProperties} aria-label={occupancy + "% de ocupação"}>
+                      <span>{person.id === "unassigned" ? <Users size={16}/> : person.name.slice(0, 1).toUpperCase()}</span>
                     </span>
                     <div>
                       <strong>{person.name}</strong>
@@ -904,6 +905,7 @@ export function ErpAgendaBoard({
                           ).length
                         }{" "}
                         agendamento(s)
+                        {" · "}{occupancy}% ocupado
                         {!person.canSchedule ? " · indisponível" : ""}
                       </small>
                     </div>
@@ -916,7 +918,7 @@ export function ErpAgendaBoard({
                         if (target) moveProfessional(person.id, target.id);
                       }}><GripVertical size={18} /></button>
                   </div>
-                ))}
+                );})}
                 {!columns.length && (
                   <div className="agenda-professional-head">
                     Nenhum profissional para este filtro.
