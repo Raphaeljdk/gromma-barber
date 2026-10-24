@@ -125,9 +125,9 @@ export async function AppointmentManagementAudit({shopId,tenantCode,query,canMan
             {typeof info.previousStartsAt==="string"&&typeof info.newStartsAt==="string"&&<small>Horário: {dateTimeBR(info.previousStartsAt)} → {dateTimeBR(info.newStartsAt)}</small>}
           </li>;
         })}
-        {!events.some(event=>event.action==="APPOINTMENT_CREATED")&&<li><time>{dateTimeBR(selected.createdAt)}</time><strong>Cadastro original</strong><small>Autoria não registrada neste cadastro antigo.</small></li>}
+        {!events.some(event=>event.action==="APPOINTMENT_CREATED")&&<li><time>{dateTimeBR(selected.createdAt)}</time><strong>Agendamento criado</strong><small>Autoria não registrada neste cadastro antigo.</small></li>}
         {selected.command?.status==="CLOSED"&&!events.some(event=>event.action==="APPOINTMENT_COMPLETED")&&
-          <li><time>{dateTimeBR(selected.command.closedAt||selected.updatedAt)}</time><strong>Comanda encerrada</strong><small>Conclusão vinculada ao pagamento; autoria histórica não identificável.</small></li>}
+          <li><time>{dateTimeBR(selected.command.closedAt||selected.updatedAt)}</time><strong>Comanda finalizada</strong><small>Comanda vinculada encerrada; autoria histórica não identificável.</small></li>}
       </ol>
       <p className="muted small">Somente movimentações efetivamente registradas são atribuídas a colaboradores. Alterações antigas não auditadas ou exclusões sem registro não podem ter autoria reconstruída.</p>
     </article>}
