@@ -51,6 +51,17 @@ test("appointment history uses real audit data, role lookup and time",()=>{
   assert.ok(paid.includes('action:"APPOINTMENT_COMPLETED"'));
 });
 
+test("timeline labels make original creation and command closure clear without inventing authors",()=>{
+  const panel=read("components/management-appointment-audit.tsx");
+  assert.match(panel,/<strong>Agendamento criado<\/strong>/);
+  assert.match(panel,/<strong>Comanda finalizada<\/strong>/);
+  assert.doesNotMatch(panel,/<strong>Cadastro original<\/strong>|<strong>Comanda encerrada<\/strong>/);
+  assert.match(panel,/!events\.some\(event=>event\.action==="APPOINTMENT_CREATED"\)/);
+  assert.match(panel,/selected\.command\?\.status==="CLOSED"/);
+  assert.match(panel,/Autoria não registrada neste cadastro antigo/);
+  assert.match(panel,/Comanda vinculada encerrada; autoria histórica não identificável/);
+});
+
 test("cash report respects closed sessions and separates payment methods and customer discounts",()=>{
   const panel=read("components/management-cash-closing.tsx");
   assert.match(panel,/session\.closedAt/);
