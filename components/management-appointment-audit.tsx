@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auditPeriod, periodBounds, dateTimeBR } from "@/lib/management-audit";
 import type { Prisma } from "@prisma/client";
-import { ChevronRight, History, Search } from "lucide-react";
+import { History, Search } from "lucide-react";
+import { AuditHistoryDialog } from "@/components/audit-history-dialog";
 
 type Query = Record<string,string|string[]|undefined>;
 type Props={shopId:string;tenantCode:string;query:Query;canManage:boolean};
@@ -99,7 +100,7 @@ export async function AppointmentManagementAudit({shopId,tenantCode,query,canMan
         <td data-label="Data">{dateTimeBR(a.startsAt)}</td>
         <td data-label="Profissional">{a.barber?.name||"Sem preferência"}</td>
         <td data-label="Status"><span className={"mgmt-audit-status "+(a.status==="CANCELED"?"is-canceled":a.status==="COMPLETED"?"is-completed":"")}>{statuses[a.status]||a.status}</span></td>
-        <td data-label="Histórico"><Link className="btn secondary" href={params({registro:a.id,pagina:String(page)})+"#historico-agendamento"}><History size={15}/> Histórico <ChevronRight size={14}/></Link></td>
+        <td data-label="Histórico"><Link className="btn secondary" scroll={false} href={params({registro:a.id,pagina:String(page)})}><History size={15}/> Histórico</Link></td>
       </tr>)}
       {!rows.length&&<tr><td colSpan={5} className="muted">Nenhum agendamento encontrado neste período.</td></tr>}
       </tbody></table></div>
@@ -109,9 +110,11 @@ export async function AppointmentManagementAudit({shopId,tenantCode,query,canMan
       <span>Página {page}</span>
       {rows.length>25&&<Link href={params({pagina:String(page+1)})}>Próxima →</Link>}
     </nav>}
-    {selected&&<article className="card mgmt-audit-timeline" id="historico-agendamento">
-      <div className="mgmt-audit-heading"><div><h3>Movimentações do agendamento</h3><small>{selected.customer?.name||"Cliente sem cadastro"} · #{selected.id.slice(-8)}</small></div>
-        <Link className="btn secondary" href={params({pagina:String(page)})}>Fechar histórico</Link></div>
+    {selected&&<AuditHistoryDialog
+      closeHref={params({pagina:String(page)})}
+      subtitle={(selected.customer?.name||"Cliente sem cadastro")+" · #"+selected.id.slice(-8)}
+    >
+      <div className="mgmt-audit-timeline">
       <ol className="mgmt-audit-events">
         {events.map(event=>{
           const info=details(event.details);
@@ -130,6 +133,7 @@ export async function AppointmentManagementAudit({shopId,tenantCode,query,canMan
           <li><time>{dateTimeBR(selected.command.closedAt||selected.updatedAt)}</time><strong>Comanda finalizada</strong><small>Comanda vinculada encerrada; autoria histórica não identificável.</small></li>}
       </ol>
       <p className="muted small">Somente movimentações efetivamente registradas são atribuídas a colaboradores. Alterações antigas não auditadas ou exclusões sem registro não podem ter autoria reconstruída.</p>
-    </article>}
+      </div>
+    </AuditHistoryDialog>}
   </section>;
 }

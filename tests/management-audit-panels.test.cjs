@@ -91,3 +91,36 @@ test("interval subtraction avoids double-counting overlapping blocks",()=>{
   assert.match(source,/return intervalMinutes\(bookings\.flatMap/);
   assert.match(source,/const available=subtractIntervals\(\[base\],closed\)/);
 });
+
+
+test("appointment history opens a foreground dialog with accessible close controls", () => {
+  const panel=read("components/management-appointment-audit.tsx");
+  const dialog=read("components/audit-history-dialog.tsx");
+  const styles=read("app/management-audit.css");
+  assert.match(panel, /<AuditHistoryDialog/);
+  assert.match(panel, /closeHref=\{params\(/);
+  assert.doesNotMatch(panel, /#historico-agendamento/);
+  assert.match(dialog, /role="dialog"/);
+  assert.match(dialog, /aria-modal="true"/);
+  assert.match(dialog, /aria-label="Fechar histórico"/);
+  assert.match(dialog, /event\.key === "Escape"/);
+  assert.match(dialog, /document\.body\.style\.overflow = "hidden"/);
+  assert.match(styles, /\.mgmt-audit-modal-backdrop\s*\{[\s\S]*?position:fixed/);
+  assert.match(styles, /\.mgmt-audit-modal-body\s*\{[^}]*overflow-y:auto/);
+});
+
+test("stock audit filters saved counts by inclusive local date interval without losing paging", () => {
+  const panel=read("components/stock-audit.tsx");
+  assert.match(panel, /name="confDe" type="date"/);
+  assert.match(panel, /name="confAte" type="date"/);
+  assert.match(panel, /Histórico de conferências/);
+  assert.match(panel, /createdAt \}/);
+  assert.match(panel, /gte: localStart\(from\)/);
+  assert.match(panel, /lt: localNextDay\(to\)/);
+  assert.match(panel, /invalidRange \? Promise\.resolve\(\[\]\)/);
+  assert.match(panel, /params\.set\("confDe", from\)/);
+  assert.match(panel, /params\.set\("confAte", to\)/);
+  assert.match(panel, /href=\{listHref\(page \+ 1\)\}/);
+  assert.match(panel, /href=\{salesHref\(id\)\}/);
+  assert.match(panel, /"STOCK_COUNT_RECORDED", "STOCK_COUNT_CONFIRMED"/);
+});
