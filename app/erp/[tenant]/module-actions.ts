@@ -570,6 +570,7 @@ export async function saveProfessionalCommissionRates(formData: FormData) {
 }
 
 export async function payCommission(formData: FormData) {
+  if (process.env.COMMISSION_PAYMENTS_ENABLED !== "true") throw new Error("Commission payments disabled until database migration is verified");
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "comissoes");
   if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
