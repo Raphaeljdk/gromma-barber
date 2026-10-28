@@ -1809,7 +1809,7 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
         </section>
 
-        <section id="comissoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comissoes")}>
+        {activeModule === "comissoes" && <section id="comissoes" className="demo-section">
           <div className="section-head">
             <div><div className="eyebrow">Remuneração</div><h2>Gerar comissões</h2></div>
             <StatusPill tone="pending">Apuração estimada</StatusPill>
@@ -1881,7 +1881,7 @@ export async function TenantERPView({
           </div>
           <p className="erp-integration-note">Esta tela é uma prévia de comissões de serviços vinculados a atendimentos. Assinaturas, produtos e pagamentos ainda não estão implementados nesta apuração. A comissão não representa pagamento efetuado.</p>
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} searchParams={qs} param="comissoesPage" page={comissoesPage} total={commissionRows.length} pageSize={pageSize} label="profissionais" />
-        </section>
+        </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
@@ -1930,7 +1930,7 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal} pageSize={pageSize} hash="unidades" label="unidades" />
         </section>
 
-        <section id="relatorios" className="demo-section" hidden={Boolean(moduleId && moduleId !== "relatorios")}>
+        {activeModule === "relatorios" && <section id="relatorios" className="demo-section">
           <div className="section-head">
             <div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div>
             <StatusPill tone="ready">Dados reais</StatusPill>
@@ -1980,7 +1980,7 @@ export async function TenantERPView({
               )) : <small className="muted">Feche comandas vinculadas aos clientes para consolidar valor e frequência.</small>}
             </div>
           </article>
-        </section>
+        </section>}
 
         <section id="gerencial" className="demo-section" hidden={Boolean(moduleId && moduleId !== "gerencial")}>
           <div className="section-head">
