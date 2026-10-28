@@ -454,6 +454,7 @@ export async function createAppointment(formData: FormData) {
 
     const available: Array<{ id: string; load: number }> = [];
     for (const candidate of candidates) {
+      try { await assertProfessionalAvailable(prisma, shop.id, candidate.id, startsAt, endsAt, selectedServices.map(s=>s.id)); } catch { continue; }
       if (hasAgendaBlock(workspace.agendaBlocks, candidate.id, startsAt, endsAt, unitId)) continue;
       const conflict = await prisma.appointment.findFirst({
         where: {

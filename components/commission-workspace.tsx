@@ -7,8 +7,8 @@ import { CommissionPayment, ShareCommission } from "./commission-payment";
 const money=(n:number)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n/100);
 const date=(d:Date)=>new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo"}).format(d);
 export async function CommissionWorkspace({tenantCode,report,query}:{tenantCode:string;report:boolean;query:Record<string,string|string[]|undefined>}) {
-  try {await commissionAccess(tenantCode);} catch {return <div className="notice">Acesso restrito a gestores, administradores e contabilidade.</div>}
-  const {shop,viewer}=await commissionAccess(tenantCode),canPay=viewer.type==="ADMIN"||["OWNER","MANAGER"].includes(viewer.role);
+  let access; try {access=await commissionAccess(tenantCode);} catch {return <div className="notice">Acesso restrito a gestores, administradores e contabilidade.</div>}
+  const {shop,viewer}=access,canPay=viewer.type==="ADMIN"||["OWNER","MANAGER"].includes(viewer.role);
   const q=(key:string)=>String(Array.isArray(query[key])?query[key]?.[0]:query[key]??"").slice(0,400);
   const today=agendaDateKey(new Date()),start=q("start")||today.slice(0,8)+"01",end=q("end")||today;
   let range;try{range=commissionPeriod(start,end);}catch(e){return <div className="notice">{e instanceof Error?e.message:"Período inválido"} <Link href={`/erp/${tenantCode}/${report?"relatorio-comissoes":"comissoes"}`}>Limpar filtros</Link></div>}

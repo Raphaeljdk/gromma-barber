@@ -1,0 +1,53 @@
+name: Commission integration and browser QA
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  commissions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: local_test_only
+          POSTGRES_DB: commission_qa
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:local_test_only@localhost:5432/commission_qa
+      SESSION_SECRET: local-ci-test-secret-only-not-a-production-credential
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run db:generate
+      - run: npm run db:deploy
+      - run: npm test
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/commission-qa-fixture.cjs
+      - name: Browser flow and PostgreSQL verification
+        run: |
+          npm start > /tmp/gromma-next.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/api/health && break || sleep 1; done
+          node scripts/commission-browser-qa.cjs
+          node scripts/commission-db-qa.cjs
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: commission-qa
+          path: test-results/
