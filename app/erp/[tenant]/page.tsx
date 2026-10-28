@@ -1831,7 +1831,7 @@ export async function TenantERPView({
 
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Profissional</th><th>Produção</th><th>Regra</th><th>Comissão bruta</th><th>Deduções</th><th>Líquido</th></tr></thead>
+              <thead><tr><th>Profissional</th><th>Comandas</th><th>Regra de serviços</th><th>Comissão bruta</th><th>Deduções acumuladas</th><th>A receber (estimado)</th></tr></thead>
               <tbody>{commissionRows.length ? commissionPageRows.map((row) => (
                 <tr key={row.user.id}>
                   <td><strong>{row.user.name}</strong><div className="small muted">{ROLE_LABELS[row.user.role] ?? row.user.role}</div></td>
@@ -1844,7 +1844,7 @@ export async function TenantERPView({
               )) : <tr><td colSpan={6} className="muted">Nenhum profissional disponível.</td></tr>}</tbody>
             </table>
           </div>
-          <p className="erp-integration-note">A conta do profissional agora é calculada a partir das comandas fechadas associadas aos atendimentos. Produtos sem vínculo de profissional ainda não entram no rateio individual.</p>
+          <p className="erp-integration-note">Esta tela é uma prévia de comissões de serviços vinculados a atendimentos. Assinaturas, produtos e pagamentos ainda não estão implementados nesta apuração. A comissão não representa pagamento efetuado.</p>
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} searchParams={qs} param="comissoesPage" page={comissoesPage} total={commissionRows.length} pageSize={pageSize} label="profissionais" />
         </section>
 
