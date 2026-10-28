@@ -47,9 +47,10 @@ import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
 import { CustomerPurchaseHistory } from "@/components/customer-purchase-history";
 import { parseAgendaUnits } from "@/lib/agenda-unit-selection";
 import { readWorkspace } from "@/lib/erp-workspace";
+import { calculateCommission } from "@/lib/commission-calculation";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
   children,
@@ -232,6 +233,9 @@ export async function TenantERPView({
   const financeiroQ = valueOf("financeiroQ").trim();
   const agendaStatus = allowedValue(valueOf("agendaStatus"), APPOINTMENT_STATUSES);
   const comandaStatus = allowedValue(valueOf("comandaStatus"), COMMAND_STATUSES);
+  const comissoesDe = isAgendaDate(valueOf("comissoesDe")) ? valueOf("comissoesDe") : "";
+  const comissoesAte = isAgendaDate(valueOf("comissoesAte")) ? valueOf("comissoesAte") : "";
+  const invalidCommissionPeriod = Boolean(comissoesDe && comissoesAte && comissoesDe > comissoesAte);
   const comandaDe = isAgendaDate(valueOf("comandaDe")) ? valueOf("comandaDe") : "";
   const comandaAte = isAgendaDate(valueOf("comandaAte")) ? valueOf("comandaAte") : "";
   const invalidCommandPeriod = Boolean(comandaDe && comandaAte && comandaDe > comandaAte);
@@ -519,7 +523,7 @@ export async function TenantERPView({
       : Promise.resolve([]),
     needsProduction
       ? prisma.serviceCommand.findMany({
-          where: { barberShopId: shop.id, status: "CLOSED" },
+          where: { barberShopId: shop.id, status: "CLOSED", ...(activeModule === "comissoes" && !invalidCommissionPeriod && (comissoesDe || comissoesAte) ? { closedAt: { ...(comissoesDe ? { gte: new Date(`${comissoesDe}T00:00:00-03:00`) } : {}), ...(comissoesAte ? { lte: new Date(`${comissoesAte}T23:59:59.999-03:00`) } : {}) } } : {}) },
           orderBy: { closedAt: "desc" },
           include: {
             appointment: { include: { barber: true, service: true } },
@@ -809,14 +813,30 @@ export async function TenantERPView({
     }
   });
 
-  const commissionRows = shop.users
+  const serviceCommissionOverrides = (workspace as typeof workspace & { serviceCommissionOverrides?: Record<string, number> }).serviceCommissionOverrides ?? {};
+  const commissionByUser = new Map<string, number>();
+  for (const command of commissionCommands) {
+    const barber = command.appointment?.barber;
+    if (!barber) continue;
+    const rule = workspace.commissionRules.find((item) => item.userId === barber.id);
+    const fallbackPercent = rule?.percent ?? workspace.settings.defaultCommissionPercent;
+    const serviceId = command.appointment?.service?.id;
+    const percent = serviceId && Object.prototype.hasOwnProperty.call(serviceCommissionOverrides, serviceId)
+      ? serviceCommissionOverrides[serviceId] : fallbackPercent;
+    commissionByUser.set(barber.id, (commissionByUser.get(barber.id) ?? 0) + Number(command.total) * percent / 100);
+  }
+
+  const commissionRows = await Promise.all(shop.users
     .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
-    .map((user) => {
+    .map(async (user) => {
       const production = productionByUser.get(user.id) ?? 0;
       const rule = workspace.commissionRules.find((item) => item.userId === user.id);
       const percent = rule?.percent ?? workspace.settings.defaultCommissionPercent;
-      const grossCommission = production * (percent / 100);
-      const deductions = workspace.deductions
+      const precise = activeModule === "comissoes" && comissoesDe && comissoesAte && !invalidCommissionPeriod
+        ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions)
+        : null;
+      const grossCommission = precise ? Number(precise.gross) : (commissionByUser.get(user.id) ?? 0);
+      const deductions = precise ? Number(precise.deductions) : workspace.deductions
         .filter((item) => item.userId === user.id)
         .reduce((sum, item) => sum + item.amount, 0);
       return {
@@ -827,7 +847,13 @@ export async function TenantERPView({
         deductions,
         netCommission: Math.max(0, grossCommission - deductions),
       };
-    });
+    }));
+
+  const commissionPayments = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && (activeModule === "comissoes" || activeModule === "relatorios")
+    ? await prisma.commissionPayment.findMany({ where: { barberShopId: shop.id }, include: { professional: { select: { name: true } } }, orderBy: { paidAt: "desc" }, take: 200 })
+    : [];
+  const canPayCommission = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && canManage && Boolean(comissoesDe && comissoesAte && !invalidCommissionPeriod);
+  const isPaidForPeriod = (userId: string) => commissionPayments.some(payment => payment.userId === userId && comissoesDe && comissoesAte && payment.periodStart.toISOString().slice(0, 10) <= comissoesAte && payment.periodEnd.toISOString().slice(0, 10) >= comissoesDe);
 
   const closedRevenue = commissionCommands.reduce((sum, command) => sum + Number(command.total), 0);
   const averageTicket = commissionCommands.length ? closedRevenue / commissionCommands.length : 0;
@@ -1296,6 +1322,16 @@ export async function TenantERPView({
             hash="servicos"
             search={{ param: "servicosQ", value: servicosQ, placeholder: "Buscar serviço" }}
           />
+          {canManage && <details className="erp-quick-create">
+            <summary>Configurar comissão específica por serviço</summary>
+            <form action={saveServiceCommissionOverride} className="erp-quick-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <label><span className="label">Serviço</span><select name="serviceId" className="select" required defaultValue=""><option value="" disabled>Selecione um serviço</option>{shop.services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}</select></label>
+              <label><span className="label">Comissão específica (%) — vazio para usar a regra do profissional</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" placeholder="Ex.: 40" /></label>
+              <button className="btn" type="submit">Salvar comissão do serviço</button>
+            </form>
+            <p className="small muted">Alterações nas regras afetam apenas prévias ainda não quitadas. Não utilize esta tela para recalcular pagamentos históricos.</p>
+          </details>}
           <div className="table-wrap"><table>
             <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
             <tbody>{servicesTotal ? services.map((service) => (
@@ -1773,11 +1809,21 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
         </section>
 
-        <section id="comissoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comissoes")}>
+        {activeModule === "comissoes" && <section id="comissoes" className="demo-section">
           <div className="section-head">
-            <div><div className="eyebrow">Remuneração</div><h2>Comissões, produção e deduções</h2></div>
-            <StatusPill tone="ready">Operacional</StatusPill>
+            <div><div className="eyebrow">Remuneração</div><h2>Gerar comissões</h2></div>
+            <StatusPill tone="pending">Apuração estimada</StatusPill>
           </div>
+
+          <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} className="erp-compact-form" style={{ marginBottom: 16 }}>
+            <div className="grid grid-2">
+              <label><span className="label">Data inicial</span><input className="input" type="date" name="comissoesDe" defaultValue={comissoesDe} /></label>
+              <label><span className="label">Data final</span><input className="input" type="date" name="comissoesAte" defaultValue={comissoesAte} /></label>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período</button><a className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}>Limpar filtros</a></div>
+            {invalidCommissionPeriod && <p className="notice erp-inline-notice error-notice">A data inicial não pode ser posterior à data final. Corrija o período para filtrar.</p>}
+            <p className="small muted">Para registrar pagamento, informe data inicial e final. A apuração do período usa todos os itens de serviços elegíveis e deduções registradas no intervalo. Sem período selecionado, os valores são apenas indicadores históricos limitados.</p>
+          </form>
 
           <div className="erp-kpi-row">
             <article><span>Produção fechada</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.production, 0))}</strong><small>comandas concluídas</small></article>
@@ -1786,6 +1832,8 @@ export async function TenantERPView({
             <article><span>Comissão líquida</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.netCommission, 0))}</strong><small>estimativa operacional</small></article>
           </div>
 
+          {actionOk === "pagamento" && <div className="notice erp-inline-notice success">Pagamento registrado e período bloqueado contra duplicidade.</div>}
+          {actionError === "pagamento" && <div className="notice erp-inline-notice error-notice">Pagamento não registrado. Confira o período, os valores e possíveis pagamentos anteriores.</div>}
           {actionOk === "comissao" && <div className="notice erp-inline-notice success">Regra de comissão atualizada.</div>}
           {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
           {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
@@ -1818,7 +1866,7 @@ export async function TenantERPView({
 
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Profissional</th><th>Produção</th><th>Regra</th><th>Comissão bruta</th><th>Deduções</th><th>Líquido</th></tr></thead>
+              <thead><tr><th>Profissional</th><th>Comandas</th><th>Regra de serviços</th><th>Comissão bruta</th><th>Deduções do período</th><th>A receber (estimado)</th><th>Ações</th></tr></thead>
               <tbody>{commissionRows.length ? commissionPageRows.map((row) => (
                 <tr key={row.user.id}>
                   <td><strong>{row.user.name}</strong><div className="small muted">{ROLE_LABELS[row.user.role] ?? row.user.role}</div></td>
@@ -1826,14 +1874,14 @@ export async function TenantERPView({
                   <td>{row.percent.toFixed(2)}%</td>
                   <td>{brl(row.grossCommission)}</td>
                   <td>{brl(row.deductions)}</td>
-                  <td><strong>{brl(row.netCommission)}</strong></td>
+                  <td><strong>{brl(row.netCommission)}</strong></td><td>{canPayCommission && row.netCommission > 0 && !isPaidForPeriod(row.user.id) ? <details className="erp-quick-create"><summary>Pagar</summary><form action={payCommission} className="erp-quick-form"><input type="hidden" name="tenantCode" value={tenantCode}/><input type="hidden" name="userId" value={row.user.id}/><input type="hidden" name="periodStart" value={comissoesDe}/><input type="hidden" name="periodEnd" value={comissoesAte}/><strong>{brl(row.netCommission)}</strong><label><span className="label">Forma de pagamento</span><select name="paymentMethod" className="select" required defaultValue="PIX"><option value="PIX">Pix</option><option value="DINHEIRO">Dinheiro</option><option value="TRANSFERENCIA">Transferência</option><option value="CREDITO">Crédito</option><option value="DEBITO">Débito</option><option value="OUTRO">Outro</option></select></label><button className="btn" type="submit">Confirmar quitação</button></form></details> : isPaidForPeriod(row.user.id) ? <span className="badge approved">Pago</span> : <small className="muted">Informe período válido</small>}</td>
                 </tr>
-              )) : <tr><td colSpan={6} className="muted">Nenhum profissional disponível.</td></tr>}</tbody>
+              )) : <tr><td colSpan={7} className="muted">Nenhum profissional disponível.</td></tr>}</tbody>
             </table>
           </div>
-          <p className="erp-integration-note">A conta do profissional agora é calculada a partir das comandas fechadas associadas aos atendimentos. Produtos sem vínculo de profissional ainda não entram no rateio individual.</p>
+          <p className="erp-integration-note">Esta tela é uma prévia de comissões de serviços vinculados a atendimentos. Assinaturas, produtos e pagamentos ainda não estão implementados nesta apuração. A comissão não representa pagamento efetuado.</p>
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} searchParams={qs} param="comissoesPage" page={comissoesPage} total={commissionRows.length} pageSize={pageSize} label="profissionais" />
-        </section>
+        </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
@@ -1844,6 +1892,7 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
+          {canManage && <details className="erp-quick-create"><summary>Configurar comissões de assinaturas e produtos</summary><form action={saveProfessionalCommissionRates} className="erp-quick-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Profissional</span><select name="userId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{shop.users.filter(user => ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label><div className="grid grid-2"><label><span className="label">Assinaturas (%)</span><input name="subscriptionPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={0} required /></label><label><span className="label">Produtos (%)</span><input name="productPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={30} required /></label></div><button className="btn" type="submit">Salvar percentuais</button><p className="small muted">As regras ficam salvas por profissional. Atribuição automática de assinaturas e produtos depende de vínculo comprovado com a venda e ainda não integra a quitação.</p></form></details>}
           <div className="demo-team-grid">
             {professionals.map((user) => (
               <article className="card demo-team-card" key={user.id}>
@@ -1881,12 +1930,16 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal} pageSize={pageSize} hash="unidades" label="unidades" />
         </section>
 
-        <section id="relatorios" className="demo-section" hidden={Boolean(moduleId && moduleId !== "relatorios")}>
+        {activeModule === "relatorios" && <section id="relatorios" className="demo-section">
           <div className="section-head">
             <div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div>
             <StatusPill tone="ready">Dados reais</StatusPill>
           </div>
 
+          <article className="card erp-workspace-card" style={{ marginBottom: 16 }}>
+            <div className="erp-card-title"><div><span>Comissões</span><strong>Relatório de pagamentos registrados</strong></div></div>
+            <div className="table-wrap"><table><thead><tr><th>Profissional</th><th>Período</th><th>Bruto</th><th>Deduções</th><th>Líquido</th><th>Forma</th><th>Data</th><th>Folha</th></tr></thead><tbody>{commissionPayments.length ? commissionPayments.map(payment => <tr key={payment.id}><td>{payment.professional.name}</td><td>{payment.periodStart.toISOString().slice(0,10)} a {payment.periodEnd.toISOString().slice(0,10)}</td><td>{brl(Number(payment.gross))}</td><td>{brl(Number(payment.deductions))}</td><td>{brl(Number(payment.net))}</td><td>{payment.paymentMethod}</td><td>{new Intl.DateTimeFormat("pt-BR").format(payment.paidAt)}</td><td><a className="btn secondary" target="_blank" rel="noopener noreferrer" href={`/erp/${encodeURIComponent(tenantCode)}/comissoes/folha/${payment.id}`}>Emitir PDF</a></td></tr>) : <tr><td colSpan={8} className="muted">Nenhum pagamento registrado.</td></tr>}</tbody></table></div>
+          </article>
           <div className="erp-kpi-row">
             <article><span>Clientes ativos</span><strong>{customersAllTotal}</strong><small>base de relacionamento</small></article>
             <article><span>Atendimentos</span><strong>{appointmentsAllTotal}</strong><small>agenda registrada</small></article>
@@ -1927,7 +1980,7 @@ export async function TenantERPView({
               )) : <small className="muted">Feche comandas vinculadas aos clientes para consolidar valor e frequência.</small>}
             </div>
           </article>
-        </section>
+        </section>}
 
         <section id="gerencial" className="demo-section" hidden={Boolean(moduleId && moduleId !== "gerencial")}>
           <div className="section-head">

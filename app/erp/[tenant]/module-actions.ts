@@ -1,5 +1,6 @@
 "use server";
 
+import { calculateCommission } from "@/lib/commission-calculation";
 import { agendaReturnHref, isAgendaDate } from "@/lib/agenda";
 
 import type { Prisma } from "@prisma/client";
@@ -550,6 +551,88 @@ export async function saveTrainingItem(formData: FormData) {
 
   revalidatePath(path);
   redirect(`${path}?ok=conteudo`);
+}
+
+export async function saveProfessionalCommissionRates(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "equipe");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  const userId = value(formData, "userId", 80);
+  const subscriptionPercent = numberValue(formData, "subscriptionPercent");
+  const productPercent = numberValue(formData, "productPercent", 30);
+  const professional = await prisma.shopUser.findFirst({ where: { id: userId, barberShopId: shop.id, active: true }, select: { id: true } });
+  if (!professional || [subscriptionPercent, productPercent].some(n => !Number.isFinite(n) || n < 0 || n > 100)) redirect(`${path}?erro=comissao`);
+  try {
+    await persistWorkspace(shop, workspace => { workspace.professionalExtraRates[userId] = { subscriptionPercent, productPercent }; });
+  } catch (error) { console.error("Failed to save professional commission rates", error); redirect(`${path}?erro=banco`); }
+  revalidatePath(path);
+  redirect(`${path}?ok=comissao`);
+}
+
+export async function payCommission(formData: FormData) {
+  if (process.env.COMMISSION_PAYMENTS_ENABLED !== "true") throw new Error("Commission payments disabled until database migration is verified");
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "comissoes");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  const userId = value(formData, "userId", 80);
+  const from = value(formData, "periodStart", 10);
+  const to = value(formData, "periodEnd", 10);
+  const paymentMethod = value(formData, "paymentMethod", 40);
+  if (!isAgendaDate(from) || !isAgendaDate(to) || from > to || !["PIX", "DINHEIRO", "TRANSFERENCIA", "CREDITO", "DEBITO", "OUTRO"].includes(paymentMethod)) redirect(`${path}?erro=periodo`);
+  const start = new Date(`${from}T00:00:00-03:00`);
+  const endExclusive = new Date(new Date(`${to}T00:00:00-03:00`).getTime() + 86400000);
+  const periodStart = new Date(`${from}T00:00:00.000Z`);
+  const periodEnd = new Date(`${to}T00:00:00.000Z`);
+  const professional = await prisma.shopUser.findFirst({ where: { id: userId, barberShopId: shop.id, active: true, role: { in: ["OWNER", "MANAGER", "BARBER"] } }, select: { id: true } });
+  if (!professional) redirect(`${path}?erro=profissional`);
+  try {
+    await prisma.$transaction(async tx => {
+      const previous = await tx.commissionPayment.findFirst({ where: { barberShopId: shop.id, userId, periodStart: { lte: periodEnd }, periodEnd: { gte: periodStart } } });
+      if (previous) throw new Error("PERIOD_ALREADY_PAID");
+      const fresh = await tx.barberShop.findUniqueOrThrow({ where: { id: shop.id }, select: { enabledFeatures: true } });
+      const workspace = readWorkspace(fresh.enabledFeatures);
+      const percent = workspace.commissionRules.find(rule => rule.userId === userId)?.percent ?? workspace.settings.defaultCommissionPercent;
+      const result = await calculateCommission(tx, shop.id, userId, start, endExclusive, workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions);
+      if (result.net.lte(0) || !result.lines.length) throw new Error("NO_PAYABLE_COMMISSION");
+      await tx.commissionPayment.create({ data: {
+        barberShopId: shop.id, userId, periodStart, periodEnd, gross: result.gross, deductions: result.deductions, net: result.net,
+        breakdown: JSON.parse(JSON.stringify({ lines: result.lines, calculatedAt: new Date().toISOString() })),
+        paymentMethod, paidAt: new Date(), paidBy: viewer.type === "ADMIN" ? "ADMIN" : viewer.email,
+      } });
+    }, { isolationLevel: "Serializable", maxWait: 10000, timeout: 30000 });
+  } catch (error) {
+    console.error("Commission payment rejected", error);
+    redirect(`${path}?erro=pagamento`);
+  }
+  revalidatePath(path);
+  revalidatePath(modulePath(tenantCode, "relatorios"));
+  redirect(`${path}?ok=pagamento`);
+}
+
+export async function saveServiceCommissionOverride(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "servicos");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  const serviceId = value(formData, "serviceId", 80);
+  const raw = value(formData, "percent", 40);
+  const percent = raw === "" ? null : Number(raw.replace(",", "."));
+  const service = await prisma.service.findFirst({ where: { id: serviceId, barberShopId: shop.id }, select: { id: true } });
+  if (!service || (percent !== null && (!Number.isFinite(percent) || percent < 0 || percent > 100))) redirect(`${path}?erro=comissao`);
+  try {
+    await persistWorkspace(shop, workspace => {
+      const configured = workspace as typeof workspace & { serviceCommissionOverrides?: Record<string, number> };
+      const overrides = { ...(configured.serviceCommissionOverrides ?? {}) };
+      if (percent === null) delete overrides[service.id];
+      else overrides[service.id] = percent;
+      configured.serviceCommissionOverrides = overrides;
+    });
+  } catch (error) {
+    console.error("Failed to update service commission", error);
+    redirect(`${path}?erro=banco`);
+  }
+  revalidatePath(path);
+  revalidatePath(modulePath(tenantCode, "comissoes"));
+  redirect(`${path}?ok=comissao`);
 }
 
 export async function saveCommissionRule(formData: FormData) {

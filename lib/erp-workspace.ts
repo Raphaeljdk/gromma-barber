@@ -138,6 +138,8 @@ export type ErpWorkspace = {
   reviews: ReviewConfig[];
   training: TrainingConfig[];
   commissionRules: CommissionRuleConfig[];
+  serviceCommissionOverrides: Record<string, number>;
+  professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   deductions: DeductionConfig[];
   waitlist: WaitlistConfig[];
   agendaBlocks: AgendaBlock[];
@@ -159,6 +161,8 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   reviews: [],
   training: [],
   commissionRules: [],
+  serviceCommissionOverrides: {},
+  professionalExtraRates: {},
   deductions: [],
   waitlist: [],
   agendaBlocks: [],
@@ -205,6 +209,8 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     reviews: array<ReviewConfig>(operations.reviews),
     training: array<TrainingConfig>(operations.training),
     commissionRules: array<CommissionRuleConfig>(operations.commissionRules),
+    professionalExtraRates: Object.fromEntries(Object.entries(record(operations.professionalExtraRates)).map(([id, raw]) => { const item = record(raw); const sub = Number(item.subscriptionPercent); const prod = Number(item.productPercent); return [id, { subscriptionPercent: Number.isFinite(sub) && sub >= 0 && sub <= 100 ? sub : 0, productPercent: Number.isFinite(prod) && prod >= 0 && prod <= 100 ? prod : 30 }]; })) as Record<string, { subscriptionPercent: number; productPercent: number }>,
+    serviceCommissionOverrides: Object.fromEntries(Object.entries(record(operations.serviceCommissionOverrides)).filter(([, amount]) => typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 && amount <= 100)) as Record<string, number>,
     deductions: array<DeductionConfig>(operations.deductions),
     waitlist: array<WaitlistConfig>(operations.waitlist),
     agendaBlocks: array<AgendaBlock>(operations.agendaBlocks),
