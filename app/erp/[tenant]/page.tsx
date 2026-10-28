@@ -232,6 +232,9 @@ export async function TenantERPView({
   const financeiroQ = valueOf("financeiroQ").trim();
   const agendaStatus = allowedValue(valueOf("agendaStatus"), APPOINTMENT_STATUSES);
   const comandaStatus = allowedValue(valueOf("comandaStatus"), COMMAND_STATUSES);
+  const comissoesDe = isAgendaDate(valueOf("comissoesDe")) ? valueOf("comissoesDe") : "";
+  const comissoesAte = isAgendaDate(valueOf("comissoesAte")) ? valueOf("comissoesAte") : "";
+  const invalidCommissionPeriod = Boolean(comissoesDe && comissoesAte && comissoesDe > comissoesAte);
   const comandaDe = isAgendaDate(valueOf("comandaDe")) ? valueOf("comandaDe") : "";
   const comandaAte = isAgendaDate(valueOf("comandaAte")) ? valueOf("comandaAte") : "";
   const invalidCommandPeriod = Boolean(comandaDe && comandaAte && comandaDe > comandaAte);
@@ -519,7 +522,7 @@ export async function TenantERPView({
       : Promise.resolve([]),
     needsProduction
       ? prisma.serviceCommand.findMany({
-          where: { barberShopId: shop.id, status: "CLOSED" },
+          where: { barberShopId: shop.id, status: "CLOSED", ...(activeModule === "comissoes" && !invalidCommissionPeriod && (comissoesDe || comissoesAte) ? { closedAt: { ...(comissoesDe ? { gte: new Date(`${comissoesDe}T00:00:00-03:00`) } : {}), ...(comissoesAte ? { lte: new Date(`${comissoesAte}T23:59:59.999-03:00`) } : {}) } } : {}) },
           orderBy: { closedAt: "desc" },
           include: {
             appointment: { include: { barber: true, service: true } },
@@ -1776,8 +1779,18 @@ export async function TenantERPView({
         <section id="comissoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comissoes")}>
           <div className="section-head">
             <div><div className="eyebrow">Remuneração</div><h2>Comissões, produção e deduções</h2></div>
-            <StatusPill tone="ready">Operacional</StatusPill>
+            <StatusPill tone="pending">Apuração estimada</StatusPill>
           </div>
+
+          <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} className="erp-compact-form" style={{ marginBottom: 16 }}>
+            <div className="grid grid-2">
+              <label><span className="label">Data inicial</span><input className="input" type="date" name="comissoesDe" defaultValue={comissoesDe} /></label>
+              <label><span className="label">Data final</span><input className="input" type="date" name="comissoesAte" defaultValue={comissoesAte} /></label>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período</button><a className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}>Limpar filtros</a></div>
+            {invalidCommissionPeriod && <p className="notice erp-inline-notice error-notice">A data inicial não pode ser posterior à data final. Corrija o período para filtrar.</p>}
+            <p className="small muted">Prévia baseada em até 1.000 comandas fechadas. Deduções acumuladas ainda não são filtradas por período. Não utilizar como folha definitiva de pagamento.</p>
+          </form>
 
           <div className="erp-kpi-row">
             <article><span>Produção fechada</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.production, 0))}</strong><small>comandas concluídas</small></article>
