@@ -849,10 +849,10 @@ export async function TenantERPView({
       };
     }));
 
-  const commissionPayments = activeModule === "comissoes" || activeModule === "relatorios"
+  const commissionPayments = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && (activeModule === "comissoes" || activeModule === "relatorios")
     ? await prisma.commissionPayment.findMany({ where: { barberShopId: shop.id }, include: { professional: { select: { name: true } } }, orderBy: { paidAt: "desc" }, take: 200 })
     : [];
-  const canPayCommission = canManage && Boolean(comissoesDe && comissoesAte && !invalidCommissionPeriod);
+  const canPayCommission = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && canManage && Boolean(comissoesDe && comissoesAte && !invalidCommissionPeriod);
   const isPaidForPeriod = (userId: string) => commissionPayments.some(payment => payment.userId === userId && comissoesDe && comissoesAte && payment.periodStart.toISOString().slice(0, 10) <= comissoesAte && payment.periodEnd.toISOString().slice(0, 10) >= comissoesDe);
 
   const closedRevenue = commissionCommands.reduce((sum, command) => sum + Number(command.total), 0);
