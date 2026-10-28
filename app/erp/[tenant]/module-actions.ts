@@ -124,6 +124,48 @@ export async function saveClubPlan(formData: FormData) {
   redirect(`${path}?ok=plano`);
 }
 
+export async function editClubPlan(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "assinaturas");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  const planId = value(formData, "planId", 80);
+  const name = value(formData, "name", 100);
+  const monthlyAmount = numberValue(formData, "monthlyAmount");
+  const visits = numberValue(formData, "visitsPerMonth", 0);
+  const benefits = value(formData, "benefits", 600);
+  if (name.length < 2 || !Number.isFinite(monthlyAmount) || monthlyAmount < 0 || !Number.isFinite(visits) || visits < 0) redirect(`${path}?erro=plano`);
+  try {
+    await persistWorkspace(shop, workspace => {
+      const plan = workspace.clubPlans.find(item => item.id === planId);
+      if (!plan) throw new Error("Plan not found");
+      plan.name = name;
+      plan.monthlyAmount = monthlyAmount;
+      plan.visitsPerMonth = visits > 0 ? Math.round(visits) : null;
+      plan.benefits = benefits;
+    });
+  } catch (error) { console.error("Failed to edit club plan", error); redirect(`${path}?erro=plano`); }
+  revalidatePath(path);
+  redirect(`${path}?ok=plano-editado`);
+}
+
+export async function changeClubMemberPlan(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "assinaturas");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  const memberId = value(formData, "memberId", 80);
+  const planId = value(formData, "planId", 80);
+  try {
+    await persistWorkspace(shop, workspace => {
+      const member = workspace.clubMembers.find(item => item.id === memberId);
+      const plan = workspace.clubPlans.find(item => item.id === planId && item.active);
+      if (!member || !plan || member.status === "CANCELED") throw new Error("Invalid subscription change");
+      member.planId = plan.id;
+    });
+  } catch (error) { console.error("Failed to change member plan", error); redirect(`${path}?erro=assinante`); }
+  revalidatePath(path);
+  redirect(`${path}?ok=plano-alterado`);
+}
+
 export async function addClubMember(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
