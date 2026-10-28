@@ -47,6 +47,7 @@ import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
 import { CustomerPurchaseHistory } from "@/components/customer-purchase-history";
 import { parseAgendaUnits } from "@/lib/agenda-unit-selection";
 import { readWorkspace } from "@/lib/erp-workspace";
+import { calculateCommission } from "@/lib/commission-calculation";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
 import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
@@ -825,14 +826,17 @@ export async function TenantERPView({
     commissionByUser.set(barber.id, (commissionByUser.get(barber.id) ?? 0) + Number(command.total) * percent / 100);
   }
 
-  const commissionRows = shop.users
+  const commissionRows = await Promise.all(shop.users
     .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
-    .map((user) => {
+    .map(async (user) => {
       const production = productionByUser.get(user.id) ?? 0;
       const rule = workspace.commissionRules.find((item) => item.userId === user.id);
       const percent = rule?.percent ?? workspace.settings.defaultCommissionPercent;
-      const grossCommission = commissionByUser.get(user.id) ?? 0;
-      const deductions = workspace.deductions
+      const precise = activeModule === "comissoes" && comissoesDe && comissoesAte && !invalidCommissionPeriod
+        ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions)
+        : null;
+      const grossCommission = precise ? Number(precise.gross) : (commissionByUser.get(user.id) ?? 0);
+      const deductions = precise ? Number(precise.deductions) : workspace.deductions
         .filter((item) => item.userId === user.id)
         .reduce((sum, item) => sum + item.amount, 0);
       return {
@@ -843,7 +847,7 @@ export async function TenantERPView({
         deductions,
         netCommission: Math.max(0, grossCommission - deductions),
       };
-    });
+    }));
 
   const commissionPayments = activeModule === "comissoes" || activeModule === "relatorios"
     ? await prisma.commissionPayment.findMany({ where: { barberShopId: shop.id }, include: { professional: { select: { name: true } } }, orderBy: { paidAt: "desc" }, take: 200 })
@@ -1818,7 +1822,7 @@ export async function TenantERPView({
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período</button><a className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}>Limpar filtros</a></div>
             {invalidCommissionPeriod && <p className="notice erp-inline-notice error-notice">A data inicial não pode ser posterior à data final. Corrija o período para filtrar.</p>}
-            <p className="small muted">Prévia baseada em até 1.000 comandas fechadas. Deduções acumuladas ainda não são filtradas por período. Não utilizar como folha definitiva de pagamento.</p>
+            <p className="small muted">Para registrar pagamento, informe data inicial e final. A apuração do período usa todos os itens de serviços elegíveis e deduções registradas no intervalo. Sem período selecionado, os valores são apenas indicadores históricos limitados.</p>
           </form>
 
           <div className="erp-kpi-row">
@@ -1862,7 +1866,7 @@ export async function TenantERPView({
 
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Profissional</th><th>Comandas</th><th>Regra de serviços</th><th>Comissão bruta</th><th>Deduções acumuladas</th><th>A receber (estimado)</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Profissional</th><th>Comandas</th><th>Regra de serviços</th><th>Comissão bruta</th><th>Deduções do período</th><th>A receber (estimado)</th><th>Ações</th></tr></thead>
               <tbody>{commissionRows.length ? commissionPageRows.map((row) => (
                 <tr key={row.user.id}>
                   <td><strong>{row.user.name}</strong><div className="small muted">{ROLE_LABELS[row.user.role] ?? row.user.role}</div></td>
