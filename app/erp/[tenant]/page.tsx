@@ -51,7 +51,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
   children,
@@ -1412,6 +1412,8 @@ export async function TenantERPView({
             <article><span>MRR do clube</span><strong>{brl(clubMemberRows.filter((item) => item.status === "ACTIVE").reduce((sum, item) => sum + (item.plan?.monthlyAmount ?? 0), 0))}</strong><small>recorrência configurada</small></article>
           </div>
 
+          {actionOk === "plano-editado" && <div className="notice erp-inline-notice success">Plano atualizado. Cobranças anteriores preservadas.</div>}
+          {actionOk === "plano-alterado" && <div className="notice erp-inline-notice success">Plano do assinante atualizado para as próximas cobranças.</div>}
           {actionOk === "plano" && <div className="notice erp-inline-notice success">Plano do clube criado.</div>}
           {actionOk === "assinante" && <div className="notice erp-inline-notice success">Assinante incluído no clube.</div>}
           {actionOk === "cobranca" && <div className="notice erp-inline-notice success">Cobrança gerada no Financeiro.</div>}
@@ -1436,6 +1438,7 @@ export async function TenantERPView({
                   <button className="btn" type="submit">Criar plano</button>
                 </form>
               )}
+              {canManage && <details className="erp-quick-create"><summary>Editar plano existente</summary><form action={editClubPlan} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Plano para editar</span><select name="planId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.map(plan => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label><label><span className="label">Novo nome</span><input className="input" name="name" required minLength={2} placeholder="Nome atualizado"/></label><div className="grid grid-2"><label><span className="label">Nova mensalidade (R$)</span><input className="input" name="monthlyAmount" type="number" min="0" step="0.01" required/></label><label><span className="label">Usos por mês (0 = ilimitado)</span><input className="input" name="visitsPerMonth" type="number" min="0" step="1" defaultValue={0}/></label></div><label><span className="label">Benefícios</span><input className="input" name="benefits"/></label><p className="small muted">Atualiza as condições do plano para futuras cobranças. Recebíveis já gerados não são alterados.</p><button className="btn" type="submit">Salvar alterações do plano</button></form></details>}
               <div className="erp-stacked-list">
                 {workspace.clubPlans.length ? workspace.clubPlans.map((clubPlan) => (
                   <div key={clubPlan.id}>
@@ -1457,6 +1460,7 @@ export async function TenantERPView({
                   <button className="btn" type="submit">Adicionar assinante</button>
                 </form>
               )}
+              {canManage && <details className="erp-quick-create"><summary>Trocar plano de um assinante</summary><form action={changeClubMemberPlan} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Assinante</span><select name="memberId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{clubMemberRows.filter(member => member.status !== "CANCELED").map(member => <option key={member.id} value={member.id}>{member.customer?.name ?? "Cliente"} — {member.plan?.name ?? "Plano removido"}</option>)}</select></label><label><span className="label">Novo plano</span><select name="planId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.filter(plan => plan.active).map(plan => <option key={plan.id} value={plan.id}>{plan.name} — {brl(plan.monthlyAmount)}</option>)}</select></label><p className="small muted">A troca não modifica cobranças já emitidas. Confira os próximos lançamentos antes de cobrar.</p><button className="btn" type="submit">Atualizar assinatura</button></form></details>}
               <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} className="erp-compact-form" style={{ marginTop: 16, marginBottom: 16 }}>
                 <label><span className="label">Buscar assinante pelo nome do cliente</span><input className="input" name="assinaturasQ" type="search" placeholder="Digite o nome do cliente" defaultValue={valueOf("assinaturasQ")} /></label>
                 <div className="grid grid-2">
