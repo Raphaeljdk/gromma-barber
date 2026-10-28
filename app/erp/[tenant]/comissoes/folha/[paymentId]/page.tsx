@@ -1,3 +1,4 @@
+import { PrintCommissionSheet } from "./print-button";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { notFound } from "next/navigation";
@@ -12,7 +13,7 @@ export default async function FolhaComissao({ params }: { params: Promise<{ tena
   const formatMoney = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
   const breakdown = payment.breakdown as { lines?: { itemId: string; description: string; base: string; percent: number; commission: string }[] };
   return <main style={{ maxWidth: 850, margin: "40px auto", padding: 32, fontFamily: "Arial, sans-serif", color: "#161616", background: "#fff" }}>
-    <header style={{ borderBottom: "2px solid #111", paddingBottom: 20 }}><h1>{payment.barberShop.tradeName}</h1><p>Demonstrativo de comissão — comprovante de quitação</p><small>Documento: {payment.barberShop.document}</small></header>
+    <div className="print-hidden"><PrintCommissionSheet /></div><header style={{ borderBottom: "2px solid #111", paddingBottom: 20 }}><h1>{payment.barberShop.tradeName}</h1><p>Demonstrativo de comissão — comprovante de quitação</p><small>Documento: {payment.barberShop.document}</small></header>
     <p><strong>Profissional:</strong> {payment.professional.name}</p><p><strong>Período:</strong> {payment.periodStart.toISOString().slice(0, 10)} a {payment.periodEnd.toISOString().slice(0, 10)}</p>
     <p><strong>Identificador:</strong> {payment.id}</p>
     <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 24 }}><thead><tr><th style={{ textAlign: "left" }}>Serviço</th><th>Base</th><th>Regra</th><th>Comissão</th></tr></thead><tbody>{(breakdown.lines ?? []).map(line => <tr key={line.itemId}><td style={{ borderBottom: "1px solid #ddd", padding: 8 }}>{line.description}</td><td style={{ textAlign: "right" }}>{formatMoney(Number(line.base))}</td><td style={{ textAlign: "right" }}>{line.percent}%</td><td style={{ textAlign: "right" }}>{formatMoney(Number(line.commission))}</td></tr>)}</tbody></table>
