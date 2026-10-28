@@ -138,6 +138,7 @@ export type ErpWorkspace = {
   reviews: ReviewConfig[];
   training: TrainingConfig[];
   commissionRules: CommissionRuleConfig[];
+  serviceCommissionOverrides: Record<string, number>;
   deductions: DeductionConfig[];
   waitlist: WaitlistConfig[];
   agendaBlocks: AgendaBlock[];
@@ -159,6 +160,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   reviews: [],
   training: [],
   commissionRules: [],
+  serviceCommissionOverrides: {},
   deductions: [],
   waitlist: [],
   agendaBlocks: [],
@@ -205,6 +207,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     reviews: array<ReviewConfig>(operations.reviews),
     training: array<TrainingConfig>(operations.training),
     commissionRules: array<CommissionRuleConfig>(operations.commissionRules),
+    serviceCommissionOverrides: Object.fromEntries(Object.entries(record(operations.serviceCommissionOverrides)).filter(([, amount]) => typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 && amount <= 100)) as Record<string, number>,
     deductions: array<DeductionConfig>(operations.deductions),
     waitlist: array<WaitlistConfig>(operations.waitlist),
     agendaBlocks: array<AgendaBlock>(operations.agendaBlocks),
