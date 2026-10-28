@@ -106,6 +106,7 @@ model BarberShop {
   stockMovements    StockMovement[]
   financialEntries  FinancialEntry[]
   subscriptions     PlatformSubscription[]
+  commissionPayments CommissionPayment[]
 
   @@index([status, createdAt])
   @@index([email])
@@ -165,6 +166,7 @@ model ShopUser {
   barberShop   BarberShop      @relation(fields: [barberShopId], references: [id], onDelete: Cascade)
   unit         BarberShopUnit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
   appointments Appointment[]   @relation("BarberAppointments")
+  commissionPayments CommissionPayment[]
 
   @@unique([barberShopId, email])
   @@index([barberShopId, role, active])
@@ -355,4 +357,27 @@ model PlatformSubscription {
 
   @@index([barberShopId, status])
   @@index([nextBillingAt])
+}
+
+
+/// Snapshot imutável da apuração quitada; unicidade impede dupla quitação do mesmo período.
+model CommissionPayment {
+  id           String   @id @default(cuid())
+  barberShopId String
+  userId       String
+  periodStart  DateTime @db.Date
+  periodEnd    DateTime @db.Date
+  gross        Decimal  @db.Decimal(12, 2)
+  deductions   Decimal  @db.Decimal(12, 2)
+  net          Decimal  @db.Decimal(12, 2)
+  breakdown    Json
+  paymentMethod String
+  paidAt       DateTime
+  paidBy       String
+  createdAt    DateTime @default(now())
+  barberShop   BarberShop @relation(fields: [barberShopId], references: [id], onDelete: Restrict)
+  professional ShopUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([barberShopId, userId, periodStart, periodEnd])
+  @@index([barberShopId, paidAt])
 }
