@@ -293,6 +293,9 @@ export async function TenantERPView({
   const estoquePage = pageOf("estoquePage");
   const equipePage = pageOf("equipePage");
   const unidadesPage = pageOf("unidadesPage");
+  const assinaturasQ = valueOf("assinaturasQ").trim().toLocaleLowerCase("pt-BR");
+  const assinaturasPlano = valueOf("assinaturasPlano");
+  const assinaturasStatus = valueOf("assinaturasStatus");
   const assinaturasPage = pageOf("assinaturasPage");
   const mensagensPage = pageOf("mensagensPage");
   const promocoesPage = pageOf("promocoesPage");
@@ -879,7 +882,14 @@ export async function TenantERPView({
     (product) => (stockByProduct.get(product.id) ?? 0) <= Number(product.stockMin),
   );
 
-  const clubMemberPageRows = clubMemberRows.slice(
+  const filteredClubMemberRows = clubMemberRows.filter((member) => {
+    const matchesName = !assinaturasQ || (member.customer?.name ?? "").toLocaleLowerCase("pt-BR").includes(assinaturasQ);
+    const matchesPlan = !assinaturasPlano || member.planId === assinaturasPlano;
+    const isOverdue = member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime();
+    const matchesStatus = !assinaturasStatus || (assinaturasStatus === "OVERDUE" ? isOverdue : member.status === assinaturasStatus && !isOverdue);
+    return matchesName && matchesPlan && matchesStatus;
+  });
+  const clubMemberPageRows = filteredClubMemberRows.slice(
     (assinaturasPage - 1) * pageSize,
     assinaturasPage * pageSize,
   );
@@ -1447,9 +1457,18 @@ export async function TenantERPView({
                   <button className="btn" type="submit">Adicionar assinante</button>
                 </form>
               )}
+              <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} className="erp-compact-form" style={{ marginTop: 16, marginBottom: 16 }}>
+                <label><span className="label">Buscar assinante pelo nome do cliente</span><input className="input" name="assinaturasQ" type="search" placeholder="Digite o nome do cliente" defaultValue={valueOf("assinaturasQ")} /></label>
+                <div className="grid grid-2">
+                  <label><span className="label">Tipo de plano</span><select className="select" name="assinaturasPlano" defaultValue={assinaturasPlano}><option value="">Todos os planos</option>{workspace.clubPlans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label>
+                  <label><span className="label">Status do plano</span><select className="select" name="assinaturasStatus" defaultValue={assinaturasStatus}><option value="">Todos os status</option><option value="ACTIVE">Ativo</option><option value="OVERDUE">Vencido</option><option value="PAUSED">Pausado</option><option value="CANCELED">Cancelado</option></select></label>
+                </div>
+                <button className="btn" type="submit">Buscar e filtrar</button>
+              </form>
+              <p className="small muted">{filteredClubMemberRows.length} assinante(s) encontrado(s)</p>
               <div className="table-wrap erp-inner-table"><table>
                 <thead><tr><th>Cliente</th><th>Plano</th><th>Próxima cobrança</th><th>Status</th><th>Ação</th></tr></thead>
-                <tbody>{clubMemberRows.length ? clubMemberPageRows.map((member) => {
+                <tbody>{filteredClubMemberRows.length ? clubMemberPageRows.map((member) => {
                   const overdue = member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime();
                   return (
                     <tr key={member.id}>
@@ -1486,12 +1505,12 @@ export async function TenantERPView({
                       </td>
                     </tr>
                   );
-                }) : <tr><td colSpan={5} className="muted">Nenhum assinante cadastrado.</td></tr>}</tbody>
+                }) : <tr><td colSpan={5} className="muted">Nenhum assinante encontrado para os filtros selecionados.</td></tr>}</tbody>
               </table></div>
               <p className="erp-integration-note">Cobrança recorrente e baixa automática ficam prontas para conectar a um gateway de pagamento; enquanto isso, a geração de recebíveis já funciona dentro do Financeiro.</p>
             </article>
           </div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} searchParams={qs} param="assinaturasPage" page={assinaturasPage} total={clubMemberRows.length} pageSize={pageSize} label="assinantes" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} searchParams={qs} param="assinaturasPage" page={assinaturasPage} total={filteredClubMemberRows.length} pageSize={pageSize} label="assinantes" />
         </section>
 
         <section id="mensagens" className="demo-section" hidden={Boolean(moduleId && moduleId !== "mensagens")}>
