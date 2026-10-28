@@ -47,8 +47,9 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     ],
   },
   {
-    id: "assinaturas", label: "Assinatura", description: "Contratos e recorrência",
+    id: "assinaturas", label: "Clube / Assinaturas", description: "Planos, clientes e cobranças",
     items: [
+      { id: "assinatura-clube", label: "Abrir Clube / Assinaturas", route: "assinaturas" },
       { id: "assinatura-gromma-pag", label: "Dashboard Gromma Pag" },
       { id: "assinatura-reajuste", label: "Programar reajuste" },
       { id: "assinatura-calendario-pagamentos", label: "Calendário de pagamentos" },
