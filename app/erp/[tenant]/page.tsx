@@ -1821,9 +1821,9 @@ export async function TenantERPView({
               <label><span className="label">Data inicial</span><input className="input" type="date" name="comissoesDe" defaultValue={comissoesDe} /></label>
               <label><span className="label">Data final</span><input className="input" type="date" name="comissoesAte" defaultValue={comissoesAte} /></label>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período</button><a className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}>Limpar filtros</a></div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período</button></div>
             {invalidCommissionPeriod && <p className="notice erp-inline-notice error-notice">A data inicial não pode ser posterior à data final. Corrija o período para filtrar.</p>}
-            <p className="small muted">Para registrar pagamento, informe data inicial e final. A apuração do período usa todos os itens de serviços elegíveis e deduções registradas no intervalo. Sem período selecionado, os valores são apenas indicadores históricos limitados.</p>
+            <p className="small muted">Selecione o período para consultar as comissões. O botão Pagar é apenas uma simulação e não registra pagamentos. Sem período selecionado, os valores são indicadores históricos limitados.</p>
           </form>
 
           <div className="erp-kpi-row">
@@ -1839,35 +1839,9 @@ export async function TenantERPView({
           {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
           {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
 
-          {canManage && (
-            <div className="erp-two-column-workspace">
-              <article className="card erp-workspace-card">
-                <div className="erp-card-title"><div><span>Regra individual</span><strong>Percentual por profissional</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-                <form action={saveCommissionRule} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <label><span className="label">Profissional</span><select className="select" name="userId" required defaultValue=""><option value="" disabled>Selecione</option>{commissionRows.map((row) => <option key={row.user.id} value={row.user.id}>{row.user.name}</option>)}</select></label>
-                  <label><span className="label">Comissão (%)</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" required defaultValue={workspace.settings.defaultCommissionPercent} /></label>
-                  <button className="btn" type="submit">Salvar regra</button>
-                </form>
-              </article>
-              <article className="card erp-workspace-card">
-                <div className="erp-card-title"><div><span>Deduções</span><strong>Adiantamentos e ajustes</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-                <form action={addDeduction} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <label><span className="label">Profissional</span><select className="select" name="userId" required defaultValue=""><option value="" disabled>Selecione</option>{commissionRows.map((row) => <option key={row.user.id} value={row.user.id}>{row.user.name}</option>)}</select></label>
-                  <div className="grid grid-2">
-                    <label><span className="label">Motivo</span><input className="input" name="description" required placeholder="Ex.: Adiantamento" /></label>
-                    <label><span className="label">Valor</span><input className="input" name="amount" type="number" min="0.01" step="0.01" required /></label>
-                  </div>
-                  <button className="btn secondary" type="submit">Registrar dedução</button>
-                </form>
-              </article>
-            </div>
-          )}
-
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Profissional</th><th>Comandas</th><th>Regra de serviços</th><th>Comissão bruta</th><th>Deduções do período</th><th>A receber (estimado)</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Profissional</th><th>Comandas</th><th>Regra de serviços</th><th>Comissão bruta</th><th>Deduções do período</th><th>A receber (estimado)</th><th><div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><span>Ações</span>{canManage && commissionRows.some(row => row.netCommission > 0) && <DemoCommissionPay professional="Todos os profissionais com comissão" amount={brl(commissionRows.reduce((sum, row) => sum + row.netCommission, 0))} label="Pagar todos (simulação)" />}</div></th></tr></thead>
               <tbody>{commissionRows.length ? commissionPageRows.map((row) => (
                 <tr key={row.user.id}>
                   <td><strong>{row.user.name}</strong><div className="small muted">{ROLE_LABELS[row.user.role] ?? row.user.role}</div></td>
