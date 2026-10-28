@@ -50,7 +50,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
   children,
@@ -1892,6 +1892,7 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
+          {canManage && <details className="erp-quick-create"><summary>Configurar comissões de assinaturas e produtos</summary><form action={saveProfessionalCommissionRates} className="erp-quick-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Profissional</span><select name="userId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{shop.users.filter(user => ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label><div className="grid grid-2"><label><span className="label">Assinaturas (%)</span><input name="subscriptionPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={0} required /></label><label><span className="label">Produtos (%)</span><input name="productPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={30} required /></label></div><button className="btn" type="submit">Salvar percentuais</button><p className="small muted">As regras ficam salvas por profissional. Atribuição automática de assinaturas e produtos depende de vínculo comprovado com a venda e ainda não integra a quitação.</p></form></details>}
           <div className="demo-team-grid">
             {professionals.map((user) => (
               <article className="card demo-team-card" key={user.id}>
