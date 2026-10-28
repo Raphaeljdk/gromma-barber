@@ -23,6 +23,7 @@ import { requireTenantAccess } from "@/lib/tenant-auth";
 import { logoutTenant } from "@/app/cliente/actions";
 import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
 import { BackButton } from "@/components/back-button";
+import { DemoCommissionPay } from "@/components/demo-commission-pay";
 import { ErpSidebar } from "@/components/erp-sidebar";
 import { CustomerPhotos } from "@/components/customer-photos";
 import { CustomerDeactivateButton } from "@/components/customer-deactivate-button";
@@ -1874,12 +1875,12 @@ export async function TenantERPView({
                   <td>{row.percent.toFixed(2)}%</td>
                   <td>{brl(row.grossCommission)}</td>
                   <td>{brl(row.deductions)}</td>
-                  <td><strong>{brl(row.netCommission)}</strong></td><td>{canPayCommission && row.netCommission > 0 && !isPaidForPeriod(row.user.id) ? <details className="erp-quick-create"><summary>Pagar</summary><form action={payCommission} className="erp-quick-form"><input type="hidden" name="tenantCode" value={tenantCode}/><input type="hidden" name="userId" value={row.user.id}/><input type="hidden" name="periodStart" value={comissoesDe}/><input type="hidden" name="periodEnd" value={comissoesAte}/><strong>{brl(row.netCommission)}</strong><label><span className="label">Forma de pagamento</span><select name="paymentMethod" className="select" required defaultValue="PIX"><option value="PIX">Pix</option><option value="DINHEIRO">Dinheiro</option><option value="TRANSFERENCIA">Transferência</option><option value="CREDITO">Crédito</option><option value="DEBITO">Débito</option><option value="OUTRO">Outro</option></select></label><button className="btn" type="submit">Confirmar quitação</button></form></details> : isPaidForPeriod(row.user.id) ? <span className="badge approved">Pago</span> : <small className="muted">Informe período válido</small>}</td>
+                  <td><strong>{brl(row.netCommission)}</strong></td><td>{canManage && row.netCommission > 0 ? <DemoCommissionPay professional={row.user.name} amount={brl(row.netCommission)} /> : <span className="small muted">Sem valor disponível</span>}</td>
                 </tr>
               )) : <tr><td colSpan={7} className="muted">Nenhum profissional disponível.</td></tr>}</tbody>
             </table>
           </div>
-          <p className="erp-integration-note">Esta tela é uma prévia de comissões de serviços vinculados a atendimentos. Assinaturas, produtos e pagamentos ainda não estão implementados nesta apuração. A comissão não representa pagamento efetuado.</p>
+          <p className="erp-integration-note">Esta tela é uma prévia de comissões de serviços vinculados a atendimentos. O botão Pagar é fictício: não registra quitação, não altera caixa nem movimenta dinheiro. Assinaturas e produtos ainda não entram nesta apuração.</p>
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} searchParams={qs} param="comissoesPage" page={comissoesPage} total={commissionRows.length} pageSize={pageSize} label="profissionais" />
         </section>}
 
