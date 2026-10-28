@@ -553,6 +553,22 @@ export async function saveTrainingItem(formData: FormData) {
   redirect(`${path}?ok=conteudo`);
 }
 
+export async function saveProfessionalCommissionRates(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "equipe");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  const userId = value(formData, "userId", 80);
+  const subscriptionPercent = numberValue(formData, "subscriptionPercent");
+  const productPercent = numberValue(formData, "productPercent", 30);
+  const professional = await prisma.shopUser.findFirst({ where: { id: userId, barberShopId: shop.id, active: true }, select: { id: true } });
+  if (!professional || [subscriptionPercent, productPercent].some(n => !Number.isFinite(n) || n < 0 || n > 100)) redirect(`${path}?erro=comissao`);
+  try {
+    await persistWorkspace(shop, workspace => { workspace.professionalExtraRates[userId] = { subscriptionPercent, productPercent }; });
+  } catch (error) { console.error("Failed to save professional commission rates", error); redirect(`${path}?erro=banco`); }
+  revalidatePath(path);
+  redirect(`${path}?ok=comissao`);
+}
+
 export async function payCommission(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "comissoes");
