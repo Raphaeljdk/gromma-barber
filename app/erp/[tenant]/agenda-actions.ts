@@ -1,4 +1,5 @@
 "use server";
+import { assertProfessionalAvailable } from "@/lib/commissions";
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -38,6 +39,7 @@ export async function rescheduleAppointment(f: FormData) {
         const fresh = await tx.barberShop.findUniqueOrThrow({ where: { id: shop.id } });
         const ws = readWorkspace(fresh.enabledFeatures);
         if (!withinAgendaHours(start, end, ws.settings.openHour, ws.settings.closeHour) || hasAgendaBlock(ws.agendaBlocks, barberId, start, end, item.unitId)) throw new Error("blocked");
+        await assertProfessionalAvailable(tx, shop.id, barberId, start, end, ws.bookedServices.find(b=>b.appointmentId===item.id)?.services.map(s=>s.id) ?? (item.serviceId?[item.serviceId]:[]));
         const conflict = await tx.appointment.findFirst({ where: { id: { not: item.id }, barberShopId: shop.id, barberId, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] }, startsAt: { lt: end }, OR: [{ endsAt: { gt: start } }, { endsAt: null }] } });
         if (conflict) throw new Error("conflict");
         await tx.appointment.update({ where: { id: item.id }, data: { startsAt: start, endsAt: end, barberId } });

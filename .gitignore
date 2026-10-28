@@ -5,3 +5,7 @@ node_modules
 .vercel
 *.log
 .DS_Store
+.env.*.local
+*.tsbuildinfo
+playwright-report/
+test-results/

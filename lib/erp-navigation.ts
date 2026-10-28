@@ -98,7 +98,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "rel-cli-periodo", label: "Período e serviços" },
         ] },
         { id: "relatorios-profissionais", label: "Profissionais", children: [
-          { id: "rel-pro-comissoes", label: "Comissões", route: "comissoes" },
+          { id: "rel-pro-comissoes", label: "Comissões", route: "relatorio-comissoes" },
           { id: "rel-pro-mc", label: "MC por profissional" },
           { id: "rel-pro-ticket-clientes", label: "Ticket médio por clientes distintos" },
           { id: "rel-pro-ticket-atendimento", label: "Ticket médio por atendimento" },

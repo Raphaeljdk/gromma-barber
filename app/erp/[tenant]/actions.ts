@@ -1,4 +1,5 @@
 "use server";
+import { assertProfessionalAvailable } from "@/lib/commissions";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -453,6 +454,7 @@ export async function createAppointment(formData: FormData) {
 
     const available: Array<{ id: string; load: number }> = [];
     for (const candidate of candidates) {
+      try { await assertProfessionalAvailable(prisma, shop.id, candidate.id, startsAt, endsAt, selectedServices.map(s=>s.id)); } catch { continue; }
       if (hasAgendaBlock(workspace.agendaBlocks, candidate.id, startsAt, endsAt, unitId)) continue;
       const conflict = await prisma.appointment.findFirst({
         where: {
@@ -508,6 +510,7 @@ export async function createAppointment(formData: FormData) {
       if (!withinAgendaHours(startsAt, endsAt, latest.settings.openHour, latest.settings.closeHour)) throw new Error("Outside business hours");
       if (hasAgendaBlock(latest.agendaBlocks, barber?.id ?? "", startsAt, endsAt, unitId)) throw new Error("Blocked time");
       if (barber) {
+        await assertProfessionalAvailable(tx, shop.id, barber.id, startsAt, endsAt, selectedServices.map(s=>s.id));
         const occupied = await tx.appointment.findFirst({ where: { barberShopId: shop.id, barberId: barber.id, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] }, startsAt: { lt: endsAt }, OR: [{ endsAt: { gt: startsAt } }, { endsAt: null }] } });
         if (occupied) throw new Error("Schedule conflict");
       } else if (latest.settings.rotationEnabled) throw new Error("No professional available");

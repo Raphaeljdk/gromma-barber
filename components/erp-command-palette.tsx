@@ -59,6 +59,7 @@ const MODULES = [
   { id: "auditoria-produtividade", label: "Produtividade", group: "Gestão", icon: CalendarDays, adminOnly: true },
   { id: "notificacoes", label: "Notificações", group: "Gestão", icon: BellRing, ownerOnly: true },
   { id: "relatorios", label: "Relatórios", group: "Gestão", icon: FileText },
+  { id: "relatorio-comissoes", label: "Relatório de Comissões", group: "Gestão", icon: ScrollText },
   { id: "comissoes", label: "Comissões", group: "Gestão", icon: ScrollText },
   { id: "alertas", label: "Alertas", group: "Gestão", icon: BellRing },
   { id: "promocoes", label: "Promoções / Cupons", group: "Marketing e Promoções", icon: Tags },

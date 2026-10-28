@@ -36,6 +36,10 @@ function environment(options = {}) {
   const state = { shop: { id: 'shop1', status: 'APPROVED', accessReleased: true, enabledFeatures: { operations: { cashSessions: [{ id: 's1', unitId: 'u1', unitName: 'Centro', openingCents: 2000, openedAt: '2026-10-13T10:00:00Z', openedBy: 'u' }], commandPayments: [], productLines: [{ itemId: 'i1', productId: 'p1' }] } } }, command: { id: 'c1', unitId: 'u1', barberShopId: 'shop1', customer: { name: 'Cliente' }, status: 'OPEN', total: 100, subtotal: 100, discount: 0, updatedAt: new Date(), items: [{ id: 'i1', kind: 'PRODUCT', total: 100, quantity: 2 }] }, entries: [], stock: [], auditLogs: [], ...options.state };
   const writes = [];
   const tx = {
+    commissionProfile: {findMany: async()=>[], findUnique:async()=>null},
+    serviceCommissionRule: {findMany: async()=>[]},
+    shopUser: {findMany: async()=>[]},
+    commissionLine: {createMany: async()=>({count:0}), count:async()=>0, deleteMany:async()=>({count:0})},
     barberShop: { findUnique: async () => state.shop, findUniqueOrThrow: async () => state.shop, update: async q => { writes.push('workspace'); Object.assign(state.shop, q.data); } },
     barberShopUnit: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return { id: 'u1', name: 'Centro' }; } },
     serviceCommand: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return state.command?.status === q.where.status ? state.command : null; }, updateMany: async q => { writes.push('command'); Object.assign(state.command, q.data); return { count: 1 }; },

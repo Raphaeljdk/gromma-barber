@@ -89,7 +89,7 @@ test("every referenced subitem remains in its exact hierarchy", () => {
 test("routes are real ERP modules and all node identifiers are unique", () => {
   const existing = new Set([
     "dashboard", "agenda", "clientes", "caixa", "comandas", "estoque", "assinaturas",
-    "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
+    "auditoria", "relatorios", "relatorio-comissoes", "comissoes", "promocoes", "avaliacoes", "equipe",
     "servicos", "unidades", "plano", "configuracoes", "financeiro", "gerencial",
     "alertas", "mensagens", "documentos", "treinamentos", "totem",
     "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "auditoria-agendamentos", "auditoria-fechamento-caixa", "auditoria-produtividade", "notificacoes",
