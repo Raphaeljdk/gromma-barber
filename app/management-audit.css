@@ -88,42 +88,55 @@ html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-canceled {color:#a13b
 }
 
 /* Histórico de agendamento em primeiro plano, sem rolagem até o rodapé. */
-.tenant-erp .mgmt-audit-modal-backdrop {
+.mgmt-audit-modal-backdrop {
   position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;
   padding:20px;background:rgba(8,9,11,.75);backdrop-filter:blur(3px);
 }
-.tenant-erp .mgmt-audit-modal {
+.mgmt-audit-modal {
   display:flex;flex-direction:column;width:min(760px,100%);max-height:min(90dvh,880px);
   min-width:0;margin:0;padding:0;overflow:hidden;
   border:1px solid var(--erp-border,#65533d);border-radius:16px;
   background:var(--erp-panel,#1c1a17);color:var(--erp-text,#eee4d3);
   box-shadow:0 24px 72px rgba(0,0,0,.48);
 }
-.tenant-erp .mgmt-audit-modal-header {
+.mgmt-audit-modal-header {
   display:flex;flex:0 0 auto;justify-content:space-between;align-items:flex-start;gap:16px;
   padding:20px 22px 16px;border-bottom:1px solid var(--erp-border,#514433);
 }
-.tenant-erp .mgmt-audit-modal-header h3 {margin:0 0 5px;font-size:1.06rem;line-height:1.4;}
-.tenant-erp .mgmt-audit-modal-header p {margin:0;overflow-wrap:anywhere;}
-.tenant-erp .mgmt-audit-modal-close {
+.mgmt-audit-modal-header h3 {margin:0 0 5px;font-size:1.06rem;line-height:1.4;}
+.mgmt-audit-modal-header p {margin:0;overflow-wrap:anywhere;}
+.mgmt-audit-modal-close {
   flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
   width:38px;height:38px;border-radius:9px;border:1px solid var(--erp-border,#514433);
   color:var(--erp-text,#eee4d3);background:var(--erp-panel,#201d19);
   text-decoration:none;
 }
-.tenant-erp .mgmt-audit-modal-close:hover,.tenant-erp .mgmt-audit-modal-close:focus-visible {
+.mgmt-audit-modal-close:hover,.mgmt-audit-modal-close:focus-visible {
   outline:2px solid var(--erp-gold,#e2b770);outline-offset:2px;
 }
-.tenant-erp .mgmt-audit-modal-body {min-height:0;overflow-y:auto;overscroll-behavior:contain;}
-.tenant-erp .mgmt-audit-modal .mgmt-audit-timeline {margin:0;padding:0;min-width:0;border:0;background:transparent;}
+.mgmt-audit-modal-body {min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+.mgmt-audit-modal .mgmt-audit-timeline {margin:0;padding:0;min-width:0;border:0;background:transparent;}
 .tenant-erp .stock-audit-filters {margin:0 0 14px;}
 .tenant-erp .stock-audit-history-head {display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin:10px 0;}
 .tenant-erp .stock-audit-history-head h3 {margin:0;font-size:1rem;}
 .tenant-erp .stock-audit-history-head small {color:var(--erp-muted,#b7a68e);}
 @media(max-width:660px) {
-  .tenant-erp .mgmt-audit-modal-backdrop {padding:10px;}
-  .tenant-erp .mgmt-audit-modal {max-height:calc(100dvh - 20px);border-radius:12px;}
-  .tenant-erp .mgmt-audit-modal-header {padding:15px 13px 12px;}
-  .tenant-erp .mgmt-audit-modal-header h3 {font-size:.98rem;}
+  .mgmt-audit-modal-backdrop {padding:10px;}
+  .mgmt-audit-modal {max-height:calc(100dvh - 20px);border-radius:12px;}
+  .mgmt-audit-modal-header {padding:15px 13px 12px;}
+  .mgmt-audit-modal-header h3 {font-size:.98rem;}
   .tenant-erp .stock-audit-filters label {flex:1 1 130px;}
 }
+
+/* O diálogo usa portal no body: estilos de eventos não podem depender de .tenant-erp. */
+.mgmt-audit-modal-backdrop {position:fixed!important;inset:0!important;z-index:2147483000!important;display:flex;align-items:center;justify-content:center;overflow-y:auto;}
+.mgmt-audit-modal {position:relative;flex-shrink:1;max-height:calc(100dvh - 40px);}
+.mgmt-audit-modal .mgmt-audit-events {list-style:none;margin:0;padding:14px 20px;}
+.mgmt-audit-modal .mgmt-audit-events li {position:relative;display:grid;gap:6px;margin-left:10px;padding:0 0 20px 20px;border-left:1px solid #827049;}
+.mgmt-audit-modal .mgmt-audit-events li:last-child {border-left-color:transparent;}
+.mgmt-audit-modal .mgmt-audit-events li::before {content:"";position:absolute;top:1px;left:-5px;width:9px;height:9px;border-radius:50%;background:#b99255;}
+.mgmt-audit-modal .mgmt-audit-events time {font-size:.76rem;opacity:.8;}
+.mgmt-audit-modal .mgmt-audit-events strong {font-size:.9rem;}
+.mgmt-audit-modal .mgmt-audit-events span,.mgmt-audit-modal .mgmt-audit-events small {font-size:.78rem;overflow-wrap:anywhere;}
+.mgmt-audit-modal .mgmt-audit-timeline>p {padding:0 20px 18px;margin:0;}
+@media(max-width:660px){.mgmt-audit-modal{max-height:calc(100dvh - 20px);}}
