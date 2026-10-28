@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
 
 export function AuditHistoryDialog({ children, closeHref, subtitle }: Props) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLAnchorElement>(null);
 
@@ -52,7 +55,8 @@ export function AuditHistoryDialog({ children, closeHref, subtitle }: Props) {
     };
   }, [closeHref, router]);
 
-  return (
+  if (!mounted) return null;
+  return createPortal(
     <div
       className="mgmt-audit-modal-backdrop"
       onMouseDown={(event) => {
@@ -78,6 +82,7 @@ export function AuditHistoryDialog({ children, closeHref, subtitle }: Props) {
         </header>
         <div className="mgmt-audit-modal-body">{children}</div>
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }
