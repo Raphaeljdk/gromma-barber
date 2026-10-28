@@ -1,4 +1,5 @@
 "use server";
+import { snapshotCommand, assertProfessionalAvailable } from "@/lib/commissions";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { revalidatePath } from "next/cache";
@@ -94,6 +95,7 @@ async function synchronizeCommandDuration(
   const minutes = services.reduce((sum, item) => sum + item.durationMinutes, 0);
   if (!Number.isSafeInteger(minutes) || minutes > 24 * 60) throw new OperationError("A duração do atendimento é muito longa.");
   const endsAt = new Date(appointment.startsAt.getTime() + minutes * 60_000);
+  if (appointment.barberId) await assertProfessionalAvailable(tx, shopId, appointment.barberId, appointment.startsAt, endsAt, services.map(s=>s.id));
   if (endsAt.getTime() > (appointment.endsAt?.getTime() ?? appointment.startsAt.getTime())) {
     if (!withinAgendaHours(appointment.startsAt, endsAt, workspace.settings.openHour, workspace.settings.closeHour))
       throw new OperationError("O serviço ultrapassa o horário da barbearia. Reagende o atendimento.");
@@ -223,6 +225,7 @@ export async function checkoutCommand(form: FormData) {
     const now = new Date();
     const updated = await tx.serviceCommand.updateMany({ where: { id: command.id, barberShopId: shopId, status: "OPEN", updatedAt: command.updatedAt }, data: { status: "CLOSED", closedAt: now, subtotal: pricing.subtotalCents / 100, discount: pricing.discountCents / 100, total: pricing.totalCents / 100 } });
     if (updated.count !== 1) throw new OperationError("A comanda mudou. Atualize e confira novamente.");
+    await snapshotCommand(tx, shopId, command.id, actor);
     for (const method of PAYMENT_METHODS) if (amounts[method] > 0) await tx.financialEntry.create({ data: { barberShopId: shopId, unitId: command.unitId, type: "RECEIVABLE", status: "PAID", category: "Comandas", description: `Comanda ${command.id.slice(-6).toUpperCase()} · ${PAYMENT_LABELS[method]}`, amount: amounts[method] / 100, dueDate: now, paidAt: now } });
     workspace.commandPayments.push({ id: workspaceId("payment"), commandId: command.id, sessionId: session.id, customerName: command.customer?.name ?? "Cliente avulso", paidAt: now.toISOString(), amounts,
       couponCode: pricing.couponCode || undefined, discountCents: pricing.discountCents,
@@ -280,6 +283,8 @@ export async function reopenCommand(form: FormData) {
     });
     if (!command) throw new OperationError("Esta comanda não está fechada ou já foi reaberta.");
 
+    if (await tx.commissionLine.count({where:{barberShopId:shopId,commandId:command.id,settlementId:{not:null}}})) throw new OperationError("A comanda tem comissão quitada. Registre um ajuste autorizado antes de qualquer correção financeira.");
+    await tx.commissionLine.deleteMany({where:{barberShopId:shopId,commandId:command.id,settlementId:null}});
     const { shop, workspace } = await configuration(tx, shopId);
     const payments = workspace.commandPayments.filter(payment => payment.commandId === command.id);
     if (payments.length !== 1)

@@ -1,3 +1,4 @@
+import "./commissions.css";
 import "./globals.css";
 import "./inventory-notifications.css";
 import "./agenda-multiunit-history.css";

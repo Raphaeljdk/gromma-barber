@@ -144,7 +144,7 @@ export type ErpWorkspace = {
   cashSessions: CashSession[];
   commandPayments: CommandPayment[];
   bookedServices: BookedServices[];
-  productLines: { itemId: string; productId: string }[];
+  productLines: { itemId: string; productId: string; sellerId?: string }[];
   serviceLines: { itemId: string; serviceId: string }[];
   settings: OperationalSettings;
 };
@@ -211,7 +211,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     cashSessions: array<CashSession>(operations.cashSessions),
     commandPayments: array<CommandPayment>(operations.commandPayments),
     bookedServices: array<BookedServices>(operations.bookedServices),
-    productLines: array<{ itemId: string; productId: string }>(operations.productLines),
+    productLines: array<{ itemId: string; productId: string; sellerId?: string }>(operations.productLines),
     serviceLines: array<{ itemId: string; serviceId: string }>(operations.serviceLines),
     settings: {
       openHour: Number(settings.openHour ?? DEFAULT_WORKSPACE.settings.openHour),

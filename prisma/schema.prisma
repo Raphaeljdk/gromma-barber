@@ -356,3 +356,69 @@ model PlatformSubscription {
   @@index([barberShopId, status])
   @@index([nextBillingAt])
 }
+
+// Snapshot ledger: source keys prevent an operation from being commissioned twice.
+model CommissionProfile {
+  id String @id @default(cuid())
+  barberShopId String
+  userId String
+  servicePercent Decimal @db.Decimal(5,2)
+  subscriptionPercent Decimal @default(0) @db.Decimal(5,2)
+  productPercent Decimal @default(30) @db.Decimal(5,2)
+  availability Json?
+  updatedAt DateTime @updatedAt
+  @@unique([barberShopId, userId])
+}
+
+model ServiceCommissionRule {
+  id String @id @default(cuid())
+  barberShopId String
+  serviceId String
+  percent Decimal? @db.Decimal(5,2)
+  updatedAt DateTime @updatedAt
+  @@unique([barberShopId, serviceId])
+}
+
+model CommissionLine {
+  id String @id @default(cuid())
+  barberShopId String
+  userId String
+  sourceKey String
+  commandId String?
+  kind String
+  description String
+  baseAmount Decimal @db.Decimal(12,2)
+  percent Decimal @db.Decimal(5,2)
+  amount Decimal @db.Decimal(12,2)
+  occurredAt DateTime
+  createdAt DateTime @default(now())
+  createdBy String
+  settlementId String?
+  settlement CommissionSettlement? @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  @@unique([barberShopId, sourceKey])
+  @@index([barberShopId, userId, occurredAt])
+}
+
+model CommissionSettlement {
+  id String @id @default(cuid())
+  barberShopId String
+  userId String
+  professionalName String
+  shopName String
+  shopDocument String
+  shopAddress String?
+  periodStart DateTime
+  periodEnd DateTime
+  gross Decimal @db.Decimal(12,2)
+  deductions Decimal @db.Decimal(12,2)
+  net Decimal @db.Decimal(12,2)
+  status String @default("PAID")
+  paidAt DateTime
+  paymentMethod String
+  notes String?
+  createdAt DateTime @default(now())
+  createdBy String
+  financialEntryId String @unique
+  lines CommissionLine[]
+  @@index([barberShopId, userId, periodStart])
+}

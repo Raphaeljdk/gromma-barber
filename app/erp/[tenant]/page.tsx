@@ -1,3 +1,5 @@
+import { CommissionWorkspace } from "@/components/commission-workspace";
+import { CommissionSettings } from "@/components/commission-settings";
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -166,7 +168,8 @@ const MODULE_TITLES: Record<string, string> = {
   "auditoria-fechamento-caixa": "Fechamento de caixa",
   "auditoria-produtividade": "Produtividade",
   notificacoes: "Notificações",
-  comissoes: "Comissões",
+  comissoes: "Gerar Comissões",
+  "relatorio-comissoes": "Relatório de Comissões",
   equipe: "Profissionais",
   unidades: "Unidades",
   relatorios: "Relatórios",
@@ -1272,6 +1275,8 @@ export async function TenantERPView({
 
         <section id="servicos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "servicos")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {valueOf("commissionError") && <div className="notice error-notice" role="alert">{valueOf("commissionError")}</div>}
+          {valueOf("commissionOk") && <div className="notice success">Comissão salva.</div>}
           {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
           {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
@@ -1302,6 +1307,7 @@ export async function TenantERPView({
               <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
+          {activeModule === "servicos" && canManage && <CommissionSettings shopId={shop.id} tenantCode={tenantCode} kind="services" />}
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/servicos`} searchParams={qs} param="servicosPage" page={servicosPage} total={servicesTotal} pageSize={pageSize} hash="servicos" label="serviços" />
         </section>
 
@@ -1773,69 +1779,11 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
         </section>
 
-        <section id="comissoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "comissoes")}>
-          <div className="section-head">
-            <div><div className="eyebrow">Remuneração</div><h2>Comissões, produção e deduções</h2></div>
-            <StatusPill tone="ready">Operacional</StatusPill>
-          </div>
-
-          <div className="erp-kpi-row">
-            <article><span>Produção fechada</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.production, 0))}</strong><small>comandas concluídas</small></article>
-            <article><span>Comissão bruta</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.grossCommission, 0))}</strong><small>pelas regras atuais</small></article>
-            <article><span>Deduções</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.deductions, 0))}</strong><small>ajustes registrados</small></article>
-            <article><span>Comissão líquida</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.netCommission, 0))}</strong><small>estimativa operacional</small></article>
-          </div>
-
-          {actionOk === "comissao" && <div className="notice erp-inline-notice success">Regra de comissão atualizada.</div>}
-          {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
-          {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
-
-          {canManage && (
-            <div className="erp-two-column-workspace">
-              <article className="card erp-workspace-card">
-                <div className="erp-card-title"><div><span>Regra individual</span><strong>Percentual por profissional</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-                <form action={saveCommissionRule} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <label><span className="label">Profissional</span><select className="select" name="userId" required defaultValue=""><option value="" disabled>Selecione</option>{commissionRows.map((row) => <option key={row.user.id} value={row.user.id}>{row.user.name}</option>)}</select></label>
-                  <label><span className="label">Comissão (%)</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" required defaultValue={workspace.settings.defaultCommissionPercent} /></label>
-                  <button className="btn" type="submit">Salvar regra</button>
-                </form>
-              </article>
-              <article className="card erp-workspace-card">
-                <div className="erp-card-title"><div><span>Deduções</span><strong>Adiantamentos e ajustes</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-                <form action={addDeduction} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <label><span className="label">Profissional</span><select className="select" name="userId" required defaultValue=""><option value="" disabled>Selecione</option>{commissionRows.map((row) => <option key={row.user.id} value={row.user.id}>{row.user.name}</option>)}</select></label>
-                  <div className="grid grid-2">
-                    <label><span className="label">Motivo</span><input className="input" name="description" required placeholder="Ex.: Adiantamento" /></label>
-                    <label><span className="label">Valor</span><input className="input" name="amount" type="number" min="0.01" step="0.01" required /></label>
-                  </div>
-                  <button className="btn secondary" type="submit">Registrar dedução</button>
-                </form>
-              </article>
-            </div>
-          )}
-
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Profissional</th><th>Produção</th><th>Regra</th><th>Comissão bruta</th><th>Deduções</th><th>Líquido</th></tr></thead>
-              <tbody>{commissionRows.length ? commissionPageRows.map((row) => (
-                <tr key={row.user.id}>
-                  <td><strong>{row.user.name}</strong><div className="small muted">{ROLE_LABELS[row.user.role] ?? row.user.role}</div></td>
-                  <td>{brl(row.production)}</td>
-                  <td>{row.percent.toFixed(2)}%</td>
-                  <td>{brl(row.grossCommission)}</td>
-                  <td>{brl(row.deductions)}</td>
-                  <td><strong>{brl(row.netCommission)}</strong></td>
-                </tr>
-              )) : <tr><td colSpan={6} className="muted">Nenhum profissional disponível.</td></tr>}</tbody>
-            </table>
-          </div>
-          <p className="erp-integration-note">A conta do profissional agora é calculada a partir das comandas fechadas associadas aos atendimentos. Produtos sem vínculo de profissional ainda não entram no rateio individual.</p>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} searchParams={qs} param="comissoesPage" page={comissoesPage} total={commissionRows.length} pageSize={pageSize} label="profissionais" />
-        </section>
+        {(activeModule === "comissoes" || activeModule === "relatorio-comissoes") && <CommissionWorkspace tenantCode={tenantCode} report={activeModule === "relatorio-comissoes"} query={qs} />}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
+          {valueOf("commissionError") && <div className="notice error-notice" role="alert">{valueOf("commissionError")}</div>}
+          {valueOf("commissionOk") && <div className="notice success">Configurações salvas.</div>}
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`}
@@ -1844,6 +1792,7 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
+          {activeModule === "equipe" && canManage && <CommissionSettings shopId={shop.id} tenantCode={tenantCode} kind="professionals" />}
           <div className="demo-team-grid">
             {professionals.map((user) => (
               <article className="card demo-team-card" key={user.id}>

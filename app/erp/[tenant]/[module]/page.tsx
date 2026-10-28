@@ -25,6 +25,7 @@ const MODULES = new Set([
   "auditoria-produtividade",
   "notificacoes",
   "comissoes",
+  "relatorio-comissoes",
   "equipe",
   "unidades",
   "relatorios",

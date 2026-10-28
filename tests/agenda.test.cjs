@@ -107,6 +107,7 @@ function environment(overrides = {}) {
   const shop = { id: 'shop1', status: 'APPROVED', accessReleased: true, enabledFeatures: overrides.features || { otherFeature: true, operations: { waitlist: [{ id: 'old', customerName: 'Existente', notes: 'Manter dados anteriores' }] } } };
   const scoped = (model) => async (query) => { queries.push({ model, query }); return { id: query.where.id, durationMinutes: 30 }; };
   const prisma = {
+    commissionProfile: {findUnique:async()=>null},
     barberShop: { findUnique: async () => shop, findUniqueOrThrow: async () => shop, update: async (query) => { saved.push(query); return shop; } },
     barberShopUnit: { findFirst: scoped('unit') }, service: { findFirst: scoped('service') },
     customer: {
