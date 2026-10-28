@@ -49,7 +49,7 @@ import { parseAgendaUnits } from "@/lib/agenda-unit-selection";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, saveCommissionRule, saveServiceCommissionOverride, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
 
 function StatusPill({
   children,
@@ -812,13 +812,26 @@ export async function TenantERPView({
     }
   });
 
+  const serviceCommissionOverrides = (workspace as typeof workspace & { serviceCommissionOverrides?: Record<string, number> }).serviceCommissionOverrides ?? {};
+  const commissionByUser = new Map<string, number>();
+  for (const command of commissionCommands) {
+    const barber = command.appointment?.barber;
+    if (!barber) continue;
+    const rule = workspace.commissionRules.find((item) => item.userId === barber.id);
+    const fallbackPercent = rule?.percent ?? workspace.settings.defaultCommissionPercent;
+    const serviceId = command.appointment?.service?.id;
+    const percent = serviceId && Object.prototype.hasOwnProperty.call(serviceCommissionOverrides, serviceId)
+      ? serviceCommissionOverrides[serviceId] : fallbackPercent;
+    commissionByUser.set(barber.id, (commissionByUser.get(barber.id) ?? 0) + Number(command.total) * percent / 100);
+  }
+
   const commissionRows = shop.users
     .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
     .map((user) => {
       const production = productionByUser.get(user.id) ?? 0;
       const rule = workspace.commissionRules.find((item) => item.userId === user.id);
       const percent = rule?.percent ?? workspace.settings.defaultCommissionPercent;
-      const grossCommission = production * (percent / 100);
+      const grossCommission = commissionByUser.get(user.id) ?? 0;
       const deductions = workspace.deductions
         .filter((item) => item.userId === user.id)
         .reduce((sum, item) => sum + item.amount, 0);
@@ -1299,6 +1312,16 @@ export async function TenantERPView({
             hash="servicos"
             search={{ param: "servicosQ", value: servicosQ, placeholder: "Buscar serviço" }}
           />
+          {canManage && <details className="erp-quick-create">
+            <summary>Configurar comissão específica por serviço</summary>
+            <form action={saveServiceCommissionOverride} className="erp-quick-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <label><span className="label">Serviço</span><select name="serviceId" className="select" required defaultValue=""><option value="" disabled>Selecione um serviço</option>{shop.services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}</select></label>
+              <label><span className="label">Comissão específica (%) — vazio para usar a regra do profissional</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" placeholder="Ex.: 40" /></label>
+              <button className="btn" type="submit">Salvar comissão do serviço</button>
+            </form>
+            <p className="small muted">Alterações nas regras afetam apenas prévias ainda não quitadas. Não utilize esta tela para recalcular pagamentos históricos.</p>
+          </details>}
           <div className="table-wrap"><table>
             <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
             <tbody>{servicesTotal ? services.map((service) => (
