@@ -80,7 +80,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "rel-ass-troca", label: "Troca de assinatura" },
           { id: "rel-ass-cancelados", label: "Cancelados por período" },
           { id: "rel-ass-transacoes", label: "Históricos de transações" },
-          { id: "rel-ass-quantidade", label: "Quantidade de assinantes" },
+          { id: "rel-ass-quantidade", label: "Quantidade de assinantes", route: "assinantes" },
           { id: "rel-ass-vendas-novas", label: "Vendas novas por período" },
           { id: "rel-ass-vendas-origem", label: "Vendas por origem" },
           { id: "rel-ass-pontos", label: "Resgate de pontos" },

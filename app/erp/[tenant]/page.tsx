@@ -145,6 +145,7 @@ const AUDIENCE_LABELS: Record<string, string> = {
 };
 
 const MODULE_TITLES: Record<string, string> = {
+  assinantes: "Quantidade de assinantes",
   dashboard: "Dashboard",
   agenda: "Agenda",
   "agenda-feriados": "Cadastro de Feriados",
@@ -773,9 +774,15 @@ export async function TenantERPView({
     return Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", month: "numeric" }).format(customer.birthDate)) === currentMonth;
   });
 
+  const memberCustomers = ["assinaturas", "assinantes"].includes(activeModule) && workspace.clubMembers.length
+    ? await prisma.customer.findMany({
+        where: { barberShopId: shop.id, id: { in: workspace.clubMembers.map(member => member.customerId) } },
+        select: { id: true, name: true },
+      })
+    : appointmentCustomers;
   const clubMemberRows = workspace.clubMembers.map((member) => ({
     ...member,
-    customer: appointmentCustomers.find((customer) => customer.id === member.customerId) ?? null,
+    customer: memberCustomers.find((customer) => customer.id === member.customerId) ?? null,
     plan: workspace.clubPlans.find((planItem) => planItem.id === member.planId) ?? null,
   }));
   const overdueClubMembers = clubMemberRows.filter(
@@ -882,16 +889,18 @@ export async function TenantERPView({
     (product) => (stockByProduct.get(product.id) ?? 0) <= Number(product.stockMin),
   );
 
+  const normalizeSubscriberName = (name: string) => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-BR");
   const filteredClubMemberRows = clubMemberRows.filter((member) => {
-    const matchesName = !assinaturasQ || (member.customer?.name ?? "").toLocaleLowerCase("pt-BR").includes(assinaturasQ);
+    const matchesName = !assinaturasQ || normalizeSubscriberName(member.customer?.name ?? "").includes(normalizeSubscriberName(assinaturasQ));
     const matchesPlan = !assinaturasPlano || member.planId === assinaturasPlano;
     const isOverdue = member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime();
     const matchesStatus = !assinaturasStatus || (assinaturasStatus === "OVERDUE" ? isOverdue : member.status === assinaturasStatus && !isOverdue);
     return matchesName && matchesPlan && matchesStatus;
   });
+  const safeAssinaturasPage = Math.min(assinaturasPage, Math.max(1, Math.ceil(filteredClubMemberRows.length / pageSize)));
   const clubMemberPageRows = filteredClubMemberRows.slice(
-    (assinaturasPage - 1) * pageSize,
-    assinaturasPage * pageSize,
+    (safeAssinaturasPage - 1) * pageSize,
+    safeAssinaturasPage * pageSize,
   );
   const messageContacts = customersForRelationship.slice(
     (mensagensPage - 1) * pageSize,
@@ -1391,6 +1400,29 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
+        {activeModule === "assinantes" && <section className="demo-section" id="quantidade-assinantes">
+          <div className="section-head"><div><div className="eyebrow">Relatórios de assinaturas</div><h2>Quantidade de assinantes</h2></div></div>
+          <article className="card erp-workspace-card">
+              <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/assinantes`} className="erp-compact-form" style={{ marginTop: 16, marginBottom: 16 }}>
+                <label><span className="label">Buscar assinante pelo nome do cliente</span><input className="input" name="assinaturasQ" type="search" placeholder="Digite o nome do cliente" defaultValue={valueOf("assinaturasQ")} /></label>
+                <div className="grid grid-2">
+                  <label><span className="label">Tipo de plano</span><select className="select" name="assinaturasPlano" defaultValue={assinaturasPlano}><option value="">Todos os planos</option>{workspace.clubPlans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label>
+                  <label><span className="label">Status do plano</span><select className="select" name="assinaturasStatus" defaultValue={assinaturasStatus}><option value="">Todos os status</option><option value="ACTIVE">Ativo</option><option value="OVERDUE">Vencido</option><option value="PAUSED">Pausado</option><option value="CANCELED">Cancelado</option></select></label>
+                </div>
+                <div className="erp-row-actions"><button className="btn" type="submit">Buscar e filtrar</button><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/assinantes`}>Limpar filtros</Link></div>
+              </form>
+              <p className="small muted">{filteredClubMemberRows.length} assinante(s) encontrado(s)</p>
+            <div className="table-wrap"><table>
+              <thead><tr><th>Cliente</th><th>Tipo de plano</th><th>Status do plano</th><th>Próxima cobrança</th></tr></thead>
+              <tbody>{clubMemberPageRows.length ? clubMemberPageRows.map(member => {
+                const overdue = member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime();
+                return <tr key={member.id}><td>{member.customer?.name ?? "Cliente indisponível"}</td><td>{member.plan?.name ?? "Plano removido"}</td><td>{overdue ? "Vencido" : member.status === "ACTIVE" ? "Ativo" : member.status === "PAUSED" ? "Pausado" : "Cancelado"}</td><td>{new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(member.nextBillingAt))}</td></tr>;
+              }) : <tr><td colSpan={4} className="muted">Nenhum assinante encontrado para os filtros selecionados.</td></tr>}</tbody>
+            </table></div>
+            <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinantes`} searchParams={qs} param="assinaturasPage" page={safeAssinaturasPage} total={filteredClubMemberRows.length} pageSize={pageSize} label="assinantes" />
+          </article>
+        </section>}
+
         <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
           <div className="section-head">
             <div><div className="eyebrow">Clube de assinaturas</div><h2>Planos, assinantes e cobranças</h2></div>
@@ -1514,7 +1546,7 @@ export async function TenantERPView({
               <p className="erp-integration-note">Cobrança recorrente e baixa automática ficam prontas para conectar a um gateway de pagamento; enquanto isso, a geração de recebíveis já funciona dentro do Financeiro.</p>
             </article>
           </div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} searchParams={qs} param="assinaturasPage" page={assinaturasPage} total={filteredClubMemberRows.length} pageSize={pageSize} label="assinantes" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} searchParams={qs} param="assinaturasPage" page={safeAssinaturasPage} total={filteredClubMemberRows.length} pageSize={pageSize} label="assinantes" />
         </section>
 
         <section id="mensagens" className="demo-section" hidden={Boolean(moduleId && moduleId !== "mensagens")}>

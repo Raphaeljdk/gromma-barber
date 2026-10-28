@@ -74,7 +74,7 @@ test("every referenced subitem remains in its exact hierarchy", () => {
   }
   const subscription = ERP_NAVIGATION.find(group => group.id === "assinaturas");
   assert.deepEqual(subscription.items.map(item => item.label), [
-    "Dashboard Gromma Pag", "Programar reajuste", "Calendário de pagamentos",
+    "Abrir Clube / Assinaturas", "Dashboard Gromma Pag", "Programar reajuste", "Calendário de pagamentos",
     "Calendário de recebíveis", "Novos contratos", "Clientes cancelados",
     "Contratos ativos", "Distribuição do Pote", "Inadimplentes", "Planos",
     "Solicitar saque", "Transações financeiras",
@@ -89,7 +89,7 @@ test("every referenced subitem remains in its exact hierarchy", () => {
 test("routes are real ERP modules and all node identifiers are unique", () => {
   const existing = new Set([
     "dashboard", "agenda", "clientes", "caixa", "comandas", "estoque", "assinaturas",
-    "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
+    "assinantes", "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
     "servicos", "unidades", "plano", "configuracoes", "financeiro", "gerencial",
     "alertas", "mensagens", "documentos", "treinamentos", "totem",
     "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "auditoria-agendamentos", "auditoria-fechamento-caixa", "auditoria-produtividade", "notificacoes",

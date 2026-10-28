@@ -51,6 +51,7 @@ const MODULES = [
   { id: "estoque-balanco", label: "Balanço de estoque", group: "Operacional", icon: PackageSearch },
   { id: "estoque-compras", label: "Solicitação de compra", group: "Operacional", icon: PackageSearch, adminOnly: true },
   { id: "totem", label: "Totem / Check-in", group: "Operacional", icon: Store, proOnly: true },
+  { id: "assinantes", label: "Quantidade de assinantes", group: "Gestão", icon: BadgeDollarSign },
   { id: "assinaturas", label: "Clube / Assinaturas", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "gerencial", label: "Gerencial", group: "Gestão", icon: LayoutDashboard },
   { id: "auditoria-estoque", label: "Auditoria de estoque", group: "Gestão", icon: ScrollText, adminOnly: true },

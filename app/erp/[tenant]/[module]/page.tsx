@@ -11,6 +11,7 @@ const MODULES = new Set([
   "servicos",
   "comandas",
   "assinaturas",
+  "assinantes",
   "mensagens",
   "promocoes",
   "financeiro",
