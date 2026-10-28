@@ -552,6 +552,32 @@ export async function saveTrainingItem(formData: FormData) {
   redirect(`${path}?ok=conteudo`);
 }
 
+export async function saveServiceCommissionOverride(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "servicos");
+  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  const serviceId = value(formData, "serviceId", 80);
+  const raw = value(formData, "percent", 40);
+  const percent = raw === "" ? null : Number(raw.replace(",", "."));
+  const service = await prisma.service.findFirst({ where: { id: serviceId, barberShopId: shop.id }, select: { id: true } });
+  if (!service || (percent !== null && (!Number.isFinite(percent) || percent < 0 || percent > 100))) redirect(`${path}?erro=comissao`);
+  try {
+    await persistWorkspace(shop, workspace => {
+      const configured = workspace as typeof workspace & { serviceCommissionOverrides?: Record<string, number> };
+      const overrides = { ...(configured.serviceCommissionOverrides ?? {}) };
+      if (percent === null) delete overrides[service.id];
+      else overrides[service.id] = percent;
+      configured.serviceCommissionOverrides = overrides;
+    });
+  } catch (error) {
+    console.error("Failed to update service commission", error);
+    redirect(`${path}?erro=banco`);
+  }
+  revalidatePath(path);
+  revalidatePath(modulePath(tenantCode, "comissoes"));
+  redirect(`${path}?ok=comissao`);
+}
+
 export async function saveCommissionRule(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "comissoes");
