@@ -194,7 +194,7 @@ export async function changeClubMemberPlan(formData: FormData) {
         throw new Error("Regularize a cobrança vencida antes de solicitar a troca");
       const old = workspace.clubPlans.find(p => p.id === member.planId);
       workspace.clubEvents.filter(e => e.memberId === member.id && e.kind === "CHANGE" && e.status === "SCHEDULED")
-        .forEach(e => { e.status = "APPLIED"; e.reason = "Solicitação substituída antes da vigência"; });
+        .forEach(e => { e.status = "SUPERSEDED"; e.reason = "Solicitação substituída antes da vigência"; });
       workspace.clubEvents.push({ id: workspaceId("change"), memberId: member.id, customerId: member.customerId,
         at: new Date().toISOString(), effectiveAt: effectiveAt.toISOString(), status: "SCHEDULED",
         actor: viewer.type === "ADMIN" ? viewer.email : viewer.email, reason,
