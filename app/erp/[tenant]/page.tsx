@@ -53,10 +53,11 @@ import { CustomerPurchaseHistory } from "@/components/customer-purchase-history"
 import { parseAgendaUnits } from "@/lib/agenda-unit-selection";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { effectiveClubMember } from "@/lib/club-lifecycle";
+import { hasStaffPermission, permissionsForRole, STAFF_PERMISSION_KEYS, STAFF_PERMISSION_LABELS, STAFF_PERMISSION_ROLES } from "@/lib/role-permissions";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions } from "./module-actions";
 
 function StatusPill({
   children,
@@ -324,6 +325,12 @@ export async function TenantERPView({
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
 
   const workspace = readWorkspace(shop.enabledFeatures);
+  const controlledModulePermission = activeModule === "financeiro" ? "VIEW_FINANCE"
+    : activeModule === "comissoes" ? "VIEW_COMMISSIONS"
+    : activeModule === "relatorios" || Boolean(SUBSCRIPTION_REPORTS[activeModule]) ? "VIEW_REPORTS"
+    : activeModule.startsWith("auditoria") ? "VIEW_AUDIT" : null;
+  if (viewer.type === "TENANT" && controlledModulePermission &&
+      !hasStaffPermission(viewer.role, workspace.rolePermissions, controlledModulePermission)) notFound();
   const activeAgendaUnitIds = shop.units.filter(unit => unit.active).map(unit => unit.id);
   const agendaSelectedUnitIds = parseAgendaUnits(valueOf("agendaUnits"), activeAgendaUnitIds, agendaUnit);
   const comissoesUnidadeRaw = valueOf("comissoesUnidade");
@@ -585,7 +592,7 @@ export async function TenantERPView({
     .filter(product => product.quantity > 0)
     .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name, "pt-BR"));
   const stockSalesLeast = [...stockSalesRanking].sort((a, b) => a.quantity - b.quantity || a.name.localeCompare(b.name, "pt-BR"));
-  const auditCanView = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewer.role);
+  const auditCanView = viewer.type === "ADMIN" || hasStaffPermission(viewer.role, workspace.rolePermissions, "VIEW_AUDIT");
   const auditPage = Math.min(pageOf("auditoriaPage"), 1000);
   const auditWhere: Prisma.AdminAuditLogWhereInput = { barberShopId: shop.id, action: { startsWith: "APPOINTMENT_" } };
   const [auditEvents, auditCount, legacyCancellations] = activeModule === "auditoria" && auditCanView ? await Promise.all([
@@ -739,6 +746,7 @@ export async function TenantERPView({
   const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
   const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
+  const canManageCampaigns = hasStaffPermission(viewerRole, workspace.rolePermissions, "MANAGE_CAMPAIGNS");
   const inventoryNotices = isOwner
     ? await loadInventoryNotifications(shop.id, tenantCode, shop.units.map(unit => ({
       id: unit.id, name: unit.name, active: unit.active,
@@ -1568,7 +1576,7 @@ export async function TenantERPView({
           <div className="erp-two-column-workspace">
             <article className="card erp-workspace-card">
               <div className="erp-card-title"><div><span>Nova mensagem</span><strong>Campanha segmentada</strong></div><StatusPill tone="ready">Salva no tenant</StatusPill></div>
-              {canManage && (
+              {canManageCampaigns && (
                 <form action={saveCampaign} className="erp-compact-form">
                   <input type="hidden" name="tenantCode" value={tenantCode} />
                   <label><span className="label">Título</span><input className="input" name="title" required placeholder="Ex.: Sentimos sua falta" /></label>
@@ -1902,6 +1910,20 @@ export async function TenantERPView({
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {isOwner && <details className="erp-quick-create">
+            <summary>Grupos de acesso e permissões</summary>
+            <p className="small muted">Administrador possui todos os acessos. Operações financeiras sensíveis permanecem exclusivas do administrador, independentemente das opções abaixo.</p>
+            {actionOk === "permissoes" && <p className="notice">Permissões atualizadas e registradas na auditoria.</p>}
+            {STAFF_PERMISSION_ROLES.map(role => <form key={role} action={saveRolePermissions} className="erp-compact-form" style={{marginBottom:20}}>
+              <input type="hidden" name="tenantCode" value={tenantCode}/><input type="hidden" name="role" value={role}/>
+              <h3>{ROLE_LABELS[role] ?? role}</h3>
+              {STAFF_PERMISSION_KEYS.map(permission => <label key={permission} style={{display:"flex",alignItems:"center",gap:8}}>
+                <input name="permissions" type="checkbox" value={permission} defaultChecked={permissionsForRole(role,workspace.rolePermissions).includes(permission)}/>
+                <span>{STAFF_PERMISSION_LABELS[permission]}</span>
+              </label>)}
+              <button type="submit" className="btn secondary">Salvar permissões de {ROLE_LABELS[role] ?? role}</button>
+            </form>)}
+          </details>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`}
             searchParams={qs}
