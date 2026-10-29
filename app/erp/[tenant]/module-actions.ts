@@ -3,6 +3,7 @@
 import { appendClubCharge, registerClubMember } from "@/lib/club-operations";
 import { movementKind } from "@/lib/subscription-reports";
 import { applyClubLifecycle } from "@/lib/club-lifecycle";
+import { STAFF_PERMISSION_KEYS, isPermissionRole, hasStaffPermission, type StaffPermission } from "@/lib/role-permissions";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { agendaReturnHref, isAgendaDate } from "@/lib/agenda";
 
@@ -86,6 +87,28 @@ async function persistWorkspace(
 
 function modulePath(tenantCode: string, module: string) {
   return `/erp/${encodeURIComponent(tenantCode)}/${module}`;
+}
+
+export async function saveRolePermissions(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "equipe");
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  const role = value(formData, "role", 30);
+  if (!isPermissionRole(role)) redirect(`${path}?erro=permissao`);
+  const selected = [...new Set(formData.getAll("permissions").map(p => String(p)))].filter(
+    (p): p is StaffPermission => (STAFF_PERMISSION_KEYS as readonly string[]).includes(p));
+  try {
+    await prisma.$transaction(async tx => {
+      const fresh = await tx.barberShop.findUniqueOrThrow({ where: { id: shop.id } });
+      const workspace = readWorkspace(fresh.enabledFeatures);
+      workspace.rolePermissions[role] = selected;
+      await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) } });
+      await tx.adminAuditLog.create({ data: { barberShopId: shop.id, action: "ROLE_PERMISSIONS_UPDATED",
+        adminEmail: viewer.email, details: { role, permissions: selected } } });
+    }, { isolationLevel: "Serializable" });
+  } catch (error) { console.error("Failed to save permissions", error); redirect(`${path}?erro=permissao`); }
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
+  redirect(`${path}?ok=permissoes`);
 }
 
 const AUDIENCE_RULES = ["ALL", "INACTIVE_30", "INACTIVE_60", "INACTIVE_90", "BIRTHDAY", "CLUB"] as const;
@@ -292,7 +315,7 @@ export async function generateClubCharge(formData: FormData) {
 export async function saveCampaign(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "mensagens");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (viewer.type !== "ADMIN" && !hasStaffPermission(viewer.role, readWorkspace(shop.enabledFeatures).rolePermissions, "MANAGE_CAMPAIGNS")) redirect(`${path}?erro=permissao`);
 
   const title = value(formData, "title", 100);
   const message = value(formData, "message", 1200);
@@ -392,7 +415,7 @@ export async function saveCoupon(formData: FormData) {
 export async function savePromotion(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "promocoes");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (viewer.type !== "ADMIN" && !hasStaffPermission(viewer.role, readWorkspace(shop.enabledFeatures).rolePermissions, "MANAGE_CAMPAIGNS")) redirect(`${path}?erro=permissao`);
 
   const title = value(formData, "title", 100);
   const message = value(formData, "message", 1200);
