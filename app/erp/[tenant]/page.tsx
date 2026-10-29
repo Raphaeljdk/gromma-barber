@@ -926,7 +926,10 @@ export async function TenantERPView({
     (promocoesPage - 1) * pageSize,
     promocoesPage * pageSize,
   );
-  const filteredCommissionRows = commissionRows.filter(row => !comissoesUnidade || row.user.unitId === comissoesUnidade);
+  const canViewAllCommissions = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
+  const filteredCommissionRows = commissionRows.filter(row =>
+    (canViewAllCommissions || (viewer.type === "TENANT" && row.user.id === viewer.userId)) &&
+    (!comissoesUnidade || row.user.unitId === comissoesUnidade));
   const documentPageRows = workspace.documents.slice(
     (documentosPage - 1) * pageSize,
     documentosPage * pageSize,
@@ -1408,14 +1411,14 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
-        {SUBSCRIPTION_REPORTS[activeModule] && <SubscriptionReports report={activeModule} tenantCode={tenantCode} shopId={shop.id} workspace={workspace} canFinance={canFinance} searchParams={qs} />}
+        {SUBSCRIPTION_REPORTS[activeModule] && <SubscriptionReports report={activeModule} tenantCode={tenantCode} shopId={shop.id} workspace={workspace} canFinance={isOwner} searchParams={qs} />}
 
         <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
           <div className="section-head">
             <div><div className="eyebrow">Clube de assinaturas</div><h2>Planos, assinantes e cobranças</h2></div>
             <div className="erp-section-actions">
               <StatusPill tone="ready">Operacional interno</StatusPill>
-              {canFinance && overdueClubMembers.length > 0 && (
+              {isOwner && overdueClubMembers.length > 0 && (
                 <form action={processClubBilling}>
                   <input type="hidden" name="tenantCode" value={tenantCode} />
                   <button className="btn secondary" type="submit">Processar recorrência ({overdueClubMembers.length})</button>
@@ -1443,7 +1446,7 @@ export async function TenantERPView({
           <div className="erp-two-column-workspace">
             <article className="card erp-workspace-card">
               <div className="erp-card-title"><div><span>Planos do clube</span><strong>Benefícios e recorrência</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-              {canManage && (
+              {isOwner && (
                 <form action={saveClubPlan} className="erp-compact-form">
                   <input type="hidden" name="tenantCode" value={tenantCode} />
                   <div className="grid grid-2">
@@ -1457,7 +1460,7 @@ export async function TenantERPView({
                   <button className="btn" type="submit">Criar plano</button>
                 </form>
               )}
-              {canManage && <details className="erp-quick-create"><summary>Editar plano existente</summary><form action={editClubPlan} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Plano para editar</span><select name="planId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.map(plan => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label><label><span className="label">Novo nome</span><input className="input" name="name" required minLength={2} placeholder="Nome atualizado"/></label><div className="grid grid-2"><label><span className="label">Nova mensalidade (R$)</span><input className="input" name="monthlyAmount" type="number" min="0" step="0.01" required/></label><label><span className="label">Usos por mês (0 = ilimitado)</span><input className="input" name="visitsPerMonth" type="number" min="0" step="1" defaultValue={0}/></label></div><label><span className="label">Benefícios</span><input className="input" name="benefits"/></label><p className="small muted">Atualiza as condições do plano para futuras cobranças. Recebíveis já gerados não são alterados.</p><button className="btn" type="submit">Salvar alterações do plano</button></form></details>}
+              {isOwner && <details className="erp-quick-create"><summary>Editar plano existente</summary><form action={editClubPlan} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Plano para editar</span><select name="planId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.map(plan => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label><label><span className="label">Novo nome</span><input className="input" name="name" required minLength={2} placeholder="Nome atualizado"/></label><div className="grid grid-2"><label><span className="label">Nova mensalidade (R$)</span><input className="input" name="monthlyAmount" type="number" min="0" step="0.01" required/></label><label><span className="label">Usos por mês (0 = ilimitado)</span><input className="input" name="visitsPerMonth" type="number" min="0" step="1" defaultValue={0}/></label></div><label><span className="label">Benefícios</span><input className="input" name="benefits"/></label><p className="small muted">Atualiza as condições do plano para futuras cobranças. Recebíveis já gerados não são alterados.</p><button className="btn" type="submit">Salvar alterações do plano</button></form></details>}
               <div className="erp-stacked-list">
                 {workspace.clubPlans.length ? workspace.clubPlans.map((clubPlan) => (
                   <div key={clubPlan.id}>
@@ -1906,7 +1909,7 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
-          {canManage && <details className="erp-quick-create"><summary>Configurar comissões de assinaturas e produtos</summary><form action={saveProfessionalCommissionRates} className="erp-quick-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Profissional</span><select name="userId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{shop.users.filter(user => ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label><div className="grid grid-2"><label><span className="label">Assinaturas (%)</span><input name="subscriptionPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={0} required /></label><label><span className="label">Produtos (%)</span><input name="productPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={30} required /></label></div><button className="btn" type="submit">Salvar percentuais</button><p className="small muted">As regras ficam salvas por profissional. Atribuição automática de assinaturas e produtos depende de vínculo comprovado com a venda e ainda não integra a quitação.</p></form></details>}
+          {isOwner && <details className="erp-quick-create"><summary>Configurar comissões de assinaturas e produtos</summary><form action={saveProfessionalCommissionRates} className="erp-quick-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Profissional</span><select name="userId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{shop.users.filter(user => ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label><div className="grid grid-2"><label><span className="label">Assinaturas (%)</span><input name="subscriptionPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={0} required /></label><label><span className="label">Produtos (%)</span><input name="productPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={30} required /></label></div><button className="btn" type="submit">Salvar percentuais</button><p className="small muted">As regras ficam salvas por profissional. Atribuição automática de assinaturas e produtos depende de vínculo comprovado com a venda e ainda não integra a quitação.</p></form></details>}
           <div className="demo-team-grid">
             {professionals.map((user) => (
               <article className="card demo-team-card" key={user.id}>
