@@ -2,6 +2,7 @@
 
 import { appendClubCharge, registerClubMember } from "@/lib/club-operations";
 import { movementKind } from "@/lib/subscription-reports";
+import { applyClubLifecycle } from "@/lib/club-lifecycle";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { agendaReturnHref, isAgendaDate } from "@/lib/agenda";
 
@@ -153,26 +154,37 @@ export async function editClubPlan(formData: FormData) {
 export async function changeClubMemberPlan(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   const memberId = value(formData, "memberId", 80);
   const planId = value(formData, "planId", 80);
+  const reason = value(formData, "reason", 600);
+  if (reason.length < 5) redirect(`${path}?erro=motivo`);
   try {
     await persistWorkspace(shop, workspace => {
       const member = workspace.clubMembers.find(item => item.id === memberId);
       const plan = workspace.clubPlans.find(item => item.id === planId && item.active);
-      if (!member || !plan || member.status === "CANCELED") throw new Error("Invalid subscription change");
+      if (!member || !plan || !["ACTIVE","PAUSED"].includes(member.status) || member.cancelEffectiveAt)
+        throw new Error("Assinatura indisponível para troca");
       if (member.planId === plan.id) throw new Error("Selecione um plano diferente");
+      const effectiveAt = new Date(member.nextBillingAt);
+      if (!Number.isFinite(effectiveAt.getTime()) || effectiveAt.getTime() <= Date.now())
+        throw new Error("Regularize a cobrança vencida antes de solicitar a troca");
       const old = workspace.clubPlans.find(p => p.id === member.planId);
+      workspace.clubEvents.filter(e => e.memberId === member.id && e.kind === "CHANGE" && e.status === "SCHEDULED")
+        .forEach(e => { e.status = "APPLIED"; e.reason = "Solicitação substituída antes da vigência"; });
       workspace.clubEvents.push({ id: workspaceId("change"), memberId: member.id, customerId: member.customerId,
-        at: new Date().toISOString(), kind: "CHANGE", previousPlanId: member.planId,
+        at: new Date().toISOString(), effectiveAt: effectiveAt.toISOString(), status: "SCHEDULED",
+        actor: viewer.type === "ADMIN" ? viewer.email : viewer.email, reason,
+        kind: "CHANGE", previousPlanId: member.planId,
         previousPlanName: old?.name ?? "Plano indisponível", previousAmount: old?.monthlyAmount ?? null,
         newPlanId: plan.id, newPlanName: plan.name, newAmount: plan.monthlyAmount,
         movement: movementKind(old?.monthlyAmount ?? null, plan.monthlyAmount) });
-      member.planId = plan.id;
+      member.pendingPlanId = plan.id;
+      member.pendingPlanRequestedAt = new Date().toISOString();
     });
-  } catch (error) { console.error("Failed to change member plan", error); redirect(`${path}?erro=assinante`); }
+  } catch (error) { console.error("Failed to schedule member plan", error); redirect(`${path}?erro=assinante`); }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
-  redirect(`${path}?ok=plano-alterado`);
+  redirect(`${path}?ok=troca-programada`);
 }
 
 export async function addClubMember(formData: FormData) {
@@ -200,13 +212,17 @@ export async function processClubBilling(formData: FormData) {
 
       const workspace = cloneWorkspace(readWorkspace(fresh.enabledFeatures));
       const now = new Date();
+      const lifecycleChanges = applyClubLifecycle(workspace, now);
       const dueMembers = workspace.clubMembers.filter(
         (member) =>
           member.status === "ACTIVE" &&
           new Date(member.nextBillingAt).getTime() <= now.getTime(),
       );
 
-      if (!dueMembers.length) return;
+      if (!dueMembers.length) {
+        if (lifecycleChanges) await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) } });
+        return;
+      }
 
       const customerIds = Array.from(new Set(dueMembers.map((member) => member.customerId)));
       const customers = await tx.customer.findMany({
@@ -700,41 +716,36 @@ export async function saveOperationalSettings(formData: FormData) {
 export async function updateClubMemberStatus(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
-
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   const memberId = value(formData, "memberId", 80);
   const action = value(formData, "action", 20);
-  const status =
-    action === "pause" ? "PAUSED" :
-    action === "cancel" ? "CANCELED" :
-    action === "activate" ? "ACTIVE" :
-    null;
-
-  if (!memberId || !status) redirect(`${path}?erro=assinante-status`);
-
+  const reason = value(formData, "reason", 600);
+  const status = action === "pause" ? "PAUSED" : action === "activate" ? "ACTIVE" : null;
+  if (!memberId || !["pause", "activate", "cancel"].includes(action) || reason.length < 5)
+    redirect(`${path}?erro=motivo`);
   try {
-    await persistWorkspace(shop, (workspace) => {
-      const member = workspace.clubMembers.find((item) => item.id === memberId);
-      if (!member) throw new Error("Member not found");
-      if (member.status === status) return;
-      if (member.status === "CANCELED") throw new Error("Crie uma nova contratação para um cliente cancelado");
-      if (status === "CANCELED") {
+    await persistWorkspace(shop, workspace => {
+      const member = workspace.clubMembers.find(item => item.id === memberId);
+      if (!member || member.status === "CANCELED") throw new Error("Assinatura inválida");
+      if (action === "cancel") {
+        if (member.cancelEffectiveAt) throw new Error("Cancelamento já programado");
+        const now = new Date();
+        const due = new Date(member.nextBillingAt);
+        const effectiveAt = Number.isFinite(due.getTime()) && due > now ? due : now;
         const plan = workspace.clubPlans.find(p => p.id === member.planId);
-        member.canceledAt = new Date().toISOString();
+        member.cancelRequestedAt = now.toISOString();
+        member.cancelEffectiveAt = effectiveAt.toISOString();
         workspace.clubEvents.push({ id: workspaceId("cancel"), memberId: member.id, customerId: member.customerId,
-          at: member.canceledAt, kind: "CANCEL", previousPlanId: member.planId,
+          at: now.toISOString(), effectiveAt: effectiveAt.toISOString(),
+          status: effectiveAt <= now ? "APPLIED" : "SCHEDULED",
+          actor: viewer.email, reason, kind: "CANCEL", previousPlanId: member.planId,
           previousPlanName: plan?.name ?? "Plano indisponível", previousAmount: plan?.monthlyAmount ?? null });
-      }
-      member.status = status;
-      if (status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < Date.now()) {
-        member.nextBillingAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        if (effectiveAt <= now) { member.status = "CANCELED"; member.canceledAt = effectiveAt.toISOString(); }
+      } else if (status && member.status !== status) {
+        member.status = status;
       }
     });
-  } catch (error) {
-    console.error("Failed to update club member status", error);
-    redirect(`${path}?erro=assinante-status`);
-  }
-
+  } catch (error) { console.error("Failed to update club member status", error); redirect(`${path}?erro=assinante-status`); }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=assinante-status`);
 }
