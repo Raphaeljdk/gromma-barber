@@ -41,9 +41,8 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
     const overdue = members.filter(m=>m.reportStatus==='OVERDUE');
     const gross = [...active,...overdue].reduce((sum,m)=>sum+(workspace.clubPlans.find(p=>p.id===m.planId)?.monthlyAmount ?? 0),0);
     summary = <div className="erp-kpi-row">
-      <article><span>Quantidade de clientes</span><strong>{new Set(members.map(m=>m.customerId)).size}</strong></article>
       <article><span>Total de assinaturas</span><strong>{members.length}</strong></article>
-      <article><span>Valor bruto mensal</span><strong>{brl(gross)}</strong><small>Assinaturas vigentes no filtro</small></article>
+      <article><span>Receita total de assinaturas</span><strong>{brl(gross)}</strong><small>Assinaturas vigentes no filtro</small></article>
       <article><span>Clientes adimplentes</span><strong>{new Set(active.map(m=>m.customerId).filter(id=>!overdue.some(m=>m.customerId===id))).size}</strong></article>
       <article><span>Clientes inadimplentes</span><strong>{new Set(overdue.map(m=>m.customerId)).size}</strong></article>
     </div>;
