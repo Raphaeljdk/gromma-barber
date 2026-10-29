@@ -19,6 +19,10 @@ export type ClubMemberConfig = {
   startedAt: string;
   nextBillingAt: string;
   canceledAt?: string;
+  pendingPlanId?: string;
+  pendingPlanRequestedAt?: string;
+  cancelRequestedAt?: string;
+  cancelEffectiveAt?: string;
 };
 
 export type ClubEvent = {
@@ -26,6 +30,10 @@ export type ClubEvent = {
   kind: "CHANGE" | "CANCEL"; previousPlanId: string; previousPlanName: string;
   previousAmount: number | null; newPlanId?: string; newPlanName?: string; newAmount?: number;
   movement?: "UPGRADE" | "DOWNGRADE" | "CHANGE";
+  effectiveAt?: string;
+  status?: "SCHEDULED" | "APPLIED";
+  actor?: string;
+  reason?: string;
 };
 export type ClubSale = {
   id: string; memberId: string; customerId: string; planId: string; planName: string;
