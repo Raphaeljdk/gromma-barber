@@ -367,7 +367,19 @@ export async function TenantERPView({
     agendaRangeEnd.setTime(new Date(`${addAgendaDays(days[41], 1)}T00:00:00-03:00`).getTime());
   }
 
-  const activePlanCustomerIds = [...new Set(workspace.clubMembers.filter((member) => member.status === "ACTIVE").map((member) => member.customerId))];
+  // Direitos do clube exigem ciclo vigente e nenhuma cobrança vencida em aberto.
+  const entitlementNow = new Date();
+  const dueChargeEntries = workspace.clubCharges.length ? await prisma.financialEntry.findMany({
+    where: { barberShopId: shop.id, id: { in: workspace.clubCharges.map(charge => charge.entryId) },
+      status: "PENDING", dueDate: { lte: entitlementNow } },
+    select: { id: true },
+  }) : [];
+  const overdueEntryIds = new Set(dueChargeEntries.map(entry => entry.id));
+  const blockedMemberIds = new Set(workspace.clubCharges.filter(charge => overdueEntryIds.has(charge.entryId)).map(charge => charge.memberId));
+  const entitledMembers = workspace.clubMembers.map(member => effectiveClubMember(member, entitlementNow))
+    .filter(member => member.status === "ACTIVE" && !blockedMemberIds.has(member.id) &&
+      new Date(member.nextBillingAt).getTime() > entitlementNow.getTime());
+  const activePlanCustomerIds = [...new Set(entitledMembers.map(member => member.customerId))];
   const customerWhere: Prisma.CustomerWhereInput = {
     barberShopId: shop.id,
     active: true,
@@ -707,7 +719,7 @@ export async function TenantERPView({
   }
 
   const activeClubPlans = new Map(workspace.clubPlans.filter((item) => item.active).map((item) => [item.id, item.name]));
-  const customerPlan = new Map(workspace.clubMembers.filter((item) => item.status === "ACTIVE" && activeClubPlans.has(item.planId)).map((item) => [item.customerId, activeClubPlans.get(item.planId)!]));
+  const customerPlan = new Map(entitledMembers.filter(item => activeClubPlans.has(item.planId)).map(item => [item.customerId, activeClubPlans.get(item.planId)!]));
 
   const servicePool = servicosQ
     ? shop.services.filter((service) => service.name.toLowerCase().includes(servicosQ.toLowerCase()))
