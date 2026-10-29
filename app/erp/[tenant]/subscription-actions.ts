@@ -35,7 +35,7 @@ export async function createClubInvite(form: FormData) {
   redirect(`${path}?convite=${token}`);
 }
 export async function requestClubRefund(form: FormData) {
-  const { shop, tenantCode, viewer } = await context(form, ['OWNER','MANAGER','ACCOUNTANT']);
+  const { shop, tenantCode, viewer } = await context(form, ['OWNER']);
   const path = `/erp/${encodeURIComponent(tenantCode)}/assinaturas-transacoes`;
   try {
     const reason = value(form, 'reason', 600);
@@ -55,7 +55,7 @@ export async function requestClubRefund(form: FormData) {
   redirect(`${path}?ok=estorno-solicitado`);
 }
 export async function confirmClubRefund(form: FormData) {
-  const { shop, tenantCode, viewer } = await context(form, ['OWNER','MANAGER','ACCOUNTANT']);
+  const { shop, tenantCode, viewer } = await context(form, ['OWNER']);
   const path = `/erp/${encodeURIComponent(tenantCode)}/assinaturas-transacoes`;
   try {
     const reference = value(form, 'reference', 200);
