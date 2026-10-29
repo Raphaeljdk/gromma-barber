@@ -109,11 +109,15 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
           <article><span>Vendedores no resultado</span><strong>{groups.size}</strong></article>
           <article><span>Valor total registrado</span><strong>{brl(sales.reduce((sum,s)=>sum+(s.amount??0),0))}</strong></article>
         </div>
-        {[...groups.entries()].map(([id,group])=><article key={id} className="card erp-workspace-card">
-          <h3>Vendedor: {group.name}</h3>
-          <div className="table-wrap"><table><thead><tr><th>Plano vendido</th><th>Cliente</th><th>Data</th><th>Valor do plano</th></tr></thead><tbody>
-            {group.items.map(sale=><tr key={sale.id}><td>{sale.planName}</td><td>{name(sale.customerId)}</td><td>{date(sale.at)}</td><td>{sale.amount===null?'Não registrado':brl(sale.amount)}</td></tr>)}
-          </tbody><tfoot><tr><th colSpan={3}>Total — {group.items.length} plano(s) vendido(s)</th><th>{brl(group.amount)}</th></tr></tfoot></table></div>
+        {[...groups.entries()].map(([id,group])=><article key={id} className="card erp-workspace-card" style={{padding:'20px 22px'}}>
+          <h3 style={{fontSize:'1.35rem',marginBottom:16}}>{group.name}</h3>
+          <div className="table-wrap"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Valor</th><th>Data da compra</th></tr></thead><tbody>
+            {group.items.map(sale=><tr key={sale.id}><td>{name(sale.customerId)}</td><td>{sale.planName}</td><td>{sale.amount===null?'Não registrado':brl(sale.amount)}</td><td>{date(sale.at)}</td></tr>)}
+          </tbody></table></div>
+          <div style={{display:'flex',justifyContent:'flex-end',gap:12,flexWrap:'wrap',marginTop:14}}>
+            <div style={{background:'var(--card, #20242b)',padding:'12px 18px',borderRadius:8,minWidth:145}}><span className="small muted">Total de planos</span><div><strong>{group.items.length}</strong></div></div>
+            <div style={{background:'var(--card, #20242b)',padding:'12px 18px',borderRadius:8,minWidth:175}}><span className="small muted">Total vendido</span><div><strong>{brl(group.amount)}</strong></div></div>
+          </div>
           {group.unknown>0&&<p className="small muted">{group.unknown} venda(s) sem valor histórico registrado não entram no total monetário.</p>}
         </article>)}
       </div>;
