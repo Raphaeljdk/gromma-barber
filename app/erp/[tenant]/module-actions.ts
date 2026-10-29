@@ -97,7 +97,7 @@ function audienceRule(raw: string): AudienceRule {
 export async function saveClubPlan(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
 
   const name = value(formData, "name", 100);
   const monthlyAmount = numberValue(formData, "monthlyAmount");
@@ -130,7 +130,7 @@ export async function saveClubPlan(formData: FormData) {
 export async function editClubPlan(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   const planId = value(formData, "planId", 80);
   const name = value(formData, "name", 100);
   const monthlyAmount = numberValue(formData, "monthlyAmount");
@@ -203,7 +203,7 @@ export async function addClubMember(formData: FormData) {
 export async function processClubBilling(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
-  if (!allowed(viewer, FINANCE_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -532,7 +532,7 @@ export async function saveTrainingItem(formData: FormData) {
 export async function saveProfessionalCommissionRates(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "equipe");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   const userId = value(formData, "userId", 80);
   const subscriptionPercent = numberValue(formData, "subscriptionPercent");
   const productPercent = numberValue(formData, "productPercent", 30);
@@ -549,7 +549,7 @@ export async function payCommission(formData: FormData) {
   if (process.env.COMMISSION_PAYMENTS_ENABLED !== "true") throw new Error("Commission payments disabled until database migration is verified");
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "comissoes");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   const userId = value(formData, "userId", 80);
   const from = value(formData, "periodStart", 10);
   const to = value(formData, "periodEnd", 10);
@@ -588,7 +588,7 @@ export async function payCommission(formData: FormData) {
 export async function saveServiceCommissionOverride(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "servicos");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   const serviceId = value(formData, "serviceId", 80);
   const raw = value(formData, "percent", 40);
   const percent = raw === "" ? null : Number(raw.replace(",", "."));
@@ -614,7 +614,7 @@ export async function saveServiceCommissionOverride(formData: FormData) {
 export async function saveCommissionRule(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "comissoes");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
 
   const userId = value(formData, "userId", 80);
   const percent = numberValue(formData, "percent");
@@ -643,7 +643,7 @@ export async function saveCommissionRule(formData: FormData) {
 export async function addDeduction(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "comissoes");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
 
   const userId = value(formData, "userId", 80);
   const description = value(formData, "description", 180);
