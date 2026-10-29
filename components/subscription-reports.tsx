@@ -19,7 +19,7 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
   const quantity = report === 'assinantes', transactions = report === 'assinaturas-transacoes';
   const now = new Date();
   const [customers, financial] = await Promise.all([
-    prisma.customer.findMany({ where: { barberShopId: shopId, id: { in: Array.from(new Set([...workspace.clubMembers.map(m=>m.customerId), ...workspace.clubEvents.map(e=>e.customerId), ...workspace.clubSales.map(s=>s.customerId)])) } }, select: { id: true, name: true } }),
+    prisma.customer.findMany({ where: report === 'assinaturas-trocas' ? { barberShopId: shopId } : { barberShopId: shopId, id: { in: Array.from(new Set([...workspace.clubMembers.map(m=>m.customerId), ...workspace.clubEvents.map(e=>e.customerId), ...workspace.clubSales.map(s=>s.customerId)])) } }, select: { id: true, name: true }, orderBy: { name: 'asc' }, take: report === 'assinaturas-trocas' ? 5000 : undefined }),
     prisma.financialEntry.findMany({ where: { barberShopId: shopId, type: 'RECEIVABLE', category: 'Clube de assinaturas' }, orderBy: { createdAt: 'desc' } }),
   ]);
   const names = new Map(customers.map(c=>[c.id,c.name]));
@@ -51,13 +51,13 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
     rows=members.map(m=>({id:m.id,cells:[name(m.customerId),allPlans.get(m.planId)??'Plano indisponível',date(m.startedAt),date(m.nextBillingAt),statusNames[m.reportStatus]]}));
     notes=<p className="small muted">Os indicadores acompanham os filtros. A adimplência considera cobranças vinculadas em aberto e vencidas; assinaturas antigas sem vínculo usam o vencimento cadastrado. Pausados e cancelados não entram em adimplentes/inadimplentes.</p>;
   } else if (report==='assinaturas-trocas') {
-    columns=['Cliente','Plano anterior','Plano adquirido','Plano atual','Data da troca','Movimentação'];
+    columns=['Cliente','Plano anterior','Plano atual','Data da troca','Histórico de movimentação'];
     rows=workspace.clubEvents.filter(e=>e.kind==='CHANGE' && matches(e.customerId) && (!plan || e.newPlanId===plan) && valid && dateInPeriod(e.at,from,to))
-      .sort((a,b)=>b.at.localeCompare(a.at)).map(e=>({id:e.id,cells:[name(e.customerId),e.previousPlanName,e.newPlanName,
+      .sort((a,b)=>b.at.localeCompare(a.at)).map(e=>({id:e.id,cells:[name(e.customerId),e.previousPlanName,
         allPlans.get(workspace.clubMembers.find(m=>m.id===e.memberId)?.planId??'')??'Plano indisponível',date(e.at),statusNames[e.movement??'CHANGE']]}));
     if (!from && !to && valid) {
       const changed = new Set(workspace.clubEvents.filter(e=>e.kind==='CHANGE').map(e=>e.memberId));
-      rows.push(...workspace.clubMembers.filter(m=>!changed.has(m.id)&&matches(m.customerId)&&(!plan||m.planId===plan)).map(m=>({id:`unchanged-${m.id}`,cells:[name(m.customerId),'Sem troca registrada','—',allPlans.get(m.planId)??'Plano indisponível','—','Sem troca registrada']})));
+      rows.push(...workspace.clubMembers.filter(m=>!changed.has(m.id)&&matches(m.customerId)&&(!plan||m.planId===plan)).map(m=>({id:`unchanged-${m.id}`,cells:[name(m.customerId),'Sem troca registrada',allPlans.get(m.planId)??'Plano indisponível','—','Sem troca registrada']})));
     }
     notes=<p className="small muted">Cada linha preserva uma troca. Sem período, assinantes sem trocas também aparecem. Upgrade e downgrade comparam os valores mensais no momento da alteração. Trocas anteriores sem histórico não são reconstruídas.</p>;
   } else if (report==='assinaturas-cancelados') {
@@ -111,7 +111,7 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
     {value('erro')&&<p role="alert" className="notice">Não foi possível concluir. Confira a situação do pagamento e os dados informados.</p>}
     <article className="card erp-workspace-card"><form method="get" action={path} className="erp-compact-form">
       {!quantity&&<><div className="grid grid-2"><label><span className="label">Data de início</span><input className="input" name="de" type="date" defaultValue={from}/></label><label><span className="label">Data final</span><input className="input" name="ate" type="date" defaultValue={to}/></label></div><Link href={`${path}?de=${month.slice(0,7)}-01&ate=${month.slice(0,7)}-${last}`}>Mês atual</Link></>}
-      <label><span className="label">Buscar pelo nome do cliente</span><input className="input" type="search" name="assinaturasQ" placeholder="Digite o nome do cliente" defaultValue={value('assinaturasQ')}/></label>
+      <label><span className="label">Buscar pelo nome do cliente</span><input className="input" type="search" name="assinaturasQ" list={report==='assinaturas-trocas' ? 'clientes-trocas-sugestoes' : undefined} autoComplete="off" placeholder="Digite o nome do cliente" defaultValue={value('assinaturasQ')}/>{report==='assinaturas-trocas'&&<datalist id="clientes-trocas-sugestoes">{customers.map(customer=><option key={customer.id} value={customer.name}/>)}</datalist>}</label>
       {!transactions&&<label><span className="label">Tipo de plano (opcional)</span><select className="select" name="assinaturasPlano" defaultValue={plan}><option value="">Todos os planos</option>{[...allPlans].map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>}
       {quantity&&<label><span className="label">Status do plano</span><select className="select" name="assinaturasStatus" defaultValue={status}><option value="">Todos os status</option>{['ACTIVE','OVERDUE','PAUSED','CANCELED'].map(s=><option key={s} value={s}>{statusNames[s]}</option>)}</select></label>}
       {report==='assinaturas-origem'&&<label><span className="label">Vendedor (opcional)</span><select className="select" name="vendedor" defaultValue={seller}><option value="">Todos os vendedores</option><option value="unknown">Sem vendedor registrado</option>{[...sellers].map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>}
