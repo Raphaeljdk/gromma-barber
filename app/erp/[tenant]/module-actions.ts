@@ -568,7 +568,7 @@ export async function payCommission(formData: FormData) {
       const fresh = await tx.barberShop.findUniqueOrThrow({ where: { id: shop.id }, select: { enabledFeatures: true } });
       const workspace = readWorkspace(fresh.enabledFeatures);
       const percent = workspace.commissionRules.find(rule => rule.userId === userId)?.percent ?? workspace.settings.defaultCommissionPercent;
-      const result = await calculateCommission(tx, shop.id, userId, start, endExclusive, workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions);
+      const result = await calculateCommission(tx, shop.id, userId, start, endExclusive, workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions, { workspace });
       if (result.net.lte(0) || !result.lines.length) throw new Error("NO_PAYABLE_COMMISSION");
       await tx.commissionPayment.create({ data: {
         barberShopId: shop.id, userId, periodStart, periodEnd, gross: result.gross, deductions: result.deductions, net: result.net,
