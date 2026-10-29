@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { prisma } from '@/lib/prisma';
 import type { ErpWorkspace } from '@/lib/erp-workspace';
 import { brl } from '@/lib/plans';
+import { effectiveClubMember } from '@/lib/club-lifecycle';
 import { SUBSCRIPTION_REPORTS, dateInPeriod, validPeriod, normalizeName, memberStatus, pageRows, salesRows } from '@/lib/subscription-reports';
 import { SectionPagination } from './section-pagination';
 import { requestClubRefund, confirmClubRefund } from '@/app/erp/[tenant]/subscription-actions';
@@ -35,7 +36,7 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
   workspace.clubSales.forEach(s=>{ if(!allPlans.has(s.planId)) allPlans.set(s.planId,s.planName); });
   workspace.clubEvents.forEach(e=>{ if(!allPlans.has(e.previousPlanId)) allPlans.set(e.previousPlanId,e.previousPlanName); });
   if (quantity) {
-    const members = workspace.clubMembers.map(m=>({ ...m, reportStatus: memberStatus(m,workspace,entries,now) }))
+    const members = workspace.clubMembers.map(m=>({ ...effectiveClubMember(m,now), reportStatus: memberStatus(effectiveClubMember(m,now),workspace,entries,now) }))
       .filter(m=>matches(m.customerId) && (!plan || m.planId===plan) && (!status || m.reportStatus===status));
     const active = members.filter(m=>m.reportStatus==='ACTIVE');
     const overdue = members.filter(m=>m.reportStatus==='OVERDUE');
@@ -50,20 +51,20 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
     rows=members.map(m=>({id:m.id,cells:[name(m.customerId),allPlans.get(m.planId)??'Plano indisponível',date(m.startedAt),date(m.nextBillingAt),statusNames[m.reportStatus]]}));
     notes=<p className="small muted">Os indicadores acompanham os filtros. A adimplência considera cobranças vinculadas em aberto e vencidas; assinaturas antigas sem vínculo usam o vencimento cadastrado. Pausados e cancelados não entram em adimplentes/inadimplentes.</p>;
   } else if (report==='assinaturas-trocas') {
-    columns=['Cliente','Plano anterior','Plano atual','Data da troca','Histórico de movimentação'];
+    columns=['Cliente','Plano anterior','Plano solicitado','Solicitado em','Vigência prevista','Situação / histórico'];
     rows=workspace.clubEvents.filter(e=>e.kind==='CHANGE' && matches(e.customerId) && (!plan || e.newPlanId===plan) && valid && dateInPeriod(e.at,from,to))
       .sort((a,b)=>b.at.localeCompare(a.at)).map(e=>({id:e.id,cells:[name(e.customerId),e.previousPlanName,
-        allPlans.get(workspace.clubMembers.find(m=>m.id===e.memberId)?.planId??'')??'Plano indisponível',date(e.at),statusNames[e.movement??'CHANGE']]}));
+        e.newPlanName??'Plano indisponível',date(e.at),date(e.effectiveAt??e.at),<span>{e.status==='SCHEDULED'?'Programada':e.status==='APPLIED'?'Aplicada':'Registrada'} · {statusNames[e.movement??'CHANGE']}{e.actor&&<small> · {e.actor}</small>}{e.reason&&<small> · Motivo: {e.reason}</small>}</span>]}));
     if (!from && !to && valid) {
       const changed = new Set(workspace.clubEvents.filter(e=>e.kind==='CHANGE').map(e=>e.memberId));
-      rows.push(...workspace.clubMembers.filter(m=>!changed.has(m.id)&&matches(m.customerId)&&(!plan||m.planId===plan)).map(m=>({id:`unchanged-${m.id}`,cells:[name(m.customerId),'Sem troca registrada',allPlans.get(m.planId)??'Plano indisponível','—','Sem troca registrada']})));
+      rows.push(...workspace.clubMembers.filter(m=>!changed.has(m.id)&&matches(m.customerId)&&(!plan||m.planId===plan)).map(m=>({id:`unchanged-${m.id}`,cells:[name(m.customerId),'Sem troca registrada',allPlans.get(m.planId)??'Plano indisponível','—','—','Sem troca registrada']})));
     }
     notes=<p className="small muted">Cada linha preserva uma troca. Sem período, assinantes sem trocas também aparecem. Upgrade e downgrade comparam os valores mensais no momento da alteração. Trocas anteriores sem histórico não são reconstruídas.</p>;
   } else if (report==='assinaturas-cancelados') {
     columns=['Cliente','Plano cancelado','Contratação','Cancelamento'];
     const recorded=new Set(workspace.clubEvents.filter(e=>e.kind==='CANCEL').map(e=>e.memberId));
-    const cancellations=[...workspace.clubEvents.filter(e=>e.kind==='CANCEL').map(e=>({id:e.id,memberId:e.memberId,customerId:e.customerId,planId:e.previousPlanId,planName:e.previousPlanName,at:e.at})),
-      ...workspace.clubMembers.filter(m=>m.status==='CANCELED'&&!recorded.has(m.id)).map(m=>({id:`legacy-${m.id}`,memberId:m.id,customerId:m.customerId,planId:m.planId,planName:allPlans.get(m.planId)??'Plano indisponível',at:m.canceledAt??''}))];
+    const cancellations=[...workspace.clubEvents.filter(e=>e.kind==='CANCEL' && (e.status!=='SCHEDULED' || (e.effectiveAt && new Date(e.effectiveAt)<=now))).map(e=>({id:e.id,memberId:e.memberId,customerId:e.customerId,planId:e.previousPlanId,planName:e.previousPlanName,at:e.effectiveAt??e.at})),
+      ...workspace.clubMembers.filter(m=>effectiveClubMember(m,now).status==='CANCELED'&&!recorded.has(m.id)).map(m=>({id:`legacy-${m.id}`,memberId:m.id,customerId:m.customerId,planId:m.planId,planName:allPlans.get(m.planId)??'Plano indisponível',at:m.canceledAt??m.cancelEffectiveAt??''}))];
     rows=cancellations.filter(c=>matches(c.customerId)&&(!plan||c.planId===plan)&&valid&&dateInPeriod(c.at||null,from,to)).sort((a,b)=>b.at.localeCompare(a.at)).map(c=>({id:c.id,cells:[name(c.customerId),c.planName,date(workspace.clubMembers.find(m=>m.id===c.memberId)?.startedAt),date(c.at)]}));
     notes=<p className="small muted">Cancelamentos antigos sem data aparecem apenas sem filtro de período. O histórico não é apagado por novas contratações.</p>;
   } else if (transactions) {
