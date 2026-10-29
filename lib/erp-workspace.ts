@@ -32,7 +32,7 @@ export type ClubEvent = {
   previousAmount: number | null; newPlanId?: string; newPlanName?: string; newAmount?: number;
   movement?: "UPGRADE" | "DOWNGRADE" | "CHANGE";
   effectiveAt?: string;
-  status?: "SCHEDULED" | "APPLIED";
+  status?: "SCHEDULED" | "APPLIED" | "SUPERSEDED";
   actor?: string;
   reason?: string;
 };
