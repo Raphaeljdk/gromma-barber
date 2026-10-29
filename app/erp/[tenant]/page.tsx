@@ -52,6 +52,7 @@ import { ErpOperationalSubpage } from "@/components/erp-operational-subpages";
 import { CustomerPurchaseHistory } from "@/components/customer-purchase-history";
 import { parseAgendaUnits } from "@/lib/agenda-unit-selection";
 import { readWorkspace } from "@/lib/erp-workspace";
+import { effectiveClubMember } from "@/lib/club-lifecycle";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
@@ -786,9 +787,9 @@ export async function TenantERPView({
       })
     : appointmentCustomers;
   const clubMemberRows = workspace.clubMembers.map((member) => ({
-    ...member,
+    ...effectiveClubMember(member, now),
     customer: memberCustomers.find((customer) => customer.id === member.customerId) ?? null,
-    plan: workspace.clubPlans.find((planItem) => planItem.id === member.planId) ?? null,
+    plan: workspace.clubPlans.find((planItem) => planItem.id === effectiveClubMember(member, now).planId) ?? null,
   }));
   const overdueClubMembers = clubMemberRows.filter(
     (member) => member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime(),
@@ -1482,8 +1483,10 @@ export async function TenantERPView({
                 <form action={createClubInvite} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Cliente</span><select className="select" name="customerId" required defaultValue=""><option value="" disabled>Selecione</option>{appointmentCustomers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><button className="btn secondary" type="submit">Gerar link individual</button></form>
               </details>}
               {/^[a-f0-9]{64}$/.test(valueOf("convite")) && canOperate && <div className="notice"><p>Link individual criado. Compartilhe apenas com o cliente correspondente.</p><a target="_blank" rel="noreferrer" href={`/clube/${encodeURIComponent(tenantCode)}/${valueOf("convite")}`}>Abrir contratação do cliente</a><p className="small muted">Copie o endereço do link para enviar ao cliente. Nenhuma mensagem foi enviada automaticamente.</p></div>}
+              {actionOk === "troca-programada" && <p className="notice">Troca de plano programada para o próximo vencimento.</p>}
+              {actionError === "motivo" && <p role="alert">Informe um motivo com pelo menos 5 caracteres.</p>}
               {actionError === "convite" && <p role="alert">Não foi possível criar o link. Confira o cliente selecionado.</p>}
-              {canManage && <details className="erp-quick-create"><summary>Trocar plano de um assinante</summary><form action={changeClubMemberPlan} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Assinante</span><select name="memberId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{clubMemberRows.filter(member => member.status !== "CANCELED").map(member => <option key={member.id} value={member.id}>{member.customer?.name ?? "Cliente"} — {member.plan?.name ?? "Plano removido"}</option>)}</select></label><label><span className="label">Novo plano</span><select name="planId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.filter(plan => plan.active).map(plan => <option key={plan.id} value={plan.id}>{plan.name} — {brl(plan.monthlyAmount)}</option>)}</select></label><p className="small muted">A troca não modifica cobranças já emitidas. Confira os próximos lançamentos antes de cobrar.</p><button className="btn" type="submit">Atualizar assinatura</button></form></details>}
+              {isOwner && <details className="erp-quick-create"><summary>Trocar plano de um assinante</summary><form action={changeClubMemberPlan} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Assinante</span><select name="memberId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{clubMemberRows.filter(member => member.status !== "CANCELED").map(member => <option key={member.id} value={member.id}>{member.customer?.name ?? "Cliente"} — {member.plan?.name ?? "Plano removido"}</option>)}</select></label><label><span className="label">Novo plano</span><select name="planId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.filter(plan => plan.active).map(plan => <option key={plan.id} value={plan.id}>{plan.name} — {brl(plan.monthlyAmount)}</option>)}</select></label><label><span className="label">Motivo da troca</span><input className="input" name="reason" required minLength={5} maxLength={600} placeholder="Motivo informado pelo assinante" /></label><p className="small muted">A troca será programada para o próximo vencimento, sem cobrança proporcional. As cobranças já emitidas são preservadas.</p><button className="btn" type="submit">Programar troca</button></form></details>}
               <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} className="erp-compact-form" style={{ marginTop: 16, marginBottom: 16 }}>
                 <label><span className="label">Buscar assinante pelo nome do cliente</span><input className="input" name="assinaturasQ" type="search" placeholder="Digite o nome do cliente" defaultValue={valueOf("assinaturasQ")} /></label>
                 <div className="grid grid-2">
@@ -1500,32 +1503,33 @@ export async function TenantERPView({
                   return (
                     <tr key={member.id}>
                       <td><strong>{member.customer?.name ?? "Cliente"}</strong></td>
-                      <td>{member.plan?.name ?? "Plano removido"}</td>
+                      <td>{member.plan?.name ?? "Plano removido"}{member.pendingPlanId && <div className="small muted">Troca programada: {workspace.clubPlans.find(p => p.id === member.pendingPlanId)?.name ?? "Plano indisponível"}</div>}{member.cancelEffectiveAt && member.status !== "CANCELED" && <div className="small muted">Cancelamento programado para {new Intl.DateTimeFormat("pt-BR").format(new Date(member.cancelEffectiveAt))}</div>}</td>
                       <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(member.nextBillingAt))}</td>
                       <td><span className={`badge ${overdue ? "rejected" : "approved"}`}>{overdue ? "Vencido" : member.status === "ACTIVE" ? "Ativo" : member.status}</span></td>
                       <td>
                         <div className="erp-row-actions">
-                          {canFinance && member.plan && member.status === "ACTIVE" && (
+                          {isOwner && member.plan && member.status === "ACTIVE" && (
                             <form action={generateClubCharge}>
                               <input type="hidden" name="tenantCode" value={tenantCode} />
                               <input type="hidden" name="memberId" value={member.id} />
                               <button className="btn secondary" type="submit">Cobrar</button>
                             </form>
                           )}
-                          {canManage && member.status !== "CANCELED" && (
+                          {isOwner && member.status !== "CANCELED" && (
                             <form action={updateClubMemberStatus}>
                               <input type="hidden" name="tenantCode" value={tenantCode} />
                               <input type="hidden" name="memberId" value={member.id} />
+                              <input className="input" name="reason" required minLength={5} placeholder="Motivo" aria-label="Motivo da pausa ou ativação" />
                               <button className="erp-table-quiet-action" type="submit" name="action" value={member.status === "PAUSED" ? "activate" : "pause"}>
                                 {member.status === "PAUSED" ? "Ativar" : "Pausar"}
                               </button>
                             </form>
                           )}
-                          {canManage && member.status !== "CANCELED" && (
+                          {isOwner && member.status !== "CANCELED" && !member.cancelEffectiveAt && (
                             <form action={updateClubMemberStatus}>
                               <input type="hidden" name="tenantCode" value={tenantCode} />
                               <input type="hidden" name="memberId" value={member.id} />
-                              <button className="erp-table-quiet-action" type="submit" name="action" value="cancel">Cancelar</button>
+                              <input className="input" name="reason" required minLength={5} placeholder="Motivo do cancelamento" aria-label="Motivo do cancelamento" /><button className="erp-table-quiet-action" type="submit" name="action" value="cancel">Programar cancelamento</button>
                             </form>
                           )}
                         </div>
