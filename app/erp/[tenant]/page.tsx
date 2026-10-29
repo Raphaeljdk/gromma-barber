@@ -850,7 +850,7 @@ export async function TenantERPView({
       const rule = workspace.commissionRules.find((item) => item.userId === user.id);
       const percent = rule?.percent ?? workspace.settings.defaultCommissionPercent;
       const precise = activeModule === "comissoes" && comissoesDe && comissoesAte && !invalidCommissionPeriod
-        ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions)
+        ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions, { workspace })
         : null;
       const grossCommission = precise ? Number(precise.gross) : (commissionByUser.get(user.id) ?? 0);
       const deductions = precise ? Number(precise.deductions) : workspace.deductions
