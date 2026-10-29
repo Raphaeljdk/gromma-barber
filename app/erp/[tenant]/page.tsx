@@ -1,3 +1,4 @@
+import { CommissionSelectionTable } from "@/components/commission-selection-table";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
@@ -1884,21 +1885,7 @@ export async function TenantERPView({
           {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
           {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
 
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Profissional</th><th>Comandas</th><th>Regra de serviços</th><th>Comissão bruta</th><th>Deduções do período</th><th>A receber (estimado)</th><th><div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><span>Ações</span>{canManage && commissionRows.some(row => row.netCommission > 0) && <DemoCommissionPay professional="Todos os profissionais com comissão" amount={brl(commissionRows.reduce((sum, row) => sum + row.netCommission, 0))} label="Pagar todos (simulação)" />}</div></th></tr></thead>
-              <tbody>{commissionRows.length ? commissionPageRows.map((row) => (
-                <tr key={row.user.id}>
-                  <td><strong>{row.user.name}</strong><div className="small muted">{ROLE_LABELS[row.user.role] ?? row.user.role}</div></td>
-                  <td>{brl(row.production)}</td>
-                  <td>{row.percent.toFixed(2)}%</td>
-                  <td>{brl(row.grossCommission)}</td>
-                  <td>{brl(row.deductions)}</td>
-                  <td><strong>{brl(row.netCommission)}</strong></td><td>{canManage && row.netCommission > 0 ? <DemoCommissionPay professional={row.user.name} amount={brl(row.netCommission)} /> : <span className="small muted">Sem valor disponível</span>}</td>
-                </tr>
-              )) : <tr><td colSpan={7} className="muted">Nenhum profissional disponível.</td></tr>}</tbody>
-            </table>
-          </div>
+          <CommissionSelectionTable canManage={canManage} rows={commissionPageRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission }))} />
           <p className="erp-integration-note">Esta tela é uma prévia de comissões de serviços vinculados a atendimentos. O botão Pagar é fictício: não registra quitação, não altera caixa nem movimenta dinheiro. Assinaturas e produtos ainda não entram nesta apuração.</p>
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} searchParams={qs} param="comissoesPage" page={comissoesPage} total={commissionRows.length} pageSize={pageSize} label="profissionais" />
         </section>}
