@@ -260,18 +260,20 @@ export async function processClubBilling(formData: FormData) {
 export async function generateClubCharge(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
-  if (!allowed(viewer, FINANCE_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   try {
     await prisma.$transaction(async tx => {
       const fresh = await tx.barberShop.findUnique({ where: { id: shop.id } });
       if (!fresh) throw new Error("Barbearia indisponível");
       const workspace = readWorkspace(fresh.enabledFeatures);
+      const now = new Date();
+      applyClubLifecycle(workspace, now);
       const member = workspace.clubMembers.find(m => m.id === value(formData, "memberId", 80));
       const plan = workspace.clubPlans.find(p => p.id === member?.planId && p.active);
       if (!member || !plan || member.status !== "ACTIVE") throw new Error("Assinatura inválida");
       const customer = await tx.customer.findFirst({ where: { id: member.customerId, barberShopId: shop.id }, select: { name: true } });
       if (!customer) throw new Error("Cliente indisponível");
-      const now = new Date();
+      if (new Date(member.nextBillingAt).getTime() > now.getTime()) throw new Error("Ciclo ainda não venceu");
       const current = workspace.clubCharges.filter(c => c.memberId === member.id && new Date(c.periodEnd) > now);
       if (current.length) {
         const existing = await tx.financialEntry.findFirst({ where: { barberShopId: shop.id, id: { in: current.map(c => c.entryId) }, status: { in: ["PENDING", "PAID"] } } });
