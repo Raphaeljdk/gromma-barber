@@ -31,6 +31,7 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
   const refunds = new Map(workspace.clubRefunds.map(r=>[r.entryId,r]));
   let columns: string[] = [], rows: { id: string; cells: ReactNode[] }[] = [];
   let summary: ReactNode = null;
+  let attendanceSummary: ReactNode = null;
   let notes: ReactNode = null;
   const allPlans = new Map(workspace.clubPlans.map(p=>[p.id,p.name]));
   workspace.clubSales.forEach(s=>{ if(!allPlans.has(s.planId)) allPlans.set(s.planId,s.planName); });
@@ -47,6 +48,38 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
       <article><span>Clientes adimplentes</span><strong>{new Set(active.map(m=>m.customerId).filter(id=>!overdue.some(m=>m.customerId===id))).size}</strong></article>
       <article><span>Clientes inadimplentes</span><strong>{new Set(overdue.map(m=>m.customerId)).size}</strong></article>
     </div>;
+    const localDay = new Intl.DateTimeFormat('en-CA',{ timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit' }).format(now);
+    const attendanceFrom = from || localDay.slice(0,7)+'-01';
+    const attendanceTo = to || localDay;
+    const startAt = new Date(attendanceFrom+'T00:00:00-03:00');
+    const endAt = new Date(new Date(attendanceTo+'T00:00:00-03:00').getTime()+86400000);
+    if(valid && startAt<=endAt && endAt.getTime()-startAt.getTime()<=367*86400000) {
+      const duration = endAt.getTime()-startAt.getTime();
+      const [appointments, previous] = await Promise.all([
+        prisma.appointment.findMany({where:{barberShopId:shopId,startsAt:{gte:startAt,lt:endAt}},
+          select:{customerId:true,startsAt:true,status:true,command:{select:{id:true,status:true,total:true}}}}),
+        prisma.appointment.findMany({where:{barberShopId:shopId,startsAt:{gte:new Date(startAt.getTime()-duration),lt:startAt}},
+          select:{customerId:true,startsAt:true,status:true,command:{select:{id:true,status:true,total:true}}}}),
+      ]);
+      const receiptIds = new Set(workspace.commandPayments.map(payment=>payment.commandId));
+      const historicalMember = (customerId:string|null,at:Date) => customerId ? members.find(m=>m.customerId===customerId &&
+        new Date(m.startedAt)<=at && (!m.canceledAt||new Date(m.canceledAt)>at) && (!m.cancelEffectiveAt||new Date(m.cancelEffectiveAt)>at)) : undefined;
+      const isCompleted = (appointment:typeof appointments[number]) => appointment.status==='COMPLETED' &&
+        appointment.command?.status==='CLOSED' && receiptIds.has(appointment.command.id);
+      const confirmed = appointments.filter(isCompleted);
+      const attended = confirmed.filter(appointment=>Boolean(historicalMember(appointment.customerId,appointment.startsAt)));
+      const beforeAttended = previous.filter(appointment=>isCompleted(appointment) && Boolean(historicalMember(appointment.customerId,appointment.startsAt)));
+      const distinct = new Set(attended.map(a=>a.customerId)).size;
+      const grossPaid = attended.reduce((sum,appointment)=>sum+Number(appointment.command?.total??0),0);
+      const participation = confirmed.length ? 100*attended.length/confirmed.length : 0;
+      attendanceSummary=<div className="erp-kpi-row">
+        <article><span>Atendimentos de assinantes</span><strong>{attended.length}</strong><small>{attendanceFrom} a {attendanceTo}</small></article>
+        <article><span>Assinantes distintos atendidos</span><strong>{distinct}</strong></article>
+        <article><span>Participação na agenda concluída</span><strong>{participation.toFixed(1)}%</strong><small>Atendimentos de assinantes / atendimentos recebidos</small></article>
+        <article><span>Ticket médio de comandas de assinantes</span><strong>{brl(attended.length?grossPaid/attended.length:0)}</strong></article>
+        <article><span>Período anterior equivalente</span><strong>{beforeAttended.length} atendimento(s)</strong><small>Atual: {attended.length} · Anterior: {beforeAttended.length}</small></article>
+      </div>;
+    }
     columns=['Cliente','Tipo de plano','Data de contratação','Data de vencimento','Status do plano'];
     rows=members.map(m=>({id:m.id,cells:[name(m.customerId),allPlans.get(m.planId)??'Plano indisponível',date(m.startedAt),date(m.nextBillingAt),statusNames[m.reportStatus]]}));
     notes=<p className="small muted">Os indicadores acompanham os filtros. A adimplência considera cobranças vinculadas em aberto e vencidas; assinaturas antigas sem vínculo usam o vencimento cadastrado. Pausados e cancelados não entram em adimplentes/inadimplentes.</p>;
@@ -134,7 +167,7 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
     {value('ok')==='estorno-confirmado'&&<p role="status" className="notice">Devolução registrada no Financeiro. Pagamento original preservado.</p>}
     {value('erro')&&<p role="alert" className="notice">Não foi possível concluir. Confira a situação do pagamento e os dados informados.</p>}
     <article className="card erp-workspace-card"><form method="get" action={path} className="erp-compact-form">
-      {!quantity&&<><div className="grid grid-2"><label><span className="label">Data de início</span><input className="input" name="de" type="date" defaultValue={from}/></label><label><span className="label">Data final</span><input className="input" name="ate" type="date" defaultValue={to}/></label></div><Link href={`${path}?de=${month.slice(0,7)}-01&ate=${month.slice(0,7)}-${last}`}>Mês atual</Link></>}
+      {<><div className="grid grid-2"><label><span className="label">Data de início</span><input className="input" name="de" type="date" defaultValue={from}/></label><label><span className="label">Data final</span><input className="input" name="ate" type="date" defaultValue={to}/></label></div><Link href={`${path}?de=${month.slice(0,7)}-01&ate=${month.slice(0,7)}-${last}`}>Mês atual</Link></>}
       {report!=='assinaturas-origem'&&      <label><span className="label">Buscar pelo nome do cliente</span><input className="input" type="search" name="assinaturasQ" list={report==='assinaturas-trocas' ? 'clientes-trocas-sugestoes' : undefined} autoComplete="off" placeholder="Digite o nome do cliente" defaultValue={value('assinaturasQ')}/>{report==='assinaturas-trocas'&&<datalist id="clientes-trocas-sugestoes">{customers.map(customer=><option key={customer.id} value={customer.name}/>)}</datalist>}</label>}
 
       {!transactions&&<label><span className="label">Tipo de plano (opcional)</span><select className="select" name="assinaturasPlano" defaultValue={plan}><option value="">Todos os planos</option>{[...allPlans].map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>}
@@ -143,7 +176,7 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
       <div className="erp-row-actions"><button className="btn" type="submit">Buscar e filtrar</button><Link className="btn secondary" href={path}>Limpar filtros</Link></div>
     </form></article>
     {!valid&&<p role="alert" className="notice">Período inválido: informe datas válidas e início anterior ou igual à data final.</p>}
-    {summary}{notes}{report!=='assinaturas-origem'&&<article className="card erp-workspace-card"><p aria-live="polite">{rows.length} registro(s) encontrado(s)</p><div className="table-wrap"><table><thead><tr>{columns.map(c=><th key={c}>{c}</th>)}</tr></thead><tbody>{paginated.rows.length?paginated.rows.map(r=><tr key={r.id}>{r.cells.map((cell,i)=><td key={i}>{cell}</td>)}</tr>):<tr><td colSpan={columns.length}>Nenhum registro encontrado para os filtros selecionados.</td></tr>}</tbody></table></div>
+    {summary}{attendanceSummary}{notes}{report!=='assinaturas-origem'&&<article className="card erp-workspace-card"><p aria-live="polite">{rows.length} registro(s) encontrado(s)</p><div className="table-wrap"><table><thead><tr>{columns.map(c=><th key={c}>{c}</th>)}</tr></thead><tbody>{paginated.rows.length?paginated.rows.map(r=><tr key={r.id}>{r.cells.map((cell,i)=><td key={i}>{cell}</td>)}</tr>):<tr><td colSpan={columns.length}>Nenhum registro encontrado para os filtros selecionados.</td></tr>}</tbody></table></div>
       <SectionPagination basePath={path} searchParams={qs} param="assinaturasPage" page={paginated.page} total={rows.length} label="registros"/>
     </article>}
   </section>;
