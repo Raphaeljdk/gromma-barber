@@ -326,6 +326,8 @@ export async function TenantERPView({
   const workspace = readWorkspace(shop.enabledFeatures);
   const activeAgendaUnitIds = shop.units.filter(unit => unit.active).map(unit => unit.id);
   const agendaSelectedUnitIds = parseAgendaUnits(valueOf("agendaUnits"), activeAgendaUnitIds, agendaUnit);
+  const comissoesUnidadeRaw = valueOf("comissoesUnidade");
+  const comissoesUnidade = shop.units.some(unit => unit.id === comissoesUnidadeRaw && unit.active) ? comissoesUnidadeRaw : "";
   const agendaAvailableProfessionalIds = [
     ...shop.users.filter(user =>
       ["OWNER", "MANAGER", "BARBER"].includes(user.role) &&
@@ -852,15 +854,18 @@ export async function TenantERPView({
       const precise = activeModule === "comissoes" && comissoesDe && comissoesAte && !invalidCommissionPeriod
         ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions, { workspace })
         : null;
-      const grossCommission = precise ? Number(precise.gross) : (commissionByUser.get(user.id) ?? 0);
+      const grossCommission = precise ? Number(precise.gross) : (activeModule === "comissoes" ? 0 : (commissionByUser.get(user.id) ?? 0));
       const deductions = precise ? Number(precise.deductions) : workspace.deductions
         .filter((item) => item.userId === user.id)
         .reduce((sum, item) => sum + item.amount, 0);
       return {
         user,
-        production,
+        production: precise ? precise.lines.reduce((total, line) => total + Number(line.base), 0) : (activeModule === "comissoes" ? 0 : production),
         percent,
         grossCommission,
+        serviceCommission: Number(precise?.categories.SERVICE ?? 0),
+        productCommission: Number(precise?.categories.PRODUCT ?? 0),
+        subscriptionCommission: Number(precise?.categories.SUBSCRIPTION ?? 0),
         deductions,
         netCommission: Math.max(0, grossCommission - deductions),
       };
@@ -921,10 +926,7 @@ export async function TenantERPView({
     (promocoesPage - 1) * pageSize,
     promocoesPage * pageSize,
   );
-  const commissionPageRows = commissionRows.slice(
-    (comissoesPage - 1) * pageSize,
-    comissoesPage * pageSize,
-  );
+  const filteredCommissionRows = commissionRows.filter(row => !comissoesUnidade || row.user.unitId === comissoesUnidade);
   const documentPageRows = workspace.documents.slice(
     (documentosPage - 1) * pageSize,
     documentosPage * pageSize,
@@ -1871,16 +1873,17 @@ export async function TenantERPView({
               <label><span className="label">Data inicial</span><input className="input" type="date" name="comissoesDe" defaultValue={comissoesDe} /></label>
               <label><span className="label">Data final</span><input className="input" type="date" name="comissoesAte" defaultValue={comissoesAte} /></label>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período</button></div>
+            <label><span className="label">Unidades</span><select name="comissoesUnidade" className="select" defaultValue={comissoesUnidade}><option value="">Todas as unidades</option>{shop.units.filter(unit => unit.active).map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período e unidade</button></div>
             {invalidCommissionPeriod && <p className="notice erp-inline-notice error-notice">A data inicial não pode ser posterior à data final. Corrija o período para filtrar.</p>}
             <p className="small muted">Selecione o período para consultar as comissões. O botão Pagar é apenas uma simulação e não registra pagamentos. Sem período selecionado, os valores são indicadores históricos limitados.</p>
           </form>
 
           <div className="erp-kpi-row">
-            <article><span>Produção fechada</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.production, 0))}</strong><small>comandas concluídas</small></article>
-            <article><span>Comissão bruta</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.grossCommission, 0))}</strong><small>pelas regras atuais</small></article>
-            <article><span>Deduções</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.deductions, 0))}</strong><small>ajustes registrados</small></article>
-            <article><span>Comissão líquida</span><strong>{brl(commissionRows.reduce((sum, row) => sum + row.netCommission, 0))}</strong><small>estimativa operacional</small></article>
+            <article><span>Produção fechada</span><strong>{brl(filteredCommissionRows.reduce((sum, row) => sum + row.production, 0))}</strong><small>comandas concluídas</small></article>
+            <article><span>Comissão bruta</span><strong>{brl(filteredCommissionRows.reduce((sum, row) => sum + row.grossCommission, 0))}</strong><small>pelas regras atuais</small></article>
+            <article><span>Deduções</span><strong>{brl(filteredCommissionRows.reduce((sum, row) => sum + row.deductions, 0))}</strong><small>ajustes registrados</small></article>
+            <article><span>Comissão líquida</span><strong>{brl(filteredCommissionRows.reduce((sum, row) => sum + row.netCommission, 0))}</strong><small>estimativa operacional</small></article>
           </div>
 
           {actionOk === "pagamento" && <div className="notice erp-inline-notice success">Pagamento registrado e período bloqueado contra duplicidade.</div>}
@@ -1889,9 +1892,9 @@ export async function TenantERPView({
           {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
           {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
 
-          <CommissionSelectionTable canManage={canManage} rows={commissionPageRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission }))} />
-          <p className="erp-integration-note">Esta tela é uma prévia de comissões de serviços vinculados a atendimentos. O botão Pagar é fictício: não registra quitação, não altera caixa nem movimenta dinheiro. Assinaturas e produtos ainda não entram nesta apuração.</p>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} searchParams={qs} param="comissoesPage" page={comissoesPage} total={commissionRows.length} pageSize={pageSize} label="profissionais" />
+          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
+          <p className="erp-integration-note">Esta apuração considera comandas fechadas com recibo registrado e primeira cobrança de assinatura com baixa no Financeiro. Descontos são rateados; cancelamentos e comandas sem pagamento comprovado ficam de fora. Produtos da comanda são atribuídos ao profissional do atendimento. O botão Pagar é simulado: não altera caixa nem movimenta dinheiro.</p>
+
         </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
