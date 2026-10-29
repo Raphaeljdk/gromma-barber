@@ -1,5 +1,7 @@
 "use server";
 
+import { appendClubCharge, registerClubMember } from "@/lib/club-operations";
+import { movementKind } from "@/lib/subscription-reports";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { agendaReturnHref, isAgendaDate } from "@/lib/agenda";
 
@@ -120,7 +122,7 @@ export async function saveClubPlan(formData: FormData) {
     redirect(`${path}?erro=banco`);
   }
 
-  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=plano`);
 }
 
@@ -144,7 +146,7 @@ export async function editClubPlan(formData: FormData) {
       plan.benefits = benefits;
     });
   } catch (error) { console.error("Failed to edit club plan", error); redirect(`${path}?erro=plano`); }
-  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=plano-editado`);
 }
 
@@ -159,10 +161,17 @@ export async function changeClubMemberPlan(formData: FormData) {
       const member = workspace.clubMembers.find(item => item.id === memberId);
       const plan = workspace.clubPlans.find(item => item.id === planId && item.active);
       if (!member || !plan || member.status === "CANCELED") throw new Error("Invalid subscription change");
+      if (member.planId === plan.id) throw new Error("Selecione um plano diferente");
+      const old = workspace.clubPlans.find(p => p.id === member.planId);
+      workspace.clubEvents.push({ id: workspaceId("change"), memberId: member.id, customerId: member.customerId,
+        at: new Date().toISOString(), kind: "CHANGE", previousPlanId: member.planId,
+        previousPlanName: old?.name ?? "Plano indisponível", previousAmount: old?.monthlyAmount ?? null,
+        newPlanId: plan.id, newPlanName: plan.name, newAmount: plan.monthlyAmount,
+        movement: movementKind(old?.monthlyAmount ?? null, plan.monthlyAmount) });
       member.planId = plan.id;
     });
   } catch (error) { console.error("Failed to change member plan", error); redirect(`${path}?erro=assinante`); }
-  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=plano-alterado`);
 }
 
@@ -170,68 +179,12 @@ export async function addClubMember(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
   if (!allowed(viewer, OPERATION_ROLES)) redirect(`${path}?erro=permissao`);
-
-  const customerId = value(formData, "customerId", 80);
-  const planId = value(formData, "planId", 80);
-  const chargeNow = boolValue(formData, "chargeNow");
-
-  const customer = await prisma.customer.findFirst({
-    where: { id: customerId, barberShopId: shop.id, active: true },
-    select: { id: true, name: true },
-  });
-  const workspace = readWorkspace(shop.enabledFeatures);
-  const plan = workspace.clubPlans.find((item) => item.id === planId && item.active);
-
-  if (!customer || !plan) redirect(`${path}?erro=assinante`);
-
-  const startedAt = new Date();
-  const nextBillingAt = new Date(startedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
-
   try {
-    await prisma.$transaction(async (tx) => {
-      const fresh = await tx.barberShop.findUnique({ where: { id: shop.id } });
-      if (!fresh) throw new Error("Tenant not found");
-
-      const next = cloneWorkspace(readWorkspace(fresh.enabledFeatures));
-      const existing = next.clubMembers.find(
-        (item) => item.customerId === customer.id && item.status === "ACTIVE",
-      );
-      if (existing) throw new Error("Customer already subscribed");
-
-      next.clubMembers.unshift({
-        id: workspaceId("member"),
-        customerId: customer.id,
-        planId: plan.id,
-        status: "ACTIVE",
-        startedAt: startedAt.toISOString(),
-        nextBillingAt: nextBillingAt.toISOString(),
-      });
-
-      await tx.barberShop.update({
-        where: { id: shop.id },
-        data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, next) },
-      });
-
-      if (chargeNow && plan.monthlyAmount > 0) {
-        await tx.financialEntry.create({
-          data: {
-            barberShopId: shop.id,
-            type: "RECEIVABLE",
-            status: "PENDING",
-            category: "Clube de assinaturas",
-            description: `${plan.name} · ${customer.name}`,
-            amount: plan.monthlyAmount,
-            dueDate: startedAt,
-          },
-        });
-      }
-    });
-  } catch (error) {
-    console.error("Failed to add club member", error);
-    redirect(`${path}?erro=assinante`);
-  }
-
-  revalidatePath(path);
+    await prisma.$transaction(tx => registerClubMember(tx, shop.id, value(formData, "customerId", 80),
+      value(formData, "planId", 80), value(formData, "sellerId", 80), boolValue(formData, "chargeNow"), "STAFF"),
+      { isolationLevel: "Serializable" });
+  } catch (error) { console.error("Failed to add subscriber", error); redirect(`${path}?erro=assinante`); }
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=assinante`);
 }
 
@@ -266,22 +219,10 @@ export async function processClubBilling(formData: FormData) {
         const plan = workspace.clubPlans.find((item) => item.id === member.planId && item.active);
         if (!plan || plan.monthlyAmount <= 0) continue;
 
-        await tx.financialEntry.create({
-          data: {
-            barberShopId: shop.id,
-            type: "RECEIVABLE",
-            status: "PENDING",
-            category: "Clube de assinaturas",
-            description: `${plan.name} · ${customerById.get(member.customerId) ?? "Cliente"}`,
-            amount: plan.monthlyAmount,
-            dueDate: now,
-          },
-        });
-
         const currentDue = new Date(member.nextBillingAt);
-        const nextDue = new Date(
-          Math.max(currentDue.getTime(), now.getTime()) + 30 * 24 * 60 * 60 * 1000,
-        );
+        const nextDue = new Date(Math.max(currentDue.getTime(), now.getTime()) + 30 * 86400000);
+        await appendClubCharge(tx, shop.id, workspace, member, plan,
+          customerById.get(member.customerId) ?? "Cliente", currentDue, nextDue);
         member.nextBillingAt = nextDue.toISOString();
       }
 
@@ -289,13 +230,13 @@ export async function processClubBilling(formData: FormData) {
         where: { id: shop.id },
         data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) },
       });
-    });
+    }, { isolationLevel: "Serializable" });
   } catch (error) {
     console.error("Failed to process club billing", error);
     redirect(`${path}?erro=recorrencia`);
   }
 
-  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   revalidatePath(modulePath(tenantCode, "financeiro"));
   redirect(`${path}?ok=recorrencia`);
 }
@@ -304,54 +245,29 @@ export async function generateClubCharge(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
   if (!allowed(viewer, FINANCE_ROLES)) redirect(`${path}?erro=permissao`);
-
-  const memberId = value(formData, "memberId", 80);
-  const workspace = readWorkspace(shop.enabledFeatures);
-  const member = workspace.clubMembers.find((item) => item.id === memberId);
-  const plan = member ? workspace.clubPlans.find((item) => item.id === member.planId) : null;
-  const customer = member
-    ? await prisma.customer.findFirst({
-        where: { id: member.customerId, barberShopId: shop.id },
-        select: { name: true },
-      })
-    : null;
-
-  if (!member || !plan || !customer) redirect(`${path}?erro=cobranca`);
-
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.financialEntry.create({
-        data: {
-          barberShopId: shop.id,
-          type: "RECEIVABLE",
-          status: "PENDING",
-          category: "Clube de assinaturas",
-          description: `${plan.name} · ${customer.name}`,
-          amount: plan.monthlyAmount,
-          dueDate: new Date(),
-        },
-      });
-
+    await prisma.$transaction(async tx => {
       const fresh = await tx.barberShop.findUnique({ where: { id: shop.id } });
-      if (!fresh) throw new Error("Tenant not found");
-      const next = cloneWorkspace(readWorkspace(fresh.enabledFeatures));
-      const target = next.clubMembers.find((item) => item.id === member.id);
-      if (target) {
-        target.nextBillingAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        target.status = "ACTIVE";
+      if (!fresh) throw new Error("Barbearia indisponível");
+      const workspace = readWorkspace(fresh.enabledFeatures);
+      const member = workspace.clubMembers.find(m => m.id === value(formData, "memberId", 80));
+      const plan = workspace.clubPlans.find(p => p.id === member?.planId && p.active);
+      if (!member || !plan || member.status !== "ACTIVE") throw new Error("Assinatura inválida");
+      const customer = await tx.customer.findFirst({ where: { id: member.customerId, barberShopId: shop.id }, select: { name: true } });
+      if (!customer) throw new Error("Cliente indisponível");
+      const now = new Date();
+      const current = workspace.clubCharges.filter(c => c.memberId === member.id && new Date(c.periodEnd) > now);
+      if (current.length) {
+        const existing = await tx.financialEntry.findFirst({ where: { barberShopId: shop.id, id: { in: current.map(c => c.entryId) }, status: { in: ["PENDING", "PAID"] } } });
+        if (existing) throw new Error("Já existe cobrança para o ciclo atual");
       }
-      await tx.barberShop.update({
-        where: { id: shop.id },
-        data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, next) },
-      });
-    });
-  } catch (error) {
-    console.error("Failed to generate club charge", error);
-    redirect(`${path}?erro=cobranca`);
-  }
-
-  revalidatePath(path);
-  revalidatePath(modulePath(tenantCode, "financeiro"));
+      const next = new Date(now.getTime() + 30 * 86400000);
+      await appendClubCharge(tx, shop.id, workspace, member, plan, customer.name, now, next);
+      member.nextBillingAt = next.toISOString();
+      await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) } });
+    }, { isolationLevel: "Serializable" });
+  } catch (error) { console.error("Failed to generate club charge", error); redirect(`${path}?erro=cobranca`); }
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=cobranca`);
 }
 
@@ -800,6 +716,15 @@ export async function updateClubMemberStatus(formData: FormData) {
     await persistWorkspace(shop, (workspace) => {
       const member = workspace.clubMembers.find((item) => item.id === memberId);
       if (!member) throw new Error("Member not found");
+      if (member.status === status) return;
+      if (member.status === "CANCELED") throw new Error("Crie uma nova contratação para um cliente cancelado");
+      if (status === "CANCELED") {
+        const plan = workspace.clubPlans.find(p => p.id === member.planId);
+        member.canceledAt = new Date().toISOString();
+        workspace.clubEvents.push({ id: workspaceId("cancel"), memberId: member.id, customerId: member.customerId,
+          at: member.canceledAt, kind: "CANCEL", previousPlanId: member.planId,
+          previousPlanName: plan?.name ?? "Plano indisponível", previousAmount: plan?.monthlyAmount ?? null });
+      }
       member.status = status;
       if (status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < Date.now()) {
         member.nextBillingAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -810,7 +735,7 @@ export async function updateClubMemberStatus(formData: FormData) {
     redirect(`${path}?erro=assinante-status`);
   }
 
-  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=assinante-status`);
 }
 

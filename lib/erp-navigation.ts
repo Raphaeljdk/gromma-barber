@@ -77,12 +77,12 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
       { id: "gerar-comissao", label: "Gerar comissão", route: "comissoes" },
       { id: "relatorios", label: "Relatórios", route: "relatorios", children: [
         { id: "relatorios-assinaturas", label: "Assinaturas", children: [
-          { id: "rel-ass-troca", label: "Troca de assinatura" },
-          { id: "rel-ass-cancelados", label: "Cancelados por período" },
-          { id: "rel-ass-transacoes", label: "Históricos de transações" },
+          { id: "rel-ass-troca", label: "Troca de assinatura", route: "assinaturas-trocas" },
+          { id: "rel-ass-cancelados", label: "Cancelados por período", route: "assinaturas-cancelados" },
+          { id: "rel-ass-transacoes", label: "Históricos de transações", route: "assinaturas-transacoes" },
           { id: "rel-ass-quantidade", label: "Quantidade de assinantes", route: "assinantes" },
-          { id: "rel-ass-vendas-novas", label: "Vendas novas por período" },
-          { id: "rel-ass-vendas-origem", label: "Vendas por origem" },
+          { id: "rel-ass-vendas-novas", label: "Vendas novas por período", route: "assinaturas-vendas" },
+          { id: "rel-ass-vendas-origem", label: "Vendas por origem", route: "assinaturas-origem" },
           { id: "rel-ass-pontos", label: "Resgate de pontos" },
         ] },
         { id: "relatorios-financeiro", label: "Financeiro", children: [

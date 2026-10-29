@@ -18,6 +18,30 @@ export type ClubMemberConfig = {
   status: "ACTIVE" | "PAST_DUE" | "PAUSED" | "CANCELED";
   startedAt: string;
   nextBillingAt: string;
+  canceledAt?: string;
+};
+
+export type ClubEvent = {
+  id: string; memberId: string; customerId: string; at: string;
+  kind: "CHANGE" | "CANCEL"; previousPlanId: string; previousPlanName: string;
+  previousAmount: number | null; newPlanId?: string; newPlanName?: string; newAmount?: number;
+  movement?: "UPGRADE" | "DOWNGRADE" | "CHANGE";
+};
+export type ClubSale = {
+  id: string; memberId: string; customerId: string; planId: string; planName: string;
+  amount: number; at: string; sellerId: string | null; sellerName: string;
+  source: "STAFF" | "CUSTOMER";
+};
+export type ClubCharge = {
+  entryId: string; memberId: string; customerId: string; planId: string; planName: string;
+  startedAt: string; periodStart: string; periodEnd: string;
+};
+export type ClubRefund = {
+  id: string; entryId: string; requestedAt: string; reason: string;
+  status: "REQUESTED" | "COMPLETED"; completedAt?: string; expenseId?: string;
+};
+export type ClubInvite = {
+  hash: string; customerId: string; expiresAt: string; usedAt?: string;
 };
 
 export type AudienceRule = "ALL" | "INACTIVE_30" | "INACTIVE_60" | "INACTIVE_90" | "BIRTHDAY" | "CLUB";
@@ -129,6 +153,11 @@ export type OperationalSettings = {
 };
 
 export type ErpWorkspace = {
+  clubEvents: ClubEvent[];
+  clubSales: ClubSale[];
+  clubCharges: ClubCharge[];
+  clubRefunds: ClubRefund[];
+  clubInvites: ClubInvite[];
   clubPlans: ClubPlanConfig[];
   clubMembers: ClubMemberConfig[];
   campaigns: CampaignConfig[];
@@ -152,6 +181,11 @@ export type ErpWorkspace = {
 };
 
 export const DEFAULT_WORKSPACE: ErpWorkspace = {
+  clubEvents: [],
+  clubSales: [],
+  clubCharges: [],
+  clubRefunds: [],
+  clubInvites: [],
   clubPlans: [],
   clubMembers: [],
   campaigns: [],
@@ -200,6 +234,11 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
   const settings = record(operations.settings);
 
   return {
+    clubEvents: array<ClubEvent>(operations.clubEvents),
+    clubSales: array<ClubSale>(operations.clubSales),
+    clubCharges: array<ClubCharge>(operations.clubCharges),
+    clubRefunds: array<ClubRefund>(operations.clubRefunds),
+    clubInvites: array<ClubInvite>(operations.clubInvites),
     clubPlans: array<ClubPlanConfig>(operations.clubPlans),
     clubMembers: array<ClubMemberConfig>(operations.clubMembers),
     campaigns: array<CampaignConfig>(operations.campaigns),
