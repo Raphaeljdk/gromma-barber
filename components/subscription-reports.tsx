@@ -91,12 +91,32 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
     notes=<p className="small muted">O período usa a data da captura/baixa para pagamentos e a emissão para cobranças pendentes. Valores pagos manualmente aparecem como baixa registrada. Sem gateway conectado, nenhum estorno bancário é automático. A confirmação cria uma saída compensatória e preserva o pagamento original. Cobranças antigas sem vínculo mantêm sua descrição e valores.</p>;
   } else {
     const sales=salesRows(workspace).filter(s=>valid&&dateInPeriod(s.at,from,to)&&matches(s.customerId)&&(!plan||s.planId===plan)&&(!seller||(s.sellerId??'unknown')===seller)).sort((a,b)=>b.at.localeCompare(a.at));
-    columns=['Cliente','Tipo de plano','Data da compra','Valor contratado','Vendedor / origem'];
-    rows=sales.map(s=>({id:s.id,cells:[name(s.customerId),s.planName,date(s.at),s.amount===null?'Não registrado':brl(s.amount),s.sellerName]}));
+    columns=report==='assinaturas-origem' ? ['Cliente','Tipo de plano','Data da compra','Valor contratado','Vendedor'] : ['Cliente','Tipo de plano','Data da compra','Valor contratado'];
+    rows=report==='assinaturas-origem' ? [] : sales.map(s=>({id:s.id,cells:[name(s.customerId),s.planName,date(s.at),s.amount===null?'Não registrado':brl(s.amount)]}));
     if(report==='assinaturas-origem') {
-      const groups=new Map<string,{name:string;count:number;amount:number;unknown:number}>();
-      for(const s of sales){const key=s.sellerId??'unknown';const g=groups.get(key)??{name:s.sellerId?s.sellerName:'Sem vendedor registrado',count:0,amount:0,unknown:0};g.count++;g.amount+=s.amount??0;g.unknown+=s.amount===null?1:0;groups.set(key,g);}
-      summary=<article className="card erp-workspace-card"><h3>Vendas por vendedor no período</h3><div className="table-wrap"><table><thead><tr><th>Vendedor</th><th>Planos vendidos</th><th>Valor total registrado</th><th>Vendas sem valor histórico</th></tr></thead><tbody>{[...groups.entries()].map(([id,g])=><tr key={id}><td>{g.name}</td><td>{g.count}</td><td>{brl(g.amount)}</td><td>{g.unknown}</td></tr>)}</tbody></table></div></article>;
+      const groups=new Map<string,{name:string;items:typeof sales;amount:number;unknown:number}>();
+      for(const sale of sales){
+        const key=sale.sellerId??'unknown';
+        const group=groups.get(key)??{name:sale.sellerId?sale.sellerName:'Sem vendedor registrado',items:[],amount:0,unknown:0};
+        group.items.push(sale);
+        group.amount+=sale.amount??0;
+        if(sale.amount===null)group.unknown++;
+        groups.set(key,group);
+      }
+      summary=<div className="erp-report-seller-groups" style={{display:'grid',gap:16}}>
+        <div className="erp-kpi-row">
+          <article><span>Vendas no período</span><strong>{sales.length}</strong></article>
+          <article><span>Vendedores no resultado</span><strong>{groups.size}</strong></article>
+          <article><span>Valor total registrado</span><strong>{brl(sales.reduce((sum,s)=>sum+(s.amount??0),0))}</strong></article>
+        </div>
+        {[...groups.entries()].map(([id,group])=><article key={id} className="card erp-workspace-card">
+          <h3>Vendedor: {group.name}</h3>
+          <div className="table-wrap"><table><thead><tr><th>Plano vendido</th><th>Cliente</th><th>Data</th><th>Valor do plano</th></tr></thead><tbody>
+            {group.items.map(sale=><tr key={sale.id}><td>{sale.planName}</td><td>{name(sale.customerId)}</td><td>{date(sale.at)}</td><td>{sale.amount===null?'Não registrado':brl(sale.amount)}</td></tr>)}
+          </tbody><tfoot><tr><th colSpan={3}>Total — {group.items.length} plano(s) vendido(s)</th><th>{brl(group.amount)}</th></tr></tfoot></table></div>
+          {group.unknown>0&&<p className="small muted">{group.unknown} venda(s) sem valor histórico registrado não entram no total monetário.</p>}
+        </article>)}
+      </div>;
     } else summary=<div className="erp-kpi-row"><article><span>Contratações no filtro</span><strong>{sales.length}</strong></article><article><span>Valor contratado registrado</span><strong>{brl(sales.reduce((sum,s)=>sum+(s.amount??0),0))}</strong></article></div>;
     notes=<p className="small muted">Contratações são contadas pela data de compra, não por cada cobrança mensal. Dados históricos ausentes aparecem como não registrados e não entram no total monetário. A escolha do vendedor pelo cliente é preservada na contratação.</p>;
   }
@@ -110,15 +130,16 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
     {value('erro')&&<p role="alert" className="notice">Não foi possível concluir. Confira a situação do pagamento e os dados informados.</p>}
     <article className="card erp-workspace-card"><form method="get" action={path} className="erp-compact-form">
       {!quantity&&<><div className="grid grid-2"><label><span className="label">Data de início</span><input className="input" name="de" type="date" defaultValue={from}/></label><label><span className="label">Data final</span><input className="input" name="ate" type="date" defaultValue={to}/></label></div><Link href={`${path}?de=${month.slice(0,7)}-01&ate=${month.slice(0,7)}-${last}`}>Mês atual</Link></>}
-      <label><span className="label">Buscar pelo nome do cliente</span><input className="input" type="search" name="assinaturasQ" list={report==='assinaturas-trocas' ? 'clientes-trocas-sugestoes' : undefined} autoComplete="off" placeholder="Digite o nome do cliente" defaultValue={value('assinaturasQ')}/>{report==='assinaturas-trocas'&&<datalist id="clientes-trocas-sugestoes">{customers.map(customer=><option key={customer.id} value={customer.name}/>)}</datalist>}</label>
+      {report!=='assinaturas-origem'&&      <label><span className="label">Buscar pelo nome do cliente</span><input className="input" type="search" name="assinaturasQ" list={report==='assinaturas-trocas' ? 'clientes-trocas-sugestoes' : undefined} autoComplete="off" placeholder="Digite o nome do cliente" defaultValue={value('assinaturasQ')}/>{report==='assinaturas-trocas'&&<datalist id="clientes-trocas-sugestoes">{customers.map(customer=><option key={customer.id} value={customer.name}/>)}</datalist>}</label>}
+
       {!transactions&&<label><span className="label">Tipo de plano (opcional)</span><select className="select" name="assinaturasPlano" defaultValue={plan}><option value="">Todos os planos</option>{[...allPlans].map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>}
       {quantity&&<label><span className="label">Status do plano</span><select className="select" name="assinaturasStatus" defaultValue={status}><option value="">Todos os status</option>{['ACTIVE','OVERDUE','PAUSED','CANCELED'].map(s=><option key={s} value={s}>{statusNames[s]}</option>)}</select></label>}
       {report==='assinaturas-origem'&&<label><span className="label">Vendedor (opcional)</span><select className="select" name="vendedor" defaultValue={seller}><option value="">Todos os vendedores</option><option value="unknown">Sem vendedor registrado</option>{[...sellers].map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>}
       <div className="erp-row-actions"><button className="btn" type="submit">Buscar e filtrar</button><Link className="btn secondary" href={path}>Limpar filtros</Link></div>
     </form></article>
     {!valid&&<p role="alert" className="notice">Período inválido: informe datas válidas e início anterior ou igual à data final.</p>}
-    {summary}{notes}<article className="card erp-workspace-card"><p aria-live="polite">{rows.length} registro(s) encontrado(s)</p><div className="table-wrap"><table><thead><tr>{columns.map(c=><th key={c}>{c}</th>)}</tr></thead><tbody>{paginated.rows.length?paginated.rows.map(r=><tr key={r.id}>{r.cells.map((cell,i)=><td key={i}>{cell}</td>)}</tr>):<tr><td colSpan={columns.length}>Nenhum registro encontrado para os filtros selecionados.</td></tr>}</tbody></table></div>
+    {summary}{notes}{report!=='assinaturas-origem'&&<article className="card erp-workspace-card"><p aria-live="polite">{rows.length} registro(s) encontrado(s)</p><div className="table-wrap"><table><thead><tr>{columns.map(c=><th key={c}>{c}</th>)}</tr></thead><tbody>{paginated.rows.length?paginated.rows.map(r=><tr key={r.id}>{r.cells.map((cell,i)=><td key={i}>{cell}</td>)}</tr>):<tr><td colSpan={columns.length}>Nenhum registro encontrado para os filtros selecionados.</td></tr>}</tbody></table></div>
       <SectionPagination basePath={path} searchParams={qs} param="assinaturasPage" page={paginated.page} total={rows.length} label="registros"/>
-    </article>
+    </article>}
   </section>;
 }
