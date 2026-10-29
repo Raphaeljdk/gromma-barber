@@ -91,7 +91,7 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
     columns=['Cliente','Plano anterior','Plano solicitado','Solicitado em','Vigência prevista','Situação / histórico'];
     rows=workspace.clubEvents.filter(e=>e.kind==='CHANGE' && matches(e.customerId) && (!plan || e.newPlanId===plan) && valid && dateInPeriod(e.at,from,to))
       .sort((a,b)=>b.at.localeCompare(a.at)).map(e=>({id:e.id,cells:[name(e.customerId),e.previousPlanName,
-        e.newPlanName??'Plano indisponível',date(e.at),date(e.effectiveAt??e.at),<span>{e.status==='SCHEDULED'?'Programada':e.status==='APPLIED'?'Aplicada':'Registrada'} · {statusNames[e.movement??'CHANGE']}{e.actor&&<small> · {e.actor}</small>}{e.reason&&<small> · Motivo: {e.reason}</small>}</span>]}));
+        e.newPlanName??'Plano indisponível',date(e.at),date(e.effectiveAt??e.at),<span>{e.status==='SCHEDULED'?'Programada':e.status==='APPLIED'?'Aplicada':e.status==='SUPERSEDED'?'Substituída':'Registrada'} · {statusNames[e.movement??'CHANGE']}{e.actor&&<small> · {e.actor}</small>}{e.reason&&<small> · Motivo: {e.reason}</small>}</span>]}));
     if (!from && !to && valid) {
       const changed = new Set(workspace.clubEvents.filter(e=>e.kind==='CHANGE').map(e=>e.memberId));
       rows.push(...workspace.clubMembers.filter(m=>!changed.has(m.id)&&matches(m.customerId)&&(!plan||m.planId===plan)).map(m=>({id:`unchanged-${m.id}`,cells:[name(m.customerId),'Sem troca registrada',allPlans.get(m.planId)??'Plano indisponível','—','—','Sem troca registrada']})));
