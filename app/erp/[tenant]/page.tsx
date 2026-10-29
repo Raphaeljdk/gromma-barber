@@ -1,3 +1,6 @@
+import { SubscriptionReports } from "@/components/subscription-reports";
+import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
+import { createClubInvite } from "./subscription-actions";
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -145,6 +148,7 @@ const AUDIENCE_LABELS: Record<string, string> = {
 };
 
 const MODULE_TITLES: Record<string, string> = {
+  ...SUBSCRIPTION_REPORTS,
   assinantes: "Quantidade de assinantes",
   dashboard: "Dashboard",
   agenda: "Agenda",
@@ -278,12 +282,12 @@ export async function TenantERPView({
   const needsProductCount = ["dashboard", "estoque", "alertas"].includes(activeModule);
   const needsStockHealth = ["estoque", "alertas"].includes(activeModule);
   const needsFinanceList = activeModule === "financeiro";
-  const needsFinanceCount = ["financeiro", "relatorios"].includes(activeModule);
+  const needsFinanceCount = ["dashboard", "financeiro"].includes(activeModule);
   const needsFinancialHealth = ["dashboard", "financeiro", "gerencial", "alertas"].includes(activeModule);
   const needsCashAggregates = ["dashboard", "caixa", "relatorios", "gerencial"].includes(activeModule);
   const needsAgendaBoard = activeModule === "agenda";
   const needsRelationship = ["mensagens", "promocoes"].includes(activeModule);
-  const needsProduction = ["comissoes", "relatorios", "gerencial"].includes(activeModule);
+  const needsProduction = ["dashboard", "comissoes", "gerencial"].includes(activeModule);
 
   const pageSize = 10;
   const agendaPage = pageOf("agendaPage");
@@ -860,7 +864,7 @@ export async function TenantERPView({
       };
     }));
 
-  const commissionPayments = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && (activeModule === "comissoes" || activeModule === "relatorios")
+  const commissionPayments = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && (activeModule === "comissoes" || activeModule === "dashboard")
     ? await prisma.commissionPayment.findMany({ where: { barberShopId: shop.id }, include: { professional: { select: { name: true } } }, orderBy: { paidAt: "desc" }, take: 200 })
     : [];
   const canPayCommission = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && canManage && Boolean(comissoesDe && comissoesAte && !invalidCommissionPeriod);
@@ -1400,28 +1404,7 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
-        {activeModule === "assinantes" && <section className="demo-section" id="quantidade-assinantes">
-          <div className="section-head"><div><div className="eyebrow">Relatórios de assinaturas</div><h2>Quantidade de assinantes</h2></div></div>
-          <article className="card erp-workspace-card">
-              <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/assinantes`} className="erp-compact-form" style={{ marginTop: 16, marginBottom: 16 }}>
-                <label><span className="label">Buscar assinante pelo nome do cliente</span><input className="input" name="assinaturasQ" type="search" placeholder="Digite o nome do cliente" defaultValue={valueOf("assinaturasQ")} /></label>
-                <div className="grid grid-2">
-                  <label><span className="label">Tipo de plano</span><select className="select" name="assinaturasPlano" defaultValue={assinaturasPlano}><option value="">Todos os planos</option>{workspace.clubPlans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label>
-                  <label><span className="label">Status do plano</span><select className="select" name="assinaturasStatus" defaultValue={assinaturasStatus}><option value="">Todos os status</option><option value="ACTIVE">Ativo</option><option value="OVERDUE">Vencido</option><option value="PAUSED">Pausado</option><option value="CANCELED">Cancelado</option></select></label>
-                </div>
-                <div className="erp-row-actions"><button className="btn" type="submit">Buscar e filtrar</button><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/assinantes`}>Limpar filtros</Link></div>
-              </form>
-              <p className="small muted">{filteredClubMemberRows.length} assinante(s) encontrado(s)</p>
-            <div className="table-wrap"><table>
-              <thead><tr><th>Cliente</th><th>Tipo de plano</th><th>Status do plano</th><th>Próxima cobrança</th></tr></thead>
-              <tbody>{clubMemberPageRows.length ? clubMemberPageRows.map(member => {
-                const overdue = member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime();
-                return <tr key={member.id}><td>{member.customer?.name ?? "Cliente indisponível"}</td><td>{member.plan?.name ?? "Plano removido"}</td><td>{overdue ? "Vencido" : member.status === "ACTIVE" ? "Ativo" : member.status === "PAUSED" ? "Pausado" : "Cancelado"}</td><td>{new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date(member.nextBillingAt))}</td></tr>;
-              }) : <tr><td colSpan={4} className="muted">Nenhum assinante encontrado para os filtros selecionados.</td></tr>}</tbody>
-            </table></div>
-            <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinantes`} searchParams={qs} param="assinaturasPage" page={safeAssinaturasPage} total={filteredClubMemberRows.length} pageSize={pageSize} label="assinantes" />
-          </article>
-        </section>}
+        {SUBSCRIPTION_REPORTS[activeModule] && <SubscriptionReports report={activeModule} tenantCode={tenantCode} shopId={shop.id} workspace={workspace} canFinance={canFinance} searchParams={qs} />}
 
         <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
           <div className="section-head">
@@ -1488,10 +1471,17 @@ export async function TenantERPView({
                   <input type="hidden" name="tenantCode" value={tenantCode} />
                   <label><span className="label">Cliente</span><select className="select" name="customerId" required defaultValue=""><option value="" disabled>Selecione</option>{appointmentCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label>
                   <label><span className="label">Plano</span><select className="select" name="planId" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.filter((item) => item.active).map((clubPlan) => <option key={clubPlan.id} value={clubPlan.id}>{clubPlan.name} · {brl(clubPlan.monthlyAmount)}</option>)}</select></label>
+                  <label><span className="label">Vendedor da assinatura</span><select className="select" name="sellerId" defaultValue=""><option value="">Sem indicação</option>{shop.users.filter(u=>u.active).map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
                   <label className="erp-check-row"><input type="checkbox" name="chargeNow" defaultChecked /><span>Gerar primeira cobrança no Financeiro</span></label>
                   <button className="btn" type="submit">Adicionar assinante</button>
                 </form>
               )}
+              {(canManage || (viewer.type === "TENANT" && viewer.role === "RECEPTIONIST")) && <details className="erp-quick-create"><summary>Link de contratação para o cliente</summary>
+                <p>O cliente poderá escolher o plano e informar quem vendeu. Link individual, válido por 7 dias e para uma contratação.</p>
+                <form action={createClubInvite} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Cliente</span><select className="select" name="customerId" required defaultValue=""><option value="" disabled>Selecione</option>{appointmentCustomers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><button className="btn secondary" type="submit">Gerar link individual</button></form>
+              </details>}
+              {/^[a-f0-9]{64}$/.test(valueOf("convite")) && canOperate && <div className="notice"><p>Link individual criado. Compartilhe apenas com o cliente correspondente.</p><a target="_blank" rel="noreferrer" href={`/clube/${encodeURIComponent(tenantCode)}/${valueOf("convite")}`}>Abrir contratação do cliente</a><p className="small muted">Copie o endereço do link para enviar ao cliente. Nenhuma mensagem foi enviada automaticamente.</p></div>}
+              {actionError === "convite" && <p role="alert">Não foi possível criar o link. Confira o cliente selecionado.</p>}
               {canManage && <details className="erp-quick-create"><summary>Trocar plano de um assinante</summary><form action={changeClubMemberPlan} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Assinante</span><select name="memberId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{clubMemberRows.filter(member => member.status !== "CANCELED").map(member => <option key={member.id} value={member.id}>{member.customer?.name ?? "Cliente"} — {member.plan?.name ?? "Plano removido"}</option>)}</select></label><label><span className="label">Novo plano</span><select name="planId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.filter(plan => plan.active).map(plan => <option key={plan.id} value={plan.id}>{plan.name} — {brl(plan.monthlyAmount)}</option>)}</select></label><p className="small muted">A troca não modifica cobranças já emitidas. Confira os próximos lançamentos antes de cobrar.</p><button className="btn" type="submit">Atualizar assinatura</button></form></details>}
               <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} className="erp-compact-form" style={{ marginTop: 16, marginBottom: 16 }}>
                 <label><span className="label">Buscar assinante pelo nome do cliente</span><input className="input" name="assinaturasQ" type="search" placeholder="Digite o nome do cliente" defaultValue={valueOf("assinaturasQ")} /></label>
@@ -1960,9 +1950,9 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal} pageSize={pageSize} hash="unidades" label="unidades" />
         </section>
 
-        {activeModule === "relatorios" && <section id="relatorios" className="demo-section">
+        {activeModule === "dashboard" && <section id="indicadores-consolidados" className="demo-section">
           <div className="section-head">
-            <div><div className="eyebrow">Relatórios</div><h2>Visões de acompanhamento</h2></div>
+            <div><div className="eyebrow">Dashboard operacional</div><h2>Visões de acompanhamento</h2></div>
             <StatusPill tone="ready">Dados reais</StatusPill>
           </div>
 

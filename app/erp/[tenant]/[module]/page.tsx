@@ -12,6 +12,12 @@ const MODULES = new Set([
   "comandas",
   "assinaturas",
   "assinantes",
+  "assinaturas-trocas",
+  "assinaturas-cancelados",
+  "assinaturas-transacoes",
+  "assinaturas-vendas",
+  "assinaturas-origem",
+
   "mensagens",
   "promocoes",
   "financeiro",

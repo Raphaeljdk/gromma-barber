@@ -364,7 +364,7 @@ export async function markFinancialPaid(formData: FormData) {
 
   if (updated.count !== 1) redirect(`${path}?erro=financeiro-status#financeiro`);
 
-  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=financeiro-pago#financeiro`);
 }
 
