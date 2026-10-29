@@ -17,6 +17,10 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
   const plan = value('assinaturasPlano'), status = value('assinaturasStatus'), seller = value('vendedor');
   const valid = validPeriod(from,to);
   const path = `/erp/${encodeURIComponent(tenantCode)}/${report}`;
+  const exportParams = new URLSearchParams({report});
+  for(const filter of ["de","ate","assinaturasQ","assinaturasPlano","assinaturasStatus","vendedor"]) { const v=value(filter); if(v) exportParams.set(filter,v); }
+  const exportBase = `/erp/${encodeURIComponent(tenantCode)}/assinaturas/exportar`;
+
   const quantity = report === 'assinantes', transactions = report === 'assinaturas-transacoes';
   const now = new Date();
   const [customers, financial] = await Promise.all([
@@ -162,7 +166,7 @@ export async function SubscriptionReports({ report, tenantCode, shopId, workspac
   const sellers=new Map(workspace.clubSales.filter(s=>s.sellerId).map(s=>[s.sellerId!,s.sellerName]));
   const month=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
   const last=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).getUTCDate();
-  return <section className="demo-section"><div className="section-head"><div><span className="eyebrow">Relatórios de assinaturas</span><h2>{SUBSCRIPTION_REPORTS[report]}</h2></div></div>
+  return <section className="demo-section"><div className="section-head"><div><span className="eyebrow">Relatórios de assinaturas</span><h2>{SUBSCRIPTION_REPORTS[report]}</h2></div><div className="erp-row-actions"><Link className="btn secondary" href={`${exportBase}?${exportParams.toString()}&formato=xlsx`}>Exportar Excel</Link><Link className="btn secondary" href={`${exportBase}?${exportParams.toString()}&formato=pdf`}>Exportar PDF</Link></div></div>
     {value('ok')==='estorno-solicitado'&&<p role="status" className="notice">Solicitação registrada. Nenhum dinheiro foi devolvido automaticamente.</p>}
     {value('ok')==='estorno-confirmado'&&<p role="status" className="notice">Devolução registrada no Financeiro. Pagamento original preservado.</p>}
     {value('erro')&&<p role="alert" className="notice">Não foi possível concluir. Confira a situação do pagamento e os dados informados.</p>}
