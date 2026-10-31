@@ -123,11 +123,23 @@ async function synchronizeCommandDuration(
 }
 
 export async function addCommandItem(form: FormData) {
-  return run(form, "comandas", async (tx, shopId) => {
+  return run(form, "comandas", async (tx, shopId, actor) => {
     const command = await tx.serviceCommand.findFirst({
       where: { id: value(form, "commandId"), barberShopId: shopId, status: "OPEN" }, include: { items: true },
     });
     if (!command) throw new OperationError("A comanda não está aberta.");
+    const staff = actor === "Administrador" ? null : await tx.shopUser.findFirst({
+      where: { id: actor, barberShopId: shopId, active: true },
+      select: { id: true, role: true, unitId: true },
+    });
+    if (actor !== "Administrador" && !staff) throw new OperationError("Colaborador indisponível.");
+    if (staff?.role === "BARBER") {
+      const assigned = command.appointmentId ? await tx.appointment.findFirst({
+        where: { id: command.appointmentId, barberShopId: shopId, barberId: staff.id, status: { notIn: ["CANCELED","NO_SHOW"] } },
+        select: { id: true },
+      }) : null;
+      if (!assigned) throw new OperationError("O profissional só pode incluir itens na comanda do próprio atendimento.");
+    }
     const quantity = Number(value(form, "quantity"));
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) throw new OperationError("Informe uma quantidade entre 1 e 100.");
     const [kind, id] = value(form, "catalogItem").split(":");
@@ -141,7 +153,18 @@ export async function addCommandItem(form: FormData) {
       commandId: command.id, kind, description: catalog.name, quantity, unitPrice: price / 100, total: price * quantity / 100,
     } });
     const { shop, workspace } = await configuration(tx, shopId);
-    if (product) workspace.productLines.push({ itemId: item.id, productId: product.id });
+    if (product) {
+      workspace.productLines.push({ itemId: item.id, productId: product.id });
+      let sellerId = staff?.role === "BARBER" ? staff.id : value(form, "sellerId");
+      if (staff && ["MANAGER","RECEPTIONIST"].includes(staff.role) && !sellerId)
+        throw new OperationError("Selecione o profissional responsável pela venda.");
+      if (sellerId) {
+        const seller = await tx.shopUser.findFirst({ where: { id: sellerId, barberShopId: shopId,
+          active: true, role: { in: ["OWNER","MANAGER","BARBER"] } }, select: { id: true } });
+        if (!seller) throw new OperationError("Profissional vendedor não encontrado nesta barbearia.");
+        workspace.productSellerAssignments.push({ itemId: item.id, userId: seller.id, recordedAt: new Date().toISOString() });
+      }
+    }
     if (service && command.appointmentId) workspace.serviceLines.push({ itemId: item.id, serviceId: service.id });
     if (command.appointmentId && service) {
       await synchronizeCommandDuration(tx, shopId, command.appointmentId, command.items.some(line => line.id === item.id) ? command.items : [...command.items, item], workspace);
@@ -154,7 +177,11 @@ export async function addCommandItem(form: FormData) {
   });
 }
 export async function removeCommandItem(form: FormData) {
-  return run(form, "comandas", async (tx, shopId) => {
+  return run(form, "comandas", async (tx, shopId, actor) => {
+    const actorRole = actor === "Administrador" ? "ADMIN" : (await tx.shopUser.findFirst({
+      where: { id: actor, barberShopId: shopId, active: true }, select: { role: true },
+    }))?.role;
+    if (!["ADMIN","OWNER"].includes(actorRole ?? "")) throw new OperationError("Somente o administrador pode excluir itens e alterar o valor da comanda.");
     const command = await tx.serviceCommand.findFirst({
       where: { id: value(form, "commandId"), barberShopId: shopId, status: "OPEN" }, include: { items: true },
     });
@@ -164,6 +191,7 @@ export async function removeCommandItem(form: FormData) {
     if (subtotal < cents(command.discount)) throw new OperationError("O desconto da comanda supera o valor restante.");
     const { shop, workspace } = await configuration(tx, shopId);
     workspace.productLines = workspace.productLines.filter(line => line.itemId !== item.id);
+    workspace.productSellerAssignments = workspace.productSellerAssignments.filter(line => line.itemId !== item.id);
     workspace.serviceLines = workspace.serviceLines.filter(line => line.itemId !== item.id);
     if (command.appointmentId && item.kind === "SERVICE") {
       await synchronizeCommandDuration(tx, shopId, command.appointmentId, command.items.filter(i => i.id !== item.id), workspace);
@@ -205,6 +233,13 @@ export async function checkoutCommand(form: FormData) {
     } catch (e) { throw new OperationError(e instanceof Error ? e.message : "Desconto inválido."); }
     if (String(pricing.totalCents) !== value(form, "expectedTotal") || pricing.subtotalCents !== subtotal)
       throw new OperationError("O desconto ou os itens mudaram. Atualize e confira o pagamento.");
+    // A recepção e o barbeiro podem registrar a venda, mas não alterar a quantia com desconto.
+    const actorRole = actor === "Administrador" ? "ADMIN" : (await tx.shopUser.findFirst({
+      where: { id: actor, barberShopId: shopId, active: true }, select: { role: true },
+    }))?.role;
+    if (!["ADMIN","OWNER"].includes(actorRole ?? "") && (pricing.discountCents !== cents(command.discount) ||
+        discountInput.kind !== "NONE" || discountInput.couponCode || String(form.get("appliedItemDiscounts") || "[]") !== "[]"))
+      throw new OperationError("Somente o administrador pode aplicar ou modificar descontos.");
     const amounts = paymentAmounts(form);
     try { validatePayments(amounts, pricing.totalCents); }
     catch { throw new OperationError("A soma dos pagamentos deve ser igual ao total com desconto."); }
@@ -269,7 +304,7 @@ export async function reopenCommand(form: FormData) {
   const tenantCode = value(form, "tenantCode").toUpperCase();
   const viewer = await requireTenantAccess(tenantCode);
   const path = `/erp/${encodeURIComponent(tenantCode)}/comandas`;
-  if (viewer.type !== "ADMIN" && !["OWNER", "MANAGER"].includes(viewer.role))
+  if (viewer.type !== "ADMIN" && viewer.role !== "OWNER")
     redirect(`${path}?checkoutError=${encodeURIComponent("Somente a gestão pode reabrir comandas.")}&commandId=${encodeURIComponent(value(form, "commandId"))}`);
 
   return run(form, "comandas", async (tx, shopId, actor) => {
