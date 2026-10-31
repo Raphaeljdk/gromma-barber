@@ -3,6 +3,7 @@
 import { appendClubCharge, registerClubMember } from "@/lib/club-operations";
 import { movementKind } from "@/lib/subscription-reports";
 import { applyClubLifecycle } from "@/lib/club-lifecycle";
+import { billingDayFromDate, nextMonthlyBillingAt, nextBillingDayAfter } from "@/lib/club-billing-date";
 import { STAFF_PERMISSION_KEYS, isPermissionRole, hasStaffPermission, type StaffPermission } from "@/lib/role-permissions";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { agendaReturnHref, isAgendaDate } from "@/lib/agenda";
@@ -210,6 +211,42 @@ export async function changeClubMemberPlan(formData: FormData) {
   redirect(`${path}?ok=troca-programada`);
 }
 
+/** Altera exclusivamente o próximo vencimento; preserva cobranças emitidas e histórico. */
+export async function changeClubBillingDay(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "assinaturas");
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  const memberId = value(formData, "memberId", 80);
+  const day = Number(value(formData, "billingDay", 2));
+  const reason = value(formData, "reason", 600);
+  if (!Number.isInteger(day) || day < 1 || day > 31 || reason.length < 5) redirect(`${path}?erro=vencimento`);
+  try {
+    await prisma.$transaction(async tx => {
+      const fresh = await tx.barberShop.findUniqueOrThrow({ where: { id: shop.id } });
+      const workspace = readWorkspace(fresh.enabledFeatures);
+      const member = workspace.clubMembers.find(m => m.id === memberId && m.status !== "CANCELED");
+      if (!member || member.cancelEffectiveAt) throw new Error("Assinatura indisponível");
+      const previousDay = member.billingDay ?? billingDayFromDate(new Date(member.startedAt));
+      const previousDue = member.nextBillingAt;
+      const current = new Date();
+      const next = nextBillingDayAfter(current, day);
+      if (member.pendingPlanId && new Date(member.nextBillingAt) <= current) throw new Error("Primeiro regularize a troca de plano");
+      member.billingDay = day;
+      member.nextBillingAt = next.toISOString();
+      workspace.clubEvents.push({ id: workspaceId("billing"), memberId: member.id, customerId: member.customerId,
+        at: current.toISOString(), effectiveAt: next.toISOString(), status: "APPLIED",
+        actor: viewer.email, reason, kind: "BILLING_DAY", previousPlanId: member.planId,
+        previousPlanName: "Vencimento " + previousDay, previousAmount: null,
+        newPlanId: member.planId, newPlanName: "Vencimento " + day });
+      await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) } });
+      await tx.adminAuditLog.create({ data: { barberShopId: shop.id, adminEmail: viewer.email,
+        action: "CLUB_BILLING_DAY_CHANGED", details: { memberId, previousDay, day, previousDue, nextDue: next.toISOString(), reason } } });
+    }, { isolationLevel: "Serializable" });
+  } catch(error) { console.error("Billing day update failed",error); redirect(`${path}?erro=vencimento`); }
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
+  redirect(`${path}?ok=vencimento`);
+}
+
 export async function addClubMember(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
@@ -259,7 +296,7 @@ export async function processClubBilling(formData: FormData) {
         if (!plan || plan.monthlyAmount <= 0) continue;
 
         const currentDue = new Date(member.nextBillingAt);
-        const nextDue = new Date(Math.max(currentDue.getTime(), now.getTime()) + 30 * 86400000);
+        const nextDue = nextMonthlyBillingAt(currentDue, member.billingDay ?? billingDayFromDate(new Date(member.startedAt)));
         await appendClubCharge(tx, shop.id, workspace, member, plan,
           customerById.get(member.customerId) ?? "Cliente", currentDue, nextDue);
         member.nextBillingAt = nextDue.toISOString();
@@ -302,7 +339,7 @@ export async function generateClubCharge(formData: FormData) {
         const existing = await tx.financialEntry.findFirst({ where: { barberShopId: shop.id, id: { in: current.map(c => c.entryId) }, status: { in: ["PENDING", "PAID"] } } });
         if (existing) throw new Error("Já existe cobrança para o ciclo atual");
       }
-      const next = new Date(now.getTime() + 30 * 86400000);
+      const next = nextMonthlyBillingAt(new Date(member.nextBillingAt), member.billingDay ?? billingDayFromDate(new Date(member.startedAt)));
       await appendClubCharge(tx, shop.id, workspace, member, plan, customer.name, now, next);
       member.nextBillingAt = next.toISOString();
       await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) } });
