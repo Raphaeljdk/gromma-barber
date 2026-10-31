@@ -343,27 +343,27 @@ export async function updateAppointmentNotes(formData: FormData) {
 export async function markFinancialPaid(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}/financeiro`;
-
-  if (!allowed(viewer, FINANCE_ROLES)) {
-    redirect(`${path}?erro=permissao#financeiro`);
-  }
-
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao#financeiro`);
   const entryId = text(formData, "entryId", 80);
-
-  let updated;
-
+  const reason = text(formData, "reason", 600);
+  if (reason.length < 5) redirect(`${path}?erro=financeiro-status#financeiro`);
   try {
-    updated = await prisma.financialEntry.updateMany({
-      where: { id: entryId, barberShopId: shop.id, status: "PENDING" },
-      data: { status: "PAID", paidAt: new Date() },
-    });
+    await prisma.$transaction(async tx => {
+      const entry = await tx.financialEntry.findFirst({ where: { id: entryId, barberShopId: shop.id, status: "PENDING" },
+        select: { id: true, amount: true, category: true, status: true, unitId: true } });
+      if (!entry) throw new Error("Lançamento não localizado");
+      const paidAt = new Date();
+      const result = await tx.financialEntry.updateMany({ where: { id: entryId, barberShopId: shop.id, status: "PENDING" },
+        data: { status: "PAID", paidAt } });
+      if (result.count !== 1) throw new Error("O lançamento mudou");
+      await tx.adminAuditLog.create({ data: { barberShopId: shop.id, action: "FINANCIAL_PAYMENT_CONFIRMED",
+        adminEmail: viewer.email, details: { entryId, amount: entry.amount.toString(), unitId: entry.unitId,
+          category: entry.category, previousStatus: entry.status, newStatus: "PAID", paidAt: paidAt.toISOString(), reason } } });
+    }, { isolationLevel: "Serializable" });
   } catch (error) {
     console.error("Failed to mark financial entry as paid", error);
     redirect(`${path}?erro=financeiro-status#financeiro`);
   }
-
-  if (updated.count !== 1) redirect(`${path}?erro=financeiro-status#financeiro`);
-
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=financeiro-pago#financeiro`);
 }
@@ -729,7 +729,7 @@ export async function createFinancialEntry(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}/financeiro`;
 
-  if (!allowed(viewer, FINANCE_ROLES)) {
+  if (!allowed(viewer, ["OWNER"])) {
     redirect(`${path}?erro=permissao#financeiro`);
   }
 
@@ -746,7 +746,7 @@ export async function createFinancialEntry(formData: FormData) {
   }
 
   try {
-    await prisma.financialEntry.create({
+    const entry = await prisma.financialEntry.create({
       data: {
         barberShopId: shop.id,
         unitId: unit?.id ?? null,
@@ -758,6 +758,8 @@ export async function createFinancialEntry(formData: FormData) {
         dueDate,
       },
     });
+    await prisma.adminAuditLog.create({ data: { barberShopId: shop.id, action: "FINANCIAL_ENTRY_CREATED", adminEmail: viewer.email,
+      details: { entryId: entry.id, amount: String(amount), category, type, description, unitId: unit?.id ?? null } } });
   } catch (error) {
     console.error("Failed to create financial entry", error);
     redirect(`${path}?erro=financeiro#financeiro`);
