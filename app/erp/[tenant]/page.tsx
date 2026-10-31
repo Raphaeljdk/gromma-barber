@@ -1353,7 +1353,7 @@ export async function TenantERPView({
           {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
           {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
-          {canManage && (
+          {isOwner && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo serviço <small>Cadastro operacional</small></summary>
             <form action={createService} className="erp-quick-form">
@@ -1690,7 +1690,7 @@ export async function TenantERPView({
 
             <article className="card erp-workspace-card">
               <div className="erp-card-title"><div><span>Cupons de desconto</span><strong>Regras e validade</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-              {canManage && (
+              {isOwner && (
                 <form action={saveCoupon} className="erp-compact-form">
                   <input type="hidden" name="tenantCode" value={tenantCode} />
                   <label><span className="label">Código</span><input className="input" name="code" required placeholder="VOLTE10" /></label>
@@ -1849,7 +1849,7 @@ export async function TenantERPView({
           {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}
           {actionError === "movimento" && <div className="notice erp-inline-notice error-notice">Revise produto, unidade e quantidade da movimentação.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
-          {canManage && (
+          {isOwner && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo produto <small>Cadastro de estoque</small></summary>
             <form action={createProduct} className="erp-quick-form">
