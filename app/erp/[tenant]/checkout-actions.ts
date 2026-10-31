@@ -27,6 +27,9 @@ async function run(form: FormData, module: "caixa" | "comandas", operation: (tx:
     if (!(e instanceof OperationError)) console.error("Checkout operation failed", e);
   }
   revalidatePath(`/erp/${encodeURIComponent(tenant)}`, "layout");
+  if (module === "comandas" && value(form, "professionalReturn") === "1") {
+    redirect(`/erp/${encodeURIComponent(tenant)}/profissional?${error ? "checkoutError="+encodeURIComponent(error) : "checkoutOk=1"}`);
+  }
   const command = module === "comandas" ? `&commandId=${encodeURIComponent(value(form, "commandId"))}` : "";
   if (module === "comandas" && value(form, "agendaReturn") === "1") {
     const appointment = encodeURIComponent(value(form, "appointmentId"));
