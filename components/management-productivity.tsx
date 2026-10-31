@@ -1,18 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { addAgendaDays, agendaDateKey, isAgendaDate } from "@/lib/agenda";
 import { periodBounds, dateBR, occupancyMinutes, availableForProfessional, bookedIntervals, intervalMinutes, intersect, barbershopDayBounds } from "@/lib/management-audit";
-import type { AgendaBlock } from "@/lib/erp-workspace";
+import type { AgendaBlock, ClubMemberConfig } from "@/lib/erp-workspace";
+import { addUnitHoliday } from "@/app/erp/[tenant]/module-actions";
 import type { OperationalSettings } from "@/lib/erp-workspace";
 import type { Prisma } from "@prisma/client";
 
 type Query=Record<string,string|string[]|undefined>;
 type Unit={id:string;name:string;active:boolean};
 type Professional={id:string;name:string;unitId:string|null;role:string};
-type Props={shopId:string;tenantCode:string;query:Query;canManage:boolean;units:Unit[];professionals:Professional[];blocks:AgendaBlock[];settings:OperationalSettings};
+type Props={shopId:string;tenantCode:string;query:Query;canManage:boolean;units:Unit[];professionals:Professional[];blocks:AgendaBlock[];settings:OperationalSettings;clubMembers:ClubMemberConfig[];isOwner:boolean};
 const read=(q:Query,k:string,max=90)=>String(Array.isArray(q[k])?q[k]?.[0]??"":q[k]??"").trim().slice(0,max);
 const hours=(min:number)=>(min/60).toLocaleString("pt-BR",{maximumFractionDigits:1})+" h";
 
-export async function ManagementProductivity({shopId,tenantCode,query,canManage,units,professionals,blocks,settings}:Props){
+export async function ManagementProductivity({shopId,tenantCode,query,canManage,units,professionals,blocks,settings,clubMembers,isOwner}:Props){
   if(!canManage)return <section className="demo-section"><p className="notice error-notice">Somente a gestão pode consultar a produtividade.</p></section>;
   const path="/erp/"+encodeURIComponent(tenantCode)+"/auditoria-produtividade";
   const today=agendaDateKey(new Date());
@@ -21,6 +22,9 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
   const rawView=read(query,"visao",7);
   const view=rawView==="day"||rawView==="week"?"day"===rawView?"day":"week":"month";
   const selectedPro=read(query,"profissional");
+  const selectedUnit=read(query,"unidade");
+  const clientTypeRaw=read(query,"tipoCliente");
+  const clientType=["SUBSCRIBER","WALK_IN"].includes(clientTypeRaw)?clientTypeRaw:"ALL";
   const activeUnits=units.filter(unit=>unit.active);
   const allPros=await prisma.shopUser.findMany({
     where:{barberShopId:shopId,role:{in:["OWNER","MANAGER","BARBER"]}},
@@ -30,7 +34,7 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
   const people=selectedPro&&allPros.some(p=>p.id===selectedPro)?allPros.filter(p=>p.id===selectedPro):allPros;
   // A professional not tied to a single unit is shown separately per shop unit.
   const rows=people.flatMap(person=>
-    activeUnits.filter(unit=>!person.unitId||person.unitId===unit.id)
+    activeUnits.filter(unit=>(!selectedUnit||unit.id===selectedUnit) && (!person.unitId||person.unitId===unit.id))
       .map(unit=>({professional:person,unit})));
   const date=new Date(day+"T12:00:00-03:00");
   const weekDay=date.getUTCDay();
@@ -56,12 +60,19 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
       OR:[{endsAt:{gt:start}},{endsAt:null}],
     },
     select:{
-      barberId:true,unitId:true,status:true,startsAt:true,endsAt:true,
+      barberId:true,unitId:true,customerId:true,status:true,startsAt:true,endsAt:true,
       service:{select:{durationMinutes:true}},
     },
   });
   type Booked=Parameters<typeof bookedIntervals>[0][number];
-  const bookings:Booked[]=appointments.map(a=>({...a,durationMinutes:a.service?.durationMinutes??30}));
+  const subscriberAt=(customerId:string|null,at:Date)=>Boolean(customerId && clubMembers.some(m=>
+    m.customerId===customerId && new Date(m.startedAt)<=at &&
+    (!m.canceledAt || new Date(m.canceledAt)>at) &&
+    (!m.brokenAt || new Date(m.brokenAt)>at) &&
+    (!m.cancelEffectiveAt || new Date(m.cancelEffectiveAt)>at)));
+  const typeAppointments=appointments.filter(a=>clientType==="ALL" ||
+    (clientType==="SUBSCRIBER" ? subscriberAt(a.customerId,a.startsAt) : !subscriberAt(a.customerId,a.startsAt)));
+  const bookings:Booked[]=typeAppointments.map(a=>({...a,durationMinutes:a.service?.durationMinutes??30}));
   const summary=rows.map(({professional,unit})=>{
     let availableMinutes=0,blockedMinutes=0,scheduledMinutes=0,appointmentsCount=0;
     const cells=columns.map(col=>{
@@ -86,7 +97,7 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
         level:minutes===0?"no-capacity":percent>=85?"high":percent>=60?"medium":percent>=30?"low":"empty"};
     });
     const dateStart=Date.parse(first+"T00:00:00-03:00"),dateEnd=end.getTime();
-    appointmentsCount=appointments.filter(a=>a.barberId===professional.id&&a.unitId===unit.id&&a.startsAt.getTime()>=dateStart&&a.startsAt.getTime()<dateEnd).length;
+    appointmentsCount=typeAppointments.filter(a=>a.barberId===professional.id&&a.unitId===unit.id&&a.startsAt.getTime()>=dateStart&&a.startsAt.getTime()<dateEnd).length;
     return {professional,unit,cells,availableMinutes,blockedMinutes,scheduledMinutes,appointmentsCount,
       utilization:availableMinutes>0?Math.round(scheduledMinutes/availableMinutes*100):0};
   });
@@ -102,8 +113,28 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
         <option value="">Todos os profissionais</option>
         {allPros.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
       </select></label>
+      <label>Unidade<select name="unidade" defaultValue={selectedUnit}>
+        <option value="">Todas as unidades</option>
+        {activeUnits.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
+      </select></label>
+      <label>Tipo de cliente<select name="tipoCliente" defaultValue={clientType}>
+        <option value="ALL">Assinantes e avulsos</option><option value="SUBSCRIBER">Somente assinantes</option><option value="WALK_IN">Somente avulsos</option>
+      </select></label>
       <button className="btn" type="submit">Visualizar</button>
     </form>
+    {isOwner && <details className="card" style={{padding:16,marginBottom:12}}>
+      <summary>Cadastrar feriado ou fechamento de unidade</summary>
+      <p className="small muted">Feriados cadastrados reduzem a carga horária disponível. Folgas e demais bloqueios continuam seguindo a agenda operacional.</p>
+      <form className="mgmt-audit-filters" action={addUnitHoliday}>
+        <input type="hidden" name="tenantCode" value={tenantCode}/>
+        <label>Data<input name="date" type="date" required/></label>
+        <label>Unidade<select name="unitId"><option value="">Todas as unidades</option>{activeUnits.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
+        <label>Descrição<input name="reason" minLength={3} maxLength={100} required placeholder="Ex.: feriado municipal"/></label>
+        <button className="btn" type="submit">Registrar feriado</button>
+      </form>
+    </details>}
+    {read(query,"ok")==="feriado"&&<p className="notice">Feriado registrado e aplicado no cálculo da capacidade.</p>}
+    {read(query,"erro")==="feriado"&&<p role="alert" className="notice error-notice">Não foi possível cadastrar o feriado. Confira os dados.</p>}
     <div className="mgmt-audit-kpis">
       <article><small>Profissionais / unidades</small><strong>{summary.length}</strong></article>
       <article><small>Horas disponíveis</small><strong>{hours(summary.reduce((a,b)=>a+b.availableMinutes,0))}</strong></article>
@@ -140,6 +171,6 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
         {!summary.length&&<tr><td colSpan={7}>Nenhum dado disponível neste período.</td></tr>}
         </tbody></table></div>
     </div>
-    <p className="muted small">Horas disponíveis = horário configurado de abertura menos bloqueios fechados do profissional ou da unidade, sem contar intervalos sobrepostos duas vezes. Horas ocupadas são durações previstas dos agendamentos não cancelados/não faltantes, limitadas ao tempo disponível — não comprovam ponto ou trabalho efetivo. Horários de funcionamento configurados atualmente são aplicados ao período consultado; não há escala histórica por dia armazenada. Profissionais sem unidade fixa aparecem separados por unidade.</p>
+    <p className="muted small">O filtro de clientes altera apenas as horas ocupadas e o número de atendimentos, mantendo a mesma capacidade disponível para comparação. A classificação histórica de assinantes considera o intervalo registrado de contratação e cancelamento; suspensões antigas sem histórico podem exigir conferência. Horas disponíveis = horário configurado de abertura menos feriados cadastrados, folgas e bloqueios fechados do profissional ou da unidade, sem contar intervalos sobrepostos duas vezes. Horas ocupadas são durações previstas dos agendamentos não cancelados/não faltantes, limitadas ao tempo disponível — não comprovam ponto ou trabalho efetivo. Horários de funcionamento configurados atualmente são aplicados ao período consultado; não há escala histórica por dia armazenada. Profissionais sem unidade fixa aparecem separados por unidade.</p>
   </section>;
 }
