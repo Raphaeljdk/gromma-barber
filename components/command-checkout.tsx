@@ -120,6 +120,7 @@ export function CommandCheckout({
             }}>
             <input type="hidden" name="tenantCode" value={tenantCode} />
             <input type="hidden" name="commandId" value={command.id} />
+            <input className="input" name="reason" required minLength={5} maxLength={200} placeholder="Motivo da reabertura" aria-label="Motivo da reabertura" />
             <button type="submit" className="btn secondary checkout-compact-action checkout-reopen-action"
               disabled={!mayReopen} title={mayReopen ? "Voltar a comanda para aberto e corrigir o recebimento" : "O caixa original foi fechado ou não é possível localizar o recebimento anterior."}>
               <RotateCcw size={16} /> Reabrir comanda
@@ -153,7 +154,8 @@ export function CommandCheckout({
             <div className="checkout-lines">{command.items.length ? command.items.map(item => <div key={item.id}>
               <span><strong>{item.description}</strong><small>{item.kind === "PRODUCT" ? "Produto" : "Serviço"} · {item.quantity} un.</small></span>
               <b>{itemDeductions.has(item.id) ? <><del className="checkout-old-price">{brl(item.total)}</del><strong className="checkout-new-price">{brl((Math.round(item.total * 100) - (itemDeductions.get(item.id) ?? 0)) / 100)}</strong></> : brl(item.total)}</b>
-              {editable && canEditFinancial && <form action={removeCommandItem}>{fields}<input type="hidden" name="itemId" value={item.id} /><button className="agenda-icon-button" type="submit" title={"Remover " + item.description} aria-label={"Remover " + item.description}><Trash2 size={16} /></button></form>}
+              {editable && canEditFinancial && <form action={removeCommandItem}>{fields}<input type="hidden" name="itemId" value={item.id} />
+                <input name="reason" className="input" required minLength={5} maxLength={200} placeholder="Motivo da exclusão" aria-label={"Motivo para excluir "+item.description} style={{maxWidth:170}}/><button className="agenda-icon-button" type="submit" title={"Remover " + item.description} aria-label={"Remover " + item.description}><Trash2 size={16} /></button></form>}
             </div>) : <p className="agenda-form-hint">Nenhum serviço ou produto na comanda.</p>}</div>
           </section>}
           {editable && showAdd && <form action={addCommandItem} className="checkout-add checkout-add-focused">
@@ -245,6 +247,11 @@ export function CommandCheckout({
                     value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Código do cupom" maxLength={40} />
                   <datalist id="gromma-checkout-coupons">{coupons.filter(c => c.active).map(c => <option key={c.code} value={c.code}/>)}</datalist>
                 </label>
+                {(discountKind !== "NONE" || Boolean(couponCode) || appliedItemDiscounts.length > 0) &&
+                  <label><span className="label">Motivo da alteração financeira</span>
+                    <input className="input" name="discountReason" required minLength={5} maxLength={200}
+                      placeholder="Explique o desconto ou cupom aplicado"/>
+                  </label>}
                 {pricingError ? <p className="checkout-discount-error" role="alert">{pricingError}</p>
                   : <p className="agenda-form-hint">Desconto: {brl(pricing.discountCents / 100)} · Total: {brl(pricing.totalCents / 100)}</p>}
               </div>}
