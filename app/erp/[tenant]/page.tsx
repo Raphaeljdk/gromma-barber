@@ -1515,7 +1515,7 @@ export async function TenantERPView({
             </article>
 
             <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Assinantes</span><strong>Vínculo e cobrança</strong></div><StatusPill tone="ready">Financeiro conectado</StatusPill></div>
+              <div className="erp-card-title"><div><span>Assinantes</span><strong>Vínculo e cobrança</strong></div><StatusPill tone="pending">Cobrança interna · sem gateway</StatusPill></div>
               {canOperate && workspace.clubPlans.some((item) => item.active) && (
                 <form action={addClubMember} className="erp-compact-form">
                   <input type="hidden" name="tenantCode" value={tenantCode} />
