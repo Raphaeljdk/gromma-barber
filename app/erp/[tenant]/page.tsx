@@ -608,6 +608,27 @@ export async function TenantERPView({
   const auditCanView = viewer.type === "ADMIN" || hasStaffPermission(viewer.role, workspace.rolePermissions, "VIEW_AUDIT");
   const auditPage = Math.min(pageOf("auditoriaPage"), 1000);
   const auditWhere: Prisma.AdminAuditLogWhereInput = { barberShopId: shop.id, action: { startsWith: "APPOINTMENT_" } };
+  const auditFinanceFrom = isAgendaDate(valueOf("auditFinanceDe")) ? valueOf("auditFinanceDe") : "";
+  const auditFinanceTo = isAgendaDate(valueOf("auditFinanceAte")) ? valueOf("auditFinanceAte") : "";
+  const auditFinanceActor = valueOf("auditFinanceActor").trim().slice(0,100);
+  const financeAuditInvalid = Boolean(auditFinanceFrom && auditFinanceTo && auditFinanceFrom > auditFinanceTo);
+  const financeAuditActions = ["FINANCIAL_PAYMENT_CONFIRMED","FINANCIAL_ENTRY_CREATED","COMMAND_DISCOUNT_APPLIED",
+    "COMMAND_ITEM_REMOVED","COMMAND_REOPENED","CLUB_PLAN_CHANGE_SCHEDULED","CLUB_STATUS_CHANGE_REQUESTED",
+    "CLUB_BILLING_DAY_CHANGED","SUBSCRIPTION_COMMISSION_TIERS_UPDATED","ROLE_PERMISSIONS_UPDATED",
+    "CLUB_REFUND_REQUESTED","CLUB_REFUND_CONFIRMED","CLUB_BROKEN_NONPAYMENT","CLUB_RECONTRACT_AFTER_BREAK",
+    "UNIT_HOLIDAY_CREATED"] as const;
+  const financeAuditWhere: Prisma.AdminAuditLogWhereInput = {barberShopId:shop.id,action:{in:[...financeAuditActions]},
+    ...(auditFinanceFrom || auditFinanceTo ? {createdAt:{
+      ...(auditFinanceFrom?{gte:new Date(auditFinanceFrom+"T00:00:00-03:00")}:{}),
+      ...(auditFinanceTo?{lt:new Date(new Date(auditFinanceTo+"T00:00:00-03:00").getTime()+86400000)}:{})}}:{}),
+    ...(auditFinanceActor ? {adminEmail:{contains:auditFinanceActor,mode:"insensitive"}}:{})};
+  const financeAuditPage=Math.min(pageOf("auditFinancePage"),1000);
+  const [financeAuditRows,financeAuditCount] = activeModule==="auditoria" && auditCanView && !financeAuditInvalid
+    ? await Promise.all([
+      prisma.adminAuditLog.findMany({where:financeAuditWhere,orderBy:[{createdAt:"desc"},{id:"desc"}],
+        skip:(financeAuditPage-1)*25,take:25}),
+      prisma.adminAuditLog.count({where:financeAuditWhere}),
+    ]) : [[],0];
   const [auditEvents, auditCount, legacyCancellations] = activeModule === "auditoria" && auditCanView ? await Promise.all([
     prisma.adminAuditLog.findMany({ where: auditWhere, orderBy: { createdAt: "desc" }, skip: (auditPage - 1) * 25, take: 25 }),
     prisma.adminAuditLog.count({ where: auditWhere }),
@@ -2280,7 +2301,47 @@ export async function TenantERPView({
             <div><div className="eyebrow">Gestão · Auditoria</div><h2>Histórico de movimentações da agenda</h2></div>
             <StatusPill tone="ready">Registro persistente</StatusPill>
           </div>
-          {!auditCanView ? <p className="notice error-notice">A auditoria é exclusiva do proprietário e da gerência.</p> : <>
+          {!auditCanView ? <p className="notice error-notice">A auditoria depende de permissão de consulta.</p> : <>
+            <article className="card erp-workspace-card" style={{marginBottom:20}}>
+              <div className="erp-card-title"><div><span>Auditoria financeira</span><strong>Alterações sensíveis e histórico de gestão</strong></div>
+                <span className="badge">{financeAuditCount} evento(s)</span></div>
+              <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/auditoria`} className="erp-compact-form">
+                <div className="grid grid-3">
+                  <label>De<input className="input" name="auditFinanceDe" type="date" defaultValue={auditFinanceFrom}/></label>
+                  <label>Até<input className="input" name="auditFinanceAte" type="date" defaultValue={auditFinanceTo}/></label>
+                  <label>Responsável<input className="input" name="auditFinanceActor" type="search" maxLength={100} defaultValue={auditFinanceActor} placeholder="E-mail ou acesso"/></label>
+                </div>
+                <button type="submit" className="btn secondary">Pesquisar alterações</button>
+              </form>
+              {financeAuditInvalid&&<p role="alert" className="notice error-notice">A data inicial não pode superar a data final.</p>}
+              <div className="table-wrap"><table>
+                <thead><tr><th>Data e horário</th><th>Operação</th><th>Responsável</th><th>Antes</th><th>Depois</th><th>Motivo</th></tr></thead>
+                <tbody>{financeAuditRows.map(record=>{
+                  const info=record.details && typeof record.details==="object" && !Array.isArray(record.details)
+                    ? record.details as Record<string,unknown> : {};
+                  const old=info.previousAmount??info.previousStatus??info.previousDay??"—";
+                  const current=info.newAmount??info.newStatus??info.day??"—";
+                  const display=(v:unknown)=>typeof v==="string" || typeof v==="number"?String(v):"—";
+                  const labels:Record<string,string>={
+                    FINANCIAL_PAYMENT_CONFIRMED:"Pagamento confirmado",FINANCIAL_ENTRY_CREATED:"Lançamento criado",
+                    COMMAND_DISCOUNT_APPLIED:"Desconto na comanda",COMMAND_ITEM_REMOVED:"Item excluído",
+                    COMMAND_REOPENED:"Comanda reaberta",CLUB_PLAN_CHANGE_SCHEDULED:"Troca de plano programada",
+                    CLUB_STATUS_CHANGE_REQUESTED:"Situação da assinatura",CLUB_BILLING_DAY_CHANGED:"Dia de cobrança",
+                    SUBSCRIPTION_COMMISSION_TIERS_UPDATED:"Faixas de comissão",ROLE_PERMISSIONS_UPDATED:"Permissões",
+                    CLUB_REFUND_REQUESTED:"Estorno solicitado",CLUB_REFUND_CONFIRMED:"Devolução registrada",
+                    CLUB_BROKEN_NONPAYMENT:"Ruptura por inadimplência",CLUB_RECONTRACT_AFTER_BREAK:"Recontratação regularizada",
+                    UNIT_HOLIDAY_CREATED:"Feriado cadastrado",
+                  };
+                  return <tr key={record.id}><td>{new Date(record.createdAt).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"})}</td>
+                    <td>{labels[record.action]??record.action}</td><td>{record.adminEmail}</td>
+                    <td>{display(old)}</td><td>{display(current)}</td>
+                    <td>{display(info.reason??info.note??info.description).slice(0,160)}</td></tr>;
+                })}
+                {!financeAuditRows.length&&<tr><td colSpan={6}>Nenhuma alteração financeira registrada neste filtro.</td></tr>}</tbody>
+              </table></div>
+              <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/auditoria`} searchParams={qs}
+                param="auditFinancePage" page={financeAuditPage} total={financeAuditCount} pageSize={25} label="alterações financeiras" />
+            </article>
             <p className="muted small">Os cancelamentos saem do calendário, mas permanecem registrados. A origem da solicitação e o usuário que executou a ação são informações diferentes.</p>
             <div className="card erp-workspace-card">
               <div className="erp-card-title"><div><span>Histórico de ações</span><strong>{auditCount} movimentação(ões) registrada(s)</strong></div><StatusPill tone="ready">Por barbearia</StatusPill></div>
