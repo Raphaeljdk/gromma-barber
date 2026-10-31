@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { billingDayFromDate, nextMonthlyBillingAt } from './club-billing-date';
 import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace, type ClubMemberConfig, type ClubPlanConfig } from './erp-workspace';
 
 export async function appendClubCharge(tx: Prisma.TransactionClient, shopId: string, workspace: ErpWorkspace, member: ClubMemberConfig, plan: ClubPlanConfig, name: string, dueDate: Date, periodEnd: Date) {
@@ -25,8 +26,11 @@ export async function registerClubMember(tx: Prisma.TransactionClient, shopId: s
   const plan = workspace.clubPlans.find(p => p.id === planId && p.active);
   if (!customer || !plan || (sellerId && !seller)) throw new Error('Cliente, plano ou vendedor inválido');
   if (workspace.clubMembers.some(m => m.customerId === customerId && m.status !== 'CANCELED')) throw new Error('Cliente já possui assinatura');
-  const next = new Date(now.getTime() + 30 * 86400000);
-  const member: ClubMemberConfig = { id: workspaceId('member'), customerId, planId, status: 'ACTIVE', startedAt: now.toISOString(), nextBillingAt: next.toISOString() };
+  if (source === 'CUSTOMER' && workspace.clubMembers.some(m => m.customerId === customerId && m.brokenAt))
+    throw new Error('Assinatura rompida por inadimplência: contratação requer regularização com a barbearia');
+  const billingDay = billingDayFromDate(now);
+  const next = nextMonthlyBillingAt(now, billingDay);
+  const member: ClubMemberConfig = { id: workspaceId('member'), customerId, planId, status: 'ACTIVE', billingDay, startedAt: now.toISOString(), nextBillingAt: next.toISOString() };
   workspace.clubMembers.unshift(member);
   workspace.clubSales.push({ id: workspaceId('sale'), memberId: member.id, customerId, planId, planName: plan.name,
     amount: plan.monthlyAmount, at: now.toISOString(), sellerId: seller?.id ?? null, sellerName: seller?.name ?? 'Sem indicação', source });
