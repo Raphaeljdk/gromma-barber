@@ -284,9 +284,18 @@ export async function addClubMember(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "assinaturas");
   if (!allowed(viewer, OPERATION_ROLES)) redirect(`${path}?erro=permissao`);
+  const customerId=value(formData,"customerId",80);
+  const workspace=readWorkspace(shop.enabledFeatures);
+  const brokenBefore=workspace.clubMembers.some(m=>m.customerId===customerId && !!m.brokenAt);
+  const receiptReference=value(formData,"regularizationReference",200);
+  const reason=value(formData,"regularizationReason",600);
+  if (brokenBefore && (!allowed(viewer,["OWNER"]) || receiptReference.length<5 || reason.length<5))
+    redirect(`${path}?erro=regularizacao`);
+  const regularization=brokenBefore ? {receiptReference,reason,approvedBy:viewer.email}:undefined;
   try {
-    await prisma.$transaction(tx => registerClubMember(tx, shop.id, value(formData, "customerId", 80),
-      value(formData, "planId", 80), value(formData, "sellerId", 80), boolValue(formData, "chargeNow"), "STAFF"),
+    await prisma.$transaction(tx => registerClubMember(tx, shop.id, customerId,
+      value(formData, "planId", 80), value(formData, "sellerId", 80), boolValue(formData, "chargeNow"), "STAFF",
+      undefined, regularization),
       { isolationLevel: "Serializable" });
   } catch (error) { console.error("Failed to add subscriber", error); redirect(`${path}?erro=assinante`); }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
