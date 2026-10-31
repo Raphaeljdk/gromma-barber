@@ -4,7 +4,7 @@ import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   BellRing,
   CalendarDays,
@@ -222,6 +222,7 @@ export async function TenantERPView({
   const { tenant } = await params;
   const tenantCode = decodeURIComponent(tenant).toUpperCase();
   const viewer = await requireTenantAccess(tenantCode);
+  if (viewer.type === "TENANT" && viewer.role === "BARBER") redirect(`/erp/${encodeURIComponent(tenantCode)}/profissional`);
   const qs = await searchParams;
 
   const valueOf = (key: string) => {
