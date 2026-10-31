@@ -628,7 +628,7 @@ export async function TenantERPView({
       prisma.adminAuditLog.findMany({where:financeAuditWhere,orderBy:[{createdAt:"desc"},{id:"desc"}],
         skip:(financeAuditPage-1)*25,take:25}),
       prisma.adminAuditLog.count({where:financeAuditWhere}),
-    ]) : [[],0];
+    ]) : [[],0] as const;
   const [auditEvents, auditCount, legacyCancellations] = activeModule === "auditoria" && auditCanView ? await Promise.all([
     prisma.adminAuditLog.findMany({ where: auditWhere, orderBy: { createdAt: "desc" }, skip: (auditPage - 1) * 25, take: 25 }),
     prisma.adminAuditLog.count({ where: auditWhere }),
