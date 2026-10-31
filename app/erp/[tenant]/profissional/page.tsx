@@ -34,7 +34,7 @@ export default async function ProfessionalApp({params,searchParams}:{
   const now=new Date();
   const date=localDate(now);
   const nextDate=new Date(new Date(date+"T00:00:00-03:00").getTime()+86400000);
-  const reportMonth = /^20\\d{2}-(0[1-9]|1[0-2])$/.test(qs.mes??"") ? qs.mes! : date.slice(0,7);
+  const reportMonth = /^20\d{2}-(0[1-9]|1[0-2])$/.test(qs.mes??"") ? qs.mes! : date.slice(0,7);
   const reportStart=new Date(reportMonth+"-01T00:00:00-03:00");
   const nextMonth=new Date(Date.UTC(Number(reportMonth.slice(0,4)),Number(reportMonth.slice(5,7)),1));
   const reportEnd=new Date(nextMonth.toISOString().slice(0,7)+"-01T00:00:00-03:00");
