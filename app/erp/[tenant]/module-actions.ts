@@ -471,7 +471,7 @@ export async function saveCustomerGroup(formData: FormData) {
 export async function saveCoupon(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "promocoes");
-  if (!allowed(viewer, MANAGEMENT_ROLES)) redirect(`${path}?erro=permissao`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
 
   const code = value(formData, "code", 40).toUpperCase().replace(/[^A-Z0-9_-]/g, "");
   const kind = value(formData, "kind", 20) === "FIXED" ? "FIXED" : "PERCENT";
