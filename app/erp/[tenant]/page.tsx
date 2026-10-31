@@ -1738,7 +1738,7 @@ export async function TenantERPView({
           {actionOk === "financeiro-pago" && <div className="notice erp-inline-notice success">Lançamento marcado como pago.</div>}
           {actionError === "financeiro-status" && <div className="notice erp-inline-notice error-notice">Não foi possível atualizar o lançamento financeiro.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
-          {canFinance && (
+          {isOwner && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo lançamento <small>Receber ou pagar</small></summary>
             <form action={createFinancialEntry} className="erp-quick-form">
@@ -1774,11 +1774,12 @@ export async function TenantERPView({
               <tr key={entry.id}>
                 <td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{entry.dueDate ? new Intl.DateTimeFormat("pt-BR").format(entry.dueDate) : "—"}</td><td>{entry.unit?.name ?? "Geral"}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td>
                 <td>
-                  {entry.status === "PENDING" && canFinance ? (
+                  {entry.status === "PENDING" && isOwner ? (
                     <form action={markFinancialPaid}>
                       <input type="hidden" name="tenantCode" value={tenantCode} />
                       <input type="hidden" name="entryId" value={entry.id} />
-                      <button className="btn secondary" type="submit">Marcar pago</button>
+                      <input className="input" name="reason" minLength={5} maxLength={600} required placeholder="Motivo / referência do pagamento" aria-label="Motivo da baixa manual"/>
+                      <button className="btn secondary" type="submit">Confirmar pagamento</button>
                     </form>
                   ) : <span className="muted small">—</span>}
                 </td>
