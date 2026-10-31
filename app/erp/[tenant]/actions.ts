@@ -687,7 +687,7 @@ export async function createService(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}/servicos`;
 
-  if (!allowed(viewer, MANAGEMENT_ROLES)) {
+  if (!allowed(viewer, ["OWNER"])) {
     redirect(`${path}?erro=permissao#servicos`);
   }
 
@@ -897,7 +897,7 @@ export async function createProduct(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}/estoque`;
 
-  if (!allowed(viewer, MANAGEMENT_ROLES)) {
+  if (!allowed(viewer, ["OWNER"])) {
     redirect(`${path}?erro=permissao#estoque`);
   }
 
