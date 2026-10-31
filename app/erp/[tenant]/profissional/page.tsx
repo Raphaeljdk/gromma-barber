@@ -34,7 +34,11 @@ export default async function ProfessionalApp({params,searchParams}:{
   const now=new Date();
   const date=localDate(now);
   const nextDate=new Date(new Date(date+"T00:00:00-03:00").getTime()+86400000);
-  const [appointments,services,products,commission] = await Promise.all([
+  const reportMonth = /^20\\d{2}-(0[1-9]|1[0-2])$/.test(qs.mes??"") ? qs.mes! : date.slice(0,7);
+  const reportStart=new Date(reportMonth+"-01T00:00:00-03:00");
+  const nextMonth=new Date(Date.UTC(Number(reportMonth.slice(0,4)),Number(reportMonth.slice(5,7)),1));
+  const reportEnd=new Date(nextMonth.toISOString().slice(0,7)+"-01T00:00:00-03:00");
+  const [appointments,services,products,commission,monthlyCompleted] = await Promise.all([
     prisma.appointment.findMany({where:{barberShopId:shop.id,barberId:professional.id,
       startsAt:{gte:new Date(date+"T00:00:00-03:00"),lt:nextDate},
       status:{notIn:["CANCELED","NO_SHOW"]}},
@@ -45,13 +49,22 @@ export default async function ProfessionalApp({params,searchParams}:{
     prisma.service.findMany({where:{barberShopId:shop.id,active:true},select:{id:true,name:true,price:true},orderBy:{name:"asc"},take:200}),
     prisma.product.findMany({where:{barberShopId:shop.id,active:true},select:{id:true,name:true,salePrice:true},orderBy:{name:"asc"},take:250}),
     calculateCommission(prisma,shop.id,professional.id,
-      new Date(date.slice(0,7)+"-01T00:00:00-03:00"),
-      new Date(new Date(Date.UTC(Number(date.slice(0,4)),Number(date.slice(5,7)),1)).toISOString().slice(0,7)+"-01T00:00:00-03:00"),
+      reportStart,
+      reportEnd,
       workspace.settings.defaultCommissionPercent,
       workspace.commissionRules.find(r=>r.userId===professional.id)?.percent??workspace.settings.defaultCommissionPercent,
       workspace.serviceCommissionOverrides,workspace.deductions,{workspace}),
+    prisma.appointment.findMany({where:{barberShopId:shop.id,barberId:professional.id,
+      startsAt:{gte:reportStart,lt:reportEnd},status:"COMPLETED"},
+      select:{customerId:true,startsAt:true,command:{select:{status:true,id:true}}},take:3000}),
   ]);
   const completed=appointments.filter(a=>a.status==="COMPLETED").length;
+  const recordedReceipts=new Set(workspace.commandPayments.map(p=>p.commandId));
+  const completedPaid=monthlyCompleted.filter(a=>a.command?.status==="CLOSED"&&recordedReceipts.has(a.command.id));
+  const subscriberCount=completedPaid.filter(a=>a.customerId && workspace.clubMembers.some(m=>m.customerId===a.customerId &&
+    new Date(m.startedAt)<=a.startsAt && (!m.canceledAt||new Date(m.canceledAt)>a.startsAt) &&
+    (!m.brokenAt||new Date(m.brokenAt)>a.startsAt))).length;
+  const walkInCount=completedPaid.length-subscriberCount;
   const categories=commission.categories;
   const breakdown=new Map<string,{quantity:number,base:number,commission:number,category:string}>();
   for(const line of commission.lines){
@@ -70,7 +83,7 @@ export default async function ProfessionalApp({params,searchParams}:{
     <div className="erp-kpi-row">
       <article><span>Agendamentos de hoje</span><strong>{appointments.length}</strong></article>
       <article><span>Concluídos</span><strong>{completed}</strong></article>
-      <article><span>Comissão apurada no mês</span><strong>{money(Number(commission.net))}</strong><small>Sobre pagamentos registrados</small></article>
+      <article><span>Comissão no período selecionado</span><strong>{money(Number(commission.net))}</strong><small>Sobre pagamentos registrados</small></article>
     </div>
     <section className="demo-section" style={{marginTop:18}}>
       <div className="section-head"><div><h2>Meus atendimentos</h2><p className="muted">Apenas seus agendamentos. Os valores dos itens vêm do catálogo e não podem ser editados aqui.</p></div></div>
@@ -99,7 +112,14 @@ export default async function ProfessionalApp({params,searchParams}:{
       </div>
     </section>
     <section className="demo-section" style={{marginTop:18}}>
-      <h2>Minhas comissões — mês atual</h2>
+      <h2>Meu relatório de produtividade e comissões</h2>
+      <form method="get" className="erp-compact-form" action={`/erp/${encodeURIComponent(tenantCode)}/profissional`}>
+        <label>Mês de referência<input className="input" type="month" name="mes" defaultValue={reportMonth} required/></label>
+        <button type="submit" className="btn secondary">Consultar mês</button>
+      </form>
+      <div className="erp-kpi-row"><article><span>Atendimentos recebidos</span><strong>{completedPaid.length}</strong></article>
+        <article><span>Assinantes atendidos</span><strong>{subscriberCount}</strong></article>
+        <article><span>Clientes avulsos atendidos</span><strong>{walkInCount}</strong></article></div>
       <div className="erp-kpi-row">
         <article><span>Serviços</span><strong>{money(Number(categories.SERVICE))}</strong></article>
         <article><span>Produtos</span><strong>{money(Number(categories.PRODUCT))}</strong></article>
