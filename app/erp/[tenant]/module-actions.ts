@@ -90,6 +90,38 @@ function modulePath(tenantCode: string, module: string) {
   return `/erp/${encodeURIComponent(tenantCode)}/${module}`;
 }
 
+/** Feriado cadastrado como bloqueio de unidade: a capacidade histórica fica deduzida. */
+export async function addUnitHoliday(formData: FormData) {
+  const {tenantCode,viewer,shop} = await moduleContext(formData);
+  const path=modulePath(tenantCode,"auditoria-produtividade");
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  const date=value(formData,"date",10), unitId=value(formData,"unitId",80);
+  const reason=value(formData,"reason",100);
+  if (!isAgendaDate(date) || reason.length<3) redirect(`${path}?erro=feriado`);
+  try {
+    await prisma.$transaction(async tx=>{
+      if(unitId) {
+        const valid=await tx.barberShopUnit.findFirst({where:{id:unitId,barberShopId:shop.id,active:true},select:{id:true}});
+        if(!valid) throw new Error("Unidade inválida");
+      }
+      const fresh=await tx.barberShop.findUniqueOrThrow({where:{id:shop.id}});
+      const workspace=readWorkspace(fresh.enabledFeatures);
+      const from=new Date(date+"T00:00:00-03:00");
+      const until=new Date(from.getTime()+86400000);
+      if(workspace.agendaBlocks.some(b=>b.barberId==="*" && b.unitId===unitId && b.startsAt===from.toISOString() && b.reason.startsWith("Feriado:")))
+        throw new Error("Feriado duplicado");
+      const block={id:workspaceId("holiday"),barberId:"*",unitId,startsAt:from.toISOString(),
+        endsAt:until.toISOString(),reason:"Feriado: "+reason,status:"CLOSED" as const};
+      workspace.agendaBlocks.push(block);
+      await tx.barberShop.update({where:{id:shop.id},data:{enabledFeatures:writeWorkspace(fresh.enabledFeatures,workspace)}});
+      await tx.adminAuditLog.create({data:{barberShopId:shop.id,action:"UNIT_HOLIDAY_CREATED",adminEmail:viewer.email,
+        details:{unitId,date,reason,blockId:block.id}}});
+    },{isolationLevel:"Serializable"});
+  } catch(error){console.error("Holiday registration failed",error);redirect(`${path}?erro=feriado`);}
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`,"layout");
+  redirect(`${path}?ok=feriado`);
+}
+
 export async function saveRolePermissions(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "equipe");
