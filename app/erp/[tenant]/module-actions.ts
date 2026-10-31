@@ -589,6 +589,48 @@ export async function saveTrainingItem(formData: FormData) {
   redirect(`${path}?ok=conteudo`);
 }
 
+export async function saveSubscriptionCommissionTiers(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "equipe");
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  const userId = value(formData,"userId",80);
+  const actor = await prisma.shopUser.findFirst({where:{id:userId,barberShopId:shop.id,active:true},
+    select:{id:true}});
+  if (!actor) redirect(`${path}?erro=metas`);
+  const mins = formData.getAll("tierMin"), maxs = formData.getAll("tierMax"), percents = formData.getAll("tierPercent");
+  const tiers: {min:number;max:number|null;percent:number}[] = [];
+  if (mins.length !== maxs.length || mins.length !== percents.length || mins.length > 8)
+    redirect(`${path}?erro=metas`);
+  for (let i=0; i<mins.length; i++) {
+    const minText=String(mins[i]).trim(), maxText=String(maxs[i]).trim(), percentText=String(percents[i]).trim();
+    if (!minText && !maxText && !percentText) continue;
+    const min=Number(minText.replace(",",".")), max=maxText?Number(maxText.replace(",",".")):null;
+    const percent=Number(percentText.replace(",","."));
+    if (!minText || !percentText || !Number.isFinite(min)||min<0||min>1e8 ||
+        (max!==null&&(!Number.isFinite(max)||max<=min||max>1e8))||
+        !Number.isFinite(percent)||percent<0||percent>100) redirect(`${path}?erro=metas`);
+    tiers.push({min,max,percent});
+  }
+  tiers.sort((a,b)=>a.min-b.min);
+  if (tiers.some((tier,i)=>i>0 && (tiers[i-1].max===null || tier.min<tiers[i-1].max!)))
+    redirect(`${path}?erro=metas`);
+  const reason=value(formData,"reason",600);
+  if (reason.length<5) redirect(`${path}?erro=metas`);
+  try {
+    await prisma.$transaction(async tx => {
+      const fresh=await tx.barberShop.findUniqueOrThrow({where:{id:shop.id}});
+      const workspace=readWorkspace(fresh.enabledFeatures);
+      const previous=workspace.subscriptionCommissionTiers[userId]??[];
+      workspace.subscriptionCommissionTiers[userId]=tiers;
+      await tx.barberShop.update({where:{id:shop.id},data:{enabledFeatures:writeWorkspace(fresh.enabledFeatures,workspace)}});
+      await tx.adminAuditLog.create({data:{barberShopId:shop.id,action:"SUBSCRIPTION_COMMISSION_TIERS_UPDATED",
+        adminEmail:viewer.email,details:{userId,previous,tiers,reason}}});
+    },{isolationLevel:"Serializable"});
+  } catch(error){console.error("Could not save commission tiers",error);redirect(`${path}?erro=metas`);}
+  revalidatePath(path);
+  redirect(`${path}?ok=metas`);
+}
+
 export async function saveProfessionalCommissionRates(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "equipe");
