@@ -57,7 +57,7 @@ import { hasStaffPermission, permissionsForRole, STAFF_PERMISSION_KEYS, STAFF_PE
 import { calculateCommission } from "@/lib/commission-calculation";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay } from "./module-actions";
 
 function StatusPill({
   children,
@@ -1508,6 +1508,8 @@ export async function TenantERPView({
                 <form action={createClubInvite} className="erp-compact-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Cliente</span><select className="select" name="customerId" required defaultValue=""><option value="" disabled>Selecione</option>{appointmentCustomers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><button className="btn secondary" type="submit">Gerar link individual</button></form>
               </details>}
               {/^[a-f0-9]{64}$/.test(valueOf("convite")) && canOperate && <div className="notice"><p>Link individual criado. Compartilhe apenas com o cliente correspondente.</p><a target="_blank" rel="noreferrer" href={`/clube/${encodeURIComponent(tenantCode)}/${valueOf("convite")}`}>Abrir contratação do cliente</a><p className="small muted">Copie o endereço do link para enviar ao cliente. Nenhuma mensagem foi enviada automaticamente.</p></div>}
+              {actionOk === "vencimento" && <p className="notice">Dia de vencimento atualizado e auditado.</p>}
+              {actionError === "vencimento" && <p role="alert">Não foi possível alterar o vencimento. Verifique a assinatura e o motivo.</p>}
               {actionOk === "troca-programada" && <p className="notice">Troca de plano programada para o próximo vencimento.</p>}
               {actionError === "motivo" && <p role="alert">Informe um motivo com pelo menos 5 caracteres.</p>}
               {actionError === "convite" && <p role="alert">Não foi possível criar o link. Confira o cliente selecionado.</p>}
@@ -1529,10 +1531,21 @@ export async function TenantERPView({
                     <tr key={member.id}>
                       <td><strong>{member.customer?.name ?? "Cliente"}</strong></td>
                       <td>{member.plan?.name ?? "Plano removido"}{member.pendingPlanId && <div className="small muted">Troca programada: {workspace.clubPlans.find(p => p.id === member.pendingPlanId)?.name ?? "Plano indisponível"}</div>}{member.cancelEffectiveAt && member.status !== "CANCELED" && <div className="small muted">Cancelamento programado para {new Intl.DateTimeFormat("pt-BR").format(new Date(member.cancelEffectiveAt))}</div>}</td>
-                      <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(member.nextBillingAt))}</td>
+                      <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(member.nextBillingAt))}<div className="small muted">Dia escolhido: {member.billingDay ?? Number(new Intl.DateTimeFormat("en-US",{day:"numeric",timeZone:"America/Sao_Paulo"}).format(new Date(member.startedAt)))}</div></td>
                       <td><span className={`badge ${overdue ? "rejected" : "approved"}`}>{overdue ? "Vencido" : member.status === "ACTIVE" ? "Ativo" : member.status}</span></td>
                       <td>
                         <div className="erp-row-actions">
+                          {isOwner && member.status !== "CANCELED" && !member.cancelEffectiveAt && <details>
+                            <summary>Alterar dia de cobrança</summary>
+                            <form action={changeClubBillingDay} className="erp-compact-form">
+                              <input type="hidden" name="tenantCode" value={tenantCode}/>
+                              <input type="hidden" name="memberId" value={member.id}/>
+                              <label>Dia mensal (1 a 31)<input className="input" name="billingDay" type="number" min="1" max="31" step="1" required defaultValue={member.billingDay ?? Number(new Intl.DateTimeFormat("en-US",{day:"numeric",timeZone:"America/Sao_Paulo"}).format(new Date(member.startedAt)))}/></label>
+                              <label>Motivo<input className="input" name="reason" required minLength={5} maxLength={600} placeholder="Solicitação do cliente"/></label>
+                              <p className="small muted">A alteração modifica somente o próximo vencimento, sem editar cobranças emitidas. Dias 29–31 são ajustados ao fim do mês.</p>
+                              <button className="btn secondary" type="submit">Salvar vencimento</button>
+                            </form>
+                          </details>}
                           {isOwner && member.plan && member.status === "ACTIVE" && (
                             <form action={generateClubCharge}>
                               <input type="hidden" name="tenantCode" value={tenantCode} />
