@@ -46,7 +46,7 @@ export default async function ProfessionalApp({params,searchParams}:{
     prisma.product.findMany({where:{barberShopId:shop.id,active:true},select:{id:true,name:true,salePrice:true},orderBy:{name:"asc"},take:250}),
     calculateCommission(prisma,shop.id,professional.id,
       new Date(date.slice(0,7)+"-01T00:00:00-03:00"),
-      new Date(new Date(date.slice(0,7)+"-01T00:00:00-03:00").getFullYear(),new Date(date.slice(0,7)+"-01T00:00:00-03:00").getMonth()+1,1),
+      new Date(new Date(Date.UTC(Number(date.slice(0,4)),Number(date.slice(5,7)),1)).toISOString().slice(0,7)+"-01T00:00:00-03:00"),
       workspace.settings.defaultCommissionPercent,
       workspace.commissionRules.find(r=>r.userId===professional.id)?.percent??workspace.settings.defaultCommissionPercent,
       workspace.serviceCommissionOverrides,workspace.deductions,{workspace}),
@@ -63,7 +63,7 @@ export default async function ProfessionalApp({params,searchParams}:{
   return <main className="container" style={{maxWidth:1050,padding:"20px 14px 45px",margin:"auto"}}>
     <header className="section-head"><div><span className="eyebrow">{shop.tradeName}</span>
       <h1>Área do profissional</h1><p className="muted">{professional.name} · {new Date().toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"})}</p></div>
-      <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/agenda`}>Voltar à agenda</Link>
+      <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/profissional`}>Atualizar meus dados</Link>
     </header>
     {qs.checkoutError&&<p role="alert" className="notice error-notice">{qs.checkoutError.slice(0,250)}</p>}
     {qs.checkoutOk&&<p role="status" className="notice">Item registrado. Confira a comanda abaixo.</p>}
