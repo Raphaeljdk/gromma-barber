@@ -3,6 +3,7 @@
 import { appendClubCharge, registerClubMember } from "@/lib/club-operations";
 import { movementKind } from "@/lib/subscription-reports";
 import { applyClubLifecycle } from "@/lib/club-lifecycle";
+import { reconcileClubRuptures } from "@/lib/club-delinquency";
 import { billingDayFromDate, nextMonthlyBillingAt, nextBillingDayAfter } from "@/lib/club-billing-date";
 import { STAFF_PERMISSION_KEYS, isPermissionRole, hasStaffPermission, type StaffPermission } from "@/lib/role-permissions";
 import { calculateCommission } from "@/lib/commission-calculation";
@@ -324,14 +325,20 @@ export async function processClubBilling(formData: FormData) {
       const customerById = new Map(customers.map((customer) => [customer.id, customer.name]));
 
       for (const member of dueMembers) {
-        const plan = workspace.clubPlans.find((item) => item.id === member.planId && item.active);
-        if (!plan || plan.monthlyAmount <= 0) continue;
-
-        const currentDue = new Date(member.nextBillingAt);
-        const nextDue = nextMonthlyBillingAt(currentDue, member.billingDay ?? billingDayFromDate(new Date(member.startedAt)));
-        await appendClubCharge(tx, shop.id, workspace, member, plan,
-          customerById.get(member.customerId) ?? "Cliente", currentDue, nextDue);
-        member.nextBillingAt = nextDue.toISOString();
+        let processed=0;
+        while(member.status==="ACTIVE" && new Date(member.nextBillingAt)<=now && processed<12) {
+          const currentDue=new Date(member.nextBillingAt);
+          const nextDue=nextMonthlyBillingAt(currentDue,member.billingDay??billingDayFromDate(new Date(member.startedAt)));
+          if(nextDue.getTime()<=currentDue.getTime()) throw new Error("Vencimento inconsistente");
+          const plan=workspace.clubPlans.find(p=>p.id===member.planId && p.active);
+          if(!plan || plan.monthlyAmount<=0) break;
+          const existing=workspace.clubCharges.find(c=>c.memberId===member.id && c.periodStart===currentDue.toISOString());
+          if(!existing) await appendClubCharge(tx,shop.id,workspace,member,plan,
+            customerById.get(member.customerId)??"Cliente",currentDue,nextDue);
+          member.nextBillingAt=nextDue.toISOString();
+          await reconcileClubRuptures(tx,shop.id,workspace,now);
+          processed++;
+        }
       }
 
       await tx.barberShop.update({
@@ -374,6 +381,7 @@ export async function generateClubCharge(formData: FormData) {
       const next = nextMonthlyBillingAt(new Date(member.nextBillingAt), member.billingDay ?? billingDayFromDate(new Date(member.startedAt)));
       await appendClubCharge(tx, shop.id, workspace, member, plan, customer.name, now, next);
       member.nextBillingAt = next.toISOString();
+      await reconcileClubRuptures(tx, shop.id, workspace, now);
       await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) } });
     }, { isolationLevel: "Serializable" });
   } catch (error) { console.error("Failed to generate club charge", error); redirect(`${path}?erro=cobranca`); }
