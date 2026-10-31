@@ -57,7 +57,7 @@ import { hasStaffPermission, permissionsForRole, STAFF_PERMISSION_KEYS, STAFF_PE
 import { calculateCommission } from "@/lib/commission-calculation";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionCommissionTiers } from "./module-actions";
 
 function StatusPill({
   children,
@@ -1957,6 +1957,27 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
+          {isOwner && <details className="erp-quick-create">
+            <summary>Comissão por metas de venda de assinaturas</summary>
+            <p className="small muted">Opcional. Sem faixas cadastradas, aplica-se a taxa fixa configurada por profissional (padrão 0%). Faixas consideram o total das primeiras mensalidades realmente pagas no período da apuração. O limite superior é exclusivo.</p>
+            {actionOk==="metas"&&<p className="notice">Metas de comissão atualizadas.</p>}
+            {actionError==="metas"&&<p className="notice error-notice">Revise as faixas: valores válidos, sem sobreposição, e motivo obrigatório.</p>}
+            <form action={saveSubscriptionCommissionTiers} className="erp-compact-form">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <label><span className="label">Profissional</span><select className="select" name="userId" required defaultValue="">
+                <option value="" disabled>Selecione</option>
+                {shop.users.filter(user=>["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=><option key={user.id} value={user.id}>{user.name}</option>)}
+              </select></label>
+              {[0,1,2,3].map(i=><div key={i} className="grid grid-3">
+                <label>De (R$)<input className="input" name="tierMin" type="number" step=".01" min="0" placeholder={i===0?"500":""}/></label>
+                <label>Até (R$)<input className="input" name="tierMax" type="number" step=".01" min="0" placeholder={i===0?"1000":""}/></label>
+                <label>Comissão (%)<input className="input" name="tierPercent" type="number" step=".01" min="0" max="100" placeholder={i===0?"5":""}/></label>
+              </div>)}
+              <label>Motivo da alteração<input className="input" name="reason" minLength={5} maxLength={600} required placeholder="Regra aprovada pela administração"/></label>
+              <button type="submit" className="btn secondary">Salvar faixas</button>
+            </form>
+            <p className="small muted">Para substituir faixas antigas, salve novamente todas as faixas desejadas. Campos em branco não criam uma faixa.</p>
+          </details>}
           {isOwner && <details className="erp-quick-create"><summary>Configurar comissões de assinaturas e produtos</summary><form action={saveProfessionalCommissionRates} className="erp-quick-form"><input type="hidden" name="tenantCode" value={tenantCode}/><label><span className="label">Profissional</span><select name="userId" className="select" required defaultValue=""><option value="" disabled>Selecione</option>{shop.users.filter(user => ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label><div className="grid grid-2"><label><span className="label">Assinaturas (%)</span><input name="subscriptionPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={0} required /></label><label><span className="label">Produtos (%)</span><input name="productPercent" className="input" type="number" min="0" max="100" step="0.01" defaultValue={30} required /></label></div><button className="btn" type="submit">Salvar percentuais</button><p className="small muted">As regras ficam salvas por profissional. Atribuição automática de assinaturas e produtos depende de vínculo comprovado com a venda e ainda não integra a quitação.</p></form></details>}
           <div className="demo-team-grid">
             {professionals.map((user) => (
