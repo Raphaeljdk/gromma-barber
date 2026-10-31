@@ -185,6 +185,8 @@ export async function removeCommandItem(form: FormData) {
       where: { id: actor, barberShopId: shopId, active: true }, select: { role: true },
     }))?.role;
     if (!["ADMIN","OWNER"].includes(actorRole ?? "")) throw new OperationError("Somente o administrador pode excluir itens e alterar o valor da comanda.");
+    const reason = value(form, "reason");
+    if (reason.length < 5) throw new OperationError("Informe o motivo da exclusão do item.");
     const command = await tx.serviceCommand.findFirst({
       where: { id: value(form, "commandId"), barberShopId: shopId, status: "OPEN" }, include: { items: true },
     });
@@ -204,6 +206,9 @@ export async function removeCommandItem(form: FormData) {
     await tx.serviceCommand.update({ where: { id: command.id }, data: {
       subtotal: subtotal / 100, total: (subtotal - cents(command.discount)) / 100,
     } });
+    await tx.adminAuditLog.create({data:{barberShopId:shopId,action:"COMMAND_ITEM_REMOVED",
+      adminEmail:actor,details:{commandId:command.id,itemId:item.id,description:item.description,quantity:Number(item.quantity),
+        previousAmount:command.total.toString(),newAmount:String((subtotal-cents(command.discount))/100),reason,actor}}});
   });
 }
 export async function checkoutCommand(form: FormData) {
@@ -243,6 +248,10 @@ export async function checkoutCommand(form: FormData) {
     if (!["ADMIN","OWNER"].includes(actorRole ?? "") && (pricing.discountCents !== cents(command.discount) ||
         discountInput.kind !== "NONE" || discountInput.couponCode || String(form.get("appliedItemDiscounts") || "[]") !== "[]"))
       throw new OperationError("Somente o administrador pode aplicar ou modificar descontos.");
+    const discountChanged = pricing.discountCents !== cents(command.discount) || discountInput.kind !== "NONE" ||
+      Boolean(discountInput.couponCode) || String(form.get("appliedItemDiscounts") || "[]") !== "[]";
+    const discountReason = value(form, "discountReason");
+    if (discountChanged && discountReason.length < 5) throw new OperationError("Informe o motivo para aplicar descontos.");
     const amounts = paymentAmounts(form);
     try { validatePayments(amounts, pricing.totalCents); }
     catch { throw new OperationError("A soma dos pagamentos deve ser igual ao total com desconto."); }
@@ -262,6 +271,10 @@ export async function checkoutCommand(form: FormData) {
     const updated = await tx.serviceCommand.updateMany({ where: { id: command.id, barberShopId: shopId, status: "OPEN", updatedAt: command.updatedAt }, data: { status: "CLOSED", closedAt: now, subtotal: pricing.subtotalCents / 100, discount: pricing.discountCents / 100, total: pricing.totalCents / 100 } });
     if (updated.count !== 1) throw new OperationError("A comanda mudou. Atualize e confira novamente.");
     for (const method of PAYMENT_METHODS) if (amounts[method] > 0) await tx.financialEntry.create({ data: { barberShopId: shopId, unitId: command.unitId, type: "RECEIVABLE", status: "PAID", category: "Comandas", description: `Comanda ${command.id.slice(-6).toUpperCase()} · ${PAYMENT_LABELS[method]}`, amount: amounts[method] / 100, dueDate: now, paidAt: now } });
+    if (discountChanged) await tx.adminAuditLog.create({data:{barberShopId:shopId,action:"COMMAND_DISCOUNT_APPLIED",
+      adminEmail:actor,details:{commandId:command.id,previousAmount:command.total.toString(),
+        newAmount:String(pricing.totalCents/100),previousDiscount:command.discount.toString(),
+        newDiscount:String(pricing.discountCents/100),reason:discountReason,couponCode:pricing.couponCode||null,actor}}});
     workspace.commandPayments.push({ id: workspaceId("payment"), commandId: command.id, sessionId: session.id, customerName: command.customer?.name ?? "Cliente avulso", paidAt: now.toISOString(), amounts,
       couponCode: pricing.couponCode || undefined, discountCents: pricing.discountCents,
       manualDiscountCents: pricing.manualCents });
@@ -311,6 +324,8 @@ export async function reopenCommand(form: FormData) {
     redirect(`${path}?checkoutError=${encodeURIComponent("Somente a gestão pode reabrir comandas.")}&commandId=${encodeURIComponent(value(form, "commandId"))}`);
 
   return run(form, "comandas", async (tx, shopId, actor) => {
+    const reason=value(form,"reason");
+    if(reason.length<5) throw new OperationError("Informe o motivo da reabertura.");
     const id = value(form, "commandId");
     const command = await tx.serviceCommand.findFirst({
       where: { id, barberShopId: shopId, status: "CLOSED" },
@@ -414,6 +429,7 @@ export async function reopenCommand(form: FormData) {
           originalClosedAt: command.closedAt?.toISOString() ?? null,
           originalAmounts: payment.amounts,
           restoredProducts: [...products].map(([productId, quantity]) => ({ productId, quantity })),
+          reason,
           actor,
         },
       },
