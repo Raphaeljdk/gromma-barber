@@ -1457,6 +1457,7 @@ export async function TenantERPView({
           {actionOk === "plano-editado" && <div className="notice erp-inline-notice success">Plano atualizado. Cobranças anteriores preservadas.</div>}
           {actionOk === "plano-alterado" && <div className="notice erp-inline-notice success">Plano do assinante atualizado para as próximas cobranças.</div>}
           {actionOk === "plano" && <div className="notice erp-inline-notice success">Plano do clube criado.</div>}
+          {actionError === "regularizacao" && <div role="alert" className="notice error-notice">Recontratação após inadimplência exige autorização do administrador e referência de regularização.</div>}
           {actionOk === "assinante" && <div className="notice erp-inline-notice success">Assinante incluído no clube.</div>}
           {actionOk === "cobranca" && <div className="notice erp-inline-notice success">Cobrança gerada no Financeiro.</div>}
           {actionOk === "recorrencia" && <div className="notice erp-inline-notice success">Recorrência vencida processada e enviada ao Financeiro.</div>}
@@ -1500,6 +1501,11 @@ export async function TenantERPView({
                   <label><span className="label">Plano</span><select className="select" name="planId" required defaultValue=""><option value="" disabled>Selecione</option>{workspace.clubPlans.filter((item) => item.active).map((clubPlan) => <option key={clubPlan.id} value={clubPlan.id}>{clubPlan.name} · {brl(clubPlan.monthlyAmount)}</option>)}</select></label>
                   <label><span className="label">Vendedor da assinatura</span><select className="select" name="sellerId" defaultValue=""><option value="">Sem indicação</option>{shop.users.filter(u=>u.active).map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
                   <label className="erp-check-row"><input type="checkbox" name="chargeNow" defaultChecked /><span>Gerar primeira cobrança no Financeiro</span></label>
+                  {isOwner && <details><summary>Recontratação após ruptura por inadimplência</summary>
+                    <p className="small muted">Para clientes que romperam por dois ciclos não pagos, confirme antes, fora do sistema, a regularização e a eventual multa definida em contrato. A nova assinatura não cancela débitos históricos.</p>
+                    <label><span className="label">Referência do comprovante / regularização</span><input className="input" name="regularizationReference" maxLength={200}/></label>
+                    <label><span className="label">Motivo / autorização</span><input className="input" name="regularizationReason" maxLength={600}/></label>
+                  </details>}
                   <button className="btn" type="submit">Adicionar assinante</button>
                 </form>
               )}
@@ -1529,10 +1535,10 @@ export async function TenantERPView({
                   const overdue = member.status === "ACTIVE" && new Date(member.nextBillingAt).getTime() < now.getTime();
                   return (
                     <tr key={member.id}>
-                      <td><strong>{member.customer?.name ?? "Cliente"}</strong></td>
+                      <td><strong>{member.customer?.name ?? "Cliente"}</strong>{member.brokenAt && <div className="small muted">Rompida por 2 ciclos inadimplentes · Regularização pela administração</div>}</td>
                       <td>{member.plan?.name ?? "Plano removido"}{member.pendingPlanId && <div className="small muted">Troca programada: {workspace.clubPlans.find(p => p.id === member.pendingPlanId)?.name ?? "Plano indisponível"}</div>}{member.cancelEffectiveAt && member.status !== "CANCELED" && <div className="small muted">Cancelamento programado para {new Intl.DateTimeFormat("pt-BR").format(new Date(member.cancelEffectiveAt))}</div>}</td>
                       <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(member.nextBillingAt))}<div className="small muted">Dia escolhido: {member.billingDay ?? Number(new Intl.DateTimeFormat("en-US",{day:"numeric",timeZone:"America/Sao_Paulo"}).format(new Date(member.startedAt)))}</div></td>
-                      <td><span className={`badge ${overdue ? "rejected" : "approved"}`}>{overdue ? "Vencido" : member.status === "ACTIVE" ? "Ativo" : member.status}</span></td>
+                      <td><span className={`badge ${overdue ? "rejected" : "approved"}`}>{member.brokenAt ? "Rompida" : overdue ? "Vencido" : member.status === "ACTIVE" ? "Ativo" : member.status}</span></td>
                       <td>
                         <div className="erp-row-actions">
                           {isOwner && member.status !== "CANCELED" && !member.cancelEffectiveAt && <details>
