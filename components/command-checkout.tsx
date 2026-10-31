@@ -20,11 +20,11 @@ const date = (v: string) => new Date(v).toLocaleDateString("pt-BR", { timeZone: 
 const zeroAmounts = (): Record<PaymentMethod, string> => ({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", TRANSFER: "" });
 
 export function CommandCheckout({
-  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false,
+  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false, sellers = [], viewerRole = 'BARBER',
 }: {
   tenantCode: string; command: CommandView; catalog: CatalogItem[];
   session?: CashSession; payment?: CommandPayment; canOperate: boolean; allowReopen?: boolean; coupons?: CheckoutCoupon[];
-  error?: string; autoOpen?: boolean;
+  error?: string; autoOpen?: boolean; sellers?: {id:string;name:string}[]; viewerRole?: string;
 }) {
   const [open, setOpen] = useState(autoOpen);
   const [fiscalOpen, setFiscalOpen] = useState(false);
@@ -63,6 +63,7 @@ export function CommandCheckout({
     return result + (Number.isFinite(value) ? Math.round(value * 100) : 0);
   }, 0);
   const editable = canOperate && command.status === "OPEN";
+  const canEditFinancial = viewerRole === "OWNER" || viewerRole === "ADMIN";
   const paid = command.status === "CLOSED";
   const mayReopen = Boolean(allowReopen && canReopenCommand(command.status, session?.unitId ?? "", payment, session ? [session] : []));
   const ready = editable && Boolean(session) && !pricingError && !invalidAmounts && (selectedMethod !== null || split) && sum === totalCents;
@@ -152,7 +153,7 @@ export function CommandCheckout({
             <div className="checkout-lines">{command.items.length ? command.items.map(item => <div key={item.id}>
               <span><strong>{item.description}</strong><small>{item.kind === "PRODUCT" ? "Produto" : "Serviço"} · {item.quantity} un.</small></span>
               <b>{itemDeductions.has(item.id) ? <><del className="checkout-old-price">{brl(item.total)}</del><strong className="checkout-new-price">{brl((Math.round(item.total * 100) - (itemDeductions.get(item.id) ?? 0)) / 100)}</strong></> : brl(item.total)}</b>
-              {editable && <form action={removeCommandItem}>{fields}<input type="hidden" name="itemId" value={item.id} /><button className="agenda-icon-button" type="submit" title={"Remover " + item.description} aria-label={"Remover " + item.description}><Trash2 size={16} /></button></form>}
+              {editable && canEditFinancial && <form action={removeCommandItem}>{fields}<input type="hidden" name="itemId" value={item.id} /><button className="agenda-icon-button" type="submit" title={"Remover " + item.description} aria-label={"Remover " + item.description}><Trash2 size={16} /></button></form>}
             </div>) : <p className="agenda-form-hint">Nenhum serviço ou produto na comanda.</p>}</div>
           </section>}
           {editable && showAdd && <form action={addCommandItem} className="checkout-add checkout-add-focused">
@@ -175,6 +176,12 @@ export function CommandCheckout({
                   <option key={item.id} value={item.kind + ":" + item.id}>{item.name} · {brl(item.price)}</option>)}
               </select>
             </label>
+            {itemCategory === "PRODUCT" && viewerRole !== "BARBER" && <label><span className="label">Quem vendeu?</span>
+              <select className="select" name="sellerId" required={viewerRole === "MANAGER" || viewerRole === "RECEPTIONIST"} defaultValue="">
+                <option value="">Selecione o profissional</option>
+                {sellers.map(seller => <option key={seller.id} value={seller.id}>{seller.name}</option>)}
+              </select>
+            </label>}
             <label><span className="label">Qtd.</span><input className="input" name="quantity" type="number" min="1" max="100" defaultValue="1" required /></label>
             <AgendaSubmit secondary><Plus size={16} /> Incluir</AgendaSubmit>
           </form>}
@@ -190,9 +197,9 @@ export function CommandCheckout({
               {fields}
               <input type="hidden" name="sessionId" value={session.id} />
               <input type="hidden" name="expectedTotal" value={totalCents} />
-              <button type="button" className="checkout-split-toggle" aria-expanded={showDiscount}
-                onClick={() => { setShowDiscount(!showDiscount); }}>Descontos e cupons <ChevronDown size={15}/></button>
-              {showDiscount && <div className="checkout-discount-panel">
+              {canEditFinancial && <button type="button" className="checkout-split-toggle" aria-expanded={showDiscount}
+                onClick={() => { setShowDiscount(!showDiscount); }}>Descontos e cupons <ChevronDown size={15}/></button>}
+              {canEditFinancial && showDiscount && <div className="checkout-discount-panel">
                 <label><span className="label">Tipo de desconto</span>
                   <select className="select" name="discountKind" value={discountKind}
                     onChange={e => { setDiscountKind(e.target.value as "NONE" | "FIXED" | "PERCENT"); setDiscountValue(""); }}>
@@ -241,7 +248,7 @@ export function CommandCheckout({
                 {pricingError ? <p className="checkout-discount-error" role="alert">{pricingError}</p>
                   : <p className="agenda-form-hint">Desconto: {brl(pricing.discountCents / 100)} · Total: {brl(pricing.totalCents / 100)}</p>}
               </div>}
-              {!showDiscount && <>
+              {(!canEditFinancial || !showDiscount) && <>
                 <input type="hidden" name="discountKind" value="NONE"/>
                 <input type="hidden" name="discountScope" value="ORDER"/>
                 <input type="hidden" name="discountValue" value=""/>
