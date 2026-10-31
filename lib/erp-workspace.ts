@@ -19,6 +19,8 @@ export type ClubMemberConfig = {
   status: "ACTIVE" | "PAST_DUE" | "PAUSED" | "CANCELED";
   startedAt: string;
   nextBillingAt: string;
+  billingDay?: number;
+  brokenAt?: string;
   canceledAt?: string;
   pendingPlanId?: string;
   pendingPlanRequestedAt?: string;
@@ -28,7 +30,7 @@ export type ClubMemberConfig = {
 
 export type ClubEvent = {
   id: string; memberId: string; customerId: string; at: string;
-  kind: "CHANGE" | "CANCEL"; previousPlanId: string; previousPlanName: string;
+  kind: "CHANGE" | "CANCEL" | "BILLING_DAY" | "BREAK"; previousPlanId: string; previousPlanName: string;
   previousAmount: number | null; newPlanId?: string; newPlanName?: string; newAmount?: number;
   movement?: "UPGRADE" | "DOWNGRADE" | "CHANGE";
   effectiveAt?: string;
@@ -179,6 +181,7 @@ export type ErpWorkspace = {
   commissionRules: CommissionRuleConfig[];
   serviceCommissionOverrides: Record<string, number>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
+  subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
   deductions: DeductionConfig[];
   waitlist: WaitlistConfig[];
   agendaBlocks: AgendaBlock[];
@@ -186,6 +189,7 @@ export type ErpWorkspace = {
   commandPayments: CommandPayment[];
   bookedServices: BookedServices[];
   productLines: { itemId: string; productId: string }[];
+  productSellerAssignments: { itemId: string; userId: string; recordedAt: string }[];
   serviceLines: { itemId: string; serviceId: string }[];
   settings: OperationalSettings;
 };
@@ -208,6 +212,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   commissionRules: [],
   serviceCommissionOverrides: {},
   professionalExtraRates: {},
+  subscriptionCommissionTiers: {},
   deductions: [],
   waitlist: [],
   agendaBlocks: [],
@@ -215,6 +220,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   commandPayments: [],
   bookedServices: [],
   productLines: [],
+  productSellerAssignments: [],
   serviceLines: [],
   settings: {
     openHour: 8,
@@ -263,6 +269,11 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     training: array<TrainingConfig>(operations.training),
     commissionRules: array<CommissionRuleConfig>(operations.commissionRules),
     professionalExtraRates: Object.fromEntries(Object.entries(record(operations.professionalExtraRates)).map(([id, raw]) => { const item = record(raw); const sub = Number(item.subscriptionPercent); const prod = Number(item.productPercent); return [id, { subscriptionPercent: Number.isFinite(sub) && sub >= 0 && sub <= 100 ? sub : 0, productPercent: Number.isFinite(prod) && prod >= 0 && prod <= 100 ? prod : 30 }]; })) as Record<string, { subscriptionPercent: number; productPercent: number }>,
+    subscriptionCommissionTiers: Object.fromEntries(Object.entries(record(operations.subscriptionCommissionTiers)).map(([userId, raw]) => [userId,
+      (Array.isArray(raw) ? raw : []).filter((t): t is { min: number; max: number | null; percent: number } =>
+        !!t && typeof t === "object" && typeof t.min === "number" && t.min >= 0 && (t.max === null || (typeof t.max === "number" && t.max > t.min)) &&
+        typeof t.percent === "number" && t.percent >= 0 && t.percent <= 100)
+    ])) as Record<string, { min: number; max: number | null; percent: number }[]>,
     serviceCommissionOverrides: Object.fromEntries(Object.entries(record(operations.serviceCommissionOverrides)).filter(([, amount]) => typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 && amount <= 100)) as Record<string, number>,
     deductions: array<DeductionConfig>(operations.deductions),
     waitlist: array<WaitlistConfig>(operations.waitlist),
@@ -271,6 +282,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     commandPayments: array<CommandPayment>(operations.commandPayments),
     bookedServices: array<BookedServices>(operations.bookedServices),
     productLines: array<{ itemId: string; productId: string }>(operations.productLines),
+    productSellerAssignments: array<{ itemId: string; userId: string; recordedAt: string }>(operations.productSellerAssignments),
     serviceLines: array<{ itemId: string; serviceId: string }>(operations.serviceLines),
     settings: {
       openHour: Number(settings.openHour ?? DEFAULT_WORKSPACE.settings.openHour),
