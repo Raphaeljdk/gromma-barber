@@ -77,6 +77,7 @@ type WorkspaceShop = {
 async function persistWorkspace(
   shop: WorkspaceShop,
   mutate: (workspace: ErpWorkspace) => void,
+  audit?: { action: string; actor: string; details: Record<string, unknown> },
 ) {
   await prisma.$transaction(async tx => {
     const fresh = await tx.barberShop.findUnique({ where: { id: shop.id } });
@@ -84,6 +85,8 @@ async function persistWorkspace(
     const workspace = cloneWorkspace(readWorkspace(fresh.enabledFeatures));
     mutate(workspace);
     await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, workspace) } });
+    if (audit) await tx.adminAuditLog.create({ data: { barberShopId: shop.id,
+      action: audit.action, adminEmail: audit.actor, details: audit.details as Prisma.InputJsonValue } });
   }, { isolationLevel: "Serializable" });
 }
 
@@ -216,6 +219,7 @@ export async function changeClubMemberPlan(formData: FormData) {
   const planId = value(formData, "planId", 80);
   const reason = value(formData, "reason", 600);
   if (reason.length < 5) redirect(`${path}?erro=motivo`);
+  const auditDetails: Record<string, unknown> = { memberId, planId, reason };
   try {
     await persistWorkspace(shop, workspace => {
       const member = workspace.clubMembers.find(item => item.id === memberId);
@@ -227,6 +231,7 @@ export async function changeClubMemberPlan(formData: FormData) {
       if (!Number.isFinite(effectiveAt.getTime()) || effectiveAt.getTime() <= Date.now())
         throw new Error("Regularize a cobrança vencida antes de solicitar a troca");
       const old = workspace.clubPlans.find(p => p.id === member.planId);
+      Object.assign(auditDetails, { previousPlanId: member.planId, previousAmount: old?.monthlyAmount ?? null, newAmount: plan.monthlyAmount, effectiveAt: effectiveAt.toISOString() });
       workspace.clubEvents.filter(e => e.memberId === member.id && e.kind === "CHANGE" && e.status === "SCHEDULED")
         .forEach(e => { e.status = "SUPERSEDED"; e.reason = "Solicitação substituída antes da vigência"; });
       workspace.clubEvents.push({ id: workspaceId("change"), memberId: member.id, customerId: member.customerId,
@@ -238,7 +243,7 @@ export async function changeClubMemberPlan(formData: FormData) {
         movement: movementKind(old?.monthlyAmount ?? null, plan.monthlyAmount) });
       member.pendingPlanId = plan.id;
       member.pendingPlanRequestedAt = new Date().toISOString();
-    });
+    }, {action:"CLUB_PLAN_CHANGE_SCHEDULED", actor:viewer.email, details:auditDetails});
   } catch (error) { console.error("Failed to schedule member plan", error); redirect(`${path}?erro=assinante`); }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=troca-programada`);
@@ -876,10 +881,13 @@ export async function updateClubMemberStatus(formData: FormData) {
   const status = action === "pause" ? "PAUSED" : action === "activate" ? "ACTIVE" : null;
   if (!memberId || !["pause", "activate", "cancel"].includes(action) || reason.length < 5)
     redirect(`${path}?erro=motivo`);
+  const auditDetails: Record<string, unknown> = { memberId, requestedAction: action, reason };
   try {
     await persistWorkspace(shop, workspace => {
       const member = workspace.clubMembers.find(item => item.id === memberId);
       if (!member || member.status === "CANCELED") throw new Error("Assinatura inválida");
+      auditDetails.previousStatus = member.status;
+      auditDetails.planId = member.planId;
       if (action === "cancel") {
         if (member.cancelEffectiveAt) throw new Error("Cancelamento já programado");
         const now = new Date();
@@ -888,6 +896,7 @@ export async function updateClubMemberStatus(formData: FormData) {
         const plan = workspace.clubPlans.find(p => p.id === member.planId);
         member.cancelRequestedAt = now.toISOString();
         member.cancelEffectiveAt = effectiveAt.toISOString();
+        auditDetails.effectiveAt = effectiveAt.toISOString();
         workspace.clubEvents.push({ id: workspaceId("cancel"), memberId: member.id, customerId: member.customerId,
           at: now.toISOString(), effectiveAt: effectiveAt.toISOString(),
           status: effectiveAt <= now ? "APPLIED" : "SCHEDULED",
@@ -897,7 +906,8 @@ export async function updateClubMemberStatus(formData: FormData) {
       } else if (status && member.status !== status) {
         member.status = status;
       }
-    });
+      auditDetails.newStatus = member.status;
+    }, {action:"CLUB_STATUS_CHANGE_REQUESTED", actor:viewer.email, details:auditDetails});
   } catch (error) { console.error("Failed to update club member status", error); redirect(`${path}?erro=assinante-status`); }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=assinante-status`);
