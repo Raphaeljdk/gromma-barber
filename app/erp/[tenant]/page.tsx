@@ -57,6 +57,8 @@ import { hasStaffPermission, permissionsForRole, STAFF_PERMISSION_KEYS, STAFF_PE
 import { calculateCommission } from "@/lib/commission-calculation";
 import { subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { createProfessional } from "./professional-actions";
+import { assignProductCategory } from "./product-category-actions";
+import { PRODUCT_COMMISSION_CATEGORIES,categoryName } from "@/lib/product-commission-rules";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
@@ -1892,6 +1894,8 @@ export async function TenantERPView({
           {actionOk === "produto" && <div className="notice erp-inline-notice success">Produto cadastrado com sucesso.</div>}
           {actionOk === "movimento" && <div className="notice erp-inline-notice success">Movimentação de estoque registrada.</div>}
           {actionError === "produto" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o produto. Revise os valores informados.</div>}
+          {actionOk==="categoria"&&<p className="notice">Categoria comercial salva.</p>}
+          {actionError==="categoria"&&<p role="alert" className="notice error-notice">Confira a categoria selecionada.</p>}
           {actionError === "movimento" && <div className="notice erp-inline-notice error-notice">Revise produto, unidade e quantidade da movimentação.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {isOwner && (
@@ -1900,6 +1904,12 @@ export async function TenantERPView({
             <form action={createProduct} className="erp-quick-form">
               <input type="hidden" name="tenantCode" value={tenantCode} />
               <label><span className="label">Produto</span><input className="input" name="name" required maxLength={140} placeholder="Nome do produto" /></label>
+              <label><span className="label">Categoria comercial</span>
+                <select name="productCategory" className="select" required defaultValue="">
+                  <option value="" disabled>Selecione a categoria</option>
+                  {PRODUCT_COMMISSION_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}
+                </select>
+              </label>
               <div className="grid grid-2">
                 <label><span className="label">SKU</span><input className="input" name="sku" maxLength={80} placeholder="Código interno" /></label>
                 <label><span className="label">Código de barras</span><input className="input" name="barcode" maxLength={80} placeholder="Opcional" /></label>
@@ -1932,13 +1942,24 @@ export async function TenantERPView({
             search={{ param: "estoqueQ", value: estoqueQ, placeholder: "Buscar produto, SKU ou código" }}
           />
           <div className="table-wrap"><table>
-            <thead><tr><th>SKU</th><th>Produto</th><th>Custo</th><th>Venda</th><th>Atual</th><th>Mínimo</th><th>Situação</th></tr></thead>
+            <thead><tr><th>SKU</th><th>Produto</th><th>Categoria</th><th>Custo</th><th>Venda</th><th>Atual</th><th>Mínimo</th><th>Situação</th></tr></thead>
             <tbody>{productStockRows.length ? productStockRows.map((product) => {
               const low = product.currentStock <= Number(product.stockMin);
               return (
                 <tr key={product.id}>
                   <td><strong>{product.sku ?? "—"}</strong><div className="small muted">{product.barcode ?? "Sem código de barras"}</div></td>
                   <td><strong>{product.name}</strong></td>
+                  <td>{isOwner?<form action={assignProductCategory}
+                    style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input type="hidden" name="tenantCode" value={tenantCode}/>
+                    <input type="hidden" name="productId" value={product.id}/>
+                    <select name="productCategory" className="select" style={{minWidth:120}}
+                      defaultValue={workspace.productCategoryAssignments[product.id]??""} required>
+                      <option value="" disabled>Classificar</option>
+                      {PRODUCT_COMMISSION_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}
+                    </select>
+                    <button className="btn secondary" type="submit">Salvar</button>
+                  </form>:categoryName(workspace.productCategoryAssignments[product.id])}</td>
                   <td>{brl(Number(product.costPrice))}</td>
                   <td>{brl(Number(product.salePrice))}</td>
                   <td><strong>{product.currentStock.toFixed(3).replace(/\.000$/, "")}</strong></td>
@@ -1946,7 +1967,7 @@ export async function TenantERPView({
                   <td><span className={`badge ${low ? "rejected" : "approved"}`}>{low ? "Repor" : "Regular"}</span></td>
                 </tr>
               );
-            }) : <tr><td colSpan={7} className="muted">Nenhum produto encontrado.</td></tr>}</tbody>
+            }) : <tr><td colSpan={8} className="muted">Nenhum produto encontrado.</td></tr>}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/estoque`} searchParams={qs} param="estoquePage" page={estoquePage} total={productsTotal} pageSize={pageSize} hash="estoque" label="produtos" />
         </section>
