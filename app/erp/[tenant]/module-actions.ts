@@ -685,6 +685,52 @@ export async function saveSubscriptionCommissionTiers(formData: FormData) {
   redirect(`${path}?ok=metas`);
 }
 
+/** Não existe campo editável de total recebido. Apenas percentuais de uma regra auditada. */
+export async function saveSubscriptionPotRate(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode,"comissoes");
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  const percent = Number(value(formData,"potPercent",15).replace(",","."));
+  const reason = value(formData,"reason",600);
+  if (!Number.isFinite(percent) || percent<0 || percent>100 || reason.length<5)
+    redirect(`${path}?erro=pote`);
+  const details: Record<string,unknown> = {newPercent:percent,reason};
+  try {
+    await persistWorkspace(shop, workspace => {
+      details.previousPercent=workspace.subscriptionPot.percent;
+      workspace.subscriptionPot.percent=percent;
+    },{action:"SUBSCRIPTION_POT_RATE_UPDATED",actor:viewer.email,details});
+  } catch(error) { console.error("Subscription pot rate update failed",error);redirect(`${path}?erro=pote`); }
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`,"layout");
+  redirect(`${path}?ok=pote`);
+}
+
+export async function saveSubscriptionPotShare(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path=modulePath(tenantCode,"equipe");
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  const userId=value(formData,"userId",80);
+  const sharePercent=Number(value(formData,"sharePercent",15).replace(",","."));
+  const reason=value(formData,"reason",600);
+  if (!Number.isFinite(sharePercent) || sharePercent<0 || sharePercent>100 || reason.length<5)
+    redirect(`${path}?erro=pote`);
+  const professional=await prisma.shopUser.findFirst({where:{id:userId,barberShopId:shop.id,active:true,
+    role:{in:["OWNER","MANAGER","BARBER"]}},select:{id:true}});
+  if(!professional) redirect(`${path}?erro=pote`);
+  const details: Record<string,unknown>={userId,newPercent:sharePercent,reason};
+  try {
+    await persistWorkspace(shop,workspace=>{
+      details.previousPercent=workspace.subscriptionPot.shares[userId]??0;
+      const shares={...workspace.subscriptionPot.shares,[userId]:sharePercent};
+      const total=Object.values(shares).reduce((sum,val)=>sum+Math.round(val*100),0);
+      if(total>10000) throw new Error("As participações não podem ultrapassar 100% do pote");
+      workspace.subscriptionPot.shares=shares;
+    },{action:"SUBSCRIPTION_POT_SHARE_UPDATED",actor:viewer.email,details});
+  } catch(error) {console.error("Subscription pot share update failed",error);redirect(`${path}?erro=pote`);}
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`,"layout");
+  redirect(`${path}?ok=pote`);
+}
+
 export async function saveProfessionalCommissionRates(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "equipe");
