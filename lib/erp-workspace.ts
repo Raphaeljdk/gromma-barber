@@ -16,6 +16,7 @@ export type ClubMemberConfig = {
   id: string;
   customerId: string;
   planId: string;
+  unitId?: string | null;
   status: "ACTIVE" | "PAST_DUE" | "PAUSED" | "CANCELED";
   startedAt: string;
   nextBillingAt: string;
