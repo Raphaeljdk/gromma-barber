@@ -182,6 +182,8 @@ export type ErpWorkspace = {
   serviceCommissionOverrides: Record<string, number>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
+  /** Regras de rateio do pote. Nunca armazena nem permite editar o valor arrecadado. */
+  subscriptionPot: { percent: number; shares: Record<string, number> };
   deductions: DeductionConfig[];
   waitlist: WaitlistConfig[];
   agendaBlocks: AgendaBlock[];
@@ -213,6 +215,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   serviceCommissionOverrides: {},
   professionalExtraRates: {},
   subscriptionCommissionTiers: {},
+  subscriptionPot: { percent: 0, shares: {} },
   deductions: [],
   waitlist: [],
   agendaBlocks: [],
@@ -274,6 +277,15 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         !!t && typeof t === "object" && typeof t.min === "number" && t.min >= 0 && (t.max === null || (typeof t.max === "number" && t.max > t.min)) &&
         typeof t.percent === "number" && t.percent >= 0 && t.percent <= 100)
     ])) as Record<string, { min: number; max: number | null; percent: number }[]>,
+    subscriptionPot: (() => {
+      const source = record(operations.subscriptionPot);
+      const rawPercent = Number(source.percent);
+      const percent = Number.isFinite(rawPercent) && rawPercent >= 0 && rawPercent <= 100 ? rawPercent : 0;
+      const shares = Object.fromEntries(Object.entries(record(source.shares))
+        .filter(([, v]) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100)
+        .map(([id, v]) => [id, Number(v)])) as Record<string, number>;
+      return { percent, shares };
+    })(),
     serviceCommissionOverrides: Object.fromEntries(Object.entries(record(operations.serviceCommissionOverrides)).filter(([, amount]) => typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 && amount <= 100)) as Record<string, number>,
     deductions: array<DeductionConfig>(operations.deductions),
     waitlist: array<WaitlistConfig>(operations.waitlist),
