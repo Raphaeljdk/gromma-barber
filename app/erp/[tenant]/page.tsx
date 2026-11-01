@@ -1869,7 +1869,7 @@ export async function TenantERPView({
           shopId={shop.id} tenantCode={tenantCode} query={qs} canManage={auditCanView}
           units={shop.units.map(unit=>({id:unit.id,name:unit.name,active:unit.active}))}
           professionals={shop.users.map(user=>({id:user.id,name:user.name,unitId:user.unitId,role:user.role}))}
-          blocks={workspace.agendaBlocks} settings={workspace.settings} clubMembers={workspace.clubMembers} isOwner={isOwner}/>}
+          blocks={workspace.agendaBlocks} settings={workspace.settings} clubMembers={workspace.clubMembers} professionalProfiles={workspace.professionalProfiles} isOwner={isOwner}/>}
 
         {activeModule === "notificacoes" && <StockNotifications tenantCode={tenantCode} isOwner={isOwner} query={qs} notices={inventoryNotices} />}
         {activeModule === "estoque-compras" && <StockPurchases shopId={shop.id} tenantCode={tenantCode}
