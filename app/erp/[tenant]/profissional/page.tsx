@@ -5,6 +5,7 @@ import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
+import { hasProfessionalPermission } from "@/lib/professional-profile";
 import { addCommandItem } from "../checkout-actions";
 import { addAgendaDays, isAgendaDate } from "@/lib/agenda";
 
@@ -33,6 +34,11 @@ export default async function ProfessionalApp({params,searchParams}:{
     role:{in:["BARBER","OWNER"]}},select:{id:true,name:true,unitId:true}});
   if(!professional) notFound();
   const workspace=readWorkspace(shop.enabledFeatures);
+  const profile=workspace.professionalProfiles[professional.id];
+  const canAddService=hasProfessionalPermission(profile,"ADD_SERVICE");
+  const canAddProduct=hasProfessionalPermission(profile,"ADD_PRODUCT");
+  const enabledServices=profile?.enabledServices;
+
   const now=new Date();
   const date=localDate(now);
   const nextDate=new Date(new Date(date+"T00:00:00-03:00").getTime()+86400000);
@@ -109,13 +115,13 @@ export default async function ProfessionalApp({params,searchParams}:{
           {a.command&&<div className="erp-stacked-list">{a.command.items.map(item=><div key={item.id}>
             <span>{item.description} · {Number(item.quantity)} un.</span><small>{item.kind==="PRODUCT"?"Produto":"Serviço"}</small>
           </div>)}</div>}
-          {a.command?.status==="OPEN"&&<form action={addCommandItem} className="erp-compact-form">
+          {a.command?.status==="OPEN"&&(canAddService||canAddProduct)&&<form action={addCommandItem} className="erp-compact-form">
             <input name="tenantCode" type="hidden" value={tenantCode}/><input name="commandId" type="hidden" value={a.command.id}/>
             <input name="professionalReturn" type="hidden" value="1"/>
             <label>Incluir produto ou serviço na comanda<select className="select" name="catalogItem" required defaultValue="">
               <option value="" disabled>Selecione no catálogo</option>
-              <optgroup label="Serviços">{services.map(item=><option key={item.id} value={"SERVICE:"+item.id}>{item.name} · {money(Number(item.price))}</option>)}</optgroup>
-              <optgroup label="Produtos">{products.map(item=><option key={item.id} value={"PRODUCT:"+item.id}>{item.name} · {money(Number(item.salePrice))}</option>)}</optgroup>
+              {canAddService&&<optgroup label="Serviços">{services.filter(item=>!enabledServices||enabledServices.includes(item.id)).map(item=><option key={item.id} value={"SERVICE:"+item.id}>{item.name} · {money(Number(item.price))}</option>)}</optgroup>}
+              {canAddProduct&&<optgroup label="Produtos">{products.map(item=><option key={item.id} value={"PRODUCT:"+item.id}>{item.name} · {money(Number(item.salePrice))}</option>)}</optgroup>}
             </select></label>
             <label>Quantidade<input className="input" name="quantity" type="number" min="1" max="100" defaultValue={1} required/></label>
             <button className="btn" type="submit">Adicionar item</button>
