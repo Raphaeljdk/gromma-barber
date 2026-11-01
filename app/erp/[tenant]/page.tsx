@@ -1968,6 +1968,7 @@ export async function TenantERPView({
 
           {actionOk === "pagamento" && <div className="notice erp-inline-notice success">Pagamento registrado e período bloqueado contra duplicidade.</div>}
           {actionError === "pagamento" && <div className="notice erp-inline-notice error-notice">Pagamento não registrado. Confira o período, os valores e possíveis pagamentos anteriores.</div>}
+          {actionError === "pote-pagamento" && <div className="notice erp-inline-notice error-notice">As comissões do pote estão em prévia. A quitação real fica bloqueada até existir um fechamento imutável dos valores e integração de pagamento validada.</div>}
           {actionOk === "comissao" && <div className="notice erp-inline-notice success">Regra de comissão atualizada.</div>}
           {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
           {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
