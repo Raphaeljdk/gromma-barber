@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace } from "@/lib/erp-workspace";
-import { PROFESSIONAL_PERMISSION_OPTIONS, PRODUCT_CATEGORIES, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
+import { PROFESSIONAL_PERMISSION_OPTIONS, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
+import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
 
 export const dynamic="force-dynamic";
 type Props={params:Promise<{tenant:string;userId:string}>;searchParams:Promise<Record<string,string|undefined>>};
@@ -257,27 +258,16 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
     </details>
 
     <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>7. Comissão sobre produtos</strong> <span className="muted"> · regras por categoria e meta mínima</span></summary>
-      <p className="small muted" style={{marginTop:14}}>Cadastre as faixas de comissão por categoria e valor mínimo vendido, como no modelo apresentado. A aplicação automática depende da categorização dos produtos no catálogo; até lá, a comissão de produtos continua usando a regra existente.</p>
-      <form action={saveProfessionalSection} className="erp-compact-form">
-        {hidden(code,user.id,"product-tier")}
-        <label>Categoria<select className="select" name="category">{PRODUCT_CATEGORIES.map(category=><option key={category} value={category}>{category}</option>)}</select></label>
-        <div className="grid grid-2">
-          <label>Venda mínima (R$)<input className="input" name="minimum" type="number" min={0} step=".01" required/></label>
-          <label>Comissão (%)<input className="input" name="percent" type="number" min={0} max={100} step=".01" required/></label>
-        </div>
-        
-        <button className="btn" type="submit">Adicionar faixa</button>
-      </form>
-      <div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Categoria</th><th>Venda mínima</th><th>Comissão</th><th>Ação</th></tr></thead><tbody>
-        {(profile.productTiers??[]).map(tier=><tr key={tier.id}><td>{tier.category}</td><td>{currency(tier.minimum)}</td><td>{tier.percent}%</td>
-          <td><form action={saveProfessionalSection}>{hidden(code,user.id,"product-tier-remove")}
-            <input type="hidden" name="id" value={tier.id}/><button className="btn secondary" type="submit">Excluir</button></form></td></tr>)}
-        {!profile.productTiers?.length&&<tr><td colSpan={4}>Sem faixas personalizadas.</td></tr>}
-      </tbody></table></div>
+      <summary><strong>7. Comissão de produtos</strong> <span className="muted"> · Cosméticos e Bebidas</span></summary>
+      <ProfessionalProductCommissionEditor tenantCode={code} userId={user.id}
+        rules={profile.productCommissionRules??{}}/>
+      <p className="small muted" style={{marginTop:10}}>
+        Classifique os produtos antigos em Estoque → Produtos para aplicar essas regras.
+        Itens ainda sem categoria continuam com a regra anterior, sem alterar históricos.
+      </p>
     </details>
     <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>8. Regras de comissão e venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></summary>
+      <summary><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></summary>
       <p className="small muted" style={{marginTop:14}}>O pote de assinaturas é distribuído automaticamente por produtividade. Uma bonificação adicional pela venda de um plano novo é opcional e só aparece na apuração se estiver habilitada abaixo.</p>
       <form action={saveProfessionalSection} className="erp-compact-form">
         {hidden(code,user.id,"base-commissions")}
@@ -291,8 +281,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <div className="grid grid-2">
           <label>Comissão por venda de assinatura (%)<input className="input" type="number" step=".01" min={0} max={100}
             name="subscriptionPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}/></label>
-          <label>Comissão padrão sobre produtos (%)<input className="input" type="number" step=".01" min={0} max={100}
-            name="productPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.productPercent??30}/></label>
+
         </div>
         
         <button className="btn" type="submit">Salvar percentuais de vendas</button>
