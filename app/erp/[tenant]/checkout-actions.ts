@@ -157,12 +157,13 @@ export async function addCommandItem(form: FormData) {
       commandId: command.id, kind, description: catalog.name, quantity, unitPrice: price / 100, total: price * quantity / 100,
     } });
     const { shop, workspace } = await configuration(tx, shopId);
-    if(staff?.role==="BARBER"){
+    if(staff && staff.role!=="OWNER"){
       const profile=workspace.professionalProfiles[staff.id];
       const permission=kind==="PRODUCT"?"ADD_PRODUCT":"ADD_SERVICE";
       if(!hasProfessionalPermission(profile,permission))
         throw new OperationError("O administrador não liberou esta operação para seu acesso.");
-      if(service && profile?.enabledServices && !profile.enabledServices.includes(service.id))
+      if(staff.role==="BARBER" && service && profile?.enabledServices &&
+          !profile.enabledServices.includes(service.id))
         throw new OperationError("Serviço não habilitado para este profissional.");
     }
 
