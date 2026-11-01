@@ -14,7 +14,7 @@ function moneyCents(amount: Prisma.Decimal): number {
 
 /** Um atendimento é de assinante quando o cliente possuía contrato vigente na
  * data do serviço. Cada agendamento COMPLETED conta uma única vez, mesmo com
- * vários serviços na comanda. Cancelados, faltas e avulsos não entram.
+ * vários serviços na comanda. Cancelados, faltas, avulsos e ciclos não pagos não entram.
  *
  * Contratos antigos sem histórico detalhado de suspensão/inadimplência podem
  * precisar de revisão antes da homologação financeira definitiva.
@@ -127,6 +127,22 @@ export async function calculateSubscriptionPot(
   if (!Number.isFinite(percent) || percent < 0 || percent > 100) throw new Error("Percentual de pote inválido");
   const potCents = Math.round(netCents * percent / 100);
 
+  // O histórico do contrato, sozinho, não prova que o atendimento foi realizado
+  // como assinante: um cliente inadimplente pode comprar um serviço avulso.
+  // Exigimos um ciclo com recebimento confirmado antes do atendimento.
+  const paidCycles = new Map<string, { start: number; end: number; paid: number }[]>();
+  for (const entry of entries) {
+    if (!entry.paidAt) continue;
+    const charge = chargeByEntry.get(entry.id);
+    if (!charge) continue;
+    const startAt = new Date(charge.periodStart).getTime();
+    const endAt = new Date(charge.periodEnd).getTime();
+    if (!Number.isFinite(startAt) || !Number.isFinite(endAt) || endAt <= startAt) continue;
+    const cycles = paidCycles.get(charge.memberId) ?? [];
+    cycles.push({ start: startAt, end: endAt, paid: entry.paidAt.getTime() });
+    paidCycles.set(charge.memberId, cycles);
+  }
+
   const appointments = await prisma.appointment.findMany({
     where: { barberShopId: shopId, status: "COMPLETED",
       startsAt: { gte: start, lt: endExclusive },
@@ -143,17 +159,23 @@ export async function calculateSubscriptionPot(
   const attendanceCounts: Record<string, number> = {};
   let unassignedAttendances = 0;
   let nonSubscriberAttendances = 0;
+  let unverifiedAttendances = 0;
   for (const appointment of appointments) {
     if (!appointment.barberId || !appointment.customerId) continue;
-    const isSubscriber = activeMembershipAt(byCustomer.get(appointment.customerId) ?? [], appointment.startsAt);
-    if (!isSubscriber) { nonSubscriberAttendances++; continue; }
+    const at = appointment.startsAt.getTime();
+    const memberships = (byCustomer.get(appointment.customerId) ?? []).filter(member =>
+      activeMembershipAt([member], appointment.startsAt));
+    if (!memberships.length) { nonSubscriberAttendances++; continue; }
+    const verified = memberships.some(member => (paidCycles.get(member.id) ?? []).some(cycle =>
+      cycle.start <= at && at < cycle.end && cycle.paid <= at));
+    if (!verified) { unverifiedAttendances++; continue; }
     if (!eligible.has(appointment.barberId)) { unassignedAttendances++; continue; }
     attendanceCounts[appointment.barberId] = (attendanceCounts[appointment.barberId] ?? 0) + 1;
   }
   const split = splitPotByProductivity(potCents, attendanceCounts);
   return {
     paidCents, refundedCents, netCents, potCents,
-    ...split, attendanceCounts, unassignedAttendances, nonSubscriberAttendances,
+    ...split, attendanceCounts, unassignedAttendances, nonSubscriberAttendances, unverifiedAttendances,
     paymentCount: receipts.length, refundCount: refunds.length, unassignedCount, percent,
     receipts, refunds,
     // Compatibilidade temporária com consumidores anteriores; a regra fixa foi desativada.
