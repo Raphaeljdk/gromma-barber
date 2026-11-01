@@ -65,11 +65,11 @@ export default async function ProfessionalApp({params,searchParams}:{
       startsAt:{gte:reportStart,lt:reportEnd},status:"COMPLETED"},
       select:{customerId:true,startsAt:true,command:{select:{status:true,id:true}}},take:3000}),
   ]);
-  const activeProfessionals=await prisma.shopUser.findMany({where:{barberShopId:shop.id,active:true,
-    role:{in:["OWNER","MANAGER","BARBER"]}},select:{id:true,unitId:true}});
+  const eligibleProfessionals=await prisma.shopUser.findMany({where:{barberShopId:shop.id,
+    role:{in:["OWNER","MANAGER","BARBER"]}},select:{id:true}});
+  // O barbeiro consulta a mesma base geral da apuração sem filtro de filial.
   const pot = await calculateSubscriptionPot(prisma,shop.id,workspace,reportStart,reportEnd,
-    activeProfessionals.filter(p=>!professional.unitId || p.unitId===professional.unitId).map(p=>p.id),
-    professional.unitId??undefined);
+    eligibleProfessionals.map(p=>p.id));
   const ownPotCents=pot.distributions[professional.id]?.amountCents??0;
   const completed=appointments.filter(a=>a.status==="COMPLETED").length;
   const recordedReceipts=new Set(workspace.commandPayments.map(p=>p.commandId));
@@ -141,13 +141,15 @@ export default async function ProfessionalApp({params,searchParams}:{
         <article><span>Serviços</span><strong>{money(Number(categories.SERVICE))}</strong></article>
         <article><span>Produtos</span><strong>{money(Number(categories.PRODUCT))}</strong></article>
         <article><span>Venda de assinatura</span><strong>{money(Number(categories.SUBSCRIPTION))}</strong></article>
-        <article><span>Pote de assinaturas</span><strong>{money(ownPotCents/100)}</strong><small>Participação: {(pot.distributions[professional.id]?.sharePercent??0).toFixed(2)}%</small></article>
+        <article><span>Pote de assinaturas</span><strong>{money(ownPotCents/100)}</strong><small>{pot.distributions[professional.id]?.attendances??0} de {pot.totalAttendances} atendimentos de assinantes · {(pot.distributions[professional.id]?.sharePercent??0).toFixed(2)}%</small></article>
         <article><span>Líquido estimado</span><strong>{money(Number(commission.net)+ownPotCents/100)}</strong></article>
       </div>
       <div className="card" style={{padding:16,marginTop:12}}>
         <h3>Conferência do pote — valor não editável</h3>
         <p className="small muted">Base confirmada no Financeiro: {money(pot.paidCents/100)} · Estornos concluídos: {money(pot.refundedCents/100)} · Líquido: {money(pot.netCents/100)}.</p>
         <p><strong>Pote do período: {money(pot.potCents/100)}</strong> ({pot.percent.toFixed(2)}% do líquido). Sua parte: <strong>{money(ownPotCents/100)}</strong>.</p>
+        <p className="small muted">Rateio por produtividade: cada atendimento de assinante concluído conta uma vez. Você realizou <strong>{pot.distributions[professional.id]?.attendances??0}</strong> dos <strong>{pot.totalAttendances}</strong> atendimentos elegíveis no período. A participação é automática, não configurada manualmente pelo proprietário.</p>
+        {pot.totalAttendances===0&&pot.potCents>0&&<p className="notice">Nenhum atendimento elegível encontrado para distribuir o pote neste período.</p>}
         <p className="small muted">A origem é o histórico de mensalidades baixadas. O dono não possui um campo para substituir o total arrecadado. Enquanto não houver gateway, a baixa manual é realizada exclusivamente pelo administrador e fica auditada. A distribuição exibida é uma prévia, não um pagamento.</p>
         <details><summary>Ver referências das mensalidades recebidas ({pot.paymentCount})</summary>
           <div className="table-wrap"><table><thead><tr><th>Referência</th><th>Data de baixa</th><th>Valor</th></tr></thead>
