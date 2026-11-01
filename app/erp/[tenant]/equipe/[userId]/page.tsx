@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { PROFESSIONAL_PERMISSION_OPTIONS, PRODUCT_CATEGORIES, WEEK_DAYS, profileFor } from "@/lib/professional-profile";
-import { saveProfessionalIdentity, saveProfessionalSection } from "../../professional-actions";
+import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
 
 export const dynamic="force-dynamic";
 type Props={params:Promise<{tenant:string;userId:string}>;searchParams:Promise<Record<string,string|undefined>>};
@@ -90,8 +90,22 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="active" defaultChecked={user.active}/> Cadastro ativo</label>
         {reason("Atualização dos dados cadastrais")}
         <button className="btn" type="submit">Salvar dados do profissional</button>
-        <p className="small muted">A foto é vinculada por um endereço HTTPS; envio direto de imagem ficará disponível após configurar o armazenamento. O cadastro não altera a senha e não libera automaticamente o login.</p>
+        <p className="small muted">Alternativamente, a foto pode ser indicada por URL. O cadastro não altera a senha e não libera automaticamente o login.</p>
       </form>
+      <details className="erp-quick-create" style={{marginTop:14}}>
+        <summary>Enviar foto de perfil (arquivo)</summary>
+        <form action={uploadProfessionalPhoto} className="erp-compact-form">
+          {hidden(code,user.id)}
+          <label><span className="label">Foto JPEG, PNG ou WebP (máximo 3 MB)</span>
+            <input className="input" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required/></label>
+          <label style={{display:"flex",gap:8,alignItems:"center"}}>
+            <input type="checkbox" name="photoConsent" required/>
+            Confirmo que tenho autorização para armazenar e exibir a foto do profissional em endereço público de imagem.
+          </label>
+          <p className="small muted">O envio exige Vercel Blob configurado na produção. Caso esteja indisponível, você pode continuar usando a URL HTTPS do campo acima.</p>
+          <button className="btn secondary" type="submit">Enviar foto autorizada</button>
+        </form>
+      </details>
     </details>
 
     <details className="card" style={{padding:18,marginBottom:14}}>
