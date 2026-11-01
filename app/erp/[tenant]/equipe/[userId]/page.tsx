@@ -63,9 +63,9 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
 
     <details className="card" style={{padding:14,marginBottom:10}} open>
       <summary><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></summary>
-      <form action={saveProfessionalIdentity} className="erp-compact-form" style={{marginTop:16}}>
+      <form action={saveProfessionalIdentity} className="erp-compact-form" style={{marginTop:10}}>
         {hidden(code,user.id)}
-        <div className="grid grid-2">
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,210px),1fr))",columnGap:12,rowGap:9}}>
           <label><span className={labelClass}>Nome completo</span><input className="input" name="name" required minLength={2} maxLength={120} defaultValue={user.name}/></label>
           <label><span className={labelClass}>Nome de preferência</span><input className="input" name="nickname" maxLength={100} defaultValue={profile.nickname??""}/></label>
           <label><span className={labelClass}>E-mail</span><input className="input" name="email" type="email" required defaultValue={user.email}/></label>
@@ -151,7 +151,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"permissions")}
         <p className="small muted">Sem uma regra individual salva, o profissional herda as permissões do seu papel. Alterações financeiras continuam exclusivas do administrador. As restrições de agendamentos, observações e lançamento de itens já são verificadas no servidor. O acesso do próprio barbeiro para criar bloqueios ou remover folgas pelo aplicativo ainda está em preparação; estas duas opções ficam cadastradas para essa próxima etapa.</p>
-        <div className="grid grid-2">
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:8}}>
           {PROFESSIONAL_PERMISSION_OPTIONS.map(permission=><label key={permission.id} style={{display:"flex",gap:8,alignItems:"center"}}>
             <input type="checkbox" name="permissions" value={permission.id}
               defaultChecked={profilePermissions?profilePermissions.includes(permission.id):["CREATE_APPOINTMENT","EDIT_APPOINTMENT","ADD_PRODUCT","ADD_SERVICE"].includes(permission.id)}/>
@@ -163,7 +163,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </form>
     </details>
 
-    <details className="card" style={{padding:14,marginBottom:10}} open>
+    <details className="card" style={{padding:14,marginBottom:10}}>
       <summary><strong>4. Serviços e comissões</strong> <span className="muted"> · configure tudo de uma vez</span></summary>
       <p className="small muted" style={{margin:"10px 0"}}>
         Selecione os serviços que o profissional realiza e informe a comissão de cada um.
