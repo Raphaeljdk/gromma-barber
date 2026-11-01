@@ -1992,6 +1992,10 @@ export async function TenantERPView({
             <span className="small muted">Assinaturas recebidas: <strong>{subscriptionPot ? brl(subscriptionPot.netCents/100) : "—"}</strong></span>
             <span className="small muted">Pote ({subscriptionPot?.percent.toFixed(2) ?? "0"}%): <strong>{subscriptionPot ? brl(subscriptionPot.potCents/100) : "—"}</strong></span>
             <span className="small muted">Atendimentos elegíveis: <strong>{subscriptionPot?.totalAttendances ?? 0}</strong></span>
+            {subscriptionPot && subscriptionPot.unverifiedAttendances > 0 &&
+              <span className="small" style={{fontWeight:600}}>
+                Atenção: {subscriptionPot.unverifiedAttendances} atendimento(s) sem ciclo pago para conferir
+              </span>}
             {subscriptionPot && subscriptionPot.potCents > 0 && subscriptionPot.totalAttendances === 0 &&
               <span className="small muted">Pote sem distribuição neste período</span>}
           </div>
