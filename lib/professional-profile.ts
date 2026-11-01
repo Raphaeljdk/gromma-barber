@@ -1,3 +1,5 @@
+import type { ProductCommissionCategory, ProductCommissionRule } from "./product-commission-rules";
+
 /** Cadastro de colaboradores por unidade. Mantemos campos opcionais para preservar
  * empregados existentes e para que a implantação não exija migrações destrutivas.
  * Somente o dono da empresa pode consultar/alterar dados pessoais desta ficha.
@@ -59,6 +61,8 @@ export type ProfessionalProfile = {
   breaks?: ProfessionalBreak[];
   leaves?: ProfessionalLeave[];
   productTiers?: ProfessionalProductTier[];
+  /** Regras novas de cosméticos e bebidas. Categorias não configuradas preservam legado. */
+  productCommissionRules?: Partial<Record<ProductCommissionCategory,ProductCommissionRule>>;
   /** Comissão adicional pela venda inicial de planos, diferente do pote de atendimentos. */
   salesSubscriptionCommissionEnabled?: boolean;
   potBonusPercent?: number;
