@@ -5,7 +5,7 @@ import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace } from "@/lib/erp-workspace";
 import {
   PROFESSIONAL_PERMISSION_IDS, PRODUCT_CATEGORIES, WEEK_DAYS, isDate, isTime,
-  validInterval, type ProfessionalProfile, type ProfessionalPermission,
+  validInterval, professionalCanServeAt, type ProfessionalProfile, type ProfessionalPermission,
   type ProfessionalShift, type ProfessionalBreak,
 } from "@/lib/professional-profile";
 import { put } from "@vercel/blob";
@@ -47,6 +47,27 @@ function success(ctx:Ctx,msg:string):never{
   revalidatePath("/erp/"+encodeURIComponent(ctx.code),"layout");
   redirect(ctx.path+"?ok="+encodeURIComponent(msg));
 }
+/** Não salvar escala/pausa que invalide reservas já existentes.
+ * A conferência é feita na mesma transação que grava o cadastro.
+ */
+async function assertNoConflictingBookings(tx:Prisma.TransactionClient,ctx:Ctx,
+  profile:ProfessionalProfile,from=new Date()){
+  const until=new Date(from.getTime()+366*86400000);
+  const appointments=await tx.appointment.findMany({where:{
+    barberShopId:ctx.shopId,barberId:ctx.userId,
+    status:{in:["SCHEDULED","CONFIRMED","CHECKED_IN","IN_SERVICE"]},
+    startsAt:{gte:from,lt:until},
+  },select:{id:true,startsAt:true,endsAt:true,serviceId:true,
+    service:{select:{durationMinutes:true}}},take:3001});
+  if(appointments.length>3000)throw new Error("Excesso de agendamentos; revise manualmente");
+  for(const appointment of appointments){
+    const end=appointment.endsAt??new Date(appointment.startsAt.getTime()+(appointment.service?.durationMinutes??30)*60000);
+    if(!professionalCanServeAt(profile,appointment.startsAt,end,
+      appointment.serviceId?[appointment.serviceId]:[]))
+      throw new Error("A nova escala ou pausa conflita com um atendimento já agendado");
+  }
+}
+
 async function change(ctx:Ctx,action:string,reason:string,fn:(profile:ProfessionalProfile,tx:Prisma.TransactionClient,ws:ErpWorkspace)=>Promise<Record<string,unknown>|void>){
   if(reason.trim().length<4) fail(ctx,"motivo");
   try{
@@ -231,17 +252,21 @@ export async function saveProfessionalSection(form:FormData){
       if(!validInterval(start,end))fail(ctx,"horario");
       shifts.push({day:id,start,end});
     }
-    await change(ctx,"PROFESSIONAL_SCHEDULE_UPDATED",reason,async(profile)=>{
+    await change(ctx,"PROFESSIONAL_SCHEDULE_UPDATED",reason,async(profile,tx)=>{
       const previous=profile.workHours??null;
+      const candidate={...profile,workHours:shifts};
+      await assertNoConflictingBookings(tx,ctx,candidate);
       profile.workHours=shifts;
       return {previous,next:shifts};
     });
   }else if(section==="break-add"){
     const day=num(form,"day"),start=text(form,"start",5),end=text(form,"end",5);
     if(!Number.isInteger(day)||day<0||day>6||!validInterval(start,end))fail(ctx,"intervalo");
-    await change(ctx,"PROFESSIONAL_BREAK_ADDED",reason,async(profile)=>{
+    await change(ctx,"PROFESSIONAL_BREAK_ADDED",reason,async(profile,tx)=>{
       const id=workspaceId("break");
-      profile.breaks=[...(profile.breaks??[]),{id,day,start,end}].slice(-35);
+      const breaks:ProfessionalBreak[]=[...(profile.breaks??[]),{id,day,start,end}];
+      await assertNoConflictingBookings(tx,ctx,{...profile,breaks});
+      profile.breaks=breaks.slice(-35);
       return {id,day,start,end};
     });
   }else if(section==="break-remove"){
@@ -256,9 +281,12 @@ export async function saveProfessionalSection(form:FormData){
     if(!isDate(from)||!isDate(to)||to<from||!label|| 
        (Date.parse(to+"T12:00:00Z")-Date.parse(from+"T12:00:00Z"))>366*86400000)
       fail(ctx,"folga");
-    await change(ctx,"PROFESSIONAL_LEAVE_ADDED",reason,async(profile)=>{
+    await change(ctx,"PROFESSIONAL_LEAVE_ADDED",reason,async(profile,tx)=>{
       const id=workspaceId("leave");
-      profile.leaves=[...(profile.leaves??[]),{id,from,to,reason:label}].slice(-100);
+      const leaves=[...(profile.leaves??[]),{id,from,to,reason:label}];
+      await assertNoConflictingBookings(tx,ctx,{...profile,leaves},
+        new Date(from+"T00:00:00-03:00"));
+      profile.leaves=leaves.slice(-100);
       return {id,from,to,label};
     });
   }else if(section==="leave-remove"){
