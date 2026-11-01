@@ -2405,8 +2405,8 @@ export async function TenantERPView({
                 <tbody>{financeAuditRows.map(record=>{
                   const info=record.details && typeof record.details==="object" && !Array.isArray(record.details)
                     ? record.details as Record<string,unknown> : {};
-                  const old=info.previousAmount??info.previousStatus??info.previousDay??"—";
-                  const current=info.newAmount??info.newStatus??info.day??"—";
+                  const old=info.previousAmount??info.previousStatus??info.previousDay??info.previousPercent??"—";
+                  const current=info.newAmount??info.newStatus??info.day??info.newPercent??"—";
                   const display=(v:unknown)=>typeof v==="string" || typeof v==="number"?String(v):"—";
                   const labels:Record<string,string>={
                     FINANCIAL_PAYMENT_CONFIRMED:"Pagamento confirmado",FINANCIAL_ENTRY_CREATED:"Lançamento criado",
