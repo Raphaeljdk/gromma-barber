@@ -58,7 +58,7 @@ import { calculateCommission } from "@/lib/commission-calculation";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionCommissionTiers } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionCommissionTiers, saveSubscriptionPotRate, saveSubscriptionPotShare } from "./module-actions";
 
 function StatusPill({
   children,
@@ -1971,6 +1971,49 @@ export async function TenantERPView({
           {actionOk === "comissao" && <div className="notice erp-inline-notice success">Regra de comissão atualizada.</div>}
           {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
           {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
+
+          <article className="card erp-workspace-card" style={{marginTop:18,marginBottom:18}}>
+            <div className="erp-card-title"><div>
+              <span>Pote de assinaturas · transparência</span>
+              <strong>Recebimentos confirmados — cálculo automático, sem edição do total</strong>
+            </div><StatusPill tone="pending">Prévia para conferência</StatusPill></div>
+            <p className="small muted">O montante vem exclusivamente de cobranças vinculadas ao Clube com baixa PAID no Financeiro, dentro das datas selecionadas. Estornos concluídos são abatidos no dia da devolução. A baixa manual ainda não equivale a conciliação bancária.</p>
+            {subscriptionPot ? <>
+              <div className="erp-kpi-row">
+                <article><span>Assinaturas recebidas</span><strong>{brl(subscriptionPot.paidCents/100)}</strong><small>{subscriptionPot.paymentCount} pagamento(s) · sem campo para editar valor</small></article>
+                <article><span>Estornos efetivados</span><strong>{brl(subscriptionPot.refundedCents/100)}</strong><small>{subscriptionPot.refundCount} devolução(ões)</small></article>
+                <article><span>Base líquida recebida</span><strong>{brl(subscriptionPot.netCents/100)}</strong><small>Recebido menos devoluções</small></article>
+                <article><span>Pote calculado</span><strong>{brl(subscriptionPot.potCents/100)}</strong><small>{subscriptionPot.percent.toFixed(2)}% da base líquida</small></article>
+                <article><span>Participação atribuída</span><strong>{brl(subscriptionPot.assignedCents/100)}</strong><small>Regras dos profissionais</small></article>
+                <article><span>Saldo sem rateio</span><strong>{brl(subscriptionPot.remainingCents/100)}</strong><small>Não distribuído</small></article>
+              </div>
+              {subscriptionPot.invalidShares && <p role="alert" className="notice error-notice">As participações do pote estão inconsistentes. Nenhuma distribuição foi calculada; confira as configurações.</p>}
+              {comissoesUnidade && <p className="small muted">Filtro por unidade: só entram cobranças com a unidade vinculada ao registro financeiro. Cobranças antigas sem vínculo de unidade permanecem na visão “Todas as unidades”, para não inventar uma filial de origem.</p>}
+              {isOwner && <details className="erp-quick-create">
+                <summary>Configurar percentual do pote (administrador)</summary>
+                <p className="small muted">Este percentual define quanto da receita líquida confirmada será destinado ao pote. Não altera nem substitui a receita recebida.</p>
+                <form action={saveSubscriptionPotRate} className="erp-compact-form">
+                  <input type="hidden" name="tenantCode" value={tenantCode}/>
+                  <label>Percentual destinado ao pote (%)<input className="input" name="potPercent" type="number" min="0" max="100" step=".01" defaultValue={workspace.subscriptionPot.percent} required/></label>
+                  <label>Motivo da alteração<input className="input" name="reason" required minLength={5} maxLength={600} placeholder="Regra aprovada pela administração"/></label>
+                  <button className="btn secondary" type="submit">Salvar regra e auditar</button>
+                </form>
+              </details>}
+              {actionOk === "pote" && <p role="status" className="notice">Regra do pote atualizada e registrada na auditoria.</p>}
+              {actionError === "pote" && <p role="alert" className="notice error-notice">Não foi possível atualizar o pote. Verifique o percentual e o motivo.</p>}
+              <details>
+                <summary>Conferir os recebimentos que formam o montante ({subscriptionPot.paymentCount})</summary>
+                <p className="small muted">Referência do lançamento, plano, data real da baixa e valor. Consulte Financeiro → Transações de assinaturas para o histórico integral.</p>
+                <div className="table-wrap"><table><thead><tr><th>Referência</th><th>Plano</th><th>Recebido em</th><th>Valor</th></tr></thead>
+                  <tbody>{subscriptionPot.receipts.slice(0,40).map(receipt=><tr key={receipt.id}>
+                    <td><code>{receipt.id.slice(-10)}</code></td><td>{receipt.plan}</td>
+                    <td>{new Date(receipt.paidAt).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"})}</td><td>{brl(receipt.amountCents/100)}</td>
+                  </tr>)}
+                  {!subscriptionPot.receipts.length&&<tr><td colSpan={4}>Nenhum pagamento confirmado neste período.</td></tr>}</tbody></table></div>
+                {subscriptionPot.paymentCount>40 && <p className="small muted">Exibindo as 40 baixas mais recentes. O montante inclui todos os {subscriptionPot.paymentCount} pagamentos do filtro.</p>}
+              </details>
+            </> : <p className="small muted">Corrija o período para consultar o pote.</p>}
+          </article>
 
           <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
           <p className="erp-integration-note">Esta apuração considera comandas fechadas com recibo registrado e primeira cobrança de assinatura com baixa no Financeiro. Descontos são rateados; cancelamentos e comandas sem pagamento comprovado ficam de fora. Produtos da comanda são atribuídos ao profissional do atendimento. O botão Pagar é simulado: não altera caixa nem movimenta dinheiro.</p>
