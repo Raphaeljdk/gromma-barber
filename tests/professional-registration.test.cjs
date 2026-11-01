@@ -10,7 +10,7 @@ const js=ts.transpileModule(source,{compilerOptions:{
 }}).outputText;
 const moduleObject={exports:{}};
 new Function("require","module","exports",js)(require,moduleObject,moduleObject.exports);
-const {professionalCanServeAt,validInterval,hasProfessionalPermission}=moduleObject.exports;
+const {professionalCanServeAt,validInterval,hasProfessionalPermission,subscriptionSalesEnabled}=moduleObject.exports;
 const date=(t)=>new Date("2026-11-02T"+t+":00-03:00");
 
 test("jornada e pausas permitem somente agendamentos cabíveis",()=>{
@@ -42,4 +42,14 @@ test("intervalos incorretos são rejeitados",()=>{
   assert.equal(validInterval("12:00","13:00"),true);
   assert.equal(validInterval("13:00","12:00"),false);
   assert.equal(validInterval("25:00","26:00"),false);
+});
+
+test("bônus por venda de assinatura depende de habilitação por profissional",()=>{
+  assert.equal(subscriptionSalesEnabled(undefined,0,[]),false);
+  assert.equal(subscriptionSalesEnabled({salesSubscriptionCommissionEnabled:true},5,[]),true);
+  assert.equal(subscriptionSalesEnabled({salesSubscriptionCommissionEnabled:false},5,[]),false);
+  assert.equal(subscriptionSalesEnabled({salesSubscriptionCommissionEnabled:false},0,[{min:0,max:null,percent:10}]),false);
+  // Regras antigas continuam ativas até a gestão mudar explicitamente a opção.
+  assert.equal(subscriptionSalesEnabled(undefined,5,[]),true);
+  assert.equal(subscriptionSalesEnabled({},0,[{min:0,max:null,percent:10}]),true);
 });
