@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace } from "@/lib/erp-workspace";
-import { PROFESSIONAL_PERMISSION_OPTIONS, PRODUCT_CATEGORIES, WEEK_DAYS, profileFor } from "@/lib/professional-profile";
+import { PROFESSIONAL_PERMISSION_OPTIONS, PRODUCT_CATEGORIES, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
 
 export const dynamic="force-dynamic";
@@ -294,9 +294,16 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
     </details>
     <details className="card" style={{padding:18,marginBottom:14}}>
       <summary><strong>8. Regras de comissão e venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></summary>
-      <p className="small muted" style={{marginTop:14}}>As regras abaixo são individuais. A comissão pela venda de uma assinatura não é a mesma coisa que a participação no pote recorrente, que continua sendo distribuída automaticamente por produtividade.</p>
+      <p className="small muted" style={{marginTop:14}}>O pote de assinaturas é distribuído automaticamente por produtividade. Uma bonificação adicional pela venda de um plano novo é opcional e só aparece na apuração se estiver habilitada abaixo.</p>
       <form action={saveProfessionalSection} className="erp-compact-form">
         {hidden(code,user.id,"base-commissions")}
+        <label style={{display:"flex",gap:10,alignItems:"center",padding:"10px 0"}}>
+          <input type="checkbox" name="salesSubscriptionCommissionEnabled"
+            defaultChecked={subscriptionSalesEnabled(profile,
+              workspace.professionalExtraRates[user.id]?.subscriptionPercent??0,
+              workspace.subscriptionCommissionTiers[user.id]??[])}/>
+          <strong>Habilitar bônus por venda de assinatura para este profissional</strong>
+        </label>
         <div className="grid grid-2">
           <label>Comissão por venda de assinatura (%)<input className="input" type="number" step=".01" min={0} max={100}
             name="subscriptionPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}/></label>
@@ -307,7 +314,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <button className="btn" type="submit">Salvar percentuais de vendas</button>
       </form>
       <details className="erp-quick-create" style={{marginTop:14}}>
-        <summary>Metas por faixa de faturamento em novas assinaturas (opcional)</summary>
+        <summary>Metas por venda de planos novos (somente se o bônus estiver habilitado)</summary>
         <p className="small muted">Exemplo: vendas confirmadas de R$ 500 até R$ 1.000, comissão de 5%. Quando existirem faixas, elas substituem o percentual fixo de venda de assinatura dentro das condições definidas.</p>
         <form action={saveProfessionalSection} className="erp-compact-form">
           {hidden(code,user.id,"subscription-tiers")}
