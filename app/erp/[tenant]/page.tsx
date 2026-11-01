@@ -1956,7 +1956,7 @@ export async function TenantERPView({
             <label><span className="label">Unidades</span><select name="comissoesUnidade" className="select" defaultValue={comissoesUnidade}><option value="">Todas as unidades</option>{shop.units.filter(unit => unit.active).map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período e unidade</button></div>
             {invalidCommissionPeriod && <p className="notice erp-inline-notice error-notice">A data inicial não pode ser posterior à data final. Corrija o período para filtrar.</p>}
-            <p className="small muted">Selecione o período para consultar as comissões. O botão Pagar é apenas uma simulação e não registra pagamentos. Sem período selecionado, os valores são indicadores históricos limitados.</p>
+            <p className="small muted">O período inicial é dos últimos 30 dias. O total recebido de assinaturas vem de baixas no Financeiro, sem campo de edição manual. O botão Pagar permanece uma simulação e não registra pagamentos.</p>
           </form>
 
           <div className="erp-kpi-row">
@@ -2001,6 +2001,10 @@ export async function TenantERPView({
               </details>}
               {actionOk === "pote" && <p role="status" className="notice">Regra do pote atualizada e registrada na auditoria.</p>}
               {actionError === "pote" && <p role="alert" className="notice error-notice">Não foi possível atualizar o pote. Verifique o percentual e o motivo.</p>}
+              <div className="erp-row-actions" style={{margin:"10px 0 16px"}}>
+                <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comissoes/pote/exportar?comissoesDe=${encodeURIComponent(comissoesDe)}&comissoesAte=${encodeURIComponent(comissoesAte)}&comissoesUnidade=${encodeURIComponent(comissoesUnidade)}&formato=xlsx`}>Exportar Excel · recebimentos</Link>
+                <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/comissoes/pote/exportar?comissoesDe=${encodeURIComponent(comissoesDe)}&comissoesAte=${encodeURIComponent(comissoesAte)}&comissoesUnidade=${encodeURIComponent(comissoesUnidade)}&formato=pdf`}>Exportar PDF · pote</Link>
+              </div>
               <details>
                 <summary>Conferir os recebimentos que formam o montante ({subscriptionPot.paymentCount})</summary>
                 <p className="small muted">Referência do lançamento, plano, data real da baixa e valor. Consulte Financeiro → Transações de assinaturas para o histórico integral.</p>
