@@ -1,4 +1,5 @@
 import type { CashSession, CommandPayment, BookedServices } from "./checkout";
+import type { ProfessionalProfile } from "./professional-profile";
 import type { Prisma } from "@prisma/client";
 import { STAFF_PERMISSION_KEYS, STAFF_PERMISSION_ROLES, type StaffPermissions, type StaffPermissionRole, type StaffPermission } from "./role-permissions";
 
@@ -166,6 +167,7 @@ export type OperationalSettings = {
 
 export type ErpWorkspace = {
   rolePermissions: StaffPermissions;
+  professionalProfiles: Record<string, ProfessionalProfile>;
   clubEvents: ClubEvent[];
   clubSales: ClubSale[];
   clubCharges: ClubCharge[];
@@ -199,6 +201,7 @@ export type ErpWorkspace = {
 
 export const DEFAULT_WORKSPACE: ErpWorkspace = {
   rolePermissions: {},
+  professionalProfiles: {},
   clubEvents: [],
   clubSales: [],
   clubCharges: [],
@@ -258,6 +261,8 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
   const rolePermissions = Object.fromEntries(STAFF_PERMISSION_ROLES.filter(role => Array.isArray(rawPermissions[role])).map(role => [role, (rawPermissions[role] as unknown[]).filter((permission): permission is StaffPermission => typeof permission === "string" && (STAFF_PERMISSION_KEYS as readonly string[]).includes(permission))])) as Partial<Record<StaffPermissionRole, StaffPermission[]>>;
   return {
     rolePermissions,
+    professionalProfiles: Object.fromEntries(Object.entries(record(operations.professionalProfiles))
+      .map(([id, raw])=>[id, record(raw) as ProfessionalProfile])) as Record<string, ProfessionalProfile>,
     clubEvents: array<ClubEvent>(operations.clubEvents),
     clubSales: array<ClubSale>(operations.clubSales),
     clubCharges: array<ClubCharge>(operations.clubCharges),
