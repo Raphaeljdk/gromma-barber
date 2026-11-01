@@ -334,11 +334,14 @@ export async function saveProfessionalSection(form:FormData){
   }else if(section==="base-commissions"){
     const subscriptionPercent=num(form,"subscriptionPercent");
     const productPercent=num(form,"productPercent");
+    const salesEnabled=checked(form,"salesSubscriptionCommissionEnabled");
     if(!moneyPercent(subscriptionPercent)||!moneyPercent(productPercent))fail(ctx,"comissoes");
     await change(ctx,"PROFESSIONAL_BASE_COMMISSIONS_UPDATED",reason,async(profile,tx,ws)=>{
-      const previous=ws.professionalExtraRates[ctx.userId]??null;
+      const previous={rates:ws.professionalExtraRates[ctx.userId]??null,
+        salesEnabled:profile.salesSubscriptionCommissionEnabled??null};
       ws.professionalExtraRates[ctx.userId]={subscriptionPercent,productPercent};
-      return {previous,next:{subscriptionPercent,productPercent}};
+      profile.salesSubscriptionCommissionEnabled=salesEnabled;
+      return {previous,next:{subscriptionPercent,productPercent,salesEnabled}};
     });
   }else if(section==="subscription-tiers"){
     const mins=form.getAll("tierMin").map(String);
