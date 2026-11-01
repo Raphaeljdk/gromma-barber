@@ -183,7 +183,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
                 <td>{currency(Number(service.price))}</td>
                 <td><input className="input" type="number" name={"rate_"+service.id}
                   aria-label={"Comissão em porcentagem de "+service.name} min={0} max={100} step=".01"
-                  defaultValue={override[service.id]??workspace.commissionRules.find(rule=>rule.userId===user.id)?.percent??workspace.settings.defaultCommissionPercent}
+                  defaultValue={override[service.id]??workspace.serviceCommissionOverrides[service.id]??workspace.commissionRules.find(rule=>rule.userId===user.id)?.percent??workspace.settings.defaultCommissionPercent}
                   required/></td>
               </tr>)}
               {!services.length&&<tr><td colSpan={5}>Cadastre os serviços em Empresa → Serviços para configurar comissões.</td></tr>}
