@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace, writeWorkspace } from "@/lib/erp-workspace";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
+import { professionalCanServeAt, hasProfessionalPermission } from "@/lib/professional-profile";
 import { parseCountMilli, stockBalanceMilli } from "@/lib/stock-balance";
 
 const OPERATION_ROLES = ["OWNER", "MANAGER", "RECEPTIONIST", "BARBER"];
@@ -201,6 +202,10 @@ export async function updateAppointmentStatus(formData: FormData) {
     include: { service: true, command: { select: { id: true, status: true } } },
   });
 
+  if(viewer.type==="TENANT"&&viewer.role==="BARBER"&&
+    (appointment?.barberId!==viewer.userId||
+      !hasProfessionalPermission(readWorkspace(shop.enabledFeatures).professionalProfiles[viewer.userId],"EDIT_APPOINTMENT")))
+    redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
   const isAbandonment = action === "cancel" || action === "no_show";
   // Não permitir descartar uma comanda já paga ou encerrada.
   if (isAbandonment && appointment?.command && appointment.command.status !== "OPEN") {
@@ -326,9 +331,13 @@ export async function updateAppointmentNotes(formData: FormData) {
   if (!allowed(viewer, OPERATION_ROLES)) redirect(agendaReturnHref(tenantCode, formData, { erro: "permissao" }));
   const appointmentId = text(formData, "appointmentId", 80);
   if (!appointmentId) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-informacoes" }));
+  if(viewer.type==="TENANT"&&viewer.role==="BARBER"&&
+    !hasProfessionalPermission(readWorkspace(shop.enabledFeatures).professionalProfiles[viewer.userId],"EDIT_NOTES"))
+    redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
   try {
     const updated = await prisma.appointment.updateMany({
-      where: { id: appointmentId, barberShopId: shop.id },
+      where: { id: appointmentId, barberShopId: shop.id,
+        ...(viewer.type==="TENANT"&&viewer.role==="BARBER"?{barberId:viewer.userId}:{}) },
       data: { notes: encodeAppointmentNotes(text(formData, "notes", 300), formData.get("repurchase") === "1") },
     });
     if (updated.count !== 1) throw new Error("Appointment not found in tenant");
@@ -385,6 +394,8 @@ export async function createAppointment(formData: FormData) {
   const uniqueExtraIds = [...new Set(extraIds.filter(id => id !== serviceId))];
   const customerId = text(formData, "customerId", 80);
   const barberId = text(formData, "barberId", 80);
+  if(viewer.type==="TENANT" && viewer.role==="BARBER" && barberId!==viewer.userId)
+    redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
   const startsAtRaw = text(formData, "startsAt", 40);
   const notes = encodeAppointmentNotes(text(formData, "notes", 300), formData.get("repurchase") === "1");
   const userAgent = (await headers()).get("user-agent") ?? "";
@@ -427,6 +438,9 @@ export async function createAppointment(formData: FormData) {
   }
 
   const workspace = readWorkspace(shop.enabledFeatures);
+  if(viewer.type==="TENANT"&&viewer.role==="BARBER"&&
+    !hasProfessionalPermission(workspace.professionalProfiles[viewer.userId],"CREATE_APPOINTMENT"))
+    redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
   const extraServicesFound = uniqueExtraIds.length ? await prisma.service.findMany({
     where: { id: { in: uniqueExtraIds }, barberShopId: shop.id, active: true },
     select: { id: true, name: true, price: true, durationMinutes: true },
@@ -438,6 +452,10 @@ export async function createAppointment(formData: FormData) {
   if (!Number.isSafeInteger(totalMinutes) || totalMinutes <= 0 || totalMinutes > 24 * 60)
     redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   const endsAt = new Date(startsAt.getTime() + totalMinutes * 60_000);
+  const chosenServiceIds=selectedServices.map(s=>s.id);
+  if(selectedBarber&&!professionalCanServeAt(workspace.professionalProfiles[selectedBarber.id],
+    startsAt,endsAt,chosenServiceIds))
+    redirect(agendaReturnHref(tenantCode,formData,{erro:"agenda-bloqueada"}));
   let barber = selectedBarber;
 
   if (!barber && workspace.settings.rotationEnabled) {
@@ -454,6 +472,7 @@ export async function createAppointment(formData: FormData) {
     const available: Array<{ id: string; load: number }> = [];
     for (const candidate of candidates) {
       if (hasAgendaBlock(workspace.agendaBlocks, candidate.id, startsAt, endsAt, unitId)) continue;
+      if(!professionalCanServeAt(workspace.professionalProfiles[candidate.id],startsAt,endsAt,chosenServiceIds)) continue;
       const conflict = await prisma.appointment.findFirst({
         where: {
           barberShopId: shop.id,
@@ -507,6 +526,8 @@ export async function createAppointment(formData: FormData) {
       const latest = readWorkspace(fresh.enabledFeatures);
       if (!withinAgendaHours(startsAt, endsAt, latest.settings.openHour, latest.settings.closeHour)) throw new Error("Outside business hours");
       if (hasAgendaBlock(latest.agendaBlocks, barber?.id ?? "", startsAt, endsAt, unitId)) throw new Error("Blocked time");
+      if(barber&&!professionalCanServeAt(latest.professionalProfiles[barber.id],
+        startsAt,endsAt,chosenServiceIds))throw new Error("Professional not available or service not permitted");
       if (barber) {
         const occupied = await tx.appointment.findFirst({ where: { barberShopId: shop.id, barberId: barber.id, status: { in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "IN_SERVICE"] }, startsAt: { lt: endsAt }, OR: [{ endsAt: { gt: startsAt } }, { endsAt: null }] } });
         if (occupied) throw new Error("Schedule conflict");
