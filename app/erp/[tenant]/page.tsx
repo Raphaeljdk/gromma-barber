@@ -55,6 +55,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { effectiveClubMember } from "@/lib/club-lifecycle";
 import { hasStaffPermission, permissionsForRole, STAFF_PERMISSION_KEYS, STAFF_PERMISSION_LABELS, STAFF_PERMISSION_ROLES } from "@/lib/role-permissions";
 import { calculateCommission } from "@/lib/commission-calculation";
+import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
 import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionCommissionTiers } from "./module-actions";
@@ -243,8 +244,8 @@ export async function TenantERPView({
   const financeiroQ = valueOf("financeiroQ").trim();
   const agendaStatus = allowedValue(valueOf("agendaStatus"), APPOINTMENT_STATUSES);
   const comandaStatus = allowedValue(valueOf("comandaStatus"), COMMAND_STATUSES);
-  const comissoesDe = isAgendaDate(valueOf("comissoesDe")) ? valueOf("comissoesDe") : "";
-  const comissoesAte = isAgendaDate(valueOf("comissoesAte")) ? valueOf("comissoesAte") : "";
+  const comissoesDe = isAgendaDate(valueOf("comissoesDe")) ? valueOf("comissoesDe") : addAgendaDays(agendaDateKey(new Date()), -29);
+  const comissoesAte = isAgendaDate(valueOf("comissoesAte")) ? valueOf("comissoesAte") : agendaDateKey(new Date());
   const invalidCommissionPeriod = Boolean(comissoesDe && comissoesAte && comissoesDe > comissoesAte);
   const comandaDe = isAgendaDate(valueOf("comandaDe")) ? valueOf("comandaDe") : "";
   const comandaAte = isAgendaDate(valueOf("comandaAte")) ? valueOf("comandaAte") : "";
@@ -887,6 +888,14 @@ export async function TenantERPView({
     commissionByUser.set(barber.id, (commissionByUser.get(barber.id) ?? 0) + Number(command.total) * percent / 100);
   }
 
+  const potStart = new Date(`${comissoesDe}T00:00:00-03:00`);
+  const potEndExclusive = new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000);
+  const subscriptionPot = activeModule === "comissoes" && !invalidCommissionPeriod
+    ? await calculateSubscriptionPot(prisma, shop.id, workspace, potStart, potEndExclusive,
+        shop.users.filter(user => user.active && ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>user.id),
+        comissoesUnidade || undefined)
+    : null;
+
   const commissionRows = await Promise.all(shop.users
     .filter((user) => ["OWNER", "MANAGER", "BARBER"].includes(user.role))
     .map(async (user) => {
@@ -896,7 +905,11 @@ export async function TenantERPView({
       const precise = activeModule === "comissoes" && comissoesDe && comissoesAte && !invalidCommissionPeriod
         ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions, { workspace })
         : null;
-      const grossCommission = precise ? Number(precise.gross) : (activeModule === "comissoes" ? 0 : (commissionByUser.get(user.id) ?? 0));
+      const potCommission = !comissoesUnidade || user.unitId === comissoesUnidade
+        ? (subscriptionPot?.distributions[user.id]?.amountCents ?? 0) / 100 : 0;
+      const salesCommission = Number(precise?.categories.SUBSCRIPTION ?? 0);
+      const grossCommission = precise ? Number(precise.gross) + potCommission
+        : (activeModule === "comissoes" ? 0 : (commissionByUser.get(user.id) ?? 0));
       const deductions = precise ? Number(precise.deductions) : workspace.deductions
         .filter((item) => item.userId === user.id)
         .reduce((sum, item) => sum + item.amount, 0);
@@ -907,7 +920,9 @@ export async function TenantERPView({
         grossCommission,
         serviceCommission: Number(precise?.categories.SERVICE ?? 0),
         productCommission: Number(precise?.categories.PRODUCT ?? 0),
-        subscriptionCommission: Number(precise?.categories.SUBSCRIPTION ?? 0),
+        subscriptionCommission: salesCommission + potCommission,
+        subscriptionSalesCommission: salesCommission,
+        subscriptionPotCommission: potCommission,
         deductions,
         netCommission: Math.max(0, grossCommission - deductions),
       };
