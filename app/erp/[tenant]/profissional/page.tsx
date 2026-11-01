@@ -5,7 +5,7 @@ import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
-import { hasProfessionalPermission } from "@/lib/professional-profile";
+import { hasProfessionalPermission, subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { addCommandItem } from "../checkout-actions";
 import { addAgendaDays, isAgendaDate } from "@/lib/agenda";
 
@@ -38,6 +38,10 @@ export default async function ProfessionalApp({params,searchParams}:{
   const canAddService=hasProfessionalPermission(profile,"ADD_SERVICE");
   const canAddProduct=hasProfessionalPermission(profile,"ADD_PRODUCT");
   const enabledServices=profile?.enabledServices;
+  const salesBonusEnabled=subscriptionSalesEnabled(profile,
+    workspace.professionalExtraRates[professional.id]?.subscriptionPercent??0,
+    workspace.subscriptionCommissionTiers[professional.id]??[]);
+
 
   const now=new Date();
   const date=localDate(now);
@@ -146,12 +150,14 @@ export default async function ProfessionalApp({params,searchParams}:{
       <div className="erp-kpi-row">
         <article><span>Serviços</span><strong>{money(Number(categories.SERVICE))}</strong></article>
         <article><span>Produtos</span><strong>{money(Number(categories.PRODUCT))}</strong></article>
-        <article><span>Venda de assinatura</span><strong>{money(Number(categories.SUBSCRIPTION))}</strong></article>
+        {salesBonusEnabled&&<article><span>Bônus por venda de plano</span>
+          <strong>{money(Number(categories.SUBSCRIPTION))}</strong></article>}
         <article><span>Pote de assinaturas</span><strong>{money(ownPotCents/100)}</strong><small>{pot.distributions[professional.id]?.attendances??0} de {pot.totalAttendances} atendimentos de assinantes · {(pot.distributions[professional.id]?.sharePercent??0).toFixed(2)}%</small></article>
         <article><span>Líquido estimado</span><strong>{money(Number(commission.net)+ownPotCents/100)}</strong></article>
       </div>
-      <div className="card" style={{padding:16,marginTop:12}}>
-        <h3>Conferência do pote — valor não editável</h3>
+      <details className="card" style={{padding:16,marginTop:12}}>
+        <summary><strong>Conferir cálculo do pote</strong></summary>
+        <h3 style={{marginTop:12}}>Conferência do pote — valor não editável</h3>
         <p className="small muted">Base confirmada no Financeiro: {money(pot.paidCents/100)} · Estornos concluídos: {money(pot.refundedCents/100)} · Líquido: {money(pot.netCents/100)}.</p>
         <p><strong>Pote do período: {money(pot.potCents/100)}</strong> ({pot.percent.toFixed(2)}% do líquido). Sua parte: <strong>{money(ownPotCents/100)}</strong>.</p>
         <p className="small muted">Rateio por produtividade: cada atendimento de assinante concluído conta uma vez. Você realizou <strong>{pot.distributions[professional.id]?.attendances??0}</strong> dos <strong>{pot.totalAttendances}</strong> atendimentos elegíveis no período. A participação é automática, não configurada manualmente pelo proprietário.</p>
@@ -164,7 +170,7 @@ export default async function ProfessionalApp({params,searchParams}:{
               {!pot.paymentCount&&<tr><td colSpan={3}>Sem recebimentos no período.</td></tr>}</tbody></table></div>
           {pot.paymentCount>20&&<p className="small muted">Mostrando as 20 referências mais recentes; o total considera todos os pagamentos.</p>}
         </details>
-      </div>
+      </details>
       <div className="card" style={{overflowX:"auto",marginTop:12}}>
         <table><thead><tr><th>Categoria / Serviço ou produto</th><th>Qtd.</th><th>Base recebida</th><th>Comissão</th></tr></thead>
         <tbody>{[...breakdown.entries()].map(([label,row])=><tr key={label}><td>{row.category==="SERVICE"?"Serviço":row.category==="PRODUCT"?"Produto":"Assinatura"} · {label.split("::")[1]}</td>
