@@ -1957,15 +1957,21 @@ export async function TenantERPView({
             <StatusPill tone="pending">Apuração estimada</StatusPill>
           </div>
 
-          <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/comissoes`} className="erp-compact-form" style={{ marginBottom: 16 }}>
-            <div className="grid grid-2">
-              <label><span className="label">Data inicial</span><input className="input" type="date" name="comissoesDe" defaultValue={comissoesDe} /></label>
-              <label><span className="label">Data final</span><input className="input" type="date" name="comissoesAte" defaultValue={comissoesAte} /></label>
+          <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}
+            className="erp-compact-form" style={{marginBottom:10}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",
+              gap:10,alignItems:"end"}}>
+              <label><span className="label">De</span><input className="input" type="date" name="comissoesDe" defaultValue={comissoesDe}/></label>
+              <label><span className="label">Até</span><input className="input" type="date" name="comissoesAte" defaultValue={comissoesAte}/></label>
+              <label><span className="label">Unidade</span><select name="comissoesUnidade" className="select" defaultValue={comissoesUnidade}>
+                <option value="">Todas as unidades</option>
+                {shop.units.filter(unit=>unit.active).map(unit=><option key={unit.id} value={unit.id}>{unit.name}</option>)}
+              </select></label>
+              <button className="btn" type="submit">Atualizar números</button>
             </div>
-            <label><span className="label">Unidades</span><select name="comissoesUnidade" className="select" defaultValue={comissoesUnidade}><option value="">Todas as unidades</option>{shop.units.filter(unit => unit.active).map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn" type="submit">Filtrar período e unidade</button></div>
-            {invalidCommissionPeriod && <p className="notice erp-inline-notice error-notice">A data inicial não pode ser posterior à data final. Corrija o período para filtrar.</p>}
-            <p className="small muted">O período inicial é dos últimos 30 dias. O total recebido de assinaturas vem de baixas no Financeiro, sem campo de edição manual. O botão Pagar permanece uma simulação e não registra pagamentos.</p>
+            {invalidCommissionPeriod&&<p className="notice erp-inline-notice error-notice">
+              Corrija as datas: o início não pode ser posterior ao fim.
+            </p>}
           </form>
 
           <div className="erp-kpi-row">
