@@ -202,9 +202,10 @@ export async function updateAppointmentStatus(formData: FormData) {
     include: { service: true, command: { select: { id: true, status: true } } },
   });
 
-  if(viewer.type==="TENANT"&&viewer.role==="BARBER"&&
-    (appointment?.barberId!==viewer.userId||
-      !hasProfessionalPermission(readWorkspace(shop.enabledFeatures).professionalProfiles[viewer.userId],"EDIT_APPOINTMENT")))
+  if(viewer.type==="TENANT"&&viewer.role!=="OWNER"&&
+    !hasProfessionalPermission(readWorkspace(shop.enabledFeatures).professionalProfiles[viewer.userId],"EDIT_APPOINTMENT"))
+    redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
+  if(viewer.type==="TENANT"&&viewer.role==="BARBER"&&appointment?.barberId!==viewer.userId)
     redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
   const isAbandonment = action === "cancel" || action === "no_show";
   // Não permitir descartar uma comanda já paga ou encerrada.
@@ -331,7 +332,7 @@ export async function updateAppointmentNotes(formData: FormData) {
   if (!allowed(viewer, OPERATION_ROLES)) redirect(agendaReturnHref(tenantCode, formData, { erro: "permissao" }));
   const appointmentId = text(formData, "appointmentId", 80);
   if (!appointmentId) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda-informacoes" }));
-  if(viewer.type==="TENANT"&&viewer.role==="BARBER"&&
+  if(viewer.type==="TENANT"&&viewer.role!=="OWNER"&&
     !hasProfessionalPermission(readWorkspace(shop.enabledFeatures).professionalProfiles[viewer.userId],"EDIT_NOTES"))
     redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
   try {
@@ -438,7 +439,7 @@ export async function createAppointment(formData: FormData) {
   }
 
   const workspace = readWorkspace(shop.enabledFeatures);
-  if(viewer.type==="TENANT"&&viewer.role==="BARBER"&&
+  if(viewer.type==="TENANT"&&viewer.role!=="OWNER"&&
     !hasProfessionalPermission(workspace.professionalProfiles[viewer.userId],"CREATE_APPOINTMENT"))
     redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
   const extraServicesFound = uniqueExtraIds.length ? await prisma.service.findMany({
