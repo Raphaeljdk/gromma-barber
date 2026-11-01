@@ -59,6 +59,8 @@ export type ProfessionalProfile = {
   breaks?: ProfessionalBreak[];
   leaves?: ProfessionalLeave[];
   productTiers?: ProfessionalProductTier[];
+  /** Comissão adicional pela venda inicial de planos, diferente do pote de atendimentos. */
+  salesSubscriptionCommissionEnabled?: boolean;
   potBonusPercent?: number;
   potDifferentPercent?: number;
 };
@@ -112,4 +114,18 @@ export function professionalCanServeAt(profile: ProfessionalProfile|undefined,st
   if(profile?.breaks?.some(item=>item.day===from.day&&
       from.minute<minutes(item.end)&&to.minute>minutes(item.start)))return false;
   return true;
+}
+
+/** Compatibilidade: quem já tinha uma regra de venda configurada continua
+ * habilitado até a administração escolher explicitamente a opção na ficha.
+ * O pote por produtividade não depende desta configuração.
+ */
+export function subscriptionSalesEnabled(
+  profile: ProfessionalProfile | undefined,
+  existingRate = 0,
+  configuredTiers: {min:number;max:number|null;percent:number}[] = [],
+): boolean {
+  if(typeof profile?.salesSubscriptionCommissionEnabled==="boolean")
+    return profile.salesSubscriptionCommissionEnabled;
+  return existingRate > 0 || configuredTiers.some(tier=>tier.percent>0);
 }
