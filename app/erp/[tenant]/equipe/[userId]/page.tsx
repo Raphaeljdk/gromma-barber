@@ -75,7 +75,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <label><span className={labelClass}>Telefone</span><input className="input" name="phone" type="tel" defaultValue={user.phone??""}/></label>
           <label><span className={labelClass}>WhatsApp</span><input className="input" name="whatsapp" type="tel" defaultValue={profile.whatsapp??""}/></label>
           <label><span className={labelClass}>Unidade principal</span><select name="unitId" className="select" defaultValue={user.unitId??""}><option value="">Sem unidade definida</option>{shop.units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
-          <label><span className={labelClass}>Periodicidade padrão de atendimento (dias)</span><input className="input" type="number" name="cadenceDays" min={0} max={365} defaultValue={profile.cadenceDays??30}/></label>
+          <label><span className={labelClass}>Periodicidade de atendimento (dias, informativo)</span><input className="input" type="number" name="cadenceDays" min={0} max={365} defaultValue={profile.cadenceDays??30}/></label>
           <label><span className={labelClass}>Função / grupo de acesso</span>
             {user.role==="OWNER"?<>
               <input type="hidden" name="role" value="OWNER"/>
@@ -160,7 +160,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <summary><strong>3. Permissões individuais</strong> <span className="muted"> · controle por profissional</span></summary>
       <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"permissions")}
-        <p className="small muted">Sem uma regra individual salva, o profissional herda as permissões do seu papel. A configuração individual nunca concede acesso a alterações financeiras exclusivas do administrador.</p>
+        <p className="small muted">Sem uma regra individual salva, o profissional herda as permissões do seu papel. Alterações financeiras continuam exclusivas do administrador. As restrições de agendamentos, observações e lançamento de itens já são verificadas no servidor. O acesso do próprio barbeiro para criar bloqueios ou remover folgas pelo aplicativo ainda está em preparação; estas duas opções ficam cadastradas para essa próxima etapa.</p>
         <div className="grid grid-2">
           {PROFESSIONAL_PERMISSION_OPTIONS.map(permission=><label key={permission.id} style={{display:"flex",gap:8,alignItems:"center"}}>
             <input type="checkbox" name="permissions" value={permission.id}
