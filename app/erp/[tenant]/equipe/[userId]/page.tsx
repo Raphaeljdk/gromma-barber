@@ -76,7 +76,17 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <label><span className={labelClass}>WhatsApp</span><input className="input" name="whatsapp" type="tel" defaultValue={profile.whatsapp??""}/></label>
           <label><span className={labelClass}>Unidade principal</span><select name="unitId" className="select" defaultValue={user.unitId??""}><option value="">Sem unidade definida</option>{shop.units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
           <label><span className={labelClass}>Periodicidade padrão de atendimento (dias)</span><input className="input" type="number" name="cadenceDays" min={0} max={365} defaultValue={profile.cadenceDays??30}/></label>
-          <label><span className={labelClass}>Função no ERP</span><input className="input" value={user.role} readOnly disabled/></label>
+          <label><span className={labelClass}>Função / grupo de acesso</span>
+            {user.role==="OWNER"?<>
+              <input type="hidden" name="role" value="OWNER"/>
+              <input className="input" value="Proprietário — protegido" readOnly disabled/>
+            </>:<select name="role" className="select" defaultValue={user.role}>
+              <option value="BARBER">Profissional / Barbeiro</option>
+              <option value="RECEPTIONIST">Recepção</option>
+              <option value="MANAGER">Gestor</option>
+              <option value="ACCOUNTANT">Contabilidade</option>
+            </select>}
+          </label>
           <label><span className={labelClass}>URL da foto do perfil (HTTPS)</span><input className="input" name="photoUrl" type="url" defaultValue={profile.photoUrl??""} placeholder="https://..."/></label>
           <label><span className={labelClass}>CEP</span><input className="input" name="zipCode" inputMode="numeric" maxLength={9} defaultValue={profile.zipCode??""}/></label>
           <label><span className={labelClass}>Logradouro</span><input className="input" name="street" defaultValue={profile.street??""}/></label>
