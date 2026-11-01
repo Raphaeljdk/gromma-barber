@@ -1,39 +1,113 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { ErpWorkspace } from "./erp-workspace";
+import type { ClubMemberConfig, ErpWorkspace } from "./erp-workspace";
 
-/** O pote nunca aceita uma base digitada: somente títulos do clube baixados como PAID.
- * Reembolso confirmado é subtraído no período em que ocorreu, inclusive de cobrança antiga.
- * Um pagamento marcado como PAID manualmente é uma confirmação no ERP, não conciliação bancária.
+type Database = PrismaClient | Prisma.TransactionClient;
+type Receipt = { id: string; memberId: string; plan: string; amountCents: number; paidAt: string; unitId: string | null };
+type Refund = { id: string; amountCents: number; completedAt: string };
+export type PotDistribution = { sharePercent: number; amountCents: number; attendances: number };
+
+function moneyCents(amount: Prisma.Decimal): number {
+  const cents = amount.mul(100).toDecimalPlaces(0).toNumber();
+  if (!Number.isSafeInteger(cents) || cents < 0) throw new Error("Valor financeiro inválido");
+  return cents;
+}
+
+/** Um atendimento é de assinante quando o cliente possuía contrato vigente na
+ * data do serviço. Cada agendamento COMPLETED conta uma única vez, mesmo com
+ * vários serviços na comanda. Cancelados, faltas e avulsos não entram.
+ *
+ * Contratos antigos sem histórico detalhado de suspensão/inadimplência podem
+ * precisar de revisão antes da homologação financeira definitiva.
+ */
+function activeMembershipAt(members: ClubMemberConfig[], at: Date): boolean {
+  const time = at.getTime();
+  return members.some(member => {
+    const started = new Date(member.startedAt).getTime();
+    const ended = Math.min(
+      member.canceledAt ? new Date(member.canceledAt).getTime() : Infinity,
+      member.brokenAt ? new Date(member.brokenAt).getTime() : Infinity,
+      member.cancelEffectiveAt ? new Date(member.cancelEffectiveAt).getTime() : Infinity,
+    );
+    return Number.isFinite(started) && time >= started && time < ended;
+  });
+}
+
+/** Rateio puro por produtividade. Arredondamento em centavos pela técnica de
+ * maiores restos; a soma individual é sempre igual ao pote se houver atendimentos.
+ * Porcentagens de exibição também somam exatamente 100,00%.
+ */
+export function splitPotByProductivity(potCents: number, counts: Record<string, number>): {
+  totalAttendances: number;
+  distributions: Record<string, PotDistribution>;
+  assignedCents: number;
+  remainingCents: number;
+} {
+  if (!Number.isSafeInteger(potCents) || potCents < 0) throw new Error("Pote inválido");
+  const items = Object.entries(counts)
+    .filter(([, n]) => Number.isSafeInteger(n) && n > 0)
+    .map(([id, attendances]) => ({ id, attendances }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const totalAttendances = items.reduce((sum, item) => sum + item.attendances, 0);
+  if (totalAttendances === 0)
+    return { totalAttendances: 0, distributions: {}, assignedCents: 0, remainingCents: potCents };
+
+  const allocate = (total: number) => {
+    const shares = items.map(item => {
+      const numerator = total * item.attendances;
+      const base = Math.floor(numerator / totalAttendances);
+      return { id: item.id, base, fraction: numerator % totalAttendances };
+    });
+    let pending = total - shares.reduce((sum, item) => sum + item.base, 0);
+    const order = [...shares].sort((a, b) => b.fraction - a.fraction || a.id.localeCompare(b.id));
+    const extras = new Set<string>();
+    for (const item of order) {
+      if (pending <= 0) break;
+      extras.add(item.id);
+      pending--;
+    }
+    return new Map(shares.map(item => [item.id, item.base + (extras.has(item.id) ? 1 : 0)]));
+  };
+
+  const cents = allocate(potCents);
+  const basisPoints = allocate(10000);
+  const distributions = Object.fromEntries(items.map(item => [item.id, {
+    attendances: item.attendances,
+    sharePercent: (basisPoints.get(item.id) ?? 0) / 100,
+    amountCents: cents.get(item.id) ?? 0,
+  }])) as Record<string, PotDistribution>;
+  return { totalAttendances, distributions, assignedCents: potCents, remainingCents: 0 };
+}
+
+/** O montante do pote nunca vem de um campo digitável: somente cobranças do
+ * clube baixadas como PAID. Abate estornos concluídos na data de devolução.
+ * Até integrar o gateway, a baixa manual não constitui conciliação bancária.
  */
 export async function calculateSubscriptionPot(
-  prisma: PrismaClient | Prisma.TransactionClient, shopId: string, workspace: ErpWorkspace,
+  prisma: Database, shopId: string, workspace: ErpWorkspace,
   start: Date, endExclusive: Date, eligibleProfessionalIds: string[], unitId?: string,
 ) {
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(endExclusive.getTime()) || start >= endExclusive)
+    throw new Error("Período de apuração inválido");
+  const eligible = new Set(eligibleProfessionalIds);
   const chargeByEntry = new Map(workspace.clubCharges.map(c => [c.entryId, c]));
   const ids = [...chargeByEntry.keys()];
   const percent = workspace.subscriptionPot.percent;
-  const zero = { paidCents: 0, refundedCents: 0, netCents: 0, potCents: 0,
-    assignedCents: 0, remainingCents: 0, paymentCount: 0, refundCount: 0, unassignedCount: 0,
-    percent, receipts: [] as { id: string; memberId: string; plan: string; amountCents: number; paidAt: string; unitId: string | null }[],
-    refunds: [] as { id: string; amountCents: number; completedAt: string }[],
-    distributions: {} as Record<string, { sharePercent: number; amountCents: number }>, invalidShares: false };
-  if (!ids.length) return zero;
-  const entries = await prisma.financialEntry.findMany({
+  const entries = ids.length ? await prisma.financialEntry.findMany({
     where: { barberShopId: shopId, id: { in: ids }, type: "RECEIVABLE",
       category: "Clube de assinaturas", status: "PAID", paidAt: { lt: endExclusive } },
     select: { id: true, amount: true, paidAt: true, unitId: true },
-  });
-  const receipts: typeof zero.receipts = [];
-  const completedRefunds = workspace.clubRefunds.filter(r => r.status === "COMPLETED" && r.completedAt);
-  const refundByEntry = new Map(completedRefunds.map(r => [r.entryId, r]));
-  const refunds: typeof zero.refunds = [];
+  }) : [];
+  const receipts: Receipt[] = [];
+  const refunds: Refund[] = [];
+  const refundByEntry = new Map(workspace.clubRefunds
+    .filter(r => r.status === "COMPLETED" && r.completedAt)
+    .map(r => [r.entryId, r]));
   let unassignedCount = 0;
   for (const entry of entries) {
     if (!entry.paidAt || !chargeByEntry.has(entry.id)) continue;
     if (!entry.unitId && entry.paidAt >= start) unassignedCount++;
     if (unitId && entry.unitId !== unitId) continue;
-    const amountCents = new Prisma.Decimal(entry.amount).mul(100).toDecimalPlaces(0).toNumber();
-    if (!Number.isSafeInteger(amountCents) || amountCents < 0) throw new Error("Valor de recebimento inválido");
+    const amountCents = moneyCents(new Prisma.Decimal(entry.amount));
     if (entry.paidAt >= start) {
       const charge = chargeByEntry.get(entry.id)!;
       receipts.push({ id: entry.id, memberId: charge.memberId, plan: charge.planName,
@@ -41,36 +115,48 @@ export async function calculateSubscriptionPot(
     }
     const refund = refundByEntry.get(entry.id);
     if (refund?.completedAt) {
-      const refundDate = new Date(refund.completedAt);
-      if (Number.isFinite(refundDate.getTime()) && refundDate >= start && refundDate < endExclusive)
-        refunds.push({ id: entry.id, amountCents, completedAt: refundDate.toISOString() });
+      const refundedAt = new Date(refund.completedAt);
+      if (Number.isFinite(refundedAt.getTime()) && refundedAt >= start && refundedAt < endExclusive)
+        refunds.push({ id: entry.id, amountCents, completedAt: refundedAt.toISOString() });
     }
   }
   receipts.sort((a,b) => b.paidAt.localeCompare(a.paidAt));
-  const paidCents=receipts.reduce((sum,r)=>sum+r.amountCents,0);
-  const refundedCents=refunds.reduce((sum,r)=>sum+r.amountCents,0);
-  const netCents=Math.max(0,paidCents-refundedCents);
-  const potCents=Math.round(netCents*percent/100);
-  const eligible = new Set(eligibleProfessionalIds);
-  const shares=Object.entries(workspace.subscriptionPot.shares).filter(([id])=>eligible.has(id))
-    .map(([id,pct])=>({id,pct,points:Math.round(pct*100)})).sort((a,b)=>a.id.localeCompare(b.id));
-  const totalPoints=shares.reduce((sum,item)=>sum+item.points,0);
-  if (totalPoints>10000) return {...zero,paidCents,refundedCents,netCents,potCents,
-    paymentCount:receipts.length,refundCount:refunds.length,unassignedCount,receipts,refunds,
-    invalidShares:true};
-  const roundedTarget=Math.round(potCents*totalPoints/10000);
-  const parts=shares.map(item=>{
-    const raw=potCents*item.points/10000;
-    return {...item,base:Math.floor(raw),fraction:raw-Math.floor(raw)};
+  const paidCents = receipts.reduce((sum, r) => sum + r.amountCents, 0);
+  const refundedCents = refunds.reduce((sum, r) => sum + r.amountCents, 0);
+  const netCents = Math.max(0, paidCents - refundedCents);
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) throw new Error("Percentual de pote inválido");
+  const potCents = Math.round(netCents * percent / 100);
+
+  const appointments = await prisma.appointment.findMany({
+    where: { barberShopId: shopId, status: "COMPLETED",
+      startsAt: { gte: start, lt: endExclusive },
+      customerId: { not: null }, barberId: { not: null },
+      ...(unitId ? { unitId } : {}) },
+    select: { customerId: true, barberId: true, startsAt: true },
   });
-  let remaining=roundedTarget-parts.reduce((sum,item)=>sum+item.base,0);
-  const order=[...parts].sort((a,b)=>b.fraction-a.fraction || a.id.localeCompare(b.id));
-  const bonus=new Set<string>();
-  for(const item of order) { if(remaining<=0) break; bonus.add(item.id); remaining--; }
-  const distributions=Object.fromEntries(parts.map(item=>[item.id,{
-    sharePercent:item.pct,amountCents:item.base+(bonus.has(item.id)?1:0),
-  }])) as Record<string,{sharePercent:number;amountCents:number}>;
-  return { paidCents,refundedCents,netCents,potCents,assignedCents:roundedTarget,
-    remainingCents:potCents-roundedTarget,paymentCount:receipts.length,refundCount:refunds.length,
-    unassignedCount,percent,receipts,refunds,distributions,invalidShares:false };
+  const byCustomer = new Map<string, ClubMemberConfig[]>();
+  for (const member of workspace.clubMembers) {
+    const group = byCustomer.get(member.customerId) ?? [];
+    group.push(member);
+    byCustomer.set(member.customerId, group);
+  }
+  const attendanceCounts: Record<string, number> = {};
+  let unassignedAttendances = 0;
+  let nonSubscriberAttendances = 0;
+  for (const appointment of appointments) {
+    if (!appointment.barberId || !appointment.customerId) continue;
+    const isSubscriber = activeMembershipAt(byCustomer.get(appointment.customerId) ?? [], appointment.startsAt);
+    if (!isSubscriber) { nonSubscriberAttendances++; continue; }
+    if (!eligible.has(appointment.barberId)) { unassignedAttendances++; continue; }
+    attendanceCounts[appointment.barberId] = (attendanceCounts[appointment.barberId] ?? 0) + 1;
+  }
+  const split = splitPotByProductivity(potCents, attendanceCounts);
+  return {
+    paidCents, refundedCents, netCents, potCents,
+    ...split, attendanceCounts, unassignedAttendances, nonSubscriberAttendances,
+    paymentCount: receipts.length, refundCount: refunds.length, unassignedCount, percent,
+    receipts, refunds,
+    // Compatibilidade temporária com consumidores anteriores; a regra fixa foi desativada.
+    invalidShares: false,
+  };
 }
