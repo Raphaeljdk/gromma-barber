@@ -31,7 +31,7 @@ export async function GET(request:Request,{params}:{params:Promise<{tenant:strin
     !["xlsx","pdf"].includes(formato) || (unit && !shop.units.some(u=>u.id===unit&&u.active)))
     return new Response("Parâmetros inválidos",{status:400});
   const workspace=readWorkspace(shop.enabledFeatures);
-  const eligible=shop.users.filter(u=>u.active&&["OWNER","MANAGER","BARBER"].includes(u.role)&&(!unit||u.unitId===unit));
+  const eligible=shop.users.filter(u=>["OWNER","MANAGER","BARBER"].includes(u.role));
   const pot=await calculateSubscriptionPot(prisma,shop.id,workspace,start,end,eligible.map(u=>u.id),unit||undefined);
   if(pot.receipts.length>10000)return new Response("Período contém mais de 10.000 recibos. Filtre por unidade ou período.",{status:413});
   const amount=(cents:number)=>(cents/100).toFixed(2).replace(".",",");
@@ -43,12 +43,15 @@ export async function GET(request:Request,{params}:{params:Promise<{tenant:strin
     ["Base líquida (R$)",amount(pot.netCents)],
     ["Percentual de pote (%)",String(pot.percent)],
     ["Valor do pote (R$)",amount(pot.potCents)],
+    ["Total de atendimentos de assinantes",String(pot.totalAttendances)],
+    ["Atendimentos sem acesso elegível",String(pot.unassignedAttendances)],
     ["Participação atribuída (R$)",amount(pot.assignedCents)],
     ["Saldo sem rateio (R$)",amount(pot.remainingCents)],
     [],
-    ["Profissional","Participação no pote (%)","Valor estimado (R$)"],
-    ...eligible.map(user=>[user.name,String(pot.distributions[user.id]?.sharePercent??0),
-      amount(pot.distributions[user.id]?.amountCents??0)]),
+    ["Profissional","Atendimentos concluídos de assinantes","Participação do pote (%)","Valor estimado (R$)"],
+    ...eligible.filter(user=>(pot.distributions[user.id]?.attendances??0)>0).map(user=>[
+      user.name,String(pot.distributions[user.id]?.attendances??0),
+      (pot.distributions[user.id]?.sharePercent??0).toFixed(2),amount(pot.distributions[user.id]?.amountCents??0)]),
     [],
     ["Recebimento","Plano","Data da baixa","Unidade","Valor (R$)"],
     ...pot.receipts.map(entry=>[entry.id,entry.plan,new Date(entry.paidAt).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"}),
@@ -57,7 +60,8 @@ export async function GET(request:Request,{params}:{params:Promise<{tenant:strin
     ["Estorno","Data da devolução","Valor (R$)"],
     ...pot.refunds.map(entry=>[entry.id,new Date(entry.completedAt).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"}),amount(entry.amountCents)]),
     [],
-    ["Observação","Prévia baseada em baixas internas. Ainda sem conciliação automática do gateway."],
+    ["Regra de rateio","Percentual = atendimentos de assinantes concluídos pelo profissional / total de atendimentos elegíveis. Cada agendamento conta uma vez."],
+    ["Observação","Prévia baseada em baixas internas. Ainda sem conciliação automática do gateway. Regras fixas antigas não participam do rateio."],
   ];
   const content=formato==="xlsx"?spreadsheet(rows):pdf(rows);
   return new Response(new Uint8Array(content),{headers:{
