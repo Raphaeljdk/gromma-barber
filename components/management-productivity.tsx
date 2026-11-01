@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { addAgendaDays, agendaDateKey, isAgendaDate } from "@/lib/agenda";
 import { periodBounds, dateBR, occupancyMinutes, availableForProfessional, bookedIntervals, intervalMinutes, intersect, barbershopDayBounds } from "@/lib/management-audit";
 import type { AgendaBlock, ClubMemberConfig } from "@/lib/erp-workspace";
+import type { ProfessionalProfile } from "@/lib/professional-profile";
 import { addUnitHoliday } from "@/app/erp/[tenant]/module-actions";
 import type { OperationalSettings } from "@/lib/erp-workspace";
 import type { Prisma } from "@prisma/client";
@@ -9,11 +10,11 @@ import type { Prisma } from "@prisma/client";
 type Query=Record<string,string|string[]|undefined>;
 type Unit={id:string;name:string;active:boolean};
 type Professional={id:string;name:string;unitId:string|null;role:string};
-type Props={shopId:string;tenantCode:string;query:Query;canManage:boolean;units:Unit[];professionals:Professional[];blocks:AgendaBlock[];settings:OperationalSettings;clubMembers:ClubMemberConfig[];isOwner:boolean};
+type Props={shopId:string;tenantCode:string;query:Query;canManage:boolean;units:Unit[];professionals:Professional[];blocks:AgendaBlock[];settings:OperationalSettings;clubMembers:ClubMemberConfig[];isOwner:boolean;professionalProfiles:Record<string,ProfessionalProfile>};
 const read=(q:Query,k:string,max=90)=>String(Array.isArray(q[k])?q[k]?.[0]??"":q[k]??"").trim().slice(0,max);
 const hours=(min:number)=>(min/60).toLocaleString("pt-BR",{maximumFractionDigits:1})+" h";
 
-export async function ManagementProductivity({shopId,tenantCode,query,canManage,units,professionals,blocks,settings,clubMembers,isOwner}:Props){
+export async function ManagementProductivity({shopId,tenantCode,query,canManage,units,professionals,blocks,settings,clubMembers,isOwner,professionalProfiles}:Props){
   if(!canManage)return <section className="demo-section"><p className="notice error-notice">Somente a gestão pode consultar a produtividade.</p></section>;
   const path="/erp/"+encodeURIComponent(tenantCode)+"/auditoria-produtividade";
   const today=agendaDateKey(new Date());
@@ -76,7 +77,7 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
   const summary=rows.map(({professional,unit})=>{
     let availableMinutes=0,blockedMinutes=0,scheduledMinutes=0,appointmentsCount=0;
     const cells=columns.map(col=>{
-      const dayInfo=availableForProfessional(col.day,openHour,closeHour,blocks,professional.id,unit.id);
+      const dayInfo=availableForProfessional(col.day,openHour,closeHour,blocks,professional.id,unit.id,professionalProfiles[professional.id]);
       const base=col.hour>=0?
         intersect(dayInfo.base,
           dayInfo.base.start+(col.hour-openHour)*3_600_000,
@@ -171,6 +172,6 @@ export async function ManagementProductivity({shopId,tenantCode,query,canManage,
         {!summary.length&&<tr><td colSpan={7}>Nenhum dado disponível neste período.</td></tr>}
         </tbody></table></div>
     </div>
-    <p className="muted small">O filtro de clientes altera apenas as horas ocupadas e o número de atendimentos, mantendo a mesma capacidade disponível para comparação. A classificação histórica de assinantes considera o intervalo registrado de contratação e cancelamento; suspensões antigas sem histórico podem exigir conferência. Horas disponíveis = horário configurado de abertura menos feriados cadastrados, folgas e bloqueios fechados do profissional ou da unidade, sem contar intervalos sobrepostos duas vezes. Horas ocupadas são durações previstas dos agendamentos não cancelados/não faltantes, limitadas ao tempo disponível — não comprovam ponto ou trabalho efetivo. Horários de funcionamento configurados atualmente são aplicados ao período consultado; não há escala histórica por dia armazenada. Profissionais sem unidade fixa aparecem separados por unidade.</p>
+    <p className="muted small">O filtro de clientes altera apenas as horas ocupadas e o número de atendimentos, mantendo a mesma capacidade disponível para comparação. A classificação histórica de assinantes considera o intervalo registrado de contratação e cancelamento; suspensões antigas sem histórico podem exigir conferência. Horas disponíveis = jornada cadastrada do profissional, descontando intervalos, folgas, feriados e bloqueios da unidade, sem contar intervalos sobrepostos duas vezes. Horas ocupadas são durações previstas dos agendamentos não cancelados/não faltantes, limitadas ao tempo disponível — não comprovam ponto ou trabalho efetivo. Horários de funcionamento configurados atualmente são aplicados ao período consultado; não há escala histórica por dia armazenada. Profissionais sem unidade fixa aparecem separados por unidade.</p>
   </section>;
 }
