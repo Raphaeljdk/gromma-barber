@@ -69,7 +69,8 @@ async function assertNoConflictingBookings(tx:Prisma.TransactionClient,ctx:Ctx,
 }
 
 async function change(ctx:Ctx,action:string,reason:string,fn:(profile:ProfessionalProfile,tx:Prisma.TransactionClient,ws:ErpWorkspace)=>Promise<Record<string,unknown>|void>){
-  if(reason.trim().length<4) fail(ctx,"motivo");
+  // Auditoria automática sem exigir justificativa ao editar um cadastro comum.
+  const auditReason=reason.trim().length>=4 ? reason.trim() : "Atualização do cadastro do profissional";
   try{
     await prisma.$transaction(async tx=>{
       const fresh=await tx.barberShop.findUniqueOrThrow({where:{id:ctx.shopId}});
@@ -81,7 +82,7 @@ async function change(ctx:Ctx,action:string,reason:string,fn:(profile:Profession
         enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
       }});
       await tx.adminAuditLog.create({data:{barberShopId:ctx.shopId,adminEmail:ctx.actor,action,
-        details:{userId:ctx.userId,reason,...details} as Prisma.InputJsonValue}});
+        details:{userId:ctx.userId,reason:auditReason,...details} as Prisma.InputJsonValue}});
     },{isolationLevel:"Serializable"});
   }catch(error){
     console.error("Professional profile update failed",action,error);
@@ -218,6 +219,30 @@ export async function saveProfessionalSection(form:FormData){
       profile.permissions=selected;
       return {previous,next:selected};
     });
+  }else if(section==="service-batch"){
+    const services=await prisma.service.findMany({where:{barberShopId:ctx.shopId,active:true},
+      select:{id:true,name:true},orderBy:{name:"asc"}});
+    if(services.length>250)fail(ctx,"servicos");
+    const validIds=new Set(services.map(item=>item.id));
+    const permitted=[...new Set(form.getAll("enabledServiceIds").map(String))];
+    if(permitted.some(id=>!validIds.has(id)))fail(ctx,"servicos");
+    const rates:Record<string,number>={};
+    for(const item of services){
+      const raw=form.get("rate_"+item.id);
+      // Um percentual pode ser zero e é validado, não omitido.
+      const parsed=Number(String(raw??"").trim().replace(",","."));
+      if(raw===null||String(raw).trim()===""||!moneyPercent(parsed))fail(ctx,"percentual");
+      rates[item.id]=Math.round(parsed*100)/100;
+    }
+    await change(ctx,"PROFESSIONAL_SERVICES_BATCH_UPDATED",reason,async(profile)=>{
+      const previousEnabled=profile.enabledServices??null;
+      const previousRates=profile.services??{};
+      profile.enabledServices=permitted;
+      // Manter percentuais históricos de serviços inativos, sem excluir dados.
+      profile.services={...previousRates,...rates};
+      return {previousEnabled,nextEnabled:permitted,
+        updatedServices:services.length,previousRules:Object.keys(previousRates).length};
+    });
   }else if(section==="enabled-services"){
     const ids=[...new Set(form.getAll("serviceIds").map(String).filter(id=>id.length<=80))];
     if(ids.length>200)fail(ctx,"servicos");
@@ -300,22 +325,8 @@ export async function saveProfessionalSection(form:FormData){
       profile.leaves=before.filter(x=>x.id!==id);
       return {id,removed:before.length-profile.leaves.length};
     });
-  }else if(section==="contact-add"){
-    const name=text(form,"name",120),relation=text(form,"relation",70),
-      phone=text(form,"phone",28),email=text(form,"email",180);
-    if(name.length<2||phone.replace(/\D/g,"").length<8||(email&&!emailValid(email)))fail(ctx,"contato");
-    await change(ctx,"PROFESSIONAL_CONTACT_ADDED",reason,async(profile)=>{
-      const id=workspaceId("contact");
-      profile.contacts=[...(profile.contacts??[]),{id,name,relation,phone,email}].slice(-20);
-      return {contactId:id,relation};
-    });
-  }else if(section==="contact-remove"){
-    const id=text(form,"id",100);
-    await change(ctx,"PROFESSIONAL_CONTACT_REMOVED",reason,async(profile)=>{
-      const before=profile.contacts??[];
-      profile.contacts=before.filter(x=>x.id!==id);
-      return {contactId:id,removed:before.length-profile.contacts.length};
-    });
+  // Contatos antigos permanecem no histórico de dados, mas o cadastro e a
+  // exclusão manual foram desativados conforme a simplificação solicitada.
   }else if(section==="contract-add"){
     const label=text(form,"label",140),url=text(form,"url",700),validFrom=text(form,"validFrom",10);
     if(label.length<3||!/^https:\/\//i.test(url)||(validFrom&&!isDate(validFrom)))fail(ctx,"contrato");
