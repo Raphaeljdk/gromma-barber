@@ -28,7 +28,7 @@ export async function assignProductCategory(form:FormData){
     await prisma.$transaction(async tx=>{
       const product=await tx.product.findFirst({where:{
         id:productId,barberShopId:shop.id},select:{id:true},
-      }});
+      });
       if(!product)throw Error("Product unavailable");
       const fresh=await tx.barberShop.findUniqueOrThrow({where:{id:shop.id},
         select:{enabledFeatures:true}});
