@@ -158,6 +158,18 @@ export async function saveProfessionalSection(form:FormData){
       profile.permissions=selected;
       return {previous,next:selected};
     });
+  }else if(section==="enabled-services"){
+    const ids=[...new Set(form.getAll("serviceIds").map(String).filter(id=>id.length<=80))];
+    if(ids.length>200)fail(ctx,"servicos");
+    const matched=ids.length?await prisma.service.count({where:{
+      id:{in:ids},barberShopId:ctx.shopId,active:true,
+    }}):0;
+    if(matched!==ids.length)fail(ctx,"servicos");
+    await change(ctx,"PROFESSIONAL_SERVICES_UPDATED",reason,async(profile)=>{
+      const previous=profile.enabledServices??null;
+      profile.enabledServices=ids;
+      return {previous,next:ids};
+    });
   }else if(section==="service"){
     const serviceId=text(form,"serviceId",80),percent=num(form,"percent");
     if(!moneyPercent(percent))fail(ctx,"percentual");
