@@ -151,6 +151,22 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
 
     <details className="card" style={{padding:18,marginBottom:14}}>
       <summary><strong>4. Serviços e comissões individuais</strong> <span className="muted"> · regras específicas do profissional</span></summary>
+      <details className="erp-quick-create" style={{marginTop:14}}>
+        <summary>Serviços que o profissional está habilitado a realizar</summary>
+        <p className="small muted">Você pode selecionar quais serviços aparecem para este profissional. Cadastros antigos começam com todos habilitados, até que uma lista seja salva.</p>
+        <form action={saveProfessionalSection} className="erp-compact-form">
+          {hidden(code,user.id,"enabled-services")}
+          <div className="grid grid-2" style={{maxHeight:270,overflowY:"auto"}}>
+            {services.map(service=><label key={service.id} style={{display:"flex",gap:8,alignItems:"center"}}>
+              <input name="serviceIds" type="checkbox" value={service.id}
+                defaultChecked={!profile.enabledServices||profile.enabledServices.includes(service.id)}/>
+              <span>{service.name} <small className="muted">({service.durationMinutes} min)</small></span>
+            </label>)}
+          </div>
+          {reason("Definição dos serviços autorizados")}
+          <button className="btn secondary" type="submit">Salvar serviços disponíveis</button>
+        </form>
+      </details>
       <p className="small muted" style={{marginTop:14}}>Configure apenas os serviços que precisam de percentual diferente. Os demais continuam com a comissão padrão existente, sem zerar os históricos.</p>
       <form action={saveProfessionalSection} className="erp-compact-form">
         {hidden(code,user.id,"service")}
