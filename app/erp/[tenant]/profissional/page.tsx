@@ -73,7 +73,7 @@ export default async function ProfessionalApp({params,searchParams}:{
   const ownPotCents=pot.distributions[professional.id]?.amountCents??0;
   const completed=appointments.filter(a=>a.status==="COMPLETED").length;
   const recordedReceipts=new Set(workspace.commandPayments.map(p=>p.commandId));
-  const completedPaid=monthlyCompleted.filter(a=>a.command?.status==="CLOSED"&&recordedReceipts.has(a.command.id));
+  const completedPaid=periodCompleted.filter(a=>a.command?.status==="CLOSED"&&recordedReceipts.has(a.command.id));
   const subscriberCount=completedPaid.filter(a=>a.customerId && workspace.clubMembers.some(m=>m.customerId===a.customerId &&
     new Date(m.startedAt)<=a.startsAt && (!m.canceledAt||new Date(m.canceledAt)>a.startsAt) &&
     (!m.brokenAt||new Date(m.brokenAt)>a.startsAt))).length;
