@@ -55,6 +55,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { effectiveClubMember } from "@/lib/club-lifecycle";
 import { hasStaffPermission, permissionsForRole, STAFF_PERMISSION_KEYS, STAFF_PERMISSION_LABELS, STAFF_PERMISSION_ROLES } from "@/lib/role-permissions";
 import { calculateCommission } from "@/lib/commission-calculation";
+import { createProfessional } from "./professional-actions";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
@@ -2057,6 +2058,28 @@ export async function TenantERPView({
               <button type="submit" className="btn secondary">Salvar permissões de {ROLE_LABELS[role] ?? role}</button>
             </form>)}
           </details>}
+          {isOwner && <details className="erp-quick-create">
+            <summary><Plus size={15}/> Cadastrar profissional <small>Cadastro sem acesso de login até configurar credenciais</small></summary>
+            <form action={createProfessional} className="erp-compact-form">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <div className="grid grid-2">
+                <label>Nome completo<input className="input" name="name" minLength={2} maxLength={120} required placeholder="Nome do colaborador"/></label>
+                <label>E-mail de identificação<input className="input" type="email" name="email" required placeholder="colaborador@empresa.com.br"/></label>
+                <label>Função<select className="select" name="role" defaultValue="BARBER">
+                  <option value="BARBER">Barbeiro / Profissional</option>
+                  <option value="RECEPTIONIST">Recepção</option>
+                  <option value="MANAGER">Gestor</option>
+                  <option value="ACCOUNTANT">Contabilidade</option>
+                </select></label>
+                <label>Unidade<select className="select" name="unitId"><option value="">Definir depois</option>
+                  {shop.units.filter(unit=>unit.active).map(unit=><option key={unit.id} value={unit.id}>{unit.name}</option>)}
+                </select></label>
+              </div>
+              <p className="small muted">O cadastro será criado sem senha e não concede acesso automático ao sistema. Depois você poderá preencher os demais dados e ajustar permissões e comissões com segurança.</p>
+              <button className="btn" type="submit">Cadastrar e abrir ficha</button>
+            </form>
+          </details>}
+          {actionError==="cadastro"&&<p role="alert" className="notice error-notice">Não foi possível cadastrar o profissional. Confira se o e-mail já está em uso nesta empresa.</p>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`}
             searchParams={qs}
@@ -2098,7 +2121,10 @@ export async function TenantERPView({
                 <div className="demo-avatar">{user.name.slice(0,1)}</div>
                 <div><strong>{user.name}</strong><span>{user.email}</span></div>
                 <strong className="demo-revenue">{ROLE_LABELS[user.role] ?? user.role}</strong>
-                <small>{user.active ? "Acesso ativo" : "Acesso bloqueado"}</small>
+                <small>{user.active ? "Cadastro ativo" : "Cadastro inativo"}</small>
+                {isOwner && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/${encodeURIComponent(user.id)}`}>
+                  Abrir ficha do profissional
+                </Link>}
               </article>
             ))}
           </div>
