@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { ErpWorkspace } from "./erp-workspace";
 import { subscriptionSalesEnabled } from "./professional-profile";
+import { resolveProductCommissionRate, type ProductCommissionCategory } from "./product-commission-rules";
 
 /** Comissões são atribuídas ao executor do serviço ou vendedor do produto, sobre recebimentos confirmados. */
 export async function calculateCommission(prisma: PrismaClient | Prisma.TransactionClient, shopId: string, userId: string, start: Date, endExclusive: Date, defaultPercent: number, professionalPercent: number, overrides: Record<string, number>, deductions: { userId: string; amount: number; createdAt: string }[], options?: { workspace: ErpWorkspace; unitId?: string }) {
@@ -14,6 +15,13 @@ export async function calculateCommission(prisma: PrismaClient | Prisma.Transact
   const receipts = new Map((options?.workspace.commandPayments ?? []).map(p => [p.commandId, p]));
   const serviceLinks = new Map((options?.workspace.serviceLines ?? []).map(l => [l.itemId, l.serviceId]));
   const sellers = new Map((options?.workspace.productSellerAssignments ?? []).map(a=>[a.itemId,a.userId]));
+  const productLinks=new Map((options?.workspace.productLines??[]).map(line=>[line.itemId,line.productId]));
+  const productCategories=options?.workspace.productCategoryAssignments??{};
+  const pendingProductLines: {
+    commandId:string;itemId:string;description:string;quantity:number;
+    base:Prisma.Decimal;productCategory:ProductCommissionCategory|undefined;
+  }[]=[];
+
   for (const command of commands) {
     const receipt = receipts.get(command.id);
     if (!receipt || !command.closedAt) continue;
@@ -33,21 +41,49 @@ export async function calculateCommission(prisma: PrismaClient | Prisma.Transact
         ["CANCELED","NO_SHOW"].includes(command.appointment?.status ?? ""))) continue;
       const seller = sellers.get(item.id) ?? appointmentBarber;
       if (category === "PRODUCT" && seller !== userId) continue;
-      // A personalização por serviço no cadastro do profissional prevalece
-      // sobre a regra geral do serviço e sobre a comissão padrão do colaborador.
-      const individualRate = serviceId ? options?.workspace.professionalProfiles[userId]?.services?.[serviceId] : undefined;
-      const percent = category === "SERVICE"
-        ? (individualRate !== undefined ? individualRate :
-            serviceId && Object.hasOwn(overrides, serviceId) ? overrides[serviceId] : professionalPercent)
-        : (options?.workspace.professionalExtraRates[userId]?.productPercent ?? 0);
-      if (!Number.isFinite(percent) || percent < 0 || percent > 100) throw new Error("Invalid commission rate");
-      const base = Prisma.Decimal.max(0, new Prisma.Decimal(item.total).mul(factor)).toDecimalPlaces(2);
-      const commission = base.mul(percent).div(100).toDecimalPlaces(2);
-      gross = gross.plus(commission);
-      categoryTotals[category] = categoryTotals[category].plus(commission);
-      lines.push({ commandId: command.id, itemId: item.id, category, description: item.description,
-        quantity: Number(item.quantity), base: base.toString(), percent, commission: commission.toString() });
+      const base=Prisma.Decimal.max(0,new Prisma.Decimal(item.total).mul(factor)).toDecimalPlaces(2);
+      if(category==="PRODUCT"){
+        const productId=productLinks.get(item.id);
+        const productCategory=productId?productCategories[productId]:undefined;
+        pendingProductLines.push({commandId:command.id,itemId:item.id,
+          description:item.description,quantity:Number(item.quantity),base,productCategory});
+        continue;
+      }
+      // O percentual específico do serviço prevalece sobre a regra geral.
+      const individualRate=serviceId?options?.workspace.professionalProfiles[userId]?.services?.[serviceId]:undefined;
+      const percent=individualRate!==undefined?individualRate:
+        (serviceId&&Object.hasOwn(overrides,serviceId)?overrides[serviceId]:professionalPercent);
+      if(!Number.isFinite(percent)||percent<0||percent>100)throw new Error("Invalid service commission rate");
+      const commission=base.mul(percent).div(100).toDecimalPlaces(2);
+      gross=gross.plus(commission);
+      categoryTotals.SERVICE=categoryTotals.SERVICE.plus(commission);
+      lines.push({commandId:command.id,itemId:item.id,category,description:item.description,
+        quantity:Number(item.quantity),base:base.toString(),percent,commission:commission.toString()});
     }
+  }
+  // O faturamento da categoria é apurado ANTES de escolher a faixa.
+  // Assim a alíquota escalonada vale para todas as vendas da categoria no
+  // período, sem depender da ordem das comandas.
+  const categorySales=new Map<ProductCommissionCategory,Prisma.Decimal>();
+  for(const line of pendingProductLines){
+    if(!line.productCategory)continue;
+    categorySales.set(line.productCategory,
+      (categorySales.get(line.productCategory)??new Prisma.Decimal(0)).plus(line.base));
+  }
+  const professionalRules=options?.workspace.professionalProfiles[userId]?.productCommissionRules;
+  const legacyProductPercent=options?.workspace.professionalExtraRates[userId]?.productPercent??0;
+  for(const line of pendingProductLines){
+    const rule=line.productCategory?professionalRules?.[line.productCategory]:undefined;
+    const percent=resolveProductCommissionRate(rule,
+      line.productCategory?Number(categorySales.get(line.productCategory)??0):0,
+      legacyProductPercent);
+    if(!Number.isFinite(percent)||percent<0||percent>100)throw new Error("Invalid product commission rate");
+    const commission=line.base.mul(percent).div(100).toDecimalPlaces(2);
+    gross=gross.plus(commission);
+    categoryTotals.PRODUCT=categoryTotals.PRODUCT.plus(commission);
+    lines.push({commandId:line.commandId,itemId:line.itemId,category:"PRODUCT",
+      description:line.description,quantity:line.quantity,base:line.base.toString(),
+      percent,commission:commission.toString()});
   }
   const extraRate = options?.workspace.professionalExtraRates[userId]?.subscriptionPercent ?? 0;
   const configuredTiers = options?.workspace.subscriptionCommissionTiers[userId] ?? [];
