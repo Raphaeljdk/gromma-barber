@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { ErpWorkspace } from "./erp-workspace";
+import { subscriptionSalesEnabled } from "./professional-profile";
 
 /** Comissões são atribuídas ao executor do serviço ou vendedor do produto, sobre recebimentos confirmados. */
 export async function calculateCommission(prisma: PrismaClient | Prisma.TransactionClient, shopId: string, userId: string, start: Date, endExclusive: Date, defaultPercent: number, professionalPercent: number, overrides: Record<string, number>, deductions: { userId: string; amount: number; createdAt: string }[], options?: { workspace: ErpWorkspace; unitId?: string }) {
@@ -50,7 +51,12 @@ export async function calculateCommission(prisma: PrismaClient | Prisma.Transact
   }
   const extraRate = options?.workspace.professionalExtraRates[userId]?.subscriptionPercent ?? 0;
   const configuredTiers = options?.workspace.subscriptionCommissionTiers[userId] ?? [];
-  if (options?.workspace && (extraRate > 0 || configuredTiers.length > 0)) {
+  // Esta é uma remuneração OPCIONAL por vender um plano novo. Nunca
+  // se confunde com o pote de atendimentos de assinantes.
+  const saleBonusEnabled = subscriptionSalesEnabled(
+    options?.workspace?.professionalProfiles[userId], extraRate, configuredTiers,
+  );
+  if (options?.workspace && saleBonusEnabled && (extraRate > 0 || configuredTiers.length > 0)) {
     if (!Number.isFinite(extraRate) || extraRate > 100) throw new Error("Invalid subscription rate");
     const workspace = options.workspace;
     const sales = workspace.clubSales.filter(s => s.sellerId === userId);
