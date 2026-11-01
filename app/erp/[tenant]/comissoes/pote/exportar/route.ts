@@ -45,6 +45,7 @@ export async function GET(request:Request,{params}:{params:Promise<{tenant:strin
     ["Valor do pote (R$)",amount(pot.potCents)],
     ["Total de atendimentos de assinantes",String(pot.totalAttendances)],
     ["Atendimentos sem acesso elegível",String(pot.unassignedAttendances)],
+    ["Atendimentos sem ciclo pago confirmado",String(pot.unverifiedAttendances)],
     ["Participação atribuída (R$)",amount(pot.assignedCents)],
     ["Saldo sem rateio (R$)",amount(pot.remainingCents)],
     [],
@@ -60,7 +61,7 @@ export async function GET(request:Request,{params}:{params:Promise<{tenant:strin
     ["Estorno","Data da devolução","Valor (R$)"],
     ...pot.refunds.map(entry=>[entry.id,new Date(entry.completedAt).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"}),amount(entry.amountCents)]),
     [],
-    ["Regra de rateio","Percentual = atendimentos de assinantes concluídos pelo profissional / total de atendimentos elegíveis. Cada agendamento conta uma vez."],
+    ["Regra de rateio","Percentual = atendimentos concluídos em ciclos de assinatura com mensalidade paga / total de atendimentos elegíveis. Cada agendamento conta uma vez."],
     ["Observação","Prévia baseada em baixas internas. Ainda sem conciliação automática do gateway. Regras fixas antigas não participam do rateio."],
   ];
   const content=formato==="xlsx"?spreadsheet(rows):pdf(rows);
