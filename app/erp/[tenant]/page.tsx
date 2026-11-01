@@ -1989,11 +1989,13 @@ export async function TenantERPView({
                 <article><span>Distribuído por produtividade</span><strong>{brl(subscriptionPot.assignedCents/100)}</strong><small>{subscriptionPot.totalAttendances} atendimentos concluídos de assinantes</small></article>
                 <article><span>Saldo sem rateio</span><strong>{brl(subscriptionPot.remainingCents/100)}</strong><small>Não distribuído</small></article>
               </div>
-              <p className="small muted">Rateio: atendimentos concluídos de assinantes do profissional ÷ total de atendimentos concluídos de assinantes no período. Cada agendamento conta uma vez, independentemente do número de serviços. As porcentagens somam 100% quando há atendimentos elegíveis.</p>
+              <p className="small muted">Rateio: atendimentos concluídos de assinantes do profissional ÷ total de atendimentos concluídos de assinantes no período. Cada agendamento coberto por uma mensalidade paga conta uma vez, independentemente do número de serviços. As porcentagens somam 100% quando há atendimentos elegíveis.</p>
               {subscriptionPot.totalAttendances === 0 && subscriptionPot.potCents > 0 &&
                 <p role="alert" className="notice erp-inline-notice">Há valor no pote, mas nenhum atendimento elegível de assinante neste período. O montante permanece sem rateio.</p>}
               {subscriptionPot.unassignedAttendances > 0 &&
                 <p role="alert" className="notice erp-inline-notice">{subscriptionPot.unassignedAttendances} atendimento(s) de assinantes estão vinculados a acessos profissionais não elegíveis. Confira o cadastro antes de fechar a apuração.</p>}
+              {subscriptionPot.unverifiedAttendances > 0 &&
+                <p role="alert" className="notice erp-inline-notice">{subscriptionPot.unverifiedAttendances} atendimento(s) de clientes com contrato não possuem ciclo pago confirmado na data do serviço. Eles não foram incluídos no pote e precisam ser conferidos como avulsos ou recebimentos pendentes.</p>}
               <div className="table-wrap erp-inner-table">
                 <table><thead><tr><th>Profissional</th><th>Atendimentos de assinantes</th><th>Participação do pote</th><th>Valor calculado</th></tr></thead>
                 <tbody>{shop.users.filter(user => subscriptionPot.distributions[user.id]?.attendances).map(user =>
@@ -2035,7 +2037,7 @@ export async function TenantERPView({
           </article>
 
           <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionPotNumber: row.subscriptionPotCommission, subscriberAttendances: row.subscriberAttendances, potSharePercent: row.potSharePercent, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
-          <p className="erp-integration-note">As comissões por serviço e produto consideram comandas fechadas e recibos; a comissão de venda do plano é separada do pote de assinaturas. O pote utiliza todas as mensalidades pagas no período, com estornos concluídos abatidos e rateio pela quantidade de atendimentos concluídos de assinantes por profissional. A prévia usa regras atuais e não substitui quitação auditada. O botão Pagar continua simulado e não movimenta dinheiro.</p>
+          <p className="erp-integration-note">As comissões por serviço e produto consideram comandas fechadas e recibos; a comissão de venda do plano é separada do pote de assinaturas. O pote utiliza todas as mensalidades pagas no período, abatendo estornos concluídos, e rateia somente atendimentos concluídos durante ciclos de assinatura com pagamento confirmado. Atendimentos avulsos de clientes inadimplentes não entram. A prévia usa regras atuais e não substitui quitação auditada. O botão Pagar continua simulado e não movimenta dinheiro.</p>
 
         </section>}
 
