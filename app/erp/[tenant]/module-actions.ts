@@ -752,6 +752,7 @@ export async function payCommission(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "comissoes");
   if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  if (readWorkspace(shop.enabledFeatures).subscriptionPot.percent > 0) redirect(`${path}?erro=pote-pagamento`);
   const userId = value(formData, "userId", 80);
   const from = value(formData, "periodStart", 10);
   const to = value(formData, "periodEnd", 10);
