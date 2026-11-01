@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace } from "@/lib/erp-workspace";
 import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayments, sessionTotals, calculateCheckoutPricing, parseAppliedItemDiscounts, servicesFromCommandLines, canReopenCommand, type CheckoutDiscountInput } from "@/lib/checkout";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
+import { hasProfessionalPermission } from "@/lib/professional-profile";
 import type { Prisma } from "@prisma/client";
 
 const value = (f: FormData, key: string) => String(f.get(key) ?? "").trim().slice(0, 200);
@@ -156,6 +157,15 @@ export async function addCommandItem(form: FormData) {
       commandId: command.id, kind, description: catalog.name, quantity, unitPrice: price / 100, total: price * quantity / 100,
     } });
     const { shop, workspace } = await configuration(tx, shopId);
+    if(staff?.role==="BARBER"){
+      const profile=workspace.professionalProfiles[staff.id];
+      const permission=kind==="PRODUCT"?"ADD_PRODUCT":"ADD_SERVICE";
+      if(!hasProfessionalPermission(profile,permission))
+        throw new OperationError("O administrador não liberou esta operação para seu acesso.");
+      if(service && profile?.enabledServices && !profile.enabledServices.includes(service.id))
+        throw new OperationError("Serviço não habilitado para este profissional.");
+    }
+
     if (product) {
       workspace.productLines.push({ itemId: item.id, productId: product.id });
       let sellerId = staff?.role === "BARBER" ? staff.id : value(form, "sellerId");
