@@ -615,7 +615,7 @@ export async function TenantERPView({
   const financeAuditInvalid = Boolean(auditFinanceFrom && auditFinanceTo && auditFinanceFrom > auditFinanceTo);
   const financeAuditActions = ["FINANCIAL_PAYMENT_CONFIRMED","FINANCIAL_ENTRY_CREATED","COMMAND_DISCOUNT_APPLIED",
     "COMMAND_ITEM_REMOVED","COMMAND_REOPENED","CLUB_PLAN_CHANGE_SCHEDULED","CLUB_STATUS_CHANGE_REQUESTED",
-    "CLUB_BILLING_DAY_CHANGED","SUBSCRIPTION_COMMISSION_TIERS_UPDATED","ROLE_PERMISSIONS_UPDATED",
+    "CLUB_BILLING_DAY_CHANGED","SUBSCRIPTION_COMMISSION_TIERS_UPDATED","SUBSCRIPTION_POT_RATE_UPDATED","SUBSCRIPTION_POT_SHARE_UPDATED","ROLE_PERMISSIONS_UPDATED",
     "CLUB_REFUND_REQUESTED","CLUB_REFUND_CONFIRMED","CLUB_BROKEN_NONPAYMENT","CLUB_RECONTRACT_AFTER_BREAK",
     "UNIT_HOLIDAY_CREATED"] as const;
   const financeAuditWhere: Prisma.AdminAuditLogWhereInput = {barberShopId:shop.id,action:{in:[...financeAuditActions]},
@@ -2413,7 +2413,7 @@ export async function TenantERPView({
                     COMMAND_DISCOUNT_APPLIED:"Desconto na comanda",COMMAND_ITEM_REMOVED:"Item excluído",
                     COMMAND_REOPENED:"Comanda reaberta",CLUB_PLAN_CHANGE_SCHEDULED:"Troca de plano programada",
                     CLUB_STATUS_CHANGE_REQUESTED:"Situação da assinatura",CLUB_BILLING_DAY_CHANGED:"Dia de cobrança",
-                    SUBSCRIPTION_COMMISSION_TIERS_UPDATED:"Faixas de comissão",ROLE_PERMISSIONS_UPDATED:"Permissões",
+                    SUBSCRIPTION_COMMISSION_TIERS_UPDATED:"Faixas de comissão",SUBSCRIPTION_POT_RATE_UPDATED:"Percentual do pote",SUBSCRIPTION_POT_SHARE_UPDATED:"Participação no pote",ROLE_PERMISSIONS_UPDATED:"Permissões",
                     CLUB_REFUND_REQUESTED:"Estorno solicitado",CLUB_REFUND_CONFIRMED:"Devolução registrada",
                     CLUB_BROKEN_NONPAYMENT:"Ruptura por inadimplência",CLUB_RECONTRACT_AFTER_BREAK:"Recontratação regularizada",
                     UNIT_HOLIDAY_CREATED:"Feriado cadastrado",
