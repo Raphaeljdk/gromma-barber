@@ -122,6 +122,7 @@ export async function saveProfessionalIdentity(form:FormData){
   const email=cleanEmail(text(form,"email",180));
   const phone=text(form,"phone",28);
   const unitId=text(form,"unitId",80);
+  const nextRole=text(form,"role",30) as ShopUserRole;
   const active=checked(form,"active");
   const birthDate=text(form,"birthDate",10);
   const cpf=text(form,"cpf",14).replace(/\D/g,"");
@@ -130,6 +131,7 @@ export async function saveProfessionalIdentity(form:FormData){
   const cadenceDays=num(form,"cadenceDays");
   const state=text(form,"state",2).toUpperCase();
   const photoUrl=text(form,"photoUrl",600);
+  if(!roles.includes(nextRole)&&nextRole!=="OWNER")fail(ctx,"funcao");
   if(name.length<2||!emailValid(email)||phone.length>28||
     (birthDate&&!isDate(birthDate))||(cpf&&cpf.length!==11)||(cnpj&&cnpj.length!==14)||
     (zipCode&&zipCode.length!==8)||(state&&!/^[A-Z]{2}$/.test(state))||
@@ -140,12 +142,14 @@ export async function saveProfessionalIdentity(form:FormData){
   await change(ctx,"PROFESSIONAL_IDENTITY_UPDATED",text(form,"reason",200),async(profile,tx)=>{
     const existing=await tx.shopUser.findFirst({where:{id:ctx.userId,barberShopId:ctx.shopId},
       select:{id:true,role:true,active:true,email:true,unitId:true,name:true}});
-    if(!existing || existing.role==="OWNER" && !active) throw Error("Owner must remain active");
+    if(!existing || existing.role==="OWNER" && (!active || nextRole!=="OWNER"))
+      throw Error("Owner must remain active with owner role");
+    if(existing.role!=="OWNER" && nextRole==="OWNER")throw Error("Changing owner role is not allowed");
     const currentActor=await tx.shopUser.findFirst({where:{barberShopId:ctx.shopId,email:ctx.actor},
       select:{id:true}});
     if(currentActor?.id===existing.id && !active)throw Error("Cannot disable own account");
     await tx.shopUser.update({where:{id:existing.id},data:{
-      name,email,phone:phone||null,unitId:unitId||null,active,
+      name,email,role:nextRole,phone:phone||null,unitId:unitId||null,active,
     }});
     // PII is deliberately not duplicated in the audit trail.
     const fields: (keyof ProfessionalProfile)[]=[
@@ -162,7 +166,7 @@ export async function saveProfessionalIdentity(form:FormData){
       complement:text(form,"complement",100),photoUrl,
     });
     return {previous:{name:existing.name,email:existing.email,role:existing.role,active:existing.active,unitId:existing.unitId},
-      next:{name,email,active,unitId:unitId||null},
+      next:{name,email,role:nextRole,active,unitId:unitId||null},
       changedProfileFields:fields.filter(key=>Boolean(profile[key])!==previousFields[key])};
   });
   success(ctx,"dados");
