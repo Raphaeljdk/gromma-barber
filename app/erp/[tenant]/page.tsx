@@ -892,7 +892,7 @@ export async function TenantERPView({
   const potEndExclusive = new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000);
   const subscriptionPot = activeModule === "comissoes" && !invalidCommissionPeriod
     ? await calculateSubscriptionPot(prisma, shop.id, workspace, potStart, potEndExclusive,
-        shop.users.filter(user => user.active && ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>user.id),
+        shop.users.filter(user => user.active && ["OWNER","MANAGER","BARBER"].includes(user.role) && (!comissoesUnidade || user.unitId === comissoesUnidade)).map(user=>user.id),
         comissoesUnidade || undefined)
     : null;
 
