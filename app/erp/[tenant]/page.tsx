@@ -58,7 +58,7 @@ import { calculateCommission } from "@/lib/commission-calculation";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionCommissionTiers, saveSubscriptionPotRate, saveSubscriptionPotShare } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveProfessionalCommissionRates, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionCommissionTiers, saveSubscriptionPotRate } from "./module-actions";
 
 function StatusPill({
   children,
@@ -892,7 +892,7 @@ export async function TenantERPView({
   const potEndExclusive = new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000);
   const subscriptionPot = activeModule === "comissoes" && !invalidCommissionPeriod
     ? await calculateSubscriptionPot(prisma, shop.id, workspace, potStart, potEndExclusive,
-        shop.users.filter(user => user.active && ["OWNER","MANAGER","BARBER"].includes(user.role) && (!comissoesUnidade || user.unitId === comissoesUnidade)).map(user=>user.id),
+        shop.users.filter(user => ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>user.id),
         comissoesUnidade || undefined)
     : null;
 
@@ -905,8 +905,7 @@ export async function TenantERPView({
       const precise = activeModule === "comissoes" && comissoesDe && comissoesAte && !invalidCommissionPeriod
         ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions, { workspace })
         : null;
-      const potCommission = !comissoesUnidade || user.unitId === comissoesUnidade
-        ? (subscriptionPot?.distributions[user.id]?.amountCents ?? 0) / 100 : 0;
+      const potCommission = (subscriptionPot?.distributions[user.id]?.amountCents ?? 0) / 100;
       const salesCommission = Number(precise?.categories.SUBSCRIPTION ?? 0);
       const grossCommission = precise ? Number(precise.gross) + potCommission
         : (activeModule === "comissoes" ? 0 : (commissionByUser.get(user.id) ?? 0));
@@ -923,6 +922,8 @@ export async function TenantERPView({
         subscriptionCommission: salesCommission + potCommission,
         subscriptionSalesCommission: salesCommission,
         subscriptionPotCommission: potCommission,
+        subscriberAttendances: subscriptionPot?.distributions[user.id]?.attendances ?? 0,
+        potSharePercent: subscriptionPot?.distributions[user.id]?.sharePercent ?? 0,
         deductions,
         netCommission: Math.max(0, grossCommission - deductions),
       };
@@ -986,7 +987,7 @@ export async function TenantERPView({
   const canViewAllCommissions = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const filteredCommissionRows = commissionRows.filter(row =>
     (canViewAllCommissions || (viewer.type === "TENANT" && row.user.id === viewer.userId)) &&
-    (!comissoesUnidade || row.user.unitId === comissoesUnidade));
+    (!comissoesUnidade || row.user.unitId === comissoesUnidade || row.subscriberAttendances > 0));
   const documentPageRows = workspace.documents.slice(
     (documentosPage - 1) * pageSize,
     documentosPage * pageSize,
@@ -1985,11 +1986,24 @@ export async function TenantERPView({
                 <article><span>Estornos efetivados</span><strong>{brl(subscriptionPot.refundedCents/100)}</strong><small>{subscriptionPot.refundCount} devolução(ões)</small></article>
                 <article><span>Base líquida recebida</span><strong>{brl(subscriptionPot.netCents/100)}</strong><small>Recebido menos devoluções</small></article>
                 <article><span>Pote calculado</span><strong>{brl(subscriptionPot.potCents/100)}</strong><small>{subscriptionPot.percent.toFixed(2)}% da base líquida</small></article>
-                <article><span>Participação atribuída</span><strong>{brl(subscriptionPot.assignedCents/100)}</strong><small>Regras dos profissionais</small></article>
+                <article><span>Distribuído por produtividade</span><strong>{brl(subscriptionPot.assignedCents/100)}</strong><small>{subscriptionPot.totalAttendances} atendimentos concluídos de assinantes</small></article>
                 <article><span>Saldo sem rateio</span><strong>{brl(subscriptionPot.remainingCents/100)}</strong><small>Não distribuído</small></article>
               </div>
-              {subscriptionPot.invalidShares && <p role="alert" className="notice error-notice">As participações do pote estão inconsistentes. Nenhuma distribuição foi calculada; confira as configurações.</p>}
-              {comissoesUnidade && <p className="small muted">Filtro por unidade: só entram cobranças com a unidade vinculada ao registro financeiro. Cobranças antigas sem vínculo de unidade permanecem na visão “Todas as unidades”, para não inventar uma filial de origem.</p>}
+              <p className="small muted">Rateio: atendimentos concluídos de assinantes do profissional ÷ total de atendimentos concluídos de assinantes no período. Cada agendamento conta uma vez, independentemente do número de serviços. As porcentagens somam 100% quando há atendimentos elegíveis.</p>
+              {subscriptionPot.totalAttendances === 0 && subscriptionPot.potCents > 0 &&
+                <p role="alert" className="notice erp-inline-notice">Há valor no pote, mas nenhum atendimento elegível de assinante neste período. O montante permanece sem rateio.</p>}
+              {subscriptionPot.unassignedAttendances > 0 &&
+                <p role="alert" className="notice erp-inline-notice">{subscriptionPot.unassignedAttendances} atendimento(s) de assinantes estão vinculados a acessos profissionais não elegíveis. Confira o cadastro antes de fechar a apuração.</p>}
+              <div className="table-wrap erp-inner-table">
+                <table><thead><tr><th>Profissional</th><th>Atendimentos de assinantes</th><th>Participação do pote</th><th>Valor calculado</th></tr></thead>
+                <tbody>{shop.users.filter(user => subscriptionPot.distributions[user.id]?.attendances).map(user =>
+                  <tr key={user.id}><td>{user.name}</td><td>{subscriptionPot.distributions[user.id].attendances}</td>
+                    <td>{subscriptionPot.distributions[user.id].sharePercent.toFixed(2)}%</td>
+                    <td>{brl(subscriptionPot.distributions[user.id].amountCents / 100)}</td></tr>)}
+                  {!subscriptionPot.totalAttendances && <tr><td colSpan={4}>Sem atendimentos elegíveis de assinantes neste período.</td></tr>}
+                </tbody></table>
+              </div>
+              {comissoesUnidade && <p className="small muted">Filtro por unidade: os recebimentos consideram a filial vinculada à cobrança, e a produtividade considera a filial onde o atendimento foi realizado. Cobranças antigas sem filial aparecem somente em “Todas as unidades”.</p>}
               {isOwner && <details className="erp-quick-create">
                 <summary>Configurar percentual do pote (administrador)</summary>
                 <p className="small muted">Este percentual define quanto da receita líquida confirmada será destinado ao pote. Não altera nem substitui a receita recebida.</p>
@@ -2020,8 +2034,8 @@ export async function TenantERPView({
             </> : <p className="small muted">Corrija o período para consultar o pote.</p>}
           </article>
 
-          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionPotNumber: row.subscriptionPotCommission, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
-          <p className="erp-integration-note">As comissões por serviço e produto consideram comandas fechadas e recibos; a comissão de venda do plano é separada do pote de assinaturas. O pote utiliza todas as mensalidades do Clube pagas no período, com estornos concluídos abatidos e participações personalizadas. A prévia usa regras atuais e não substitui quitação auditada. O botão Pagar continua simulado e não movimenta dinheiro.</p>
+          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionPotNumber: row.subscriptionPotCommission, subscriberAttendances: row.subscriberAttendances, potSharePercent: row.potSharePercent, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
+          <p className="erp-integration-note">As comissões por serviço e produto consideram comandas fechadas e recibos; a comissão de venda do plano é separada do pote de assinaturas. O pote utiliza todas as mensalidades pagas no período, com estornos concluídos abatidos e rateio pela quantidade de atendimentos concluídos de assinantes por profissional. A prévia usa regras atuais e não substitui quitação auditada. O botão Pagar continua simulado e não movimenta dinheiro.</p>
 
         </section>}
 
@@ -2048,30 +2062,12 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
-          {isOwner && <details className="erp-quick-create">
-            <summary>Personalizar participação no pote de assinaturas por profissional</summary>
-            <p className="small muted">Defina qual porcentagem do pote calculado pertence a cada profissional. A soma das participações não pode ultrapassar 100%. Esta regra é independente da comissão por vender uma assinatura e não permite editar a arrecadação.</p>
-            <p className="small muted">Participação total configurada: <strong>{Object.values(workspace.subscriptionPot.shares).reduce((sum,val)=>sum+val,0).toFixed(2)}%</strong></p>
-            {shop.users.filter(user=>user.active && ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>
-              <form key={user.id} action={saveSubscriptionPotShare} className="erp-compact-form" style={{marginBottom:18}}>
-                <input type="hidden" name="tenantCode" value={tenantCode}/>
-                <input type="hidden" name="userId" value={user.id}/>
-                <strong>{user.name}</strong>
-                <div className="grid grid-2">
-                  <label><span className="label">Participação no pote (%)</span>
-                    <input className="input" name="sharePercent" type="number" step=".01" min="0" max="100"
-                      defaultValue={workspace.subscriptionPot.shares[user.id] ?? 0} required/>
-                  </label>
-                  <label><span className="label">Motivo da personalização</span>
-                    <input className="input" name="reason" required minLength={5} maxLength={600} placeholder="Regra aprovada pelo proprietário"/>
-                  </label>
-                </div>
-                <button className="btn secondary" type="submit">Salvar participação de {user.name}</button>
-              </form>
-            )}
-            {actionOk === "pote" && <p className="notice">Participação atualizada e registrada na auditoria.</p>}
-            {actionError === "pote" && <p role="alert" className="notice error-notice">A soma não pode ultrapassar 100% do pote. Confira os percentuais e o motivo.</p>}
-          </details>}
+          <div className="notice">
+            <strong>Pote de assinaturas por produtividade:</strong> a participação individual não é mais digitada no cadastro.
+            O sistema calcula automaticamente pelo número de atendimentos concluídos de assinantes no período.
+            Os percentuais fixos antigos foram preservados apenas no histórico, sem efeito na distribuição.
+            Confira o resultado em <Link href={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}>Gerar Comissões</Link>.
+          </div>
           {isOwner && <details className="erp-quick-create">
             <summary>Comissão por metas de venda de assinaturas</summary>
             <p className="small muted">Opcional. Sem faixas cadastradas, aplica-se a taxa fixa configurada por profissional (padrão 0%). Faixas consideram o total das primeiras mensalidades realmente pagas no período da apuração. O limite superior é exclusivo.</p>
