@@ -3,8 +3,9 @@ import { billingDayFromDate, nextMonthlyBillingAt } from './club-billing-date';
 import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace, type ClubMemberConfig, type ClubPlanConfig } from './erp-workspace';
 
 export async function appendClubCharge(tx: Prisma.TransactionClient, shopId: string, workspace: ErpWorkspace, member: ClubMemberConfig, plan: ClubPlanConfig, name: string, dueDate: Date, periodEnd: Date) {
+  const customerUnit = member.unitId === undefined ? (await tx.customer.findFirst({where:{barberShopId:shopId,id:member.customerId},select:{unitId:true}}))?.unitId ?? null : member.unitId;
   const entry = await tx.financialEntry.create({ data: {
-    barberShopId: shopId, type: 'RECEIVABLE', status: 'PENDING', category: 'Clube de assinaturas',
+    barberShopId: shopId, unitId: customerUnit, type: 'RECEIVABLE', status: 'PENDING', category: 'Clube de assinaturas',
     description: `${plan.name} · ${name}`, amount: plan.monthlyAmount, dueDate,
   } });
   workspace.clubCharges.push({ entryId: entry.id, memberId: member.id, customerId: member.customerId,
@@ -20,7 +21,7 @@ export async function registerClubMember(tx: Prisma.TransactionClient, shopId: s
   const invite = inviteHash ? workspace.clubInvites.find(i => i.hash === inviteHash && i.customerId === customerId) : null;
   if (inviteHash && (!invite || invite.usedAt || new Date(invite.expiresAt) <= now)) throw new Error('Convite inválido');
   const [customer, seller] = await Promise.all([
-    tx.customer.findFirst({ where: { id: customerId, barberShopId: shopId, active: true }, select: { id: true, name: true } }),
+    tx.customer.findFirst({ where: { id: customerId, barberShopId: shopId, active: true }, select: { id: true, name: true, unitId: true } }),
     sellerId ? tx.shopUser.findFirst({ where: { id: sellerId, barberShopId: shopId, active: true }, select: { id: true, name: true } }) : Promise.resolve(null),
   ]);
   const plan = workspace.clubPlans.find(p => p.id === planId && p.active);
@@ -33,7 +34,7 @@ export async function registerClubMember(tx: Prisma.TransactionClient, shopId: s
     throw new Error('Recontratação após ruptura exige validação administrativa da multa / regularização');
   const billingDay = billingDayFromDate(now);
   const next = nextMonthlyBillingAt(now, billingDay);
-  const member: ClubMemberConfig = { id: workspaceId('member'), customerId, planId, status: 'ACTIVE', billingDay, startedAt: now.toISOString(), nextBillingAt: next.toISOString() };
+  const member: ClubMemberConfig = { id: workspaceId('member'), customerId, planId, unitId: customer.unitId, status: 'ACTIVE', billingDay, startedAt: now.toISOString(), nextBillingAt: next.toISOString() };
   workspace.clubMembers.unshift(member);
   workspace.clubSales.push({ id: workspaceId('sale'), memberId: member.id, customerId, planId, planName: plan.name,
     amount: plan.monthlyAmount, at: now.toISOString(), sellerId: seller?.id ?? null, sellerName: seller?.name ?? 'Sem indicação', source });
