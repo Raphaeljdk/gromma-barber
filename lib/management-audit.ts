@@ -1,6 +1,7 @@
 import { addAgendaDays, agendaDateKey, isAgendaDate } from "@/lib/agenda";
 import { PAYMENT_METHODS, type CommandPayment, type PaymentMethod } from "@/lib/checkout";
 import type { AgendaBlock } from "@/lib/erp-workspace";
+import type { ProfessionalProfile } from "@/lib/professional-profile";
 
 export type AuditPeriod = { from: string; to: string; invalid: boolean; days: number };
 export function auditPeriod(fromRaw: string, toRaw: string, today = agendaDateKey(new Date())): AuditPeriod {
@@ -85,6 +86,7 @@ export function barbershopDayBounds(day: string, openHour: number, closeHour: nu
 export function availableForProfessional(
   day: string, openHour: number, closeHour: number,
   blocks: AgendaBlock[], professionalId: string, unitId: string,
+  profile?: ProfessionalProfile,
 ) {
   const base=barbershopDayBounds(day,openHour,closeHour);
   const closed=blocks.filter(block=>
@@ -95,7 +97,27 @@ export function availableForProfessional(
     const interval=intersect({start:Date.parse(block.startsAt),end:Date.parse(block.endsAt)},base.start,base.end);
     return interval?[interval]:[];
   });
-  const available=subtractIntervals([base],closed);
+  const midnight=Date.parse(day+"T00:00:00-03:00");
+  const weekday=new Date(day+"T12:00:00-03:00").getUTCDay();
+  let available=subtractIntervals([base],closed);
+  if(profile?.workHours){
+    const shift=profile.workHours.find(x=>x.day===weekday);
+    if(!shift)available=[];
+    else{
+      const start=midnight+Number(shift.start.split(":")[0])*3600000+
+        Number(shift.start.split(":")[1])*60000;
+      const end=midnight+Number(shift.end.split(":")[0])*3600000+
+        Number(shift.end.split(":")[1])*60000;
+      available=available.flatMap(slot=>{const clipped=intersect(slot,start,end);return clipped?[clipped]:[];});
+    }
+  }
+  if(profile?.leaves?.some(leave=>leave.from<=day&&leave.to>=day))available=[];
+  const pauses=(profile?.breaks??[]).filter(item=>item.day===weekday).map(item=>{
+    const start=midnight+Number(item.start.slice(0,2))*3600000+Number(item.start.slice(3,5))*60000;
+    const end=midnight+Number(item.end.slice(0,2))*3600000+Number(item.end.slice(3,5))*60000;
+    return {start,end};
+  });
+  available=subtractIntervals(available,pauses);
   return {base,available,blockedMinutes:Math.max(0,(base.end-base.start)-intervalMinutes(available)) / 60000};
 }
 export type HeatBooking = {barberId:string|null;unitId:string;startsAt:Date;endsAt:Date|null;durationMinutes?:number|null;status:string};
