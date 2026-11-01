@@ -268,6 +268,38 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         {!profile.productTiers?.length&&<tr><td colSpan={4}>Sem faixas personalizadas.</td></tr>}
       </tbody></table></div>
     </details>
+    <details className="card" style={{padding:18,marginBottom:14}}>
+      <summary><strong>8. Regras de comissão e venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></summary>
+      <p className="small muted" style={{marginTop:14}}>As regras abaixo são individuais. A comissão pela venda de uma assinatura não é a mesma coisa que a participação no pote recorrente, que continua sendo distribuída automaticamente por produtividade.</p>
+      <form action={saveProfessionalSection} className="erp-compact-form">
+        {hidden(code,user.id,"base-commissions")}
+        <div className="grid grid-2">
+          <label>Comissão por venda de assinatura (%)<input className="input" type="number" step=".01" min={0} max={100}
+            name="subscriptionPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}/></label>
+          <label>Comissão padrão sobre produtos (%)<input className="input" type="number" step=".01" min={0} max={100}
+            name="productPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.productPercent??30}/></label>
+        </div>
+        {reason("Regras de vendas do profissional")}
+        <button className="btn" type="submit">Salvar percentuais de vendas</button>
+      </form>
+      <details className="erp-quick-create" style={{marginTop:14}}>
+        <summary>Metas por faixa de faturamento em novas assinaturas (opcional)</summary>
+        <p className="small muted">Exemplo: vendas confirmadas de R$ 500 até R$ 1.000, comissão de 5%. Quando existirem faixas, elas substituem o percentual fixo de venda de assinatura dentro das condições definidas.</p>
+        <form action={saveProfessionalSection} className="erp-compact-form">
+          {hidden(code,user.id,"subscription-tiers")}
+          {[0,1,2,3,4].map(index=>{
+            const tier=(workspace.subscriptionCommissionTiers[user.id]??[])[index];
+            return <div key={index} className="grid grid-3">
+              <label>De (R$)<input className="input" type="number" name="tierMin" step=".01" min={0} defaultValue={tier?.min??""}/></label>
+              <label>Até (R$)<input className="input" type="number" name="tierMax" step=".01" min={0} defaultValue={tier?.max??""}/></label>
+              <label>Comissão (%)<input className="input" type="number" name="tierPercent" step=".01" min={0} max={100} defaultValue={tier?.percent??""}/></label>
+            </div>;
+          })}
+          {reason("Metas de vendas de assinatura")}
+          <button className="btn secondary" type="submit">Salvar faixas comerciais</button>
+        </form>
+      </details>
+    </details>
     <article className="card" style={{padding:16}}>
       <h3>Pote de assinaturas</h3>
       <p className="small muted">A participação de cada profissional continua sendo calculada automaticamente pelos atendimentos de assinantes elegíveis. Nenhum percentual fixo de participação é editado neste cadastro.</p>
