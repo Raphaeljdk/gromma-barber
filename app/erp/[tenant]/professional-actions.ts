@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
-import { readWorkspace, writeWorkspace, workspaceId } from "@/lib/erp-workspace";
+import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace } from "@/lib/erp-workspace";
 import {
   PROFESSIONAL_PERMISSION_IDS, PRODUCT_CATEGORIES, WEEK_DAYS, isDate, isTime,
   validInterval, type ProfessionalProfile, type ProfessionalPermission,
@@ -46,14 +46,14 @@ function success(ctx:Ctx,msg:string):never{
   revalidatePath("/erp/"+encodeURIComponent(ctx.code),"layout");
   redirect(ctx.path+"?ok="+encodeURIComponent(msg));
 }
-async function change(ctx:Ctx,action:string,reason:string,fn:(profile:ProfessionalProfile,tx:Prisma.TransactionClient)=>Promise<Record<string,unknown>|void>){
+async function change(ctx:Ctx,action:string,reason:string,fn:(profile:ProfessionalProfile,tx:Prisma.TransactionClient,ws:ErpWorkspace)=>Promise<Record<string,unknown>|void>){
   if(reason.trim().length<4) fail(ctx,"motivo");
   try{
     await prisma.$transaction(async tx=>{
       const fresh=await tx.barberShop.findUniqueOrThrow({where:{id:ctx.shopId}});
       const ws=readWorkspace(fresh.enabledFeatures);
       const profile:ProfessionalProfile=structuredClone(ws.professionalProfiles[ctx.userId]??{});
-      const details=await fn(profile,tx);
+      const details=await fn(profile,tx,ws);
       ws.professionalProfiles[ctx.userId]=profile;
       await tx.barberShop.update({where:{id:ctx.shopId},data:{
         enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
@@ -263,6 +263,39 @@ export async function saveProfessionalSection(form:FormData){
       const before=profile.contracts??[];
       profile.contracts=before.filter(x=>x.id!==id);
       return {contractId:id,removed:before.length-profile.contracts.length};
+    });
+  }else if(section==="base-commissions"){
+    const subscriptionPercent=num(form,"subscriptionPercent");
+    const productPercent=num(form,"productPercent");
+    if(!moneyPercent(subscriptionPercent)||!moneyPercent(productPercent))fail(ctx,"comissoes");
+    await change(ctx,"PROFESSIONAL_BASE_COMMISSIONS_UPDATED",reason,async(profile,tx,ws)=>{
+      const previous=ws.professionalExtraRates[ctx.userId]??null;
+      ws.professionalExtraRates[ctx.userId]={subscriptionPercent,productPercent};
+      return {previous,next:{subscriptionPercent,productPercent}};
+    });
+  }else if(section==="subscription-tiers"){
+    const mins=form.getAll("tierMin").map(String);
+    const maxs=form.getAll("tierMax").map(String);
+    const percents=form.getAll("tierPercent").map(String);
+    if(mins.length!==maxs.length||mins.length!==percents.length||mins.length>8)fail(ctx,"metas");
+    const tiers: {min:number;max:number|null;percent:number}[]=[];
+    for(let index=0;index<mins.length;index++){
+      const a=mins[index].trim(),b=maxs[index].trim(),c=percents[index].trim();
+      if(!a&&!b&&!c)continue;
+      const min=Number(a.replace(",",".")),max=b?Number(b.replace(",",".")):null,
+        percent=Number(c.replace(",","."));
+      if(!a||!c||!Number.isFinite(min)||min<0||min>1e8||
+          (max!==null&&(!Number.isFinite(max)||max<=min||max>1e8))||
+          !moneyPercent(percent))fail(ctx,"metas");
+      tiers.push({min,max,percent});
+    }
+    tiers.sort((a,b)=>a.min-b.min);
+    if(tiers.some((tier,index)=>index>0&&
+       (tiers[index-1].max===null||tier.min<tiers[index-1].max!)))fail(ctx,"metas");
+    await change(ctx,"PROFESSIONAL_SUBSCRIPTION_TIERS_UPDATED",reason,async(profile,tx,ws)=>{
+      const previous=ws.subscriptionCommissionTiers[ctx.userId]??[];
+      ws.subscriptionCommissionTiers[ctx.userId]=tiers;
+      return {previous,next:tiers};
     });
   }else if(section==="product-tier"){
     const category=text(form,"category",80),minimum=num(form,"minimum"),percent=num(form,"percent");
