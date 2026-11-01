@@ -240,9 +240,12 @@ export async function saveProfessionalSection(form:FormData){
       const previousRates=profile.services??{};
       profile.enabledServices=permitted;
       // Manter percentuais históricos de serviços inativos, sem excluir dados.
+      const changedRates=services.filter(item=>previousRates[item.id]!==rates[item.id]).map(item=>({
+        serviceId:item.id,previous:previousRates[item.id]??null,next:rates[item.id],
+      }));
       profile.services={...previousRates,...rates};
       return {previousEnabled,nextEnabled:permitted,
-        updatedServices:services.length,previousRules:Object.keys(previousRates).length};
+        updatedServices:services.length,changedRates};
     });
   }else if(section==="enabled-services"){
     const ids=[...new Set(form.getAll("serviceIds").map(String).filter(id=>id.length<=80))];
