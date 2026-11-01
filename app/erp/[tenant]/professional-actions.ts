@@ -8,6 +8,7 @@ import {
   validInterval, type ProfessionalProfile, type ProfessionalPermission,
   type ProfessionalShift, type ProfessionalBreak,
 } from "@/lib/professional-profile";
+import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Prisma, ShopUserRole } from "@prisma/client";
@@ -144,6 +145,40 @@ export async function saveProfessionalIdentity(form:FormData){
       changedProfileFields:fields.filter(key=>Boolean(profile[key])!==previousFields[key])};
   });
   success(ctx,"dados");
+}
+
+/** Foto de perfil: somente JPEG, PNG ou WEBP até 3 MB.
+ * O administrador deve confirmar que possui autorização para armazenar
+ * e exibir a foto, que ficará em um endereço público não enumerável.
+ */
+export async function uploadProfessionalPhoto(form:FormData){
+  const ctx=await context(form);
+  const consent=checked(form,"photoConsent");
+  const file=form.get("photo");
+  if(!consent||!(file instanceof File)||file.size===0||file.size>3*1024*1024)
+    fail(ctx,"foto");
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type))fail(ctx,"foto");
+  const head=new Uint8Array(await file.slice(0,16).arrayBuffer());
+  const signature=Array.from(head).map(n=>n.toString(16).padStart(2,"0")).join("");
+  const validJpeg=file.type==="image/jpeg"&&signature.startsWith("ffd8ff");
+  const validPng=file.type==="image/png"&&signature.startsWith("89504e470d0a1a0a");
+  const validWebp=file.type==="image/webp"&&String.fromCharCode(...head.slice(0,4))==="RIFF"&&
+    String.fromCharCode(...head.slice(8,12))==="WEBP";
+  if(!validJpeg&&!validPng&&!validWebp)fail(ctx,"foto");
+  if(!process.env.BLOB_READ_WRITE_TOKEN)fail(ctx,"armazenamento");
+  const extension=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
+  let url="";
+  try{
+    const uploaded=await put("professional-photos/"+ctx.shopId+"/"+ctx.userId+"/profile."+extension,
+      file,{access:"public",addRandomSuffix:true,contentType:file.type,token:process.env.BLOB_READ_WRITE_TOKEN});
+    url=uploaded.url;
+  }catch(error){console.error("Photo upload failed",error);fail(ctx,"armazenamento");}
+  await change(ctx,"PROFESSIONAL_PHOTO_UPLOADED","Foto autorizada pelo administrador",async(profile)=>{
+    const previous=Boolean(profile.photoUrl);
+    profile.photoUrl=url;
+    return {previousPhoto:previous,newPhoto:true};
+  });
+  success(ctx,"foto");
 }
 
 export async function saveProfessionalSection(form:FormData){
