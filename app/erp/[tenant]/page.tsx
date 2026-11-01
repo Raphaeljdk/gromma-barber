@@ -55,6 +55,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { effectiveClubMember } from "@/lib/club-lifecycle";
 import { hasStaffPermission, permissionsForRole, STAFF_PERMISSION_KEYS, STAFF_PERMISSION_LABELS, STAFF_PERMISSION_ROLES } from "@/lib/role-permissions";
 import { calculateCommission } from "@/lib/commission-calculation";
+import { subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { createProfessional } from "./professional-actions";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
@@ -908,6 +909,11 @@ export async function TenantERPView({
         : null;
       const potCommission = (subscriptionPot?.distributions[user.id]?.amountCents ?? 0) / 100;
       const salesCommission = Number(precise?.categories.SUBSCRIPTION ?? 0);
+      const salesBonusEnabled = subscriptionSalesEnabled(
+        workspace.professionalProfiles[user.id],
+        workspace.professionalExtraRates[user.id]?.subscriptionPercent ?? 0,
+        workspace.subscriptionCommissionTiers[user.id] ?? [],
+      );
       const grossCommission = precise ? Number(precise.gross) + potCommission
         : (activeModule === "comissoes" ? 0 : (commissionByUser.get(user.id) ?? 0));
       const deductions = precise ? Number(precise.deductions) : workspace.deductions
@@ -922,6 +928,7 @@ export async function TenantERPView({
         productCommission: Number(precise?.categories.PRODUCT ?? 0),
         subscriptionCommission: salesCommission + potCommission,
         subscriptionSalesCommission: salesCommission,
+        salesBonusEnabled,
         subscriptionPotCommission: potCommission,
         subscriberAttendances: subscriptionPot?.distributions[user.id]?.attendances ?? 0,
         potSharePercent: subscriptionPot?.distributions[user.id]?.sharePercent ?? 0,
@@ -1975,11 +1982,20 @@ export async function TenantERPView({
           {actionOk === "deducao" && <div className="notice erp-inline-notice success">Dedução registrada.</div>}
           {["comissao","deducao"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados de remuneração.</div>}
 
-          <article className="card erp-workspace-card" style={{marginTop:18,marginBottom:18}}>
-            <div className="erp-card-title"><div>
-              <span>Pote de assinaturas · transparência</span>
-              <strong>Recebimentos confirmados — cálculo automático, sem edição do total</strong>
-            </div><StatusPill tone="pending">Prévia para conferência</StatusPill></div>
+          <div className="card" style={{padding:"10px 14px",margin:"10px 0 12px",display:"flex",flexWrap:"wrap",gap:"8px 20px",alignItems:"center",justifyContent:"space-between"}}>
+            <span className="small muted">Assinaturas recebidas: <strong>{subscriptionPot ? brl(subscriptionPot.netCents/100) : "—"}</strong></span>
+            <span className="small muted">Pote ({subscriptionPot?.percent.toFixed(2) ?? "0"}%): <strong>{subscriptionPot ? brl(subscriptionPot.potCents/100) : "—"}</strong></span>
+            <span className="small muted">Atendimentos elegíveis: <strong>{subscriptionPot?.totalAttendances ?? 0}</strong></span>
+            {subscriptionPot && subscriptionPot.potCents > 0 && subscriptionPot.totalAttendances === 0 &&
+              <span className="small muted">Pote sem distribuição neste período</span>}
+          </div>
+
+          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionSalesEnabled: row.salesBonusEnabled, subscriptionPotNumber: row.subscriptionPotCommission, subscriberAttendances: row.subscriberAttendances, potSharePercent: row.potSharePercent, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
+          <details className="card erp-workspace-card" style={{marginTop:12,marginBottom:14,padding:14}}>
+            <summary style={{cursor:"pointer",fontWeight:600}}>
+              Conferir recebimentos e cálculo do pote · {subscriptionPot ? brl(subscriptionPot.potCents/100) : "Período inválido"}
+            </summary>
+            <p className="small muted" style={{marginTop:10}}>Detalhamento auditável · recebimentos confirmados, estornos e produtividade. Valores não editáveis.</p>
             <p className="small muted">O montante vem exclusivamente de cobranças vinculadas ao Clube com baixa PAID no Financeiro, dentro das datas selecionadas. Estornos concluídos são abatidos no dia da devolução. A baixa manual ainda não equivale a conciliação bancária.</p>
             {subscriptionPot ? <>
               <div className="erp-kpi-row">
@@ -2035,10 +2051,10 @@ export async function TenantERPView({
                 {subscriptionPot.paymentCount>40 && <p className="small muted">Exibindo as 40 baixas mais recentes. O montante inclui todos os {subscriptionPot.paymentCount} pagamentos do filtro.</p>}
               </details>
             </> : <p className="small muted">Corrija o período para consultar o pote.</p>}
-          </article>
+          </details>
 
-          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionPotNumber: row.subscriptionPotCommission, subscriberAttendances: row.subscriberAttendances, potSharePercent: row.potSharePercent, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
-          <p className="erp-integration-note">As comissões por serviço e produto consideram comandas fechadas e recibos; a comissão de venda do plano é separada do pote de assinaturas. O pote utiliza todas as mensalidades pagas no período, abatendo estornos concluídos, e rateia somente atendimentos concluídos durante ciclos de assinatura com pagamento confirmado. Atendimentos avulsos de clientes inadimplentes não entram. A prévia usa regras atuais e não substitui quitação auditada. O botão Pagar continua simulado e não movimenta dinheiro.</p>
+
+          <p className="small muted">Prévia, sem movimentação de dinheiro. O pote vem das mensalidades recebidas e é distribuído pelos atendimentos elegíveis; o bônus por vender um plano novo só aparece para quem o tiver habilitado no cadastro.</p>
 
         </section>}
 
