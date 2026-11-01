@@ -142,7 +142,16 @@ export async function requireTenantAccess(tenantCode: string) {
 
   const session = await getTenantSession();
   if (session && session.tenantCode === normalizedTenant) {
-    return { type: "TENANT" as const, ...session };
+    // Role/active status must come from the database; session claims may be stale
+    // after an administrator blocks an employee or changes their permissions.
+    const current = await prisma.shopUser.findFirst({
+      where: { id: session.userId, barberShopId: session.barberShopId,
+        active: true, barberShop: { tenantCode: normalizedTenant,
+          status: "APPROVED", accessReleased: true } },
+      select: { role: true, email: true, barberShopId: true },
+    });
+    if (current) return { type: "TENANT" as const, ...session,
+      role: current.role, email: current.email, barberShopId: current.barberShopId };
   }
 
   const admin = await getAdminSession();
