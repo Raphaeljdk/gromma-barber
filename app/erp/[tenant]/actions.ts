@@ -7,6 +7,7 @@ import { agendaReturnHref, encodeAppointmentNotes } from "@/lib/agenda";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace, writeWorkspace } from "@/lib/erp-workspace";
+import { isProductCommissionCategory } from "@/lib/product-commission-rules";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import { professionalCanServeAt, hasProfessionalPermission } from "@/lib/professional-profile";
 import { parseCountMilli, stockBalanceMilli } from "@/lib/stock-balance";
@@ -929,6 +930,7 @@ export async function createProduct(formData: FormData) {
   const costPrice = decimal(formData, "costPrice");
   const salePrice = decimal(formData, "salePrice");
   const stockMin = decimal(formData, "stockMin");
+  const productCategory = text(formData,"productCategory",24);
 
   if (
     name.length < 2 ||
@@ -937,24 +939,29 @@ export async function createProduct(formData: FormData) {
     !Number.isFinite(salePrice) ||
     salePrice < 0 ||
     !Number.isFinite(stockMin) ||
-    stockMin < 0
+    stockMin < 0 ||
+    !isProductCommissionCategory(productCategory)
   ) {
     redirect(`${path}?erro=produto#estoque`);
   }
 
   try {
-    await prisma.product.create({
-      data: {
-        barberShopId: shop.id,
-        sku: sku || null,
-        barcode: barcode || null,
-        name,
-        costPrice,
-        salePrice,
-        stockMin,
-        active: true,
-      },
-    });
+    await prisma.$transaction(async tx => {
+      const created=await tx.product.create({
+        data:{barberShopId:shop.id,sku:sku||null,barcode:barcode||null,
+          name,costPrice,salePrice,stockMin,active:true},
+        select:{id:true},
+      });
+      const fresh=await tx.barberShop.findUniqueOrThrow({where:{id:shop.id},select:{enabledFeatures:true}});
+      const workspace=readWorkspace(fresh.enabledFeatures);
+      workspace.productCategoryAssignments[created.id]=productCategory;
+      await tx.barberShop.update({where:{id:shop.id},data:{
+        enabledFeatures:writeWorkspace(fresh.enabledFeatures,workspace),
+      }});
+      await tx.adminAuditLog.create({data:{barberShopId:shop.id,
+        adminEmail:viewer.email,action:"PRODUCT_CATEGORY_ASSIGNED",
+        details:{productId:created.id,category:productCategory,source:"PRODUCT_CREATED"}}});
+    },{isolationLevel:"Serializable"});
   } catch (error) {
     console.error("Failed to create product", error);
     redirect(`${path}?erro=produto#estoque`);
