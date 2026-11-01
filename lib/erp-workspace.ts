@@ -1,5 +1,6 @@
 import type { CashSession, CommandPayment, BookedServices } from "./checkout";
 import type { ProfessionalProfile } from "./professional-profile";
+import type { ProductCommissionCategory } from "./product-commission-rules";
 import type { Prisma } from "@prisma/client";
 import { STAFF_PERMISSION_KEYS, STAFF_PERMISSION_ROLES, type StaffPermissions, type StaffPermissionRole, type StaffPermission } from "./role-permissions";
 
@@ -194,6 +195,7 @@ export type ErpWorkspace = {
   commandPayments: CommandPayment[];
   bookedServices: BookedServices[];
   productLines: { itemId: string; productId: string }[];
+  productCategoryAssignments: Record<string,ProductCommissionCategory>;
   productSellerAssignments: { itemId: string; userId: string; recordedAt: string }[];
   serviceLines: { itemId: string; serviceId: string }[];
   settings: OperationalSettings;
@@ -227,6 +229,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   commandPayments: [],
   bookedServices: [],
   productLines: [],
+  productCategoryAssignments: {},
   productSellerAssignments: [],
   serviceLines: [],
   settings: {
@@ -300,6 +303,8 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     commandPayments: array<CommandPayment>(operations.commandPayments),
     bookedServices: array<BookedServices>(operations.bookedServices),
     productLines: array<{ itemId: string; productId: string }>(operations.productLines),
+    productCategoryAssignments: Object.fromEntries(Object.entries(record(operations.productCategoryAssignments))
+      .filter(([,value])=>value==="COSMETICS"||value==="DRINKS")) as Record<string,ProductCommissionCategory>,
     productSellerAssignments: array<{ itemId: string; userId: string; recordedAt: string }>(operations.productSellerAssignments),
     serviceLines: array<{ itemId: string; serviceId: string }>(operations.serviceLines),
     settings: {
