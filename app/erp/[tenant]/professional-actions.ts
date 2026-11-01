@@ -9,6 +9,7 @@ import {
   type ProfessionalShift, type ProfessionalBreak,
 } from "@/lib/professional-profile";
 import { put } from "@vercel/blob";
+import { isProductCommissionCategory, type ProductCommissionRule } from "@/lib/product-commission-rules";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Prisma, ShopUserRole } from "@prisma/client";
@@ -378,22 +379,40 @@ export async function saveProfessionalSection(form:FormData){
       ws.subscriptionCommissionTiers[ctx.userId]=tiers;
       return {previous,next:tiers};
     });
-  }else if(section==="product-tier"){
-    const category=text(form,"category",80),minimum=num(form,"minimum"),percent=num(form,"percent");
-    if(!(PRODUCT_CATEGORIES as readonly string[]).includes(category)||!Number.isFinite(minimum)||
-       minimum<0||minimum>1e8||!moneyPercent(percent))fail(ctx,"produto");
-    await change(ctx,"PROFESSIONAL_PRODUCT_TIER_UPDATED",reason,async(profile)=>{
-      const previous=(profile.productTiers??[]).find(x=>x.category===category&&x.minimum===minimum);
-      profile.productTiers=[...(profile.productTiers??[]).filter(x=>!(x.category===category&&x.minimum===minimum)),
-        {id:previous?.id??workspaceId("tier"),category,minimum,percent}].sort((a,b)=>a.category.localeCompare(b.category)||a.minimum-b.minimum).slice(0,70);
-      return {category,minimum,previous:previous?.percent??null,next:percent};
-    });
-  }else if(section==="product-tier-remove"){
-    const id=text(form,"id",100);
-    await change(ctx,"PROFESSIONAL_PRODUCT_TIER_REMOVED",reason,async(profile)=>{
-      const before=profile.productTiers??[];
-      profile.productTiers=before.filter(x=>x.id!==id);
-      return {id,removed:before.length-profile.productTiers.length};
+  }else if(section==="product-category-rule"){
+    const category=text(form,"category",25);
+    const mode=text(form,"mode",15);
+    const fixedPercent=num(form,"fixedPercent");
+    if(!isProductCommissionCategory(category)||!["FIXED","SCALED"].includes(mode))
+      fail(ctx,"categoria");
+    if(mode==="FIXED"&&!moneyPercent(fixedPercent))fail(ctx,"percentual");
+    const tiers:ProductCommissionRule["tiers"]=[];
+    if(mode==="SCALED"){
+      const minimums=form.getAll("tierMin").map(String);
+      const percentages=form.getAll("tierPercent").map(String);
+      if(minimums.length!==percentages.length||minimums.length>10)fail(ctx,"faixas");
+      for(let i=0;i<minimums.length;i++){
+        const minRaw=minimums[i].trim(),percentRaw=percentages[i].trim();
+        if(!minRaw&&!percentRaw)continue;
+        const min=Number(minRaw.replace(",",".")),percent=Number(percentRaw.replace(",","."));
+        if(!minRaw||!percentRaw||!Number.isFinite(min)||min<0||min>1e9||
+          Math.round(min*100)!==min*100&&!Number.isInteger(min*100) ||
+          !moneyPercent(percent))fail(ctx,"faixas");
+        tiers.push({min:Math.round(min*100)/100,percent:Math.round(percent*100)/100});
+      }
+      tiers.sort((a,b)=>a.min-b.min);
+      if(!tiers.length||tiers[0].min!==0||tiers.some((tier,i)=>i>0&&tier.min===tiers[i-1].min))
+        fail(ctx,"faixas");
+    }
+    const rule:ProductCommissionRule={
+      mode:mode as ProductCommissionRule["mode"],
+      fixedPercent:mode==="FIXED"?Math.round(fixedPercent*100)/100:0,
+      tiers,
+    };
+    await change(ctx,"PROFESSIONAL_PRODUCT_CATEGORY_COMMISSION_UPDATED",reason,async(profile)=>{
+      const previous=profile.productCommissionRules?.[category]??null;
+      profile.productCommissionRules={...(profile.productCommissionRules??{}),[category]:rule};
+      return {category,previous,next:rule};
     });
   }else fail(ctx,"secao");
   success(ctx,section);
