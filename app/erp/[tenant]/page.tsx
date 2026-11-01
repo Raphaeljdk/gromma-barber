@@ -2015,8 +2015,8 @@ export async function TenantERPView({
             </> : <p className="small muted">Corrija o período para consultar o pote.</p>}
           </article>
 
-          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
-          <p className="erp-integration-note">Esta apuração considera comandas fechadas com recibo registrado e primeira cobrança de assinatura com baixa no Financeiro. Descontos são rateados; cancelamentos e comandas sem pagamento comprovado ficam de fora. Produtos da comanda são atribuídos ao profissional do atendimento. O botão Pagar é simulado: não altera caixa nem movimenta dinheiro.</p>
+          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionPotNumber: row.subscriptionPotCommission, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
+          <p className="erp-integration-note">As comissões por serviço e produto consideram comandas fechadas e recibos; a comissão de venda do plano é separada do pote de assinaturas. O pote utiliza todas as mensalidades do Clube pagas no período, com estornos concluídos abatidos e participações personalizadas. A prévia usa regras atuais e não substitui quitação auditada. O botão Pagar continua simulado e não movimenta dinheiro.</p>
 
         </section>}
 
@@ -2043,6 +2043,30 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
+          {isOwner && <details className="erp-quick-create">
+            <summary>Personalizar participação no pote de assinaturas por profissional</summary>
+            <p className="small muted">Defina qual porcentagem do pote calculado pertence a cada profissional. A soma das participações não pode ultrapassar 100%. Esta regra é independente da comissão por vender uma assinatura e não permite editar a arrecadação.</p>
+            <p className="small muted">Participação total configurada: <strong>{Object.values(workspace.subscriptionPot.shares).reduce((sum,val)=>sum+val,0).toFixed(2)}%</strong></p>
+            {shop.users.filter(user=>user.active && ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>
+              <form key={user.id} action={saveSubscriptionPotShare} className="erp-compact-form" style={{marginBottom:18}}>
+                <input type="hidden" name="tenantCode" value={tenantCode}/>
+                <input type="hidden" name="userId" value={user.id}/>
+                <strong>{user.name}</strong>
+                <div className="grid grid-2">
+                  <label><span className="label">Participação no pote (%)</span>
+                    <input className="input" name="sharePercent" type="number" step=".01" min="0" max="100"
+                      defaultValue={workspace.subscriptionPot.shares[user.id] ?? 0} required/>
+                  </label>
+                  <label><span className="label">Motivo da personalização</span>
+                    <input className="input" name="reason" required minLength={5} maxLength={600} placeholder="Regra aprovada pelo proprietário"/>
+                  </label>
+                </div>
+                <button className="btn secondary" type="submit">Salvar participação de {user.name}</button>
+              </form>
+            )}
+            {actionOk === "pote" && <p className="notice">Participação atualizada e registrada na auditoria.</p>}
+            {actionError === "pote" && <p role="alert" className="notice error-notice">A soma não pode ultrapassar 100% do pote. Confira os percentuais e o motivo.</p>}
+          </details>}
           {isOwner && <details className="erp-quick-create">
             <summary>Comissão por metas de venda de assinaturas</summary>
             <p className="small muted">Opcional. Sem faixas cadastradas, aplica-se a taxa fixa configurada por profissional (padrão 0%). Faixas consideram o total das primeiras mensalidades realmente pagas no período da apuração. O limite superior é exclusivo.</p>
