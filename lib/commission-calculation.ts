@@ -32,8 +32,12 @@ export async function calculateCommission(prisma: PrismaClient | Prisma.Transact
         ["CANCELED","NO_SHOW"].includes(command.appointment?.status ?? ""))) continue;
       const seller = sellers.get(item.id) ?? appointmentBarber;
       if (category === "PRODUCT" && seller !== userId) continue;
+      // A personalização por serviço no cadastro do profissional prevalece
+      // sobre a regra geral do serviço e sobre a comissão padrão do colaborador.
+      const individualRate = serviceId ? options?.workspace.professionalProfiles[userId]?.services?.[serviceId] : undefined;
       const percent = category === "SERVICE"
-        ? (serviceId && Object.hasOwn(overrides, serviceId) ? overrides[serviceId] : professionalPercent)
+        ? (individualRate !== undefined ? individualRate :
+            serviceId && Object.hasOwn(overrides, serviceId) ? overrides[serviceId] : professionalPercent)
         : (options?.workspace.professionalExtraRates[userId]?.productPercent ?? 0);
       if (!Number.isFinite(percent) || percent < 0 || percent > 100) throw new Error("Invalid commission rate");
       const base = Prisma.Decimal.max(0, new Prisma.Decimal(item.total).mul(factor)).toDecimalPlaces(2);
