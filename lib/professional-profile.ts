@@ -53,6 +53,8 @@ export type ProfessionalProfile = {
   /** Quando não configuradas, preservamos o acesso tradicional do perfil. */
   permissions?: ProfessionalPermission[];
   services?: Record<string, number>;
+  /** Serviço autorizado a este profissional; undefined preserva catálogo completo. */
+  enabledServices?: string[];
   workHours?: ProfessionalShift[];
   breaks?: ProfessionalBreak[];
   leaves?: ProfessionalLeave[];
