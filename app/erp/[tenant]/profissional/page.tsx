@@ -6,6 +6,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { calculateCommission } from "@/lib/commission-calculation";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addCommandItem } from "../checkout-actions";
+import { addAgendaDays, isAgendaDate } from "@/lib/agenda";
 
 export const dynamic="force-dynamic";
 const money=(value:number)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(value);
@@ -35,11 +36,16 @@ export default async function ProfessionalApp({params,searchParams}:{
   const now=new Date();
   const date=localDate(now);
   const nextDate=new Date(new Date(date+"T00:00:00-03:00").getTime()+86400000);
-  const reportMonth = /^20\d{2}-(0[1-9]|1[0-2])$/.test(qs.mes??"") ? qs.mes! : date.slice(0,7);
-  const reportStart=new Date(reportMonth+"-01T00:00:00-03:00");
-  const nextMonth=new Date(Date.UTC(Number(reportMonth.slice(0,4)),Number(reportMonth.slice(5,7)),1));
-  const reportEnd=new Date(nextMonth.toISOString().slice(0,7)+"-01T00:00:00-03:00");
-  const [appointments,services,products,commission,monthlyCompleted] = await Promise.all([
+  const defaultFrom=addAgendaDays(date,-29);
+  const chosenFrom=isAgendaDate(qs.de??"")?qs.de!:defaultFrom;
+  const chosenTo=isAgendaDate(qs.ate??"")?qs.ate!:date;
+  const invalidRange=chosenFrom>chosenTo ||
+    (new Date(chosenTo+"T00:00:00-03:00").getTime()-new Date(chosenFrom+"T00:00:00-03:00").getTime()>365*86400000);
+  const from=invalidRange?defaultFrom:chosenFrom;
+  const to=invalidRange?date:chosenTo;
+  const reportStart=new Date(from+"T00:00:00-03:00");
+  const reportEnd=new Date(new Date(to+"T00:00:00-03:00").getTime()+86400000);
+  const [appointments,services,products,commission,periodCompleted] = await Promise.all([
     prisma.appointment.findMany({where:{barberShopId:shop.id,barberId:professional.id,
       startsAt:{gte:new Date(date+"T00:00:00-03:00"),lt:nextDate},
       status:{notIn:["CANCELED","NO_SHOW"]}},
@@ -121,9 +127,13 @@ export default async function ProfessionalApp({params,searchParams}:{
     <section className="demo-section" style={{marginTop:18}}>
       <h2>Meu relatório de produtividade e comissões</h2>
       <form method="get" className="erp-compact-form" action={`/erp/${encodeURIComponent(tenantCode)}/profissional`}>
-        <label>Mês de referência<input className="input" type="month" name="mes" defaultValue={reportMonth} required/></label>
-        <button type="submit" className="btn secondary">Consultar mês</button>
+        <div className="grid grid-2">
+          <label>Início do período<input className="input" type="date" name="de" defaultValue={from} required/></label>
+          <label>Fim do período<input className="input" type="date" name="ate" defaultValue={to} required/></label>
+        </div>
+        <button type="submit" className="btn secondary">Consultar período</button>
       </form>
+      {invalidRange&&<p role="alert" className="notice error-notice">Período inválido. Exibindo os últimos 30 dias.</p>}
       <div className="erp-kpi-row"><article><span>Atendimentos recebidos</span><strong>{completedPaid.length}</strong></article>
         <article><span>Assinantes atendidos</span><strong>{subscriberCount}</strong></article>
         <article><span>Clientes avulsos atendidos</span><strong>{walkInCount}</strong></article></div>
