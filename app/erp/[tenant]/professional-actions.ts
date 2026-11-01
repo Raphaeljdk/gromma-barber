@@ -345,15 +345,16 @@ export async function saveProfessionalSection(form:FormData){
     });
   }else if(section==="base-commissions"){
     const subscriptionPercent=num(form,"subscriptionPercent");
-    const productPercent=num(form,"productPercent");
     const salesEnabled=checked(form,"salesSubscriptionCommissionEnabled");
-    if(!moneyPercent(subscriptionPercent)||!moneyPercent(productPercent))fail(ctx,"comissoes");
+    if(!moneyPercent(subscriptionPercent))fail(ctx,"comissoes");
     await change(ctx,"PROFESSIONAL_BASE_COMMISSIONS_UPDATED",reason,async(profile,tx,ws)=>{
       const previous={rates:ws.professionalExtraRates[ctx.userId]??null,
         salesEnabled:profile.salesSubscriptionCommissionEnabled??null};
+      // Não sobrescrever comissão de produtos ao editar vendas de planos.
+      const productPercent=ws.professionalExtraRates[ctx.userId]?.productPercent??30;
       ws.professionalExtraRates[ctx.userId]={subscriptionPercent,productPercent};
       profile.salesSubscriptionCommissionEnabled=salesEnabled;
-      return {previous,next:{subscriptionPercent,productPercent,salesEnabled}};
+      return {previous,next:{subscriptionPercent,salesEnabled}};
     });
   }else if(section==="subscription-tiers"){
     const mins=form.getAll("tierMin").map(String);
@@ -396,7 +397,7 @@ export async function saveProfessionalSection(form:FormData){
         if(!minRaw&&!percentRaw)continue;
         const min=Number(minRaw.replace(",",".")),percent=Number(percentRaw.replace(",","."));
         if(!minRaw||!percentRaw||!Number.isFinite(min)||min<0||min>1e9||
-          Math.round(min*100)!==min*100&&!Number.isInteger(min*100) ||
+          Math.abs(Math.round(min*100)-min*100)>0.00001 ||
           !moneyPercent(percent))fail(ctx,"faixas");
         tiers.push({min:Math.round(min*100)/100,percent:Math.round(percent*100)/100});
       }
