@@ -86,3 +86,30 @@ export function profileFor(
 export function hasProfessionalPermission(profile: ProfessionalProfile|undefined, permission: ProfessionalPermission): boolean {
   return !profile?.permissions || profile.permissions.includes(permission);
 }
+
+/** Verifica horário individual antes de permitir novos agendamentos.
+ * Ao não existir escala individual cadastrada, preserva o horário global legado.
+ */
+export function professionalCanServeAt(profile: ProfessionalProfile|undefined,start:Date,end:Date,serviceIds:string[]=[]): boolean {
+  if(!Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||end<=start)return false;
+  if(profile?.enabledServices && serviceIds.some(id=>!profile.enabledServices!.includes(id)))return false;
+  const formatter = new Intl.DateTimeFormat("en-US",{timeZone:"America/Sao_Paulo",
+    weekday:"short",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",
+    hourCycle:"h23"});
+  const parts = (date:Date) => {
+    const pieces=Object.fromEntries(formatter.formatToParts(date).map(part=>[part.type,part.value]));
+    const day=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].indexOf(pieces.weekday);
+    return {day,date:pieces.year+"-"+pieces.month+"-"+pieces.day,
+      minute:Number(pieces.hour)*60+Number(pieces.minute)};
+  };
+  const from=parts(start),to=parts(end);
+  if(from.day<0||to.day!==from.day||from.date!==to.date)return false;
+  if(profile?.leaves?.some(item=>item.from<=from.date&&item.to>=from.date))return false;
+  if(profile?.workHours){
+    const shift=profile.workHours.find(item=>item.day===from.day);
+    if(!shift || from.minute<minutes(shift.start)||to.minute>minutes(shift.end))return false;
+  }
+  if(profile?.breaks?.some(item=>item.day===from.day&&
+      from.minute<minutes(item.end)&&to.minute>minutes(item.start)))return false;
+  return true;
+}
