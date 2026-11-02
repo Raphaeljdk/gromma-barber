@@ -9244,3 +9244,52 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
     touch-action: manipulation;
   }
 }
+
+/* Menu ERP: hierarquia legível, alinhamento à esquerda e toque confortável. */
+.tenant-erp .erp-sidebar .erp-nav-tree-row > .erp-nav-item,
+.tenant-erp .erp-sidebar .erp-nav-tree-row > .erp-nav-parent-button {
+  text-align:left;
+  justify-content:start;
+  align-items:center;
+  min-width:0;
+}
+.tenant-erp .erp-sidebar .erp-nav-tree-row > .erp-nav-item {
+  display:grid;
+  grid-template-columns:22px minmax(0,1fr) auto;
+  column-gap:9px;
+}
+.tenant-erp .erp-sidebar .erp-nav-tree-row .erp-sidebar-label {
+  text-align:left;
+  justify-self:stretch;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+.tenant-erp .erp-sidebar .erp-nav-tree-children {
+  margin-left:10px;
+  padding-left:10px;
+  border-left:1px solid rgba(212,172,91,.24);
+}
+.tenant-erp .erp-sidebar .erp-nav-tree-children .erp-nav-tree-children {
+  margin-left:5px;
+  padding-left:7px;
+}
+@media (max-width:850px) {
+  .tenant-erp .erp-sidebar .erp-nav-tree-row > .erp-nav-item {
+    display:grid;
+    grid-template-columns:16px minmax(0,1fr) auto;
+    column-gap:8px;
+    min-height:46px;
+    padding:9px 8px;
+  }
+  .tenant-erp .erp-sidebar .erp-nav-tree-row > .erp-nav-parent-button {
+    min-height:46px;
+  }
+  .tenant-erp .erp-sidebar .erp-nav-tree-row .erp-sidebar-label {
+    font-size:13px;
+    line-height:1.3;
+  }
+  .tenant-erp .erp-sidebar .erp-nav-tree-toggle {
+    min-width:40px;
+    min-height:44px;
+  }
+}
