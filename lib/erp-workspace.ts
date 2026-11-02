@@ -154,6 +154,13 @@ export type AgendaBlock = {
   status?: "OPEN" | "CLOSED";
 };
 
+export type BrandingSettings = {
+  logoUrl: string;
+  accentColor: string;
+  clubTitle: string;
+  clubDescription: string;
+};
+
 export type OperationalSettings = {
   openHour: number;
   closeHour: number;
@@ -167,6 +174,7 @@ export type OperationalSettings = {
 };
 
 export type ErpWorkspace = {
+  branding: BrandingSettings;
   rolePermissions: StaffPermissions;
   professionalProfiles: Record<string, ProfessionalProfile>;
   clubEvents: ClubEvent[];
@@ -202,6 +210,7 @@ export type ErpWorkspace = {
 };
 
 export const DEFAULT_WORKSPACE: ErpWorkspace = {
+  branding: { logoUrl: "", accentColor: "#c69a49", clubTitle: "Clube de assinaturas", clubDescription: "" },
   rolePermissions: {},
   professionalProfiles: {},
   clubEvents: [],
@@ -307,6 +316,17 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
       .filter(([,value])=>value==="COSMETICS"||value==="DRINKS")) as Record<string,ProductCommissionCategory>,
     productSellerAssignments: array<{ itemId: string; userId: string; recordedAt: string }>(operations.productSellerAssignments),
     serviceLines: array<{ itemId: string; serviceId: string }>(operations.serviceLines),
+    branding: (() => {
+      const source = record(operations.branding);
+      const logo = typeof source.logoUrl === "string" && /^https:\/\//i.test(source.logoUrl) ? source.logoUrl.slice(0,700) : "";
+      const accent = typeof source.accentColor === "string" && /^#[0-9A-Fa-f]{6}$/.test(source.accentColor)
+        ? source.accentColor : DEFAULT_WORKSPACE.branding.accentColor;
+      return {
+        logoUrl: logo, accentColor: accent,
+        clubTitle: typeof source.clubTitle === "string" ? source.clubTitle.slice(0,90) : DEFAULT_WORKSPACE.branding.clubTitle,
+        clubDescription: typeof source.clubDescription === "string" ? source.clubDescription.slice(0,500) : "",
+      };
+    })(),
     settings: {
       openHour: Number(settings.openHour ?? DEFAULT_WORKSPACE.settings.openHour),
       closeHour: Number(settings.closeHour ?? DEFAULT_WORKSPACE.settings.closeHour),
