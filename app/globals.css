@@ -9188,3 +9188,43 @@ html[data-theme="light"] .tenant-erp .erp-nav-sector-items { border-left-color: 
   background:#1c1a17;color:#f2e2bf;font-weight:750;font-size:.95rem;
 }
 html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > span {background:#fff9ed;color:#6e4b18;}
+
+/* Ficha profissional: respeitar as duas colunas do ERP e impedir overflow. */
+@media (min-width: 851px) {
+  .tenant-erp:has(.professional-registration-page) {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: 292px minmax(0, 1fr);
+  }
+  .tenant-erp:has(.professional-registration-page):has(.erp-sidebar.is-collapsed) {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+  .tenant-erp:has(.professional-registration-page) > .erp-main {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+}
+.tenant-erp .professional-registration-page {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  margin-inline: 0;
+  overflow-x: clip;
+}
+.tenant-erp .professional-registration-page > :is(article, details, header) {
+  min-width: 0;
+  max-width: 100%;
+}
+.tenant-erp .professional-registration-page :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+.tenant-erp .professional-registration-page .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+@media (max-width: 850px) {
+  .tenant-erp:has(.professional-registration-page) { grid-template-columns: minmax(0, 1fr); }
+}
