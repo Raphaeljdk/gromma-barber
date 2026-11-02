@@ -1,0 +1,39 @@
+name: GROMMA - revisao de comissoes
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/erp/**/commission-payment-actions.ts"
+      - "app/erp/**/professional-actions.ts"
+      - "app/erp/**/page.tsx"
+      - "components/commission-*.tsx"
+      - "components/professional-product-commission-editor.tsx"
+      - "tests/commission-recording-review.test.cjs"
+      - ".github/workflows/commission-review-quality.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  commission-review:
+    name: Validar TypeScript, build e regressao de comissoes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Generate Prisma
+        run: npm run db:generate
+      - name: Testar pagamentos e regras de produto
+        run: node --test tests/commission-recording-review.test.cjs tests/product-commission-categories.test.cjs
+      - name: Validar TypeScript
+        run: npx tsc --noEmit
+      - name: Build de producao
+        run: npm run build
