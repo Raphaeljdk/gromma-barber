@@ -146,7 +146,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "empresa-servicos-destaque", label: "Destacar serviço" },
         ] },
         { id: "empresa-dados", label: "Dados", route: "configuracoes" },
-        { id: "empresa-grupos-acesso", label: "Grupo de acesso" },
+
         { id: "empresa-meu-plano", label: "Meu plano", route: "plano" },
         { id: "empresa-fatura", label: "Fatura" },
       ] },
