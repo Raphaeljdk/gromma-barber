@@ -61,8 +61,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <p className="small muted">Os dados pessoais ficam restritos à administração. As alterações financeiras são registradas com justificativa; o histórico de atendimentos e comissões existentes é preservado.</p>
     </article>
 
-    <details className="card" style={{padding:14,marginBottom:10}} open>
-      <summary><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></summary>
+    <section className="card" style={{padding:14,marginBottom:10}} open>
+      <h3 className="professional-section-title"><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></h3>
       <form action={saveProfessionalIdentity} className="erp-compact-form" style={{marginTop:10}}>
         {hidden(code,user.id)}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,210px),1fr))",columnGap:12,rowGap:9}}>
@@ -102,8 +102,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <button className="btn" type="submit">Salvar dados do profissional</button>
         <p className="small muted">Alternativamente, a foto pode ser indicada por URL. O cadastro não altera a senha e não libera automaticamente o login.</p>
       </form>
-      <details className="erp-quick-create" style={{marginTop:14}}>
-        <summary>Enviar foto de perfil (arquivo)</summary>
+      <section className="erp-quick-create" style={{marginTop:14}}>
+        <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
         <form action={uploadProfessionalPhoto} className="erp-compact-form">
           {hidden(code,user.id)}
           <label><span className="label">Foto JPEG, PNG ou WebP (máximo 3 MB)</span>
@@ -115,11 +115,11 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <p className="small muted">O envio exige Vercel Blob configurado na produção. Caso esteja indisponível, você pode continuar usando a URL HTTPS do campo acima.</p>
           <button className="btn secondary" type="submit">Enviar foto autorizada</button>
         </form>
-      </details>
-    </details>
+      </section>
+    </section>
 
-    <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>2. Contratos do profissional</strong> <span className="muted"> · documentos vinculados</span></summary>
+    <section className="card" style={{padding:14,marginBottom:10}}>
+      <h3 className="professional-section-title"><strong>2. Contratos do profissional</strong> <span className="muted"> · documentos vinculados</span></h3>
       <div style={{marginTop:12}}>
         {(profile.contracts??[]).map(contract=><div key={contract.id} className="card"
           style={{padding:10,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
@@ -144,10 +144,10 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         </form>
         <p className="small muted">O arquivo continua no armazenamento de origem. O sistema salva apenas seu endereço.</p>
       </div>
-    </details>
+    </section>
 
-    <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>3. Permissões individuais</strong> <span className="muted"> · controle por profissional</span></summary>
+    <section className="card" style={{padding:14,marginBottom:10}}>
+      <h3 className="professional-section-title"><strong>3. Permissões individuais</strong> <span className="muted"> · controle por profissional</span></h3>
       <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"permissions")}
         <p className="small muted">Sem uma regra individual salva, o profissional herda as permissões do seu papel. Alterações financeiras continuam exclusivas do administrador. As restrições de agendamentos, observações e lançamento de itens já são verificadas no servidor. O acesso do próprio barbeiro para criar bloqueios ou remover folgas pelo aplicativo ainda está em preparação; estas duas opções ficam cadastradas para essa próxima etapa.</p>
@@ -161,10 +161,10 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         
         <button className="btn" type="submit">Salvar permissões</button>
       </form>
-    </details>
+    </section>
 
-    <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>4. Serviços e comissões</strong> <span className="muted"> · configure tudo de uma vez</span></summary>
+    <section className="card" style={{padding:14,marginBottom:10}}>
+      <h3 className="professional-section-title"><strong>4. Serviços e comissões</strong> <span className="muted"> · configure tudo de uma vez</span></h3>
       <p className="small muted" style={{margin:"10px 0"}}>
         Selecione os serviços que o profissional realiza e informe a comissão de cada um.
         Todos aparecem juntos; não precisa salvar serviço por serviço. O percentual de cada linha pode ser zero.
@@ -195,10 +195,10 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <button className="btn" type="submit">Salvar serviços e comissões</button>
         </div>
       </form>
-    </details>
+    </section>
 
-    <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>5. Jornada de trabalho</strong> <span className="muted"> · dias e horários de atendimento</span></summary>
+    <section className="card" style={{padding:14,marginBottom:10}}>
+      <h3 className="professional-section-title"><strong>5. Jornada de trabalho</strong> <span className="muted"> · dias e horários de atendimento</span></h3>
       <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"schedule")}
         <p className="small muted">Marque os dias de trabalho e configure o período. A jornada será considerada no relatório de capacidade. Desmarcar todos os dias define agenda indisponível.</p>
@@ -215,10 +215,10 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         
         <button className="btn" type="submit">Salvar jornada semanal</button>
       </form>
-    </details>
+    </section>
 
-    <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>6. Intervalos e folgas</strong> <span className="muted"> · pausas recorrentes e ausências</span></summary>
+    <section className="card" style={{padding:14,marginBottom:10}}>
+      <h3 className="professional-section-title"><strong>6. Intervalos e folgas</strong> <span className="muted"> · pausas recorrentes e ausências</span></h3>
       <div className="grid grid-2" style={{marginTop:18}}>
         <section><h3>Intervalos da semana</h3>
           {(profile.breaks??[]).map(entry=><div className="card" style={{padding:12,marginBottom:8}} key={entry.id}>
@@ -255,19 +255,19 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           </form>
         </section>
       </div>
-    </details>
+    </section>
 
-    <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>7. Comissão de produtos</strong> <span className="muted"> · Cosméticos e Bebidas</span></summary>
+    <section className="card" style={{padding:14,marginBottom:10}}>
+      <h3 className="professional-section-title"><strong>7. Comissão de produtos</strong> <span className="muted"> · Cosméticos e Bebidas</span></h3>
       <ProfessionalProductCommissionEditor tenantCode={code} userId={user.id}
         rules={profile.productCommissionRules??{}}/>
       <p className="small muted" style={{marginTop:10}}>
         Classifique os produtos antigos em Estoque → Produtos para aplicar essas regras.
         Itens ainda sem categoria continuam com a regra anterior, sem alterar históricos.
       </p>
-    </details>
-    <details className="card" style={{padding:14,marginBottom:10}}>
-      <summary><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></summary>
+    </section>
+    <section className="card" style={{padding:14,marginBottom:10}}>
+      <h3 className="professional-section-title"><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></h3>
       <p className="small muted" style={{marginTop:14}}>O pote de assinaturas é distribuído automaticamente por produtividade. Uma bonificação adicional pela venda de um plano novo é opcional e só aparece na apuração se estiver habilitada abaixo.</p>
       <form action={saveProfessionalSection} className="erp-compact-form">
         {hidden(code,user.id,"base-commissions")}
@@ -286,8 +286,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         
         <button className="btn" type="submit">Salvar percentuais de vendas</button>
       </form>
-      <details className="erp-quick-create" style={{marginTop:14}}>
-        <summary>Metas por venda de planos novos (somente se o bônus estiver habilitado)</summary>
+      <section className="erp-quick-create" style={{marginTop:14}}>
+        <h3 className="professional-section-title">Metas por venda de planos novos (somente se o bônus estiver habilitado)</h3>
         <p className="small muted">Exemplo: vendas confirmadas de R$ 500 até R$ 1.000, comissão de 5%. Quando existirem faixas, elas substituem o percentual fixo de venda de assinatura dentro das condições definidas.</p>
         <form action={saveProfessionalSection} className="erp-compact-form">
           {hidden(code,user.id,"subscription-tiers")}
@@ -302,8 +302,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           
           <button className="btn secondary" type="submit">Salvar faixas comerciais</button>
         </form>
-      </details>
-    </details>
+      </section>
+    </section>
     <article className="card" style={{padding:16}}>
       <h3>Pote de assinaturas</h3>
       <p className="small muted">A participação de cada profissional continua sendo calculada automaticamente pelos atendimentos de assinantes elegíveis. Nenhum percentual fixo de participação é editado neste cadastro.</p>
