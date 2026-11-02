@@ -41,31 +41,49 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
   const unit=shop.units.find(u=>u.id===user.unitId);
   const profilePermissions=profile.permissions;
   const shifts=profile.workHours??[];
-  return <main className="professional-registration-page" style={{width:"100%",maxWidth:"100%",minWidth:0,boxSizing:"border-box",margin:0,padding:"14px clamp(12px,1.5vw,24px) 60px",overflowWrap:"anywhere"}}>
-    <header className="section-head">
-      <div><span className="eyebrow">Empresa / Cadastros / Profissionais</span>
-        <h1>Cadastro do profissional</h1><p className="muted">{shop.tradeName}</p></div>
-      <Link href={teamPath} className="btn secondary">Voltar à equipe</Link>
+  const roleLabel=({OWNER:"Proprietário",BARBER:"Barbeiro",RECEPTIONIST:"Recepção",MANAGER:"Gestor",ACCOUNTANT:"Contabilidade"} as Record<string,string>)[user.role]??user.role;
+  return <main className="professional-registration-page" style={{width:"100%",maxWidth:"100%",minWidth:0,boxSizing:"border-box",margin:0,padding:"14px clamp(12px,1.5vw,24px) 60px"}}>
+    <header className="section-head professional-page-header">
+      <div>
+        <span className="eyebrow">Empresa / Cadastros / Profissionais</span>
+        <h1>Cadastro do profissional</h1>
+        <p className="muted">{shop.tradeName} · Informações e configurações do colaborador</p>
+      </div>
+      <Link href={teamPath} className="btn secondary">Voltar aos profissionais</Link>
     </header>
-    <article className="card" style={{padding:14,marginBottom:10}}>
-      <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:16}}>
-        {profile.photoUrl ? <img src={profile.photoUrl} alt={"Foto de "+user.name} width={72} height={72} style={{objectFit:"cover",borderRadius:"50%"}}/>:
-          <div className="demo-avatar" style={{height:72,width:72,fontSize:30}}>{user.name.slice(0,1).toUpperCase()}</div>}
-        <div style={{flex:1,minWidth:160}}><h2 style={{marginBottom:4}}>{user.name}</h2>
-          <p className="muted">{profile.nickname||user.email} · {unit?.name??"Sem unidade"}</p>
-          <p className="small muted">{user.role} · {user.active?"Cadastro ativo":"Cadastro inativo"} · {user.passwordHash?"Acesso com senha configurada":"Login ainda sem senha"}</p></div>
-        <div><strong>{Object.keys(override).length}</strong><p className="small muted">Comissões por serviço</p></div>
+
+    <article className="card professional-hero-card">
+      <div className="professional-profile-top">
+        {profile.photoUrl
+          ? <img src={profile.photoUrl} alt={"Foto de "+user.name} className="professional-avatar" width={58} height={58}/>
+          : <div className="professional-avatar-fallback" aria-hidden="true">{user.name.slice(0,1).toUpperCase()}</div>}
+        <div className="professional-profile-information">
+          <div className="professional-person-heading">
+            <h2>{user.name}</h2>
+            <span className={"professional-status-pill"+(user.active?" is-active":"")}>{user.active?"Ativo":"Inativo"}</span>
+          </div>
+          <p className="professional-person-email">{profile.nickname?profile.nickname+" · ":""}{user.email}</p>
+          <div className="professional-person-meta">
+            <span>{roleLabel}</span>
+            <span>{unit?.name??"Sem unidade"}</span>
+            <span>{user.passwordHash?"Acesso configurado":"Acesso ainda sem senha"}</span>
+          </div>
+        </div>
+        <div className="professional-profile-count">
+          <strong>{Object.keys(override).length}</strong>
+          <span>Comissões por serviço</span>
+        </div>
       </div>
       {query.ok&&<p role="status" className="notice">Cadastro atualizado. As alterações foram salvas e registradas na auditoria.</p>}
       {query.erro&&<p role="alert" className="notice error-notice">Não foi possível salvar essa seção. Confira os campos e as permissões.</p>}
-      <p className="small muted">Os dados pessoais ficam restritos à administração. As alterações financeiras são registradas com justificativa; o histórico de atendimentos e comissões existentes é preservado.</p>
+      <p className="professional-profile-footnote">Dados pessoais restritos à administração. Alterações sensíveis são registradas na auditoria e os históricos de atendimentos e comissões são preservados.</p>
     </article>
 
     <section className="card" style={{padding:14,marginBottom:10}}>
       <h3 className="professional-section-title"><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></h3>
       <form action={saveProfessionalIdentity} className="erp-compact-form" style={{marginTop:10}}>
         {hidden(code,user.id)}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,210px),1fr))",columnGap:12,rowGap:9}}>
+        <div className="professional-identity-grid">
           <label><span className={labelClass}>Nome completo</span><input className="input" name="name" required minLength={2} maxLength={120} defaultValue={user.name}/></label>
           <label><span className={labelClass}>Nome de preferência</span><input className="input" name="nickname" maxLength={100} defaultValue={profile.nickname??""}/></label>
           <label><span className={labelClass}>E-mail</span><input className="input" name="email" type="email" required defaultValue={user.email}/></label>
@@ -76,7 +94,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <label><span className={labelClass}>WhatsApp</span><input className="input" name="whatsapp" type="tel" defaultValue={profile.whatsapp??""}/></label>
           <label><span className={labelClass}>Unidade principal</span><select name="unitId" className="select" defaultValue={user.unitId??""}><option value="">Sem unidade definida</option>{shop.units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
           <label><span className={labelClass}>Periodicidade de atendimento (dias, informativo)</span><input className="input" type="number" name="cadenceDays" min={0} max={365} defaultValue={profile.cadenceDays??30}/></label>
-          <label><span className={labelClass}>Função / grupo de acesso</span>
+          <label><span className={labelClass}>Função / perfil de acesso</span>
             {user.role==="OWNER"?<>
               <input type="hidden" name="role" value="OWNER"/>
               <input className="input" value="Proprietário — protegido" readOnly disabled/>
@@ -134,7 +152,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         {!profile.contracts?.length&&<p className="small muted">Nenhum contrato vinculado.</p>}
         <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:10}}>
           {hidden(code,user.id,"contract-add")}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:10,alignItems:"end"}}>
+          <div className="professional-contract-grid">
             <label>Nome do contrato<input className="input" name="label" required maxLength={140} placeholder="Contrato de prestação de serviços"/></label>
             <label>Endereço do contrato/PDF<input className="input" name="url" type="url" required placeholder="https://..."/></label>
             <label>Início da vigência<input className="input" name="validFrom" type="date"/></label>
@@ -151,7 +169,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"permissions")}
         <p className="small muted">Sem uma regra individual salva, o profissional herda as permissões do seu papel. Alterações financeiras continuam exclusivas do administrador. As restrições de agendamentos, observações e lançamento de itens já são verificadas no servidor. O acesso do próprio barbeiro para criar bloqueios ou remover folgas pelo aplicativo ainda está em preparação; estas duas opções ficam cadastradas para essa próxima etapa.</p>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:8}}>
+        <div className="professional-permissions-grid">
           {PROFESSIONAL_PERMISSION_OPTIONS.map(permission=><label key={permission.id} style={{display:"flex",gap:8,alignItems:"center"}}>
             <input type="checkbox" name="permissions" value={permission.id}
               defaultChecked={profilePermissions?profilePermissions.includes(permission.id):["CREATE_APPOINTMENT","EDIT_APPOINTMENT","ADD_PRODUCT","ADD_SERVICE"].includes(permission.id)}/>
