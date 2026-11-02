@@ -47,11 +47,13 @@ export async function recordCommissionPayments(form: FormData) {
       throw new PaymentError("Período de comissões inválido.");
     const start = new Date(startText + "T00:00:00-03:00");
     const endExclusive = new Date(new Date(endText + "T00:00:00-03:00").getTime() + 86400000);
-    if (endExclusive.getTime() - start.getTime() > 366 * 86400000 ||
-        endExclusive.getTime() > Date.now() + 86400000)
-      throw new PaymentError("Selecione um período de até 366 dias já encerrado.");
+    const localToday = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
+    if (endExclusive.getTime() - start.getTime() > 366 * 86400000 || endText >= localToday)
+      throw new PaymentError("Selecione um período de até 366 dias já encerrado (até ontem).");
     const paidDate = raw(form, "paidDate", 10);
-    if (!isDate(paidDate) || paidDate > new Date().toLocaleDateString("en-CA", {timeZone:"America/Sao_Paulo"}))
+    if (!isDate(paidDate) || paidDate > localToday)
       throw new PaymentError("Informe a data real do pagamento, sem datas futuras.");
     const method = raw(form, "paymentMethod", 20);
     if (!["PIX", "DINHEIRO", "TRANSFERENCIA", "DEBITO", "CREDITO", "OUTRO"].includes(method))
