@@ -2091,41 +2091,10 @@ export async function TenantERPView({
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
-          {isOwner && <details className="erp-quick-create">
-            <summary>Grupos de acesso e permissões</summary>
-            <p className="small muted">Administrador possui todos os acessos. Operações financeiras sensíveis permanecem exclusivas do administrador, independentemente das opções abaixo.</p>
-            {actionOk === "permissoes" && <p className="notice">Permissões atualizadas e registradas na auditoria.</p>}
-            {STAFF_PERMISSION_ROLES.map(role => <form key={role} action={saveRolePermissions} className="erp-compact-form" style={{marginBottom:20}}>
-              <input type="hidden" name="tenantCode" value={tenantCode}/><input type="hidden" name="role" value={role}/>
-              <h3>{ROLE_LABELS[role] ?? role}</h3>
-              {STAFF_PERMISSION_KEYS.map(permission => <label key={permission} style={{display:"flex",alignItems:"center",gap:8}}>
-                <input name="permissions" type="checkbox" value={permission} defaultChecked={permissionsForRole(role,workspace.rolePermissions).includes(permission)}/>
-                <span>{STAFF_PERMISSION_LABELS[permission]}</span>
-              </label>)}
-              <button type="submit" className="btn secondary">Salvar permissões de {ROLE_LABELS[role] ?? role}</button>
-            </form>)}
-          </details>}
-          {isOwner && <details className="erp-quick-create">
-            <summary><Plus size={15}/> Cadastrar profissional <small>Cadastro sem acesso de login até configurar credenciais</small></summary>
-            <form action={createProfessional} className="erp-compact-form">
-              <input type="hidden" name="tenantCode" value={tenantCode}/>
-              <div className="grid grid-2">
-                <label>Nome completo<input className="input" name="name" minLength={2} maxLength={120} required placeholder="Nome do colaborador"/></label>
-                <label>E-mail de identificação<input className="input" type="email" name="email" required placeholder="colaborador@empresa.com.br"/></label>
-                <label>Função<select className="select" name="role" defaultValue="BARBER">
-                  <option value="BARBER">Barbeiro / Profissional</option>
-                  <option value="RECEPTIONIST">Recepção</option>
-                  <option value="MANAGER">Gestor</option>
-                  <option value="ACCOUNTANT">Contabilidade</option>
-                </select></label>
-                <label>Unidade<select className="select" name="unitId"><option value="">Definir depois</option>
-                  {shop.units.filter(unit=>unit.active).map(unit=><option key={unit.id} value={unit.id}>{unit.name}</option>)}
-                </select></label>
-              </div>
-              <p className="small muted">O cadastro será criado sem senha e não concede acesso automático ao sistema. Depois você poderá preencher os demais dados e ajustar permissões e comissões com segurança.</p>
-              <button className="btn" type="submit">Cadastrar e abrir ficha</button>
-            </form>
-          </details>}
+          {isOwner && <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:14}}>
+            <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/novo`}><Plus size={16}/> Cadastrar profissional</Link>
+            <span className="small muted">Abre uma página dedicada para cadastrar e depois configurar a ficha completa.</span>
+          </div>}
           {actionError==="cadastro"&&<p role="alert" className="notice error-notice">Não foi possível cadastrar o profissional. Confira se o e-mail já está em uso nesta empresa.</p>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`}
