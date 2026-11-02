@@ -9293,3 +9293,49 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
     min-height:44px;
   }
 }
+
+/* Desktop: a navegação ocupa sua coluna e o cadastro preenche apenas a coluna restante. */
+@media (min-width: 851px) {
+  .tenant-erp:has(.professional-registration-page) {
+    display:grid;
+    grid-template-columns:292px minmax(0,1fr);
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+    align-items:stretch;
+  }
+  .tenant-erp:has(.professional-registration-page):has(.erp-sidebar.is-collapsed) {
+    grid-template-columns:88px minmax(0,1fr);
+  }
+  .tenant-erp:has(.professional-registration-page) > .erp-sidebar {
+    grid-column:1;
+    grid-row:1;
+    position:sticky;
+    top:0;
+    height:100vh;
+    min-width:0;
+    width:100%;
+    overflow-y:auto;
+  }
+  .tenant-erp:has(.professional-registration-page) > .erp-main {
+    grid-column:2;
+    grid-row:1;
+    display:block;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+    padding:20px clamp(12px,1.6vw,28px);
+    box-sizing:border-box;
+    overflow-x:clip;
+  }
+  .tenant-erp .professional-registration-page {
+    width:100%;
+    max-width:none;
+    min-width:0;
+    margin:0;
+    padding:0 0 48px;
+    box-sizing:border-box;
+  }
+}
