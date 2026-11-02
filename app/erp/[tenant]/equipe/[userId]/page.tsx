@@ -61,7 +61,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <p className="small muted">Os dados pessoais ficam restritos à administração. As alterações financeiras são registradas com justificativa; o histórico de atendimentos e comissões existentes é preservado.</p>
     </article>
 
-    <section className="card" style={{padding:14,marginBottom:10}} open>
+    <section className="card" style={{padding:14,marginBottom:10}}>
       <h3 className="professional-section-title"><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></h3>
       <form action={saveProfessionalIdentity} className="erp-compact-form" style={{marginTop:10}}>
         {hidden(code,user.id)}
