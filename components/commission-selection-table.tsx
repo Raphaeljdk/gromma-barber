@@ -89,7 +89,7 @@ export function CommissionSelectionTable({rows,canManage,canPay=false,tenantCode
         <tbody>
           {filteredRows.map(row=><tr key={row.id} style={selected.includes(row.id)?{background:"rgba(211,166,75,.12)"}:undefined}>
             {canManage&&<td><input type="checkbox" aria-label={"Selecionar "+row.name}
-              disabled={row.netNumber<=0} checked={selected.includes(row.id)}
+              disabled={row.netNumber<=0||paidIds.includes(row.id)} checked={selected.includes(row.id)}
               onChange={e=>setSelected(prev=>e.target.checked?[...prev,row.id]:prev.filter(id=>id!==row.id))}/></td>}
             <td><strong>{row.name}</strong><div className="small muted">{row.unitName}</div></td>
             <td>{money(row.serviceNumber)}</td>
