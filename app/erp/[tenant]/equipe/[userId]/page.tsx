@@ -51,6 +51,25 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </div>
       <Link href={teamPath} className="btn secondary">Voltar aos profissionais</Link>
     </header>
+    <nav aria-label="Ir para uma seção do profissional" style={{display:"flex",gap:7,
+      flexWrap:"wrap",alignItems:"center",padding:"8px 0 13px",marginBottom:8}}>
+      <a key="dados-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
+          href="#dados-profissional">Dados</a>
+      <a key="contratos-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
+          href="#contratos-profissional">Contratos</a>
+      <a key="permissoes-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
+          href="#permissoes-profissional">Permissões</a>
+      <a key="servicos-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
+          href="#servicos-profissional">Serviços</a>
+      <a key="jornada-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
+          href="#jornada-profissional">Jornada</a>
+      <a key="folgas-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
+          href="#folgas-profissional">Folgas</a>
+      <a key="produtos-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
+          href="#produtos-profissional">Produtos</a>
+      <a key="assinaturas-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
+          href="#assinaturas-profissional">Assinaturas</a>
+    </nav>
 
     <article className="card professional-hero-card">
       <div className="professional-profile-top">
@@ -79,7 +98,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <p className="professional-profile-footnote">Dados pessoais restritos à administração. Alterações sensíveis são registradas na auditoria e os históricos de atendimentos e comissões são preservados.</p>
     </article>
 
-    <section className="card" style={{padding:14,marginBottom:10}}>
+    <section id="dados-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></h3>
       <form action={saveProfessionalIdentity} className="erp-compact-form" style={{marginTop:10}}>
         {hidden(code,user.id)}
@@ -136,7 +155,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </section>
     </section>
 
-    <section className="card" style={{padding:14,marginBottom:10}}>
+    <section id="contratos-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>2. Contratos do profissional</strong> <span className="muted"> · documentos vinculados</span></h3>
       <div style={{marginTop:12}}>
         {(profile.contracts??[]).map(contract=><div key={contract.id} className="card"
@@ -164,7 +183,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </div>
     </section>
 
-    <section className="card" style={{padding:14,marginBottom:10}}>
+    <section id="permissoes-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>3. Permissões individuais</strong> <span className="muted"> · controle por profissional</span></h3>
       <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"permissions")}
@@ -181,7 +200,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </form>
     </section>
 
-    <section className="card" style={{padding:14,marginBottom:10}}>
+    <section id="servicos-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>4. Serviços e comissões</strong> <span className="muted"> · configure tudo de uma vez</span></h3>
       <p className="small muted" style={{margin:"10px 0"}}>
         Selecione os serviços que o profissional realiza e informe a comissão de cada um.
@@ -215,7 +234,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </form>
     </section>
 
-    <section className="card" style={{padding:14,marginBottom:10}}>
+    <section id="jornada-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>5. Jornada de trabalho</strong> <span className="muted"> · dias e horários de atendimento</span></h3>
       <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"schedule")}
@@ -235,7 +254,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </form>
     </section>
 
-    <section className="card" style={{padding:14,marginBottom:10}}>
+    <section id="folgas-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>6. Intervalos e folgas</strong> <span className="muted"> · pausas recorrentes e ausências</span></h3>
       <div className="grid grid-2" style={{marginTop:18}}>
         <section><h3>Intervalos da semana</h3>
@@ -275,7 +294,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </div>
     </section>
 
-    <section className="card" style={{padding:14,marginBottom:10}}>
+    <section id="produtos-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>7. Comissão de produtos</strong> <span className="muted"> · Cosméticos e Bebidas</span></h3>
       <ProfessionalProductCommissionEditor tenantCode={code} userId={user.id}
         rules={profile.productCommissionRules??{}}/>
@@ -284,7 +303,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         Itens ainda sem categoria continuam com a regra anterior, sem alterar históricos.
       </p>
     </section>
-    <section className="card" style={{padding:14,marginBottom:10}}>
+    <section id="assinaturas-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></h3>
       <p className="small muted" style={{marginTop:14}}>O pote de assinaturas é distribuído automaticamente por produtividade. Uma bonificação adicional pela venda de um plano novo é opcional e só aparece na apuração se estiver habilitada abaixo.</p>
       <form action={saveProfessionalSection} className="erp-compact-form">
