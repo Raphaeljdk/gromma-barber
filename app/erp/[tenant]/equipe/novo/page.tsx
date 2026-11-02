@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
-import { createProfessional } from "../professional-actions";
+import { createProfessional } from "../../professional-actions";
 
 export const dynamic = "force-dynamic";
 
