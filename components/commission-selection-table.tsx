@@ -55,7 +55,8 @@ export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage
         <thead><tr>
           {canManage&&<th style={{width:30}} aria-label="Selecionar profissional"></th>}
           <th>Profissional</th>
-          <th>Serviços + produtos</th>
+          <th>Serviços</th>
+          <th>Produtos</th>
           <th>Assinaturas</th>
           <th>A receber</th>
           {canManage&&<th style={{width:128}}>Ação</th>}
@@ -66,7 +67,8 @@ export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage
               disabled={row.netNumber<=0} checked={selected.includes(row.id)}
               onChange={e=>setSelected(prev=>e.target.checked?[...prev,row.id]:prev.filter(id=>id!==row.id))}/></td>}
             <td><strong>{row.name}</strong><div className="small muted">{row.unitName}</div></td>
-            <td>{money(row.serviceNumber+row.productNumber)}</td>
+            <td>{money(row.serviceNumber)}</td>
+            <td>{money(row.productNumber)}</td>
             <td>
               {money(row.subscriptionPotNumber+(row.subscriptionSalesEnabled?row.subscriptionSalesNumber:0))}
               {row.subscriptionSalesEnabled&&row.subscriptionSalesNumber>0&&
@@ -77,7 +79,7 @@ export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage
               <DemoCommissionPay professional={row.name} amount={row.net} label="Pagar (simulação)"/>:
               <span className="small muted">Sem saldo</span>}</td>}
           </tr>)}
-          {!rows.length&&<tr><td colSpan={canManage?6:4} className="small muted">Nenhum profissional encontrado neste período.</td></tr>}
+          {!rows.length&&<tr><td colSpan={canManage?7:5} className="small muted">Nenhum profissional encontrado neste período.</td></tr>}
         </tbody>
       </table>
     </div>
