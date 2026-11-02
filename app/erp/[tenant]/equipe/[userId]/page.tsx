@@ -41,7 +41,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
   const unit=shop.units.find(u=>u.id===user.unitId);
   const profilePermissions=profile.permissions;
   const shifts=profile.workHours??[];
-  return <main className="container" style={{width:"100%",maxWidth:"none",margin:"0 auto",padding:"14px clamp(12px,2vw,32px) 60px"}}>
+  return <main className="container" style={{width:"100%",maxWidth:1200,minWidth:0,boxSizing:"border-box",margin:"0 auto",padding:"14px clamp(12px,2vw,24px) 60px",overflowWrap:"anywhere"}}>
     <header className="section-head">
       <div><span className="eyebrow">Empresa / Cadastros / Profissionais</span>
         <h1>Cadastro do profissional</h1><p className="muted">{shop.tradeName}</p></div>
