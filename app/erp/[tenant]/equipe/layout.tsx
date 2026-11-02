@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "./professional.css";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
