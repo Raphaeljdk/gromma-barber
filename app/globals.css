@@ -9228,3 +9228,19 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
 @media (max-width: 850px) {
   .tenant-erp:has(.professional-registration-page) { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Navegação de cadastro: alvos de toque confortáveis em telas pequenas. */
+@media (max-width: 850px) {
+  .erp-sidebar .erp-nav-tree-row > .erp-nav-item,
+  .erp-sidebar .erp-nav-tree-row > .erp-nav-parent-button {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
+  .erp-sidebar .erp-nav-tree-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
