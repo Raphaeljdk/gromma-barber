@@ -942,7 +942,7 @@ export async function TenantERPView({
   const commissionPayments = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && (activeModule === "comissoes" || activeModule === "dashboard")
     ? await prisma.commissionPayment.findMany({ where: { barberShopId: shop.id }, include: { professional: { select: { name: true } } }, orderBy: { paidAt: "desc" }, take: 200 })
     : [];
-  const canPayCommission = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && canManage && Boolean(comissoesDe && comissoesAte && !invalidCommissionPeriod);
+  const canPayCommission = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && isOwner && !comissoesUnidade && Boolean(comissoesDe && comissoesAte && !invalidCommissionPeriod);
   const isPaidForPeriod = (userId: string) => commissionPayments.some(payment => payment.userId === userId && comissoesDe && comissoesAte && payment.periodStart.toISOString().slice(0, 10) <= comissoesAte && payment.periodEnd.toISOString().slice(0, 10) >= comissoesDe);
 
   const closedRevenue = commissionCommands.reduce((sum, command) => sum + Number(command.total), 0);
@@ -2002,6 +2002,9 @@ export async function TenantERPView({
             <article><span>Comissão líquida</span><strong>{brl(filteredCommissionRows.reduce((sum, row) => sum + row.netCommission, 0))}</strong><small>estimativa operacional</small></article>
           </div>
 
+          {valueOf("comissaoPagamentoOk") && <div role="status" className="notice erp-inline-notice success">Baixa de comissão registrada com histórico e lançamento financeiro. Consulte o demonstrativo abaixo.</div>}
+          {valueOf("comissaoPagamentoErro") && <div role="alert" className="notice erp-inline-notice error-notice">{valueOf("comissaoPagamentoErro").slice(0,220)}</div>}
+          {comissoesUnidade && <p className="small muted">Para registrar quitação, selecione “Todas as unidades” e confira a apuração integral. O filtro por filial serve apenas para consulta.</p>}
           {actionOk === "pagamento" && <div className="notice erp-inline-notice success">Pagamento registrado e período bloqueado contra duplicidade.</div>}
           {actionError === "pagamento" && <div className="notice erp-inline-notice error-notice">Pagamento não registrado. Confira o período, os valores e possíveis pagamentos anteriores.</div>}
           {actionError === "pote-pagamento" && <div className="notice erp-inline-notice error-notice">As comissões do pote estão em prévia. A quitação real fica bloqueada até existir um fechamento imutável dos valores e integração de pagamento validada.</div>}
@@ -2021,7 +2024,10 @@ export async function TenantERPView({
               <span className="small muted">Pote sem distribuição neste período</span>}
           </div>
 
-          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionSalesEnabled: row.salesBonusEnabled, subscriptionPotNumber: row.subscriptionPotCommission, subscriberAttendances: row.subscriberAttendances, potSharePercent: row.potSharePercent, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
+          <CommissionSelectionTable canManage={isOwner} canPay={canPayCommission}
+            tenantCode={tenantCode} start={comissoesDe} end={comissoesAte}
+            paidIds={filteredCommissionRows.filter(row => isPaidForPeriod(row.user.id)).map(row => row.user.id)}
+            rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionSalesEnabled: row.salesBonusEnabled, subscriptionPotNumber: row.subscriptionPotCommission, subscriberAttendances: row.subscriberAttendances, potSharePercent: row.potSharePercent, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
           <details className="card erp-workspace-card" style={{marginTop:12,marginBottom:14,padding:14}}>
             <summary style={{cursor:"pointer",fontWeight:600}}>
               Conferir recebimentos e cálculo do pote · {subscriptionPot ? brl(subscriptionPot.potCents/100) : "Período inválido"}
