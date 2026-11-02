@@ -10,6 +10,10 @@ on:
       - "components/commission-*.tsx"
       - "components/professional-product-commission-editor.tsx"
       - "tests/commission-recording-review.test.cjs"
+      - "tests/branding-customization.test.cjs"
+      - "app/clube/**/page.tsx"
+      - "app/erp/**/branding-actions.ts"
+      - "lib/erp-workspace.ts"
       - ".github/workflows/commission-review-quality.yml"
 
 permissions:
@@ -32,7 +36,7 @@ jobs:
       - name: Generate Prisma
         run: npm run db:generate
       - name: Testar pagamentos e regras de produto
-        run: node --test tests/commission-recording-review.test.cjs tests/product-commission-categories.test.cjs
+        run: node --test tests/commission-recording-review.test.cjs tests/product-commission-categories.test.cjs tests/branding-customization.test.cjs
       - name: Validar TypeScript
         run: npx tsc --noEmit
       - name: Build de producao
