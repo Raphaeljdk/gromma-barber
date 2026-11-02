@@ -1,0 +1,331 @@
+/* Ficha dos profissionais - estilos restritos às páginas de equipe. */
+.tenant-erp .professional-registration-page {
+  --profile-line: var(--erp-border, #34312a);
+  --profile-text: var(--erp-text, #f3efe7);
+  --profile-muted: var(--erp-muted, #aaa398);
+  --profile-highlight: var(--erp-gold, #ddb466);
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-wrap: normal;
+}
+.tenant-erp .professional-registration-page .professional-page-header {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 18px;
+  min-width: 0;
+}
+.tenant-erp .professional-registration-page .professional-page-header > div {
+  min-width: 0;
+}
+.tenant-erp .professional-registration-page .professional-page-header .eyebrow {
+  display: block;
+  font-size: .7rem;
+  letter-spacing: .12em;
+  margin-bottom: 8px;
+}
+.tenant-erp .professional-registration-page .professional-page-header h1 {
+  font-size: clamp(1.7rem, 2.5vw, 2.45rem) !important;
+  letter-spacing: -.035em;
+  line-height: 1.15;
+  margin: 0 !important;
+  overflow-wrap: normal;
+}
+.tenant-erp .professional-registration-page .professional-page-header p {
+  margin: 7px 0 0;
+  font-size: .89rem;
+}
+.tenant-erp .professional-registration-page .professional-page-header .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.tenant-erp .professional-registration-page .professional-hero-card {
+  padding: 18px 20px !important;
+  margin: 0 0 14px !important;
+  background: var(--erp-panel-2, #171612);
+  border: 1px solid var(--profile-line);
+  border-radius: 16px;
+  box-shadow: none;
+}
+.tenant-erp .professional-registration-page .professional-profile-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.tenant-erp .professional-registration-page .professional-avatar,
+.tenant-erp .professional-registration-page .professional-avatar-fallback {
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+  flex: 0 0 58px;
+  height: 58px;
+  width: 58px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--profile-highlight) 40%, transparent);
+  background: var(--erp-panel-3, #211a10);
+  color: var(--profile-highlight);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.tenant-erp .professional-registration-page .professional-profile-information {
+  min-width: 0;
+  flex: 1 1 0%;
+}
+.tenant-erp .professional-registration-page .professional-person-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.tenant-erp .professional-registration-page .professional-person-heading h2 {
+  font-size: 1.2rem;
+  font-weight: 750;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+.tenant-erp .professional-registration-page .professional-status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--profile-line);
+  background: var(--erp-panel-3, #141414);
+  color: var(--profile-muted);
+  padding: 4px 9px;
+  font-size: .72rem;
+  font-weight: 750;
+}
+.tenant-erp .professional-registration-page .professional-status-pill.is-active {
+  border-color: rgba(74, 166, 116, .42);
+  color: #65c78a;
+  background: rgba(74, 166, 116, .1);
+}
+.tenant-erp .professional-registration-page .professional-person-email {
+  margin: 5px 0 8px;
+  color: var(--profile-muted);
+  font-size: .83rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.tenant-erp .professional-registration-page .professional-person-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tenant-erp .professional-registration-page .professional-person-meta span {
+  border: 1px solid var(--profile-line);
+  border-radius: 7px;
+  padding: 4px 7px;
+  color: var(--profile-muted);
+  font-size: .73rem;
+  line-height: 1.25;
+}
+.tenant-erp .professional-registration-page .professional-profile-count {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 130px;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--profile-line);
+  border-radius: 12px;
+  background: var(--erp-panel-3, #131313);
+  text-align: center;
+}
+.tenant-erp .professional-registration-page .professional-profile-count strong {
+  font-size: 1.45rem;
+  line-height: 1.1;
+  color: var(--profile-highlight);
+}
+.tenant-erp .professional-registration-page .professional-profile-count span {
+  color: var(--profile-muted);
+  font-size: .72rem;
+  line-height: 1.3;
+}
+.tenant-erp .professional-registration-page .professional-profile-footnote {
+  margin: 13px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--profile-line);
+  color: var(--profile-muted);
+  font-size: .76rem;
+  line-height: 1.4;
+}
+.tenant-erp .professional-registration-page > section.card,
+.tenant-erp .professional-registration-page > article.card:not(.professional-hero-card) {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: 19px 20px !important;
+  margin-bottom: 14px !important;
+  border-radius: 16px;
+  border: 1px solid var(--profile-line);
+  background: var(--erp-panel-2, #141414);
+  box-shadow: none;
+}
+.tenant-erp .professional-registration-page .professional-section-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  margin: 0 0 16px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--profile-line);
+  color: var(--profile-text);
+  font-size: 1.05rem;
+  font-weight: 750;
+  line-height: 1.4;
+  letter-spacing: -.012em;
+}
+.tenant-erp .professional-registration-page .professional-section-title strong {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+.tenant-erp .professional-registration-page .professional-section-title span {
+  font-size: .78rem;
+  font-weight: 450;
+  letter-spacing: 0;
+}
+.tenant-erp .professional-registration-page .professional-identity-grid,
+.tenant-erp .professional-registration-page .professional-contract-grid,
+.tenant-erp .professional-registration-page .professional-permissions-grid {
+  display: grid;
+  gap: 12px 14px;
+  align-items: start;
+  min-width: 0;
+}
+.tenant-erp .professional-registration-page .professional-identity-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.tenant-erp .professional-registration-page .professional-contract-grid {
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  align-items: end;
+}
+.tenant-erp .professional-registration-page .professional-permissions-grid {
+  grid-template-columns: repeat(3, minmax(0,1fr));
+}
+.tenant-erp .professional-registration-page :is(.professional-identity-grid,.professional-contract-grid) > label,
+.tenant-erp .professional-registration-page .grid > label,
+.tenant-erp .professional-registration-page .erp-compact-form > label:not([style*="flex"]) {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--profile-text);
+}
+.tenant-erp .professional-registration-page .professional-identity-grid .label {
+  margin: 0;
+  font-size: .78rem;
+  font-weight: 650;
+}
+.tenant-erp .professional-registration-page :is(.input,.select,.textarea) {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  min-height: 40px;
+  border-radius: 9px;
+  border: 1px solid var(--profile-line);
+  background: var(--erp-panel-3, #0e0e0e);
+  color: var(--profile-text);
+  padding: 9px 11px;
+  box-shadow: none;
+  font-size: .87rem;
+}
+.tenant-erp .professional-registration-page :is(.input,.select,.textarea):focus-visible {
+  outline: 2px solid var(--profile-highlight);
+  outline-offset: 1px;
+  border-color: var(--profile-highlight);
+}
+.tenant-erp .professional-registration-page .erp-compact-form {
+  min-width: 0;
+  gap: 10px;
+}
+.tenant-erp .professional-registration-page .btn {
+  min-height: 40px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: .85rem;
+}
+.tenant-erp .professional-registration-page .erp-quick-create {
+  padding: 14px;
+  border: 1px solid var(--profile-line);
+  border-radius: 11px;
+  background: var(--erp-panel-3, #101010);
+}
+.tenant-erp .professional-registration-page .erp-quick-create .professional-section-title {
+  font-size: .9rem;
+  margin-bottom: 10px;
+}
+.tenant-erp .professional-registration-page .table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.tenant-erp .professional-registration-page .table-wrap .input {
+  min-width: 90px;
+}
+.tenant-erp .professional-registration-page input[type="checkbox"] {
+  accent-color: var(--profile-highlight);
+}
+@media (max-width: 1480px) {
+  .tenant-erp .professional-registration-page .professional-identity-grid {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }
+  .tenant-erp .professional-registration-page .professional-permissions-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+@media (max-width: 1080px) {
+  .tenant-erp .professional-registration-page .professional-identity-grid,
+  .tenant-erp .professional-registration-page .professional-contract-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+@media (max-width: 850px) {
+  .tenant-erp .professional-registration-page .professional-page-header {
+    align-items: flex-start;
+  }
+  .tenant-erp .professional-registration-page .professional-identity-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+@media (max-width: 620px) {
+  .tenant-erp .professional-registration-page .professional-page-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .tenant-erp .professional-registration-page .professional-page-header h1 {
+    font-size: 1.7rem !important;
+  }
+  .tenant-erp .professional-registration-page .professional-hero-card,
+  .tenant-erp .professional-registration-page > section.card,
+  .tenant-erp .professional-registration-page > article.card:not(.professional-hero-card) {
+    padding: 15px !important;
+    border-radius: 12px;
+  }
+  .tenant-erp .professional-registration-page .professional-profile-top {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .tenant-erp .professional-registration-page .professional-profile-count {
+    flex: 1 1 100%;
+    text-align: left;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .tenant-erp .professional-registration-page .professional-identity-grid,
+  .tenant-erp .professional-registration-page .professional-contract-grid,
+  .tenant-erp .professional-registration-page .professional-permissions-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .tenant-erp .professional-registration-page .professional-section-title {
+    font-size: 1rem;
+  }
+}
