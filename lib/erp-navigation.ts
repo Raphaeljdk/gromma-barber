@@ -136,7 +136,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "empresa-filiais", label: "Filiais", route: "unidades" },
         { id: "empresa-produtos", label: "Produtos", route: "estoque" },
         { id: "empresa-profissionais", label: "Profissionais", route: "equipe", children: [
-          { id: "empresa-profissionais-cadastro", label: "Cadastrar profissional", route: "equipe" },
+          { id: "empresa-profissionais-cadastro", label: "Cadastrar profissional", route: "equipe/novo", ownerOnly: true },
           { id: "empresa-profissionais-exibicao", label: "Exibição do profissional", route: "equipe" },
           { id: "empresa-profissionais-destaque", label: "Destacar profissional" },
         ] },
