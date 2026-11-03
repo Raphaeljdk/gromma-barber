@@ -1,0 +1,58 @@
+name: GROMMA - financeiro PostgreSQL real
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/erp/**"
+      - "lib/commission-calculation.ts"
+      - "lib/subscription-commission-pool.ts"
+      - "lib/erp-workspace.ts"
+      - "prisma/**"
+      - "tests/commission-real-postgres-e2e.cjs"
+      - ".github/workflows/commission-postgres-e2e.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  qa-postgres-real:
+    name: Server action real + Postgres 18 efêmero
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: qa
+          POSTGRES_PASSWORD: qa_local_ci_only
+          POSTGRES_DB: gromma_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qa -d gromma_qa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://qa:qa_local_ci_only@127.0.0.1:5432/gromma_qa?schema=public
+      GROMMA_TEST_ONLY_DATABASE: "yes"
+    steps:
+      - name: Checkout revisado
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - name: Dependências da aplicação
+        run: npm install --no-audit --no-fund
+      - name: Gerar cliente Prisma
+        run: npx prisma generate
+      - name: Aplicar TODAS as migrações em banco efêmero (nunca produção)
+        run: npx prisma migrate deploy
+      - name: Testar autenticação simulada e ação de pagamentos REAL com Postgres
+        run: node --test tests/commission-real-postgres-e2e.cjs
+      - name: Validar histórico das migrações do banco efêmero
+        run: npx prisma migrate status
