@@ -38,6 +38,8 @@ function environment(options = {}) {
   const tx = {
     barberShop: { findUnique: async () => state.shop, findUniqueOrThrow: async () => state.shop, update: async q => { writes.push('workspace'); Object.assign(state.shop, q.data); } },
     barberShopUnit: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return { id: 'u1', name: 'Centro' }; } },
+    // The real checkout now checks the active operator before any financial write.
+    shopUser: { findFirst: async q => { assert.equal(q.where.barberShopId,'shop1'); return q.where.id==='operator1' ? {id:'operator1',role:'OWNER',unitId:'u1',active:true} : null; } },
     serviceCommand: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return state.command?.status === q.where.status ? state.command : null; }, updateMany: async q => { writes.push('command'); Object.assign(state.command, q.data); return { count: 1 }; },
       update: async q => { writes.push('command'); Object.assign(state.command, q.data); return state.command; } },
     commandItem: {
@@ -147,7 +149,7 @@ test('interface da comanda oferece recebimento rápido e últimas compras', () =
     '@/app/erp/[tenant]/checkout-actions': { addCommandItem() {}, removeCommandItem() {}, checkoutCommand() {}, reopenCommand() {} },
   });
   const html = renderToStaticMarkup(React.createElement(CommandCheckout, {
-    tenantCode: 'GROMMA', canOperate: true, autoOpen: true,
+    tenantCode: 'GROMMA', canOperate: true, autoOpen: true, viewerRole: 'OWNER',
     command: { id: 'c1', customerName: 'Cliente Teste', unitName: 'Matriz', status: 'OPEN',
       total: 100, subtotal: 100, discount: 0, notes: '', plan: '', visits: 3, lastVisit: null,
       items: [{ id: 'i1', description: 'Corte', kind: 'SERVICE', quantity: 1, total: 100 }],
@@ -233,7 +235,7 @@ test('desconto percentual no total e cupom promocional produzem valor consistent
   assert.deepEqual([q.manualCents, q.couponCents, q.discountCents, q.totalCents], [1000, 500, 1500, 8500]);
   const url = await result(env.actions.checkoutCommand, form({
     PIX: '85', expectedTotal: '8500', discountKind: 'PERCENT',
-    discountScope: 'ORDER', discountValue: '10', couponCode: 'INFLU',
+    discountScope: 'ORDER', discountValue: '10', couponCode: 'INFLU', discountReason: 'Desconto autorizado na comanda',
   }));
   assert.equal(url.searchParams.get('checkoutOk'), '1');
   assert.equal(env.state.command.status, 'CLOSED');
@@ -328,13 +330,13 @@ test('incluir serviço no checkout aumenta endsAt, serviço exibido e tempo rese
     } } },
   } });
   const response = await result(env.actions.addCommandItem, form({ catalogItem: 'SERVICE:s2', quantity: '1' }));
-  assert.equal(response.searchParams.get('checkoutOk'), '1');
+  assert.equal(response.searchParams.get('checkoutOk'), '1', response.searchParams.get('checkoutError'));
   assert.equal(env.state.appointment.endsAt.toISOString(), new Date(start.getTime() + 80 * 60000).toISOString());
   assert.equal(env.state.command.total, 140);
   const booked = readWorkspace(env.state.shop.enabledFeatures).bookedServices.find(entry => entry.appointmentId === 'a1');
   assert.equal(booked.services.reduce((sum, service) => sum + service.durationMinutes, 0), 80);
   assert.deepEqual(booked.services.map(item => item.name), ['Barba Premium', 'Corte Premium']);
-  const removed = await result(env.actions.removeCommandItem, form({ itemId: 'added2' }));
+  const removed = await result(env.actions.removeCommandItem, form({ itemId: 'added2', reason: 'Correção de serviço na comanda' }));
   assert.equal(removed.searchParams.get('checkoutOk'), '1');
   assert.equal(env.state.appointment.endsAt.toISOString(), new Date(start.getTime() + 35 * 60000).toISOString());
   assert.deepEqual(readWorkspace(env.state.shop.enabledFeatures).bookedServices[0].services.map(s => s.name), ['Barba Premium']);
@@ -389,13 +391,13 @@ test('homologação: atendimento de 45 minutos soma serviço de 30 minutos e pro
   } });
   const addService = await result(env.actions.addCommandItem,
     form({ catalogItem: 'SERVICE:s2', quantity: '1' }));
-  assert.equal(addService.searchParams.get('checkoutOk'), '1');
+  assert.equal(addService.searchParams.get('checkoutOk'), '1', addService.searchParams.get('checkoutError'));
   assert.equal(env.state.appointment.endsAt.toISOString(), expectedEnd.toISOString());
   assert.equal(env.state.command.total, 100);
 
   const addProduct = await result(env.actions.addCommandItem,
     form({ catalogItem: 'PRODUCT:p1', quantity: '1' }));
-  assert.equal(addProduct.searchParams.get('checkoutOk'), '1');
+  assert.equal(addProduct.searchParams.get('checkoutOk'), '1', addProduct.searchParams.get('checkoutError'));
   assert.equal(env.state.appointment.endsAt.toISOString(), expectedEnd.toISOString(),
     'Produto não acrescenta minutos à agenda');
   assert.equal(env.state.command.total, 120);
@@ -404,7 +406,7 @@ test('homologação: atendimento de 45 minutos soma serviço de 30 minutos e pro
   assert.deepEqual(booked.services.map(item => item.durationMinutes), [45, 30]);
 
   const removeService = await result(env.actions.removeCommandItem,
-    form({ itemId: 'added2' }));
+    form({ itemId: 'added2', reason: 'Correção de serviço na comanda' }));
   assert.equal(removeService.searchParams.get('checkoutOk'), '1');
   assert.equal(env.state.appointment.endsAt.toISOString(), originalEnd.toISOString());
   assert.equal(env.state.command.total, 80);
@@ -435,7 +437,7 @@ test('comanda paga pode ser reaberta e recebida em outro meio sem duplicar finan
   const closedPayment = readWorkspace(env.state.shop.enabledFeatures).commandPayments[0];
   assert.deepEqual(closedPayment.amounts, { CASH: 0, DEBIT: 10000, CREDIT: 0, PIX: 0, TRANSFER: 0 });
 
-  const reopened = await result(env.actions.reopenCommand, form());
+  const reopened = await result(env.actions.reopenCommand, form({reason:'Correção do meio de pagamento'}));
   assert.equal(reopened.searchParams.get('checkoutOk'), '1');
   assert.equal(reopened.searchParams.get('commandId'), 'c1');
   assert.equal(env.state.command.status, 'OPEN');
@@ -466,7 +468,7 @@ test('caixa original fechado impede reabrir até quando há novo caixa aberto na
     if (withNewCash) env.state.shop.enabledFeatures.operations.cashSessions.push({
       id: 's2', unitId: 'u1', openedAt: new Date().toISOString(), openedBy: 'u', openingCents: 0,
     });
-    const r = await result(env.actions.reopenCommand, form());
+    const r = await result(env.actions.reopenCommand, form({reason:'Conferência da comanda antiga'}));
     assert.match(r.searchParams.get('checkoutError'), /caixa original/);
     assert.equal(env.state.command.status, 'CLOSED');
     assert.equal(env.state.entries.length, 1);
@@ -478,14 +480,14 @@ test('caixa original fechado impede reabrir até quando há novo caixa aberto na
 test('reabertura só para gestão e nunca quando lançamento financeiro foi modificado', async () => {
   const env = environment({ viewer: { type: 'TENANT', barberShopId: 'shop1', role: 'BARBER', userId: 'barber1' } });
   assert.equal((await result(env.actions.checkoutCommand, form())).searchParams.get('checkoutOk'), '1');
-  const denied = await result(env.actions.reopenCommand, form());
+  const denied = await result(env.actions.reopenCommand, form({reason:'Tentativa de reabertura'}));
   assert.match(denied.searchParams.get('checkoutError'), /Somente a gestão/);
   assert.equal(env.state.command.status, 'CLOSED');
 
   const manager = environment();
   assert.equal((await result(manager.actions.checkoutCommand, form())).searchParams.get('checkoutOk'), '1');
   manager.state.entries[0].amount = 99;
-  const blocked = await result(manager.actions.reopenCommand, form());
+  const blocked = await result(manager.actions.reopenCommand, form({reason:'Revisão do lançamento financeiro'}));
   assert.match(blocked.searchParams.get('checkoutError'), /lançamento financeiro foi alterado/);
   assert.equal(manager.state.command.status, 'CLOSED');
   assert.equal(manager.state.stock.length, 1);

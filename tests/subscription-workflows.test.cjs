@@ -40,7 +40,7 @@ function environment(role='OWNER') {
  const tx={barberShop:{findUnique:async()=>state.shop,update:async q=>{Object.assign(state.shop,q.data);return state.shop;}},
   customer:{findFirst:async q=>{assert.equal(q.where.barberShopId,'shop1');return q.where.id==='c1'?{id:'c1',name:'João'}:null;},findMany:async()=>[{id:'c1',name:'João'}]},
   shopUser:{findFirst:async q=>{assert.equal(q.where.barberShopId,'shop1');return q.where.id==='s1'?{id:'s1',name:'Bruno'}:null;}},
-  financialEntry:{create:async q=>{const e={id:'f'+(state.entries.length+1),createdAt:new Date(),...q.data};state.entries.push(e);return e;},findFirst:async q=>{assert.equal(q.where.barberShopId,'shop1');return state.entries.find(e=>(typeof q.where.id==='string'?e.id===q.where.id:q.where.id.in.includes(e.id))&&(typeof q.where.status==='string'?e.status===q.where.status:q.where.status.in.includes(e.status)))??null;}},
+  financialEntry:{create:async q=>{const e={id:'f'+(state.entries.length+1),createdAt:new Date(),...q.data};state.entries.push(e);return e;},findMany:async q=>{assert.equal(q.where.barberShopId,'shop1');return state.entries.filter(e=>(!q.where.id?.in||q.where.id.in.includes(e.id))&&(!q.where.type||e.type===q.where.type)&&(!q.where.category||e.category===q.where.category));},findFirst:async q=>{assert.equal(q.where.barberShopId,'shop1');return state.entries.find(e=>(typeof q.where.id==='string'?e.id===q.where.id:q.where.id.in.includes(e.id))&&(typeof q.where.status==='string'?e.status===q.where.status:q.where.status.in.includes(e.status)))??null;}},
   adminAuditLog:{create:async q=>state.audit.push(q.data)},
  };
  const prisma={...tx,$transaction:async(fn,config)=>{assert.equal(config.isolationLevel,'Serializable');const snapshot=structuredClone(state);try{return await fn(tx);}catch(e){Object.assign(state,snapshot);throw e;}}};
@@ -65,14 +65,22 @@ test('member onboarding snapshots seller, value and linked invoice without claim
 test('rejects cross-tenant or invalid seller and customer and preserves data',async()=>{
  for(const changes of [{sellerId:'foreign'},{customerId:'foreign'}]){const e=environment();await assert.rejects(()=>operations.registerClubMember(e.tx,'shop1',changes.customerId??'c1','p1',changes.sellerId??'s1',true,'STAFF'));assert.equal(e.state.entries.length,0);assert.equal(e.workspace().clubMembers.length,0);}
 });
-test('plan changes preserve previous amounts, classify upgrades/downgrades and cancellation dates',async()=>{
+test('plan changes are scheduled for renewal and cancellation preserves the already-billed plan',async()=>{
  const e=environment();await operations.registerClubMember(e.tx,'shop1','c1','p1','s1',true,'STAFF');const id=e.workspace().clubMembers[0].id;
- await redirected(e.actions.changeClubMemberPlan,form({memberId:id,planId:'p2'}));
- let w=e.workspace();assert.equal(w.clubEvents[0].movement,'UPGRADE');assert.equal(w.clubEvents[0].previousPlanName,'Corte');assert.equal(w.clubEvents[0].previousAmount,80);assert.equal(e.state.entries[0].amount,80);
- await redirected(e.actions.changeClubMemberPlan,form({memberId:id,planId:'p1'}));
- await redirected(e.actions.updateClubMemberStatus,form({memberId:id,action:'cancel'}));
- await redirected(e.actions.updateClubMemberStatus,form({memberId:id,action:'cancel'}));
- w=e.workspace();assert.equal(w.clubEvents[1].movement,'DOWNGRADE');assert.equal(w.clubEvents.filter(x=>x.kind==='CANCEL').length,1);assert.ok(w.clubMembers[0].canceledAt);assert.equal(w.clubSales[0].planName,'Corte');
+ // A scheduled change never rewrites an already issued payment or historic seller snapshot.
+ let w=e.workspace();w.clubPlans.push({id:'p3',name:'Essencial',monthlyAmount:60,active:true});e.state.shop.enabledFeatures.operations=w;
+ await redirected(e.actions.changeClubMemberPlan,form({memberId:id,planId:'p2',reason:'Cliente solicitou upgrade'}));
+ w=e.workspace();assert.equal(w.clubEvents[0].movement,'UPGRADE');assert.equal(w.clubEvents[0].status,'SCHEDULED');
+ assert.equal(w.clubEvents[0].previousPlanName,'Corte');assert.equal(w.clubEvents[0].previousAmount,80);
+ assert.equal(w.clubMembers[0].planId,'p1');assert.equal(w.clubMembers[0].pendingPlanId,'p2');
+ assert.equal(e.state.entries[0].amount,80);
+ await redirected(e.actions.changeClubMemberPlan,form({memberId:id,planId:'p3',reason:'Cliente solicitou downgrade'}));
+ w=e.workspace();assert.equal(w.clubEvents[0].status,'SUPERSEDED');
+ assert.equal(w.clubEvents[1].movement,'DOWNGRADE');assert.equal(w.clubEvents[1].status,'SCHEDULED');
+ await redirected(e.actions.updateClubMemberStatus,form({memberId:id,action:'cancel',reason:'Cancelamento solicitado pelo titular'}));
+ await redirected(e.actions.updateClubMemberStatus,form({memberId:id,action:'cancel',reason:'Cancelamento solicitado pelo titular'}));
+ w=e.workspace();assert.equal(w.clubEvents.filter(x=>x.kind==='CANCEL').length,1);
+ assert.ok(w.clubMembers[0].cancelEffectiveAt);assert.equal(w.clubSales[0].planName,'Corte');
 });
 test('manual billing cannot duplicate an existing cycle',async()=>{
  const e=environment();await operations.registerClubMember(e.tx,'shop1','c1','p1','s1',true,'STAFF');
@@ -115,17 +123,17 @@ async function renderReport(report,qs={}) {
   clubSales:[{id:'s1',memberId:'m1',customerId:'c1',planId:'p1',planName:'Corte',amount:80,at:'2026-10-01T12:00:00Z',sellerId:'b1',sellerName:'Bruno',source:'CUSTOMER'}],
   clubEvents:[{id:'e1',memberId:'m1',customerId:'c1',kind:'CHANGE',previousPlanId:'p0',previousPlanName:'Básico',newPlanId:'p1',newPlanName:'Corte',at:'2026-10-03T12:00:00Z',movement:'UPGRADE'}],
   clubCharges:[{entryId:'f1',memberId:'m1',customerId:'c1',planId:'p1',planName:'Corte',startedAt:'2026-10-01T12:00:00Z',periodEnd:'2026-11-01T12:00:00Z'}]}});
- const c=load('components/subscription-reports.tsx',{'@/lib/prisma':{prisma:{customer:{findMany:async q=>{assert.equal(q.where.barberShopId,'shop1');return [{id:'c1',name:'João'},{id:'c2',name:'Maria'}];}},financialEntry:{findMany:async q=>{assert.equal(q.where.barberShopId,'shop1');return [{id:'f1',status:'PAID',createdAt:new Date('2026-10-01'),paidAt:new Date('2026-10-02T12:00:00Z'),amount:80,description:'Corte · João'}];}}}},'@/app/erp/[tenant]/subscription-actions':{requestClubRefund:()=>{},confirmClubRefund:()=>{}}}).SubscriptionReports;
+ const c=load('components/subscription-reports.tsx',{'@/lib/prisma':{prisma:{appointment:{findMany:async q=>{assert.equal(q.where.barberShopId,'shop1');return [];}},customer:{findMany:async q=>{assert.equal(q.where.barberShopId,'shop1');return [{id:'c1',name:'João'},{id:'c2',name:'Maria'}];}},financialEntry:{findMany:async q=>{assert.equal(q.where.barberShopId,'shop1');return [{id:'f1',status:'PAID',createdAt:new Date('2026-10-01'),paidAt:new Date('2026-10-02T12:00:00Z'),amount:80,description:'Corte · João'}];}}}},'@/app/erp/[tenant]/subscription-actions':{requestClubRefund:()=>{},confirmClubRefund:()=>{}}}).SubscriptionReports;
  return renderToStaticMarkup(await c({report,tenantCode:'GROMMA',shopId:'shop1',workspace,canFinance:true,searchParams:qs}));
 }
 test('quantity report renders required dates, metrics and combined filters',async()=>{
  const html=await renderReport('assinantes',{assinaturasQ:'joao',assinaturasPlano:'p1',assinaturasStatus:'ACTIVE'});
- for(const label of ['Data de contratação','Data de vencimento','Quantidade de clientes','Total de assinaturas','Valor bruto mensal','Clientes adimplentes','Clientes inadimplentes','João'])assert.ok(html.includes(label),label);
+ for(const label of ['Data de contratação','Data de vencimento','Total de assinaturas','Receita total de assinaturas','Clientes adimplentes','Clientes inadimplentes','João'])assert.ok(html.includes(label),label);
  assert.ok(!html.includes('Maria'));assert.ok(html.includes('1 registro(s)'));
 });
 test('sales and origin render per-seller totals and honor period, plan and seller filters',async()=>{
  const qs={de:'2026-10-01',ate:'2026-10-31',assinaturasPlano:'p1',vendedor:'b1'};
- const html=await renderReport('assinaturas-origem',qs);assert.ok(html.includes('Bruno'));assert.ok(html.includes('Planos vendidos'));assert.ok(html.includes('1 registro(s)'));
+ const html=await renderReport('assinaturas-origem',qs);assert.ok(html.includes('Bruno'));assert.ok(html.includes('Total de planos'));assert.ok(html.includes('Vendas no período'));
  assert.ok((await renderReport('assinaturas-vendas',{de:'2026-11-01'})).includes('0 registro(s)'));
 });
 test('cancellations never invent a date and transaction history includes refund controls and dates',async()=>{
@@ -143,7 +151,7 @@ test('plan change report preserves each event and includes subscribers without c
 });
 test('recurrence links the next cycle once and preserves the earlier payment',async()=>{
  const e=environment();await operations.registerClubMember(e.tx,'shop1','c1','p1','s1',true,'STAFF');
- const w=e.workspace();const old='2026-01-01T12:00:00Z';w.clubMembers[0].nextBillingAt=old;e.state.shop.enabledFeatures.operations=w;
+ const w=e.workspace();const old=new Date(Date.now()-86400000).toISOString();w.clubMembers[0].nextBillingAt=old;e.state.shop.enabledFeatures.operations=w;
  e.state.entries[0].status='PAID';
  await redirected(e.actions.processClubBilling,form({}));
  assert.equal(e.workspace().clubCharges.length,2);assert.equal(new Date(e.workspace().clubCharges[1].periodStart).getTime(),new Date(old).getTime());assert.equal(e.state.entries[0].status,'PAID');

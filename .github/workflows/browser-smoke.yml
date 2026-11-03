@@ -1,0 +1,61 @@
+name: GROMMA - navegador desktop e celular
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "tests/browser-smoke.cjs"
+      - ".github/workflows/browser-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-smoke:
+    name: Chromium real (1440px, iPhone e 320px)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - name: Instalar dependências do app
+        run: npm install --no-audit --no-fund
+      - name: Instalar Chromium de teste
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Gerar Prisma e compilar Next.js
+        run: npm run build
+      - name: Iniciar aplicação local sem autenticação de clientes
+        run: |
+          (npm run start -- -p 3100 > /tmp/gromma-browser-server.log 2>&1 &)
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3100/ > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/gromma-browser-server.log
+          exit 1
+      - name: Testar navegação, login e responsividade
+        env:
+          BROWSER_BASE_URL: http://127.0.0.1:3100
+        run: node tests/browser-smoke.cjs
+      - name: Guardar capturas de tela para revisão
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gromma-browser-screenshots
+          path: artifacts/browser-smoke/
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Registrar erro do servidor se o teste falhar
+        if: failure()
+        run: cat /tmp/gromma-browser-server.log || true

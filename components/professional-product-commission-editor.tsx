@@ -4,6 +4,7 @@ import { useState } from "react";
 import { saveProfessionalSection } from "@/app/erp/[tenant]/professional-actions";
 import {
   PRODUCT_COMMISSION_CATEGORIES,
+  resolveProductCommissionRate,
   type ProductCommissionCategory,
   type ProductCommissionRule,
 } from "@/lib/product-commission-rules";
@@ -34,6 +35,31 @@ export function ProfessionalProductCommissionEditor({tenantCode,userId,rules}:Pr
     </label>
     <CategoryRuleForm key={category} tenantCode={tenantCode} userId={userId}
       category={category} rule={rules[category]}/>
+    {rules[category]&&<div style={{marginTop:12,padding:"10px 12px",
+      border:"1px solid var(--border,#ddd)",borderRadius:10}}>
+      <strong className="small">Prévia da regra salva · {PRODUCT_COMMISSION_CATEGORIES.find(c=>c.id===category)?.label}</strong>
+      <div className="table-wrap" style={{marginTop:8}}><table>
+        <thead><tr><th>Vendas da categoria no período</th><th>Percentual aplicado</th></tr></thead>
+        <tbody>{[0,500,1000,2000].map(total=><tr key={total}>
+          <td>{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(total)}</td>
+          <td>{resolveProductCommissionRate(rules[category],total,0).toFixed(2)}%</td>
+        </tr>)}</tbody>
+      </table></div>
+      <form action={saveProfessionalSection} onSubmit={event=>{
+        if(!window.confirm("Restaurar a regra padrão desta categoria? Os pagamentos anteriores serão preservados."))
+          event.preventDefault();
+      }} style={{marginTop:10}}>
+        <input type="hidden" name="tenantCode" value={tenantCode}/>
+        <input type="hidden" name="userId" value={userId}/>
+        <input type="hidden" name="section" value="product-category-reset"/>
+        <input type="hidden" name="category" value={category}/>
+        <button className="btn secondary" type="submit">Restaurar comissão padrão</button>
+      </form>
+    </div>}
+    <p className="small muted" style={{marginTop:10}}>
+      A prévia é ilustrativa. A comissão real utiliza somente recebimentos confirmados;
+      regras novas não reescrevem os demonstrativos já quitados.
+    </p>
   </section>;
 }
 function CategoryRuleForm({tenantCode,userId,category,rule}:{

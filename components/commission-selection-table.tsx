@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DemoCommissionPay } from "./demo-commission-pay";
+import { CommissionPaymentButton } from "./commission-payment-button";
 
 type Row = {
   id: string; name: string; role: string; unitName: string;
@@ -17,10 +18,18 @@ const money=(n:number)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency
 /** Primeira visão: uma linha por profissional e apenas os números de decisão.
  * O detalhamento, preservado em cartões, só aparece quando solicitado.
  */
-export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage:boolean}) {
+export function CommissionSelectionTable({rows,canManage,canPay=false,tenantCode="",start="",end="",paidIds=[]}: {
+  rows:Row[];canManage:boolean;canPay?:boolean;tenantCode?:string;start?:string;end?:string;paidIds?:string[];
+}) {
   const [selected,setSelected]=useState<string[]>([]);
   const [showDetails,setShowDetails]=useState(false);
-  const eligible=rows.filter(row=>row.netNumber>0);
+  const [search,setSearch]=useState("");
+  const [unitFilter,setUnitFilter]=useState("");
+  const units=[...new Set(rows.map(row=>row.unitName))].sort();
+  const filteredRows=rows.filter(row=>
+    (!unitFilter||row.unitName===unitFilter)&&
+    (row.name+" "+row.role+" "+row.unitName).toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR")));
+  const eligible=filteredRows.filter(row=>row.netNumber>0&&!paidIds.includes(row.id));
   const chosen=eligible.filter(row=>selected.includes(row.id));
   const all=eligible.length>0&&chosen.length===eligible.length;
   const total=chosen.reduce((sum,row)=>sum+row.netNumber,0);
@@ -31,11 +40,12 @@ export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage
     pot:chosen.reduce((sum,row)=>sum+row.subscriptionPotNumber,0),
     sales:chosen.reduce((sum,row)=>sum+(row.subscriptionSalesEnabled?row.subscriptionSalesNumber:0),0),
   };
-  const anySalesEnabled=rows.some(row=>row.subscriptionSalesEnabled);
+  const anySalesEnabled=filteredRows.some(row=>row.subscriptionSalesEnabled);
+  const realPayment=canPay&&canManage&&Boolean(tenantCode&&start&&end);
   return <section aria-label="Comissões por profissional">
     <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:12}}>
       <div className="small muted">
-        <strong>{rows.length}</strong> profissional(is) · <strong>{money(totalEligible)}</strong> a receber no período
+        <strong>{filteredRows.length}</strong> de {rows.length} profissional(is) · <strong>{money(totalEligible)}</strong> disponível para conferência
         {canManage&&chosen.length>0&&<> · <strong>{money(total)}</strong> selecionado</>}
       </div>
       {canManage&&eligible.length>0&&<div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
@@ -44,12 +54,27 @@ export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage
             onChange={e=>setSelected(e.target.checked?eligible.map(row=>row.id):[])}/>
           Selecionar todos
         </label>
-        {chosen.length>0&&<DemoCommissionPay
-          professional={chosen.length===1?chosen[0].name:chosen.length+" profissionais"}
-          amount={money(total)} label="Pagar selecionados (simulação)"/>}
+        {chosen.length>0&&(realPayment
+          ? <CommissionPaymentButton tenantCode={tenantCode} start={start} end={end}
+              professionals={chosen.map(row=>({id:row.id,name:row.name,netNumber:row.netNumber}))}
+              label="Registrar quitação dos selecionados"/>
+          : <DemoCommissionPay professional={chosen.length===1?chosen[0].name:chosen.length+" profissionais"}
+              amount={money(total)} label="Prévia dos selecionados"/>) }
       </div>}
     </div>
 
+    <div className="erp-compact-form" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:9,marginBottom:12}}>
+      <label>Buscar profissional
+        <input className="input" value={search} onChange={event=>{setSearch(event.target.value);setSelected([]);}}
+          placeholder="Nome ou função" aria-label="Buscar profissional na apuração"/>
+      </label>
+      <label>Filtrar pela unidade principal
+        <select className="select" value={unitFilter} onChange={event=>{setUnitFilter(event.target.value);setSelected([]);}}>
+          <option value="">Todas as unidades</option>
+          {units.map(unit=><option key={unit} value={unit}>{unit}</option>)}
+        </select>
+      </label>
+    </div>
     <div className="table-wrap" style={{marginBottom:12}}>
       <table aria-label="Resumo de comissões por profissional" style={{width:"100%"}}>
         <thead><tr>
@@ -62,9 +87,9 @@ export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage
           {canManage&&<th style={{width:128}}>Ação</th>}
         </tr></thead>
         <tbody>
-          {rows.map(row=><tr key={row.id} style={selected.includes(row.id)?{background:"rgba(211,166,75,.12)"}:undefined}>
+          {filteredRows.map(row=><tr key={row.id} style={selected.includes(row.id)?{background:"rgba(211,166,75,.12)"}:undefined}>
             {canManage&&<td><input type="checkbox" aria-label={"Selecionar "+row.name}
-              disabled={row.netNumber<=0} checked={selected.includes(row.id)}
+              disabled={row.netNumber<=0||paidIds.includes(row.id)} checked={selected.includes(row.id)}
               onChange={e=>setSelected(prev=>e.target.checked?[...prev,row.id]:prev.filter(id=>id!==row.id))}/></td>}
             <td><strong>{row.name}</strong><div className="small muted">{row.unitName}</div></td>
             <td>{money(row.serviceNumber)}</td>
@@ -75,17 +100,21 @@ export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage
                 <div className="small muted">Inclui bônus de venda</div>}
             </td>
             <td><strong>{row.net}</strong></td>
-            {canManage&&<td>{row.netNumber>0?
-              <DemoCommissionPay professional={row.name} amount={row.net} label="Pagar (simulação)"/>:
-              <span className="small muted">Sem saldo</span>}</td>}
+            {canManage&&<td>{paidIds.includes(row.id) ? <span className="small muted">Quitado no período</span> :
+              row.netNumber>0 ? (realPayment
+              ? <CommissionPaymentButton tenantCode={tenantCode} start={start} end={end}
+                  professionals={[{id:row.id,name:row.name,netNumber:row.netNumber}]}
+                  label="Registrar quitação"/>
+              : <DemoCommissionPay professional={row.name} amount={row.net} label="Prévia"/>) :
+              <span className="small muted">Sem saldo</span>}</td> }
           </tr>)}
-          {!rows.length&&<tr><td colSpan={canManage?7:5} className="small muted">Nenhum profissional encontrado neste período.</td></tr>}
+          {!filteredRows.length&&<tr><td colSpan={canManage?7:5} className="small muted">Nenhum profissional encontrado nos filtros selecionados.</td></tr>}
         </tbody>
       </table>
     </div>
 
     <div style={{display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",marginBottom:showDetails?14:0}}>
-      <span className="small muted">Prévia de valores. Nenhum pagamento é executado por esta tela.</span>
+      <span className="small muted">{realPayment ? "A confirmação registra apenas pagamentos já efetuados, sem transferir dinheiro." : "Prévia de valores. O pagamento real está desabilitado nesta tela."}</span>
       <button type="button" className="btn secondary" aria-expanded={showDetails}
         aria-controls="commission-detail-cards"
         onClick={()=>setShowDetails(current=>!current)}>
@@ -101,7 +130,7 @@ export function CommissionSelectionTable({rows,canManage}: {rows:Row[];canManage
         {anySalesEnabled&&<article><span>Bônus por venda de plano</span><strong>{money(categoryAmounts.sales)}</strong></article>}
       </div>
       <div className="grid grid-2" style={{marginTop:14}}>
-        {rows.map(row=><article key={row.id} className="card erp-workspace-card" style={{padding:14}}>
+        {filteredRows.map(row=><article key={row.id} className="card erp-workspace-card" style={{padding:14}}>
           <header style={{display:"flex",alignItems:"start",justifyContent:"space-between",gap:10}}>
             <div><strong>{row.name}</strong><p className="small muted">{row.role} · {row.unitName}</p></div>
             <strong>{row.net}</strong>

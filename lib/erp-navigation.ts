@@ -86,6 +86,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "rel-ass-pontos", label: "Resgate de pontos" },
         ] },
         { id: "relatorios-financeiro", label: "Financeiro", children: [
+          { id: "rel-fin-estornos", label: "Estornos" },
           { id: "rel-fin-faturamento", label: "Faturamento" },
           { id: "rel-fin-movimentacoes", label: "Movimentações" },
           { id: "rel-fin-vendas-lucro", label: "Vendas e lucro" },
@@ -146,6 +147,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "empresa-servicos-destaque", label: "Destacar serviço" },
         ] },
         { id: "empresa-dados", label: "Dados", route: "configuracoes" },
+        { id: "empresa-grupos-acesso", label: "Grupo de acesso", route: "configuracoes", ownerOnly: true },
 
         { id: "empresa-meu-plano", label: "Meu plano", route: "plano" },
         { id: "empresa-fatura", label: "Fatura" },

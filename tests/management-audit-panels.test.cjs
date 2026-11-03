@@ -89,7 +89,7 @@ test("interval subtraction avoids double-counting overlapping blocks",()=>{
   const match=source.match(/export function intervalMinutes\([\s\S]*?\n\}/);
   assert.ok(match);
   assert.match(source,/return intervalMinutes\(bookings\.flatMap/);
-  assert.match(source,/const available=subtractIntervals\(\[base\],closed\)/);
+  assert.match(source,/(?:const|let) available=subtractIntervals\(\[base\],closed\)/);
 });
 
 

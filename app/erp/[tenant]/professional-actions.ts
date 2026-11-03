@@ -383,6 +383,18 @@ export async function saveProfessionalSection(form:FormData){
       ws.subscriptionCommissionTiers[ctx.userId]=tiers;
       return {previous,next:tiers};
     });
+  }else if(section==="product-category-reset"){
+    const category=text(form,"category",25);
+    if(!isProductCommissionCategory(category))fail(ctx,"categoria");
+    await change(ctx,"PROFESSIONAL_PRODUCT_CATEGORY_COMMISSION_RESET",reason,async(profile)=>{
+      const previous=profile.productCommissionRules?.[category]??null;
+      if(profile.productCommissionRules){
+        const rules={...profile.productCommissionRules};
+        delete rules[category];
+        profile.productCommissionRules=rules;
+      }
+      return {category,previous,next:null,usesLegacyRule:true};
+    });
   }else if(section==="product-category-rule"){
     const category=text(form,"category",25);
     const mode=text(form,"mode",15);

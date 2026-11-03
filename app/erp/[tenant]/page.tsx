@@ -1,4 +1,6 @@
 import { CommissionSelectionTable } from "@/components/commission-selection-table";
+import { saveBranding } from "./branding-actions";
+import { saveBarbershopUnit } from "./unit-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
@@ -907,7 +909,7 @@ export async function TenantERPView({
       const rule = workspace.commissionRules.find((item) => item.userId === user.id);
       const percent = rule?.percent ?? workspace.settings.defaultCommissionPercent;
       const precise = activeModule === "comissoes" && comissoesDe && comissoesAte && !invalidCommissionPeriod
-        ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions, { workspace })
+        ? await calculateCommission(prisma, shop.id, user.id, new Date(`${comissoesDe}T00:00:00-03:00`), new Date(new Date(`${comissoesAte}T00:00:00-03:00`).getTime() + 86400000), workspace.settings.defaultCommissionPercent, percent, workspace.serviceCommissionOverrides, workspace.deductions, { workspace, unitId: comissoesUnidade || undefined })
         : null;
       const potCommission = (subscriptionPot?.distributions[user.id]?.amountCents ?? 0) / 100;
       const salesCommission = Number(precise?.categories.SUBSCRIPTION ?? 0);
@@ -942,7 +944,7 @@ export async function TenantERPView({
   const commissionPayments = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && (activeModule === "comissoes" || activeModule === "dashboard")
     ? await prisma.commissionPayment.findMany({ where: { barberShopId: shop.id }, include: { professional: { select: { name: true } } }, orderBy: { paidAt: "desc" }, take: 200 })
     : [];
-  const canPayCommission = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && canManage && Boolean(comissoesDe && comissoesAte && !invalidCommissionPeriod);
+  const canPayCommission = process.env.COMMISSION_PAYMENTS_ENABLED === "true" && isOwner && !comissoesUnidade && Boolean(comissoesDe && comissoesAte && !invalidCommissionPeriod);
   const isPaidForPeriod = (userId: string) => commissionPayments.some(payment => payment.userId === userId && comissoesDe && comissoesAte && payment.periodStart.toISOString().slice(0, 10) <= comissoesAte && payment.periodEnd.toISOString().slice(0, 10) >= comissoesDe);
 
   const closedRevenue = commissionCommands.reduce((sum, command) => sum + Number(command.total), 0);
@@ -2002,6 +2004,9 @@ export async function TenantERPView({
             <article><span>Comissão líquida</span><strong>{brl(filteredCommissionRows.reduce((sum, row) => sum + row.netCommission, 0))}</strong><small>estimativa operacional</small></article>
           </div>
 
+          {valueOf("comissaoPagamentoOk") && <div role="status" className="notice erp-inline-notice success">Baixa de comissão registrada com histórico e lançamento financeiro. Consulte o demonstrativo abaixo.</div>}
+          {valueOf("comissaoPagamentoErro") && <div role="alert" className="notice erp-inline-notice error-notice">{valueOf("comissaoPagamentoErro").slice(0,220)}</div>}
+          {comissoesUnidade && <p className="small muted">Para registrar quitação, selecione “Todas as unidades” e confira a apuração integral. O filtro por filial serve apenas para consulta.</p>}
           {actionOk === "pagamento" && <div className="notice erp-inline-notice success">Pagamento registrado e período bloqueado contra duplicidade.</div>}
           {actionError === "pagamento" && <div className="notice erp-inline-notice error-notice">Pagamento não registrado. Confira o período, os valores e possíveis pagamentos anteriores.</div>}
           {actionError === "pote-pagamento" && <div className="notice erp-inline-notice error-notice">As comissões do pote estão em prévia. A quitação real fica bloqueada até existir um fechamento imutável dos valores e integração de pagamento validada.</div>}
@@ -2021,7 +2026,10 @@ export async function TenantERPView({
               <span className="small muted">Pote sem distribuição neste período</span>}
           </div>
 
-          <CommissionSelectionTable canManage={isOwner} rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionSalesEnabled: row.salesBonusEnabled, subscriptionPotNumber: row.subscriptionPotCommission, subscriberAttendances: row.subscriberAttendances, potSharePercent: row.potSharePercent, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
+          <CommissionSelectionTable canManage={isOwner} canPay={canPayCommission}
+            tenantCode={tenantCode} start={comissoesDe} end={comissoesAte}
+            paidIds={filteredCommissionRows.filter(row => isPaidForPeriod(row.user.id)).map(row => row.user.id)}
+            rows={filteredCommissionRows.map(row => ({ id: row.user.id, name: row.user.name, role: ROLE_LABELS[row.user.role] ?? row.user.role, production: brl(row.production), percent: `${row.percent.toFixed(2)}%`, gross: brl(row.grossCommission), deductions: brl(row.deductions), net: brl(row.netCommission), netNumber: row.netCommission, serviceNumber: row.serviceCommission, productNumber: row.productCommission, subscriptionNumber: row.subscriptionCommission, subscriptionSalesNumber: row.subscriptionSalesCommission, subscriptionSalesEnabled: row.salesBonusEnabled, subscriptionPotNumber: row.subscriptionPotCommission, subscriberAttendances: row.subscriberAttendances, potSharePercent: row.potSharePercent, unitName: shop.units.find(unit => unit.id === row.user.unitId)?.name ?? "Sem unidade" }))} />
           <details className="card erp-workspace-card" style={{marginTop:12,marginBottom:14,padding:14}}>
             <summary style={{cursor:"pointer",fontWeight:600}}>
               Conferir recebimentos e cálculo do pote · {subscriptionPot ? brl(subscriptionPot.potCents/100) : "Período inválido"}
@@ -2128,6 +2136,24 @@ export async function TenantERPView({
 
         <section id="unidades" className="demo-section" hidden={Boolean(moduleId && moduleId !== "unidades")}>
           <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {valueOf("unidadeOk") && <p role="status" className="notice success">Unidade {valueOf("unidadeOk") === "cadastrada" ? "cadastrada" : "atualizada"} com sucesso. A alteração ficou registrada na auditoria.</p>}
+          {valueOf("unidadeErro") && <p role="alert" className="notice error-notice">{valueOf("unidadeErro").slice(0,200)}</p>}
+          {isOwner && <details className="card" style={{padding:14,marginBottom:14}}>
+            <summary style={{cursor:"pointer",fontWeight:700}}>Cadastrar nova filial</summary>
+            <p className="small muted" style={{marginTop:10}}>Filiais têm operações e caixas próprios. Respeite o limite do seu plano; nenhuma nova cobrança é feita nesta tela.</p>
+            <form action={saveBarbershopUnit} className="erp-compact-form" style={{marginTop:12}}>
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
+                <label>Nome da filial<input className="input" name="name" maxLength={120} required minLength={2}/></label>
+                <label>Código único<input className="input" name="code" maxLength={16} pattern="[A-Za-z0-9_-]{2,16}" required placeholder="MATRIZ"/></label>
+                <label>Cidade<input className="input" name="city" maxLength={100} minLength={2} required/></label>
+                <label>UF<input className="input" name="state" maxLength={2} minLength={2} required placeholder="SP"/></label>
+                <label>Endereço<input className="input" name="address" maxLength={240} placeholder="Rua, número e bairro"/></label>
+              </div>
+              <label style={{display:"flex",gap:8,alignItems:"center"}}><input type="checkbox" name="active" defaultChecked/>Filial ativa</label>
+              <button className="btn" type="submit">Cadastrar filial</button>
+            </form>
+          </details>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`}
             searchParams={qs}
@@ -2144,6 +2170,26 @@ export async function TenantERPView({
                   <div><span>Cidade</span><strong>{unit.city}/{unit.state}</strong></div>
                   <div><span>Endereço</span><strong>{unit.address ?? "—"}</strong></div>
                 </div>
+                {isOwner && <details style={{marginTop:12}}>
+                  <summary style={{cursor:"pointer",fontWeight:650}}>Editar dados da filial</summary>
+                  <form action={saveBarbershopUnit} className="erp-compact-form" style={{marginTop:10}}>
+                    <input type="hidden" name="tenantCode" value={tenantCode}/>
+                    <input type="hidden" name="unitId" value={unit.id}/>
+                    <input type="hidden" name="code" value={unit.code}/>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>
+                      <label>Nome<input className="input" name="name" defaultValue={unit.name} maxLength={120} required/></label>
+                      <label>Cidade<input className="input" name="city" defaultValue={unit.city} maxLength={100} required/></label>
+                      <label>UF<input className="input" name="state" defaultValue={unit.state} maxLength={2} required/></label>
+                    </div>
+                    <label>Endereço<input className="input" name="address" defaultValue={unit.address??""} maxLength={240}/></label>
+                    <label style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input type="checkbox" name="active" defaultChecked={unit.active}/>
+                      Manter filial ativa
+                    </label>
+                    <p className="small muted">Para desativar uma filial, feche o caixa e transfira a equipe e os agendamentos futuros. Histórico financeiro e estoque não são apagados.</p>
+                    <button className="btn secondary" type="submit">Salvar alterações</button>
+                  </form>
+                </details>}
               </article>
             ))}
           </div>
@@ -2534,6 +2580,52 @@ export async function TenantERPView({
               <p className="erp-integration-note">WhatsApp automático, gateway de pagamento e emissão fiscal dependem de credenciais/provedores externos. O ERP mantém a configuração e os fluxos internos prontos sem fingir uma integração que ainda não existe.</p>
             </article>
           </div>
+          <article className="card erp-workspace-card" style={{marginTop:14}}>
+            <div className="erp-card-title"><div><span>Marca e Clube</span>
+              <strong>Identidade visual do estabelecimento</strong></div>
+              <StatusPill tone="ready">Salvo por empresa</StatusPill></div>
+            <p className="small muted">Personalize o logotipo, a cor de destaque e o conteúdo visto
+              pelo cliente no link seguro de contratação do Clube.</p>
+            {valueOf("brandingOk")==="1" && <p role="status" className="notice success">Identidade visual atualizada.</p>}
+            {valueOf("brandingErro") && <p role="alert" className="notice error-notice">{valueOf("brandingErro").slice(0,160)}</p>}
+            <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",margin:"12px 0"}}>
+              {workspace.branding.logoUrl
+                ? <img src={workspace.branding.logoUrl} width={84} height={84} alt={"Logotipo de "+shop.tradeName}
+                    style={{width:84,height:84,objectFit:"contain",borderRadius:10,border:"1px solid #ddd",padding:6}}/>
+                : <span className="small muted">Logotipo ainda não configurado</span>}
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span aria-hidden="true" style={{width:26,height:26,display:"inline-block",borderRadius:8,
+                  background:workspace.branding.accentColor,border:"1px solid #888"}}/>
+                <span className="small muted">Cor atual: {workspace.branding.accentColor}</span>
+              </div>
+            </div>
+            {isOwner ? <form action={saveBranding} className="erp-compact-form">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <div className="grid grid-2">
+                <label><span className="label">Cor de destaque</span>
+                  <input className="input" type="color" name="accentColor"
+                    defaultValue={workspace.branding.accentColor} required/></label>
+                <label><span className="label">Título do clube</span>
+                  <input className="input" name="clubTitle" maxLength={90} minLength={3}
+                    defaultValue={workspace.branding.clubTitle} required/></label>
+              </div>
+              <label><span className="label">Descrição da assinatura</span>
+                <textarea className="input" name="clubDescription" rows={3} maxLength={500}
+                  defaultValue={workspace.branding.clubDescription} placeholder="Apresente o clube e seus benefícios"/></label>
+              <label><span className="label">URL HTTPS do logotipo</span>
+                <input className="input" name="logoUrl" type="url" maxLength={700}
+                  defaultValue={workspace.branding.logoUrl} placeholder="https://..."/></label>
+              <label><span className="label">Ou enviar nova imagem (até 3 MB)</span>
+                <input className="input" name="logoFile" type="file" accept="image/jpeg,image/png,image/webp"/></label>
+              <label style={{display:"flex",gap:8,alignItems:"start"}}>
+                <input type="checkbox" name="logoConsent"/>
+                Confirmo que tenho autorização para usar a imagem enviada como logotipo.</label>
+              <label style={{display:"flex",gap:8,alignItems:"start"}}>
+                <input type="checkbox" name="removeLogo"/>
+                Remover logotipo atual (mantém as demais configurações)</label>
+              <button className="btn" type="submit">Salvar identidade visual</button>
+            </form> : <p className="small muted">Somente o proprietário pode alterar a identidade da marca.</p>}
+          </article>
         </section>
 
         <section id="plano" className="demo-section" hidden={Boolean(moduleId && moduleId !== "plano")}>

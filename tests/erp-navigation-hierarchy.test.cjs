@@ -91,7 +91,7 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
     "dashboard", "agenda", "clientes", "caixa", "comandas", "estoque", "assinaturas",
     "assinaturas-trocas", "assinaturas-cancelados", "assinaturas-transacoes", "assinaturas-vendas", "assinaturas-origem",
     "assinantes", "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
-    "servicos", "unidades", "plano", "configuracoes", "financeiro", "gerencial",
+    "servicos", "unidades", "equipe/novo", "plano", "configuracoes", "financeiro", "gerencial",
     "alertas", "mensagens", "documentos", "treinamentos", "totem",
     "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "auditoria-agendamentos", "auditoria-fechamento-caixa", "auditoria-produtividade", "notificacoes",
   ]);
