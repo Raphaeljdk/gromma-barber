@@ -41,7 +41,7 @@ function environment(options = {}) {
     commissionPayment: {
       findFirst: async ({ where }) => state.ledger.find(row =>
         row.barberShopId === where.barberShopId && row.userId === where.userId &&
-        row.periodStart <= where.periodEnd.gte && row.periodEnd >= where.periodStart.lte) ?? null,
+        row.periodStart <= where.periodStart.lte && row.periodEnd >= where.periodEnd.gte) ?? null,
       create: async ({ data }) => {
         const row = { id: "pay-" + (state.ledger.length + 1), ...data };
         state.ledger.push(row);
