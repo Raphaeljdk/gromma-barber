@@ -330,7 +330,7 @@ test('incluir serviço no checkout aumenta endsAt, serviço exibido e tempo rese
     } } },
   } });
   const response = await result(env.actions.addCommandItem, form({ catalogItem: 'SERVICE:s2', quantity: '1' }));
-  assert.equal(response.searchParams.get('checkoutOk'), '1');
+  assert.equal(response.searchParams.get('checkoutOk'), '1', response.searchParams.get('checkoutError'));
   assert.equal(env.state.appointment.endsAt.toISOString(), new Date(start.getTime() + 80 * 60000).toISOString());
   assert.equal(env.state.command.total, 140);
   const booked = readWorkspace(env.state.shop.enabledFeatures).bookedServices.find(entry => entry.appointmentId === 'a1');
@@ -391,13 +391,13 @@ test('homologação: atendimento de 45 minutos soma serviço de 30 minutos e pro
   } });
   const addService = await result(env.actions.addCommandItem,
     form({ catalogItem: 'SERVICE:s2', quantity: '1' }));
-  assert.equal(addService.searchParams.get('checkoutOk'), '1');
+  assert.equal(addService.searchParams.get('checkoutOk'), '1', addService.searchParams.get('checkoutError'));
   assert.equal(env.state.appointment.endsAt.toISOString(), expectedEnd.toISOString());
   assert.equal(env.state.command.total, 100);
 
   const addProduct = await result(env.actions.addCommandItem,
     form({ catalogItem: 'PRODUCT:p1', quantity: '1' }));
-  assert.equal(addProduct.searchParams.get('checkoutOk'), '1');
+  assert.equal(addProduct.searchParams.get('checkoutOk'), '1', addProduct.searchParams.get('checkoutError'));
   assert.equal(env.state.appointment.endsAt.toISOString(), expectedEnd.toISOString(),
     'Produto não acrescenta minutos à agenda');
   assert.equal(env.state.command.total, 120);
@@ -437,7 +437,7 @@ test('comanda paga pode ser reaberta e recebida em outro meio sem duplicar finan
   const closedPayment = readWorkspace(env.state.shop.enabledFeatures).commandPayments[0];
   assert.deepEqual(closedPayment.amounts, { CASH: 0, DEBIT: 10000, CREDIT: 0, PIX: 0, TRANSFER: 0 });
 
-  const reopened = await result(env.actions.reopenCommand, form());
+  const reopened = await result(env.actions.reopenCommand, form({reason:'Correção do meio de pagamento'}));
   assert.equal(reopened.searchParams.get('checkoutOk'), '1');
   assert.equal(reopened.searchParams.get('commandId'), 'c1');
   assert.equal(env.state.command.status, 'OPEN');
@@ -468,7 +468,7 @@ test('caixa original fechado impede reabrir até quando há novo caixa aberto na
     if (withNewCash) env.state.shop.enabledFeatures.operations.cashSessions.push({
       id: 's2', unitId: 'u1', openedAt: new Date().toISOString(), openedBy: 'u', openingCents: 0,
     });
-    const r = await result(env.actions.reopenCommand, form());
+    const r = await result(env.actions.reopenCommand, form({reason:'Conferência da comanda antiga'}));
     assert.match(r.searchParams.get('checkoutError'), /caixa original/);
     assert.equal(env.state.command.status, 'CLOSED');
     assert.equal(env.state.entries.length, 1);
@@ -480,14 +480,14 @@ test('caixa original fechado impede reabrir até quando há novo caixa aberto na
 test('reabertura só para gestão e nunca quando lançamento financeiro foi modificado', async () => {
   const env = environment({ viewer: { type: 'TENANT', barberShopId: 'shop1', role: 'BARBER', userId: 'barber1' } });
   assert.equal((await result(env.actions.checkoutCommand, form())).searchParams.get('checkoutOk'), '1');
-  const denied = await result(env.actions.reopenCommand, form());
+  const denied = await result(env.actions.reopenCommand, form({reason:'Tentativa de reabertura'}));
   assert.match(denied.searchParams.get('checkoutError'), /Somente a gestão/);
   assert.equal(env.state.command.status, 'CLOSED');
 
   const manager = environment();
   assert.equal((await result(manager.actions.checkoutCommand, form())).searchParams.get('checkoutOk'), '1');
   manager.state.entries[0].amount = 99;
-  const blocked = await result(manager.actions.reopenCommand, form());
+  const blocked = await result(manager.actions.reopenCommand, form({reason:'Revisão do lançamento financeiro'}));
   assert.match(blocked.searchParams.get('checkoutError'), /lançamento financeiro foi alterado/);
   assert.equal(manager.state.command.status, 'CLOSED');
   assert.equal(manager.state.stock.length, 1);
