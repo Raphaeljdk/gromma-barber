@@ -9,14 +9,14 @@ const source=fs.readFileSync(path.resolve(__dirname,"../lib/commission-calculati
 const js=ts.transpileModule(source,{compilerOptions:{
   module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
 }}).outputText;
-const module={exports:{}};
+const loadedModule={exports:{}};
 new Function("require","module","exports",js)(name=>{
  if(name==="@prisma/client")return {Prisma};
  if(name==="./professional-profile")return {subscriptionSalesEnabled:()=>false};
  if(name==="./product-commission-rules")return {resolveProductCommissionRate:(rule,sales,fallback)=>fallback};
  throw new Error("Unknown dependency "+name);
-},module,module.exports);
-const {calculateCommission}=module.exports;
+},loadedModule,loadedModule.exports);
+const {calculateCommission}=loadedModule.exports;
 
 const closedAt=new Date("2026-10-31T19:00:00.000Z");
 const commands=["u1","u2"].map((unitId,i)=>({
