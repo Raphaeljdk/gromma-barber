@@ -1,5 +1,6 @@
 import { CommissionSelectionTable } from "@/components/commission-selection-table";
 import { saveBranding } from "./branding-actions";
+import { saveBarbershopUnit } from "./unit-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
@@ -2135,6 +2136,24 @@ export async function TenantERPView({
 
         <section id="unidades" className="demo-section" hidden={Boolean(moduleId && moduleId !== "unidades")}>
           <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          {valueOf("unidadeOk") && <p role="status" className="notice success">Unidade {valueOf("unidadeOk") === "cadastrada" ? "cadastrada" : "atualizada"} com sucesso. A alteração ficou registrada na auditoria.</p>}
+          {valueOf("unidadeErro") && <p role="alert" className="notice error-notice">{valueOf("unidadeErro").slice(0,200)}</p>}
+          {isOwner && <details className="card" style={{padding:14,marginBottom:14}}>
+            <summary style={{cursor:"pointer",fontWeight:700}}>Cadastrar nova filial</summary>
+            <p className="small muted" style={{marginTop:10}}>Filiais têm operações e caixas próprios. Respeite o limite do seu plano; nenhuma nova cobrança é feita nesta tela.</p>
+            <form action={saveBarbershopUnit} className="erp-compact-form" style={{marginTop:12}}>
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
+                <label>Nome da filial<input className="input" name="name" maxLength={120} required minLength={2}/></label>
+                <label>Código único<input className="input" name="code" maxLength={16} pattern="[A-Za-z0-9_-]{2,16}" required placeholder="MATRIZ"/></label>
+                <label>Cidade<input className="input" name="city" maxLength={100} minLength={2} required/></label>
+                <label>UF<input className="input" name="state" maxLength={2} minLength={2} required placeholder="SP"/></label>
+                <label>Endereço<input className="input" name="address" maxLength={240} placeholder="Rua, número e bairro"/></label>
+              </div>
+              <label style={{display:"flex",gap:8,alignItems:"center"}}><input type="checkbox" name="active" defaultChecked/>Filial ativa</label>
+              <button className="btn" type="submit">Cadastrar filial</button>
+            </form>
+          </details>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`}
             searchParams={qs}
@@ -2151,6 +2170,26 @@ export async function TenantERPView({
                   <div><span>Cidade</span><strong>{unit.city}/{unit.state}</strong></div>
                   <div><span>Endereço</span><strong>{unit.address ?? "—"}</strong></div>
                 </div>
+                {isOwner && <details style={{marginTop:12}}>
+                  <summary style={{cursor:"pointer",fontWeight:650}}>Editar dados da filial</summary>
+                  <form action={saveBarbershopUnit} className="erp-compact-form" style={{marginTop:10}}>
+                    <input type="hidden" name="tenantCode" value={tenantCode}/>
+                    <input type="hidden" name="unitId" value={unit.id}/>
+                    <input type="hidden" name="code" value={unit.code}/>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>
+                      <label>Nome<input className="input" name="name" defaultValue={unit.name} maxLength={120} required/></label>
+                      <label>Cidade<input className="input" name="city" defaultValue={unit.city} maxLength={100} required/></label>
+                      <label>UF<input className="input" name="state" defaultValue={unit.state} maxLength={2} required/></label>
+                    </div>
+                    <label>Endereço<input className="input" name="address" defaultValue={unit.address??""} maxLength={240}/></label>
+                    <label style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input type="checkbox" name="active" defaultChecked={unit.active}/>
+                      Manter filial ativa
+                    </label>
+                    <p className="small muted">Para desativar uma filial, feche o caixa e transfira a equipe e os agendamentos futuros. Histórico financeiro e estoque não são apagados.</p>
+                    <button className="btn secondary" type="submit">Salvar alterações</button>
+                  </form>
+                </details>}
               </article>
             ))}
           </div>
