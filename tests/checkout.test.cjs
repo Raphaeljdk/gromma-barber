@@ -336,7 +336,7 @@ test('incluir serviço no checkout aumenta endsAt, serviço exibido e tempo rese
   const booked = readWorkspace(env.state.shop.enabledFeatures).bookedServices.find(entry => entry.appointmentId === 'a1');
   assert.equal(booked.services.reduce((sum, service) => sum + service.durationMinutes, 0), 80);
   assert.deepEqual(booked.services.map(item => item.name), ['Barba Premium', 'Corte Premium']);
-  const removed = await result(env.actions.removeCommandItem, form({ itemId: 'added2' }));
+  const removed = await result(env.actions.removeCommandItem, form({ itemId: 'added2', reason: 'Correção de serviço na comanda' }));
   assert.equal(removed.searchParams.get('checkoutOk'), '1');
   assert.equal(env.state.appointment.endsAt.toISOString(), new Date(start.getTime() + 35 * 60000).toISOString());
   assert.deepEqual(readWorkspace(env.state.shop.enabledFeatures).bookedServices[0].services.map(s => s.name), ['Barba Premium']);
@@ -406,7 +406,7 @@ test('homologação: atendimento de 45 minutos soma serviço de 30 minutos e pro
   assert.deepEqual(booked.services.map(item => item.durationMinutes), [45, 30]);
 
   const removeService = await result(env.actions.removeCommandItem,
-    form({ itemId: 'added2' }));
+    form({ itemId: 'added2', reason: 'Correção de serviço na comanda' }));
   assert.equal(removeService.searchParams.get('checkoutOk'), '1');
   assert.equal(env.state.appointment.endsAt.toISOString(), originalEnd.toISOString());
   assert.equal(env.state.command.total, 80);
