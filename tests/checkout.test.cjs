@@ -38,6 +38,8 @@ function environment(options = {}) {
   const tx = {
     barberShop: { findUnique: async () => state.shop, findUniqueOrThrow: async () => state.shop, update: async q => { writes.push('workspace'); Object.assign(state.shop, q.data); } },
     barberShopUnit: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return { id: 'u1', name: 'Centro' }; } },
+    // The real checkout now checks the active operator before any financial write.
+    shopUser: { findFirst: async q => { assert.equal(q.where.barberShopId,'shop1'); return q.where.id==='operator1' ? {id:'operator1',role:'OWNER',unitId:'u1',active:true} : null; } },
     serviceCommand: { findFirst: async q => { assert.equal(q.where.barberShopId, 'shop1'); return state.command?.status === q.where.status ? state.command : null; }, updateMany: async q => { writes.push('command'); Object.assign(state.command, q.data); return { count: 1 }; },
       update: async q => { writes.push('command'); Object.assign(state.command, q.data); return state.command; } },
     commandItem: {
@@ -147,7 +149,7 @@ test('interface da comanda oferece recebimento rápido e últimas compras', () =
     '@/app/erp/[tenant]/checkout-actions': { addCommandItem() {}, removeCommandItem() {}, checkoutCommand() {}, reopenCommand() {} },
   });
   const html = renderToStaticMarkup(React.createElement(CommandCheckout, {
-    tenantCode: 'GROMMA', canOperate: true, autoOpen: true,
+    tenantCode: 'GROMMA', canOperate: true, autoOpen: true, viewerRole: 'OWNER',
     command: { id: 'c1', customerName: 'Cliente Teste', unitName: 'Matriz', status: 'OPEN',
       total: 100, subtotal: 100, discount: 0, notes: '', plan: '', visits: 3, lastVisit: null,
       items: [{ id: 'i1', description: 'Corte', kind: 'SERVICE', quantity: 1, total: 100 }],
@@ -233,7 +235,7 @@ test('desconto percentual no total e cupom promocional produzem valor consistent
   assert.deepEqual([q.manualCents, q.couponCents, q.discountCents, q.totalCents], [1000, 500, 1500, 8500]);
   const url = await result(env.actions.checkoutCommand, form({
     PIX: '85', expectedTotal: '8500', discountKind: 'PERCENT',
-    discountScope: 'ORDER', discountValue: '10', couponCode: 'INFLU',
+    discountScope: 'ORDER', discountValue: '10', couponCode: 'INFLU', discountReason: 'Desconto autorizado na comanda',
   }));
   assert.equal(url.searchParams.get('checkoutOk'), '1');
   assert.equal(env.state.command.status, 'CLOSED');
