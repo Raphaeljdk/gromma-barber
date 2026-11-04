@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { TenantERPView } from "../page";
 
 const MODULES = new Set([
+  "dashboard",
   "agenda",
   "agenda-feriados",
   "clientes-bloqueados",
