@@ -7,6 +7,7 @@ import { PROFESSIONAL_PERMISSION_OPTIONS, WEEK_DAYS, profileFor, subscriptionSal
 import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
 import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
 import { ProfessionalServiceBatchEditor } from "@/components/professional-service-batch-editor";
+import { ProfessionalWorkWeekEditor } from "@/components/professional-work-week-editor";
 
 export const dynamic="force-dynamic";
 type Props={params:Promise<{tenant:string;userId:string}>;searchParams:Promise<Record<string,string|undefined>>};
@@ -220,22 +221,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
 
     <section id="jornada-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>5. Jornada de trabalho</strong> <span className="muted"> · dias e horários de atendimento</span></h3>
-      <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
-        {hidden(code,user.id,"schedule")}
-        <p className="small muted">Marque os dias de trabalho e configure o período. A jornada será considerada no relatório de capacidade. Desmarcar todos os dias define agenda indisponível.</p>
-        {WEEK_DAYS.map(day=>{
-          const shift=shifts.find(x=>x.day===day.id);
-          return <div key={day.id} className="grid grid-3" style={{alignItems:"end"}}>
-            <label style={{display:"flex",gap:8,alignItems:"center"}}>
-              <input type="checkbox" name={"enabled"+day.id} defaultChecked={!!shift}/> {day.label}
-            </label>
-            <label>Das<input className="input" type="time" name={"start"+day.id} defaultValue={shift?.start??"08:00"}/></label>
-            <label>Até<input className="input" type="time" name={"end"+day.id} defaultValue={shift?.end??"20:00"}/></label>
-          </div>;
-        })}
-        
-        <button className="btn" type="submit">Salvar jornada semanal</button>
-      </form>
+      <ProfessionalWorkWeekEditor tenantCode={code} userId={user.id}
+        weekDays={WEEK_DAYS} shifts={shifts}/>
     </section>
 
     <section id="folgas-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
