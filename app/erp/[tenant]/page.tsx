@@ -2100,6 +2100,7 @@ export async function TenantERPView({
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {isOwner && <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:14}}>
             <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/novo`}><Plus size={16}/> Cadastrar profissional</Link>
+            <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/permissoes`}>Grupos de acesso</Link>
             <span className="small muted">Abre uma página dedicada para cadastrar e depois configurar a ficha completa.</span>
           </div>}
           {actionError==="cadastro"&&<p role="alert" className="notice error-notice">Não foi possível cadastrar o profissional. Confira se o e-mail já está em uso nesta empresa.</p>}
