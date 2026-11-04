@@ -74,6 +74,7 @@ const MODULES = [
   { id: "unidades", label: "Unidades / Filiais", group: "Empresa", icon: Building2 },
   { id: "equipe", label: "Profissionais", group: "Empresa", icon: UserRoundCog },
   { id: "equipe/novo", label: "Cadastrar profissional", group: "Empresa", icon: UserRoundCog, ownerOnly: true },
+  { id: "equipe/permissoes", label: "Grupos de acesso", group: "Empresa", icon: UserRoundCog, ownerOnly: true },
   { id: "servicos", label: "Serviços", group: "Empresa", icon: Store },
   { id: "documentos", label: "Documentos", group: "Empresa", icon: FileText },
   { id: "treinamentos", label: "Tutoriais / Cursos", group: "Empresa", icon: BookOpenCheck },
