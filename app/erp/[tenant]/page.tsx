@@ -3,6 +3,7 @@ import { saveBranding } from "./branding-actions";
 import { saveBarbershopUnit } from "./unit-actions";
 import { UnitOperationsForm } from "@/components/unit-operations-form";
 import { unitPolicy } from "@/lib/unit-operations-policy";
+import { toggleFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
@@ -2130,6 +2131,15 @@ export async function TenantERPView({
                 {isOwner && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/${encodeURIComponent(user.id)}`}>
                   Abrir ficha do profissional
                 </Link>}
+                {isOwner && ["BARBER","OWNER","MANAGER"].includes(user.role) && <form action={toggleFeaturedProfessional}
+                  style={{marginTop:8}}>
+                  <input type="hidden" name="tenantCode" value={tenantCode}/>
+                  <input type="hidden" name="userId" value={user.id}/>
+                  <input type="hidden" name="featured" value={workspace.featuredProfessionalIds.includes(user.id)?"no":"yes"}/>
+                  <button type="submit" className="btn secondary">
+                    {workspace.featuredProfessionalIds.includes(user.id)?"Remover destaque":"Destacar no aplicativo"}
+                  </button>
+                </form>}
               </article>
             ))}
           </div>
