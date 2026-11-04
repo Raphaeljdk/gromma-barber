@@ -1477,7 +1477,9 @@ export async function TenantERPView({
                       lastVisit: commandHistories.find(h => h.customerId === command.customerId)?.visits._max.startsAt?.toISOString() || null,
                     }}
                     catalog={[...shop.services.map(i => ({ id: i.id, name: i.name, price: Number(i.price), kind: "SERVICE" })), ...checkoutProducts.map(i => ({ id: i.id, name: i.name, price: Number(i.salePrice), kind: "PRODUCT" }))]}
-                    session={workspace.cashSessions.find(session => session.unitId === command.unitId && !session.closedAt)} payment={workspace.commandPayments.find(p => p.commandId === command.id)} />
+                    session={workspace.cashSessions.find(session => session.unitId === command.unitId && !session.closedAt)}
+                    allowedPaymentMethods={unitPolicy(workspace,command.unitId).paymentMethods}
+                    payment={workspace.commandPayments.find(p => p.commandId === command.id)} />
                 </td>
               </tr>
             )) : <tr><td colSpan={7} className="muted">Nenhuma comanda encontrada.</td></tr>}</tbody>
