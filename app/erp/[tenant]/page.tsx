@@ -2626,6 +2626,20 @@ export async function TenantERPView({
               <label><span className="label">Descrição da assinatura</span>
                 <textarea className="input" name="clubDescription" rows={3} maxLength={500}
                   defaultValue={workspace.branding.clubDescription} placeholder="Apresente o clube e seus benefícios"/></label>
+              <h4>Apresentação no aplicativo do cliente</h4>
+              <p className="small muted">Página pública da barbearia:
+                <Link href={`/barbearia/${encodeURIComponent(tenantCode.toLowerCase())}`} target="_blank" rel="noopener noreferrer">
+                  Ver página do cliente
+                </Link>
+              </p>
+              <label>Título de apresentação<input className="input" name="heroTitle"
+                maxLength={110} defaultValue={workspace.branding.heroTitle}
+                placeholder="Seu melhor estilo começa aqui"/></label>
+              <label>Descrição de boas-vindas<textarea className="input" name="heroDescription"
+                rows={3} maxLength={600} defaultValue={workspace.branding.heroDescription}/></label>
+              <label>Imagem de capa (URL HTTPS)<input className="input" name="coverImageUrl"
+                type="url" maxLength={700} defaultValue={workspace.branding.coverImageUrl}
+                placeholder="https://..."/></label>
               <label><span className="label">URL HTTPS do logotipo</span>
                 <input className="input" name="logoUrl" type="url" maxLength={700}
                   defaultValue={workspace.branding.logoUrl} placeholder="https://..."/></label>
