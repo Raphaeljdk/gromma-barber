@@ -1,6 +1,8 @@
 import { CommissionSelectionTable } from "@/components/commission-selection-table";
 import { saveBranding } from "./branding-actions";
 import { saveBarbershopUnit } from "./unit-actions";
+import { UnitOperationsForm } from "@/components/unit-operations-form";
+import { unitPolicy } from "@/lib/unit-operations-policy";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
@@ -2190,6 +2192,8 @@ export async function TenantERPView({
                     <button className="btn secondary" type="submit">Salvar alterações</button>
                   </form>
                 </details>}
+                {isOwner && <UnitOperationsForm tenantCode={tenantCode} unitId={unit.id}
+                  policy={unitPolicy(workspace,unit.id)}/>}
               </article>
             ))}
           </div>
