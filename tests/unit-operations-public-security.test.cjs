@@ -65,3 +65,15 @@ test("apresentação pública só usa nomes e fotos de profissionais ativos",()=
   assert.match(page,/featuredProfessionalIds/);
   assert.doesNotMatch(page,/user\.email|user\.phone|user\.cpf/);
 });
+
+test("checkout exibe apenas meios habilitados e backend impede bypass",()=>{
+  const server=source("app/erp/[tenant]/checkout-actions.ts");
+  const screen=source("components/command-checkout.tsx");
+  const erp=source("app/erp/[tenant]/page.tsx");
+  assert.match(server,/unitPolicy\(workspace,command\.unitId\)/);
+  assert.match(server,/!policy\.paymentMethods\.includes\(method\)/);
+  assert.match(server,/formas? de pagamento|forma de pagamento/);
+  assert.match(screen,/allowedPaymentMethods/);
+  assert.match(screen,/methods\.map\(method/);
+  assert.match(erp,/allowedPaymentMethods=\{unitPolicy\(workspace,command\.unitId\)\.paymentMethods\}/);
+});
