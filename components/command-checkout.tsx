@@ -20,11 +20,12 @@ const date = (v: string) => new Date(v).toLocaleDateString("pt-BR", { timeZone: 
 const zeroAmounts = (): Record<PaymentMethod, string> => ({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", TRANSFER: "" });
 
 export function CommandCheckout({
-  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false, sellers = [], viewerRole = 'BARBER',
+  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false, sellers = [], viewerRole = 'BARBER', allowedPaymentMethods,
 }: {
   tenantCode: string; command: CommandView; catalog: CatalogItem[];
   session?: CashSession; payment?: CommandPayment; canOperate: boolean; allowReopen?: boolean; coupons?: CheckoutCoupon[];
   error?: string; autoOpen?: boolean; sellers?: {id:string;name:string}[]; viewerRole?: string;
+  allowedPaymentMethods?: PaymentMethod[];
 }) {
   const [open, setOpen] = useState(autoOpen);
   const [fiscalOpen, setFiscalOpen] = useState(false);
@@ -62,11 +63,12 @@ export function CommandCheckout({
     const value = Number((amounts[method] || "0").replace(",", "."));
     return result + (Number.isFinite(value) ? Math.round(value * 100) : 0);
   }, 0);
+  const methods = PAYMENT_METHODS.filter(method=>!allowedPaymentMethods||allowedPaymentMethods.includes(method));
   const editable = canOperate && command.status === "OPEN";
   const canEditFinancial = viewerRole === "OWNER" || viewerRole === "ADMIN";
   const paid = command.status === "CLOSED";
   const mayReopen = Boolean(allowReopen && canReopenCommand(command.status, session?.unitId ?? "", payment, session ? [session] : []));
-  const ready = editable && Boolean(session) && !pricingError && !invalidAmounts && (selectedMethod !== null || split) && sum === totalCents;
+  const ready = editable && Boolean(session) && !pricingError && !invalidAmounts && methods.length>0 && (selectedMethod !== null || split) && sum === totalCents;
   const fields = <><input type="hidden" name="tenantCode" value={tenantCode} /><input type="hidden" name="commandId" value={command.id} /></>;
   const cleanedNotes = command.notes.replaceAll("[GROMMA:RECOMPRA]", "").trim();
   const selectedLabel = selectedMethod ? PAYMENT_LABELS[selectedMethod] : "";
@@ -262,7 +264,7 @@ export function CommandCheckout({
                 <input type="hidden" name="couponCode" value=""/>
               </>}
               <div className="checkout-payment-shortcuts">
-                {PAYMENT_METHODS.map(method =>
+                {methods.map(method =>
                   <button type="button" key={method}
                     className={!split && selectedMethod === method ? "selected" : ""}
                     aria-pressed={!split && selectedMethod === method}
@@ -272,7 +274,7 @@ export function CommandCheckout({
               <button type="button" className="checkout-split-toggle" aria-expanded={split} onClick={toggleSplit}>
                 {split ? "Ocultar divisão" : "+ Dividir pagamento entre formas"} <ChevronDown size={15} />
               </button>
-              {split && <div className="checkout-payment-values">{PAYMENT_METHODS.map(method =>
+              {split && <div className="checkout-payment-values">{methods.map(method =>
                 <label key={method}><span className="label">{PAYMENT_LABELS[method]}</span>
                   <input className="input" type="number" inputMode="decimal" name={method}
                     min="0" step="0.01" value={amounts[method]} placeholder="0,00"
