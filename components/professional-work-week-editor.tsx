@@ -38,7 +38,7 @@ export function ProfessionalWorkWeekEditor({tenantCode,userId,weekDays,shifts}:P
     </div>
     <div style={{display:"grid",gap:7}}>
       {weekDays.map(day=><div key={day.id} style={{
-        display:"grid",gridTemplateColumns:"minmax(115px,1fr) minmax(105px,130px) minmax(105px,130px)",
+        display:"grid",gridTemplateColumns:"minmax(100px,1.2fr) repeat(2,minmax(0,1fr))",
         gap:10,alignItems:"center",maxWidth:620
       }}>
         <label style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}>
@@ -47,12 +47,12 @@ export function ProfessionalWorkWeekEditor({tenantCode,userId,weekDays,shifts}:P
           <span>{day.label}</span>
         </label>
         <label><span className="label">Início</span><input className="input" type="time"
-          name={"start"+day.id} value={times[day.id]?.start??"08:00"}
+          name={"start"+day.id} style={{width:"100%",minWidth:0,boxSizing:"border-box"}} value={times[day.id]?.start??"08:00"}
           onChange={e=>setTimes(current=>({...current,
             [day.id]:{...current[day.id],start:e.target.value}}))}/>
         </label>
         <label><span className="label">Fim</span><input className="input" type="time"
-          name={"end"+day.id} value={times[day.id]?.end??"20:00"}
+          name={"end"+day.id} style={{width:"100%",minWidth:0,boxSizing:"border-box"}} value={times[day.id]?.end??"20:00"}
           onChange={e=>setTimes(current=>({...current,
             [day.id]:{...current[day.id],end:e.target.value}}))}/>
         </label>
