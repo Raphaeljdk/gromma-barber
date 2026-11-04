@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { PROFESSIONAL_PERMISSION_OPTIONS, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
-import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
+import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto, uploadProfessionalContract } from "../../professional-actions";
 import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
 import { ProfessionalServicesBatch } from "@/components/professional-services-batch";
 
@@ -163,13 +163,33 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           style={{padding:10,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
           <div><strong>{contract.label}</strong><p className="small muted">{contract.validFrom||"Sem início informado"} · {contract.notes||"Documento vinculado"}</p></div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <a href={contract.url} target="_blank" rel="noopener noreferrer">Abrir contrato</a>
+            <a href={contract.url.startsWith("private:")?
+              "/erp/"+encodeURIComponent(code)+"/equipe/"+encodeURIComponent(user.id)+
+                "/contratos/"+encodeURIComponent(contract.id):contract.url}
+              target={contract.url.startsWith("private:")?undefined:"_blank"}
+              rel={contract.url.startsWith("private:")?undefined:"noopener noreferrer"}>
+              {contract.url.startsWith("private:")?"Baixar PDF protegido":"Abrir contrato"}
+            </a>
             <form action={saveProfessionalSection}>{hidden(code,user.id,"contract-remove")}
               <input type="hidden" name="id" value={contract.id}/>
               <button className="btn secondary" type="submit">Remover</button></form>
           </div>
         </div>)}
         {!profile.contracts?.length&&<p className="small muted">Nenhum contrato vinculado.</p>}
+        {process.env.PROFESSIONAL_CONTRACTS_BLOB_READ_WRITE_TOKEN&&
+          <form action={uploadProfessionalContract} className="erp-compact-form" style={{marginTop:12}}>
+            {hidden(code,user.id)}
+            <div className="professional-contract-grid">
+              <label>Nome do contrato<input className="input" name="label" required maxLength={140} placeholder="Contrato de prestação de serviços"/></label>
+              <label>Arquivo PDF (até 5 MB)<input className="input" name="document" type="file" accept="application/pdf,.pdf" required/></label>
+              <label>Início da vigência<input className="input" name="validFrom" type="date"/></label>
+              <label>Observações<input className="input" name="notes" maxLength={250}/></label>
+              <button className="btn" type="submit">Enviar PDF protegido</button>
+            </div>
+            <p className="small muted">O contrato é armazenado em área privada e só pode ser baixado pela administração desta barbearia.</p>
+          </form>}
+        {!process.env.PROFESSIONAL_CONTRACTS_BLOB_READ_WRITE_TOKEN&&
+          <p className="small muted">Upload direto de PDF indisponível: configure um Vercel Blob privado separado para contratos. Enquanto isso, preserve os vínculos existentes abaixo.</p>}
         <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:10}}>
           {hidden(code,user.id,"contract-add")}
           <div className="professional-contract-grid">
@@ -180,7 +200,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             <button className="btn secondary" type="submit">Vincular contrato</button>
           </div>
         </form>
-        <p className="small muted">O arquivo continua no armazenamento de origem. O sistema salva apenas seu endereço.</p>
+        <p className="small muted">Vínculo por URL é mantido para contratos anteriores. Use o envio de PDF protegido acima quando o armazenamento privado estiver configurado.</p>
       </div>
     </section>
 
