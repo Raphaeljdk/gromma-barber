@@ -40,3 +40,9 @@ test("validação financeira do formulário permanece no servidor",()=>{
   assert.match(editor,/percent<0\|\|percent>100/);
   assert.match(editor,/Math\.round\(percent\*100\)\/100/);
 });
+
+test("URL duplicada da foto removida sem apagar imagem existente ao salvar identidade",()=>{
+  assert.doesNotMatch(profile,/URL da foto do perfil \(HTTPS\)/);
+  assert.match(profile,/type="hidden" name="photoUrl" value=\{profile\.photoUrl\?\?""\}/);
+  assert.match(profile,/uploadProfessionalPhoto/);
+});
