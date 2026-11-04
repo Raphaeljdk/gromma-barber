@@ -756,13 +756,12 @@ export async function TenantERPView({
   const servicesTotal = servicePool.length;
   const services = servicePool.slice((servicosPage - 1) * pageSize, servicosPage * pageSize);
 
-  const professionalPool = equipeQ
-    ? shop.users.filter((user) =>
-        [user.name, user.email, user.role].some((value) =>
-          value.toLowerCase().includes(equipeQ.toLowerCase()),
-        ),
-      )
-    : shop.users;
+  const equipeUnidadeRaw = valueOf("equipeUnidade");
+  const equipeUnidade = shop.units.some(unit => unit.id === equipeUnidadeRaw) ? equipeUnidadeRaw : "";
+  const professionalPool = shop.users.filter(user =>
+    (!equipeUnidade || user.unitId === equipeUnidade) &&
+    (!equipeQ || [user.name, user.email, user.role].some(value =>
+      value.toLowerCase().includes(equipeQ.toLowerCase()))));
   const professionalsTotal = professionalPool.length;
   const professionals = professionalPool.slice((equipePage - 1) * pageSize, equipePage * pageSize);
 
@@ -2110,6 +2109,9 @@ export async function TenantERPView({
             pageParam="equipePage"
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
+            selects={[{param:"equipeUnidade",value:equipeUnidade,label:"Unidade",
+              options:[{value:"",label:"Todas as unidades"},
+                ...shop.units.map(unit=>({value:unit.id,label:unit.name}))]}]}
           />
           <div className="notice">
             <strong>Pote de assinaturas por produtividade:</strong> a participação individual não é mais digitada no cadastro.
