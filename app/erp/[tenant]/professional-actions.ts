@@ -225,6 +225,40 @@ export async function uploadProfessionalPhoto(form:FormData){
   success(ctx,"foto");
 }
 
+/** Contratos PDF precisam de Blob privado e URL entregue só após autorização. */
+export async function uploadProfessionalContract(form:FormData){
+  const ctx=await context(form);
+  const label=text(form,"label",140);
+  const validFrom=text(form,"validFrom",10);
+  const file=form.get("contractPdf");
+  if(label.length<3||(validFrom&&!isDate(validFrom))||
+    !(file instanceof File)||file.size===0||file.size>8*1024*1024||
+    (file.type&&file.type!=="application/pdf"))fail(ctx,"contrato");
+  const signature=new Uint8Array(await file.slice(0,5).arrayBuffer());
+  if(String.fromCharCode(...signature)!=="%PDF-")fail(ctx,"contrato");
+  const privateToken=process.env.GROMMA_PRIVATE_BLOB_TOKEN;
+  // Falhar fechado: nunca migrar documento sensível para o armazenamento público de fotos.
+  if(!privateToken)fail(ctx,"armazenamento-privado");
+  let url="";
+  try{
+    const created=await put("professional-contracts/"+ctx.shopId+"/"+ctx.userId+"/contract.pdf",file,{
+      access:"private",token:privateToken,addRandomSuffix:true,contentType:"application/pdf",
+    });
+    url=created.url;
+  }catch(error){console.error("Private PDF upload failed",error);fail(ctx,"armazenamento-privado");}
+  if(!/^https:\/\/[^/]+\.private\.blob\.vercel-storage\.com\//.test(url))
+    fail(ctx,"armazenamento-privado");
+  await change(ctx,"PROFESSIONAL_CONTRACT_PRIVATE_UPLOADED",
+    "Contrato PDF recebido em armazenamento privado",async profile=>{
+      const id=workspaceId("contract");
+      profile.contracts=[...(profile.contracts??[]),{
+        id,label,url,validFrom,notes:"PDF privado, acesso restrito",
+      }].slice(-30);
+      return {contractId:id,validFrom,private:true,size:file.size};
+    });
+  success(ctx,"contract-add");
+}
+
 export async function saveProfessionalSection(form:FormData){
   const ctx=await context(form);
   const section=text(form,"section",40);
