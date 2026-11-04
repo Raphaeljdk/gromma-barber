@@ -27,10 +27,14 @@ export async function saveBranding(form: FormData) {
     const accentColor = field(form, "accentColor", 7);
     const clubTitle = field(form, "clubTitle", 90);
     const clubDescription = field(form, "clubDescription", 500);
+    const heroTitle = field(form,"heroTitle",110);
+    const heroDescription = field(form,"heroDescription",600);
+    const coverImageUrl = field(form,"coverImageUrl",700);
     const logoInput = field(form, "logoUrl", 700);
     const removeLogo = form.get("removeLogo") === "on";
     if (!/^#[0-9a-fA-F]{6}$/.test(accentColor) || clubTitle.length < 3 ||
-      (!removeLogo && logoInput && !/^https:\/\//i.test(logoInput)))
+      (!removeLogo && logoInput && !/^https:\/\//i.test(logoInput)) ||
+      (coverImageUrl && !/^https:\/\//i.test(coverImageUrl)))
       throw new Error("Revise a cor, o título e a URL HTTPS do logotipo.");
     const photo = form.get("logoFile");
     let uploadedUrl = "";
@@ -58,7 +62,7 @@ export async function saveBranding(form: FormData) {
       const workspace = readWorkspace(current.enabledFeatures);
       const before = workspace.branding;
       const logoUrl = removeLogo ? "" : uploadedUrl || logoInput;
-      workspace.branding = { logoUrl, accentColor, clubTitle, clubDescription };
+      workspace.branding = { logoUrl, accentColor, clubTitle, clubDescription,heroTitle,heroDescription,coverImageUrl };
       await tx.barberShop.update({ where: { id: shop.id }, data: {
         enabledFeatures: writeWorkspace(current.enabledFeatures, workspace),
       } });
