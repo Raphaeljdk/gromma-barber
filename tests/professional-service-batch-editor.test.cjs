@@ -54,3 +54,17 @@ test("salvamento retorna à seção da ficha em vez de deslocar a página ao top
   assert.match(action,/"break-add":"folgas-profissional"/);
   assert.match(action,/anchor\?"#"\+anchor:""/);
 });
+
+const weekEditorPath=path.join(root,"components/professional-work-week-editor.tsx");
+const weekEditor=fs.readFileSync(weekEditorPath,"utf8");
+test("editor da jornada permite selecionar todos os dias e preserva a Server Action",()=>{
+  const source=ts.createSourceFile(weekEditorPath,weekEditor,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+  assert.equal(source.parseDiagnostics.length,0);
+  assert.match(weekEditor,/Selecionar todos/);
+  assert.match(weekEditor,/Segunda a sexta/);
+  assert.match(weekEditor,/Desmarcar todos/);
+  assert.match(weekEditor,/name="section" value="schedule"/);
+  assert.match(profile,/ProfessionalWorkWeekEditor tenantCode/);
+  assert.match(action,/PROFESSIONAL_SCHEDULE_UPDATED/);
+  assert.match(action,/assertNoConflictingBookings/);
+});
