@@ -1251,6 +1251,7 @@ export async function TenantERPView({
           {actionOk === "fila-resolvida" && <div className="notice erp-inline-notice success">Cliente removido da fila de espera.</div>}
           {actionOk === "fila" && <div className="notice erp-inline-notice success">Cliente adicionado à lista de espera.</div>}
           {actionError === "agenda" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o agendamento. Revise os dados informados.</div>}
+          {actionError === "agenda-penalidade" && <div role="alert" className="notice erp-inline-notice error-notice">Este cliente está temporariamente bloqueado para novos agendamentos nesta unidade após não comparecimento. Consulte as regras da filial.</div>}
           {actionError === "agenda-conflito" && <div className="notice erp-inline-notice error-notice">O profissional já possui um atendimento nesse intervalo.</div>}
           {actionError === "fila" && <div className="notice erp-inline-notice error-notice">Revise os dados da lista de espera.</div>}
           {actionOk === "agenda-status" && <div className="notice erp-inline-notice success">Status do atendimento atualizado.</div>}
