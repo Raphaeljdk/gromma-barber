@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { readWorkspace, writeWorkspace, workspaceId, type ErpWorkspace } from "@/lib/erp-workspace";
 import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayments, sessionTotals, calculateCheckoutPricing, parseAppliedItemDiscounts, servicesFromCommandLines, canReopenCommand, type CheckoutDiscountInput } from "@/lib/checkout";
+import { unitPolicy } from "@/lib/unit-operations-policy";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import { hasProfessionalPermission } from "@/lib/professional-profile";
 import type { Prisma } from "@prisma/client";
@@ -264,6 +265,10 @@ export async function checkoutCommand(form: FormData) {
     const discountReason = value(form, "discountReason");
     if (discountChanged && discountReason.length < 5) throw new OperationError("Informe o motivo para aplicar descontos.");
     const amounts = paymentAmounts(form);
+    const policy = unitPolicy(workspace,command.unitId);
+    if(workspace.unitPolicies[command.unitId]&&PAYMENT_METHODS.some(method=>
+      amounts[method]>0&&!policy.paymentMethods.includes(method)))
+      throw new OperationError("Esta forma de pagamento está desabilitada nas configurações da filial.");
     try { validatePayments(amounts, pricing.totalCents); }
     catch { throw new OperationError("A soma dos pagamentos deve ser igual ao total com desconto."); }
     const productQuantities = new Map<string, number>();
