@@ -7,6 +7,7 @@ import { agendaReturnHref, encodeAppointmentNotes } from "@/lib/agenda";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace, writeWorkspace } from "@/lib/erp-workspace";
+import { unitPolicy, noShowUntil } from "@/lib/unit-operations-policy";
 import { isProductCommissionCategory } from "@/lib/product-commission-rules";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import { professionalCanServeAt, hasProfessionalPermission } from "@/lib/professional-profile";
@@ -440,6 +441,17 @@ export async function createAppointment(formData: FormData) {
   }
 
   const workspace = readWorkspace(shop.enabledFeatures);
+  if(customerId){
+    const hours=unitPolicy(workspace,unitId).noShowBlockHours;
+    if(hours>0){
+      const lastNoShow=await prisma.appointment.findFirst({where:{
+        barberShopId:shop.id,unitId,customerId,status:"NO_SHOW"},
+        orderBy:{updatedAt:"desc"},select:{updatedAt:true}});
+      const restrictedUntil=lastNoShow?noShowUntil(lastNoShow.updatedAt,hours):null;
+      if(restrictedUntil && restrictedUntil>new Date())
+        redirect(agendaReturnHref(tenantCode,formData,{erro:"agenda-penalidade"}));
+    }
+  }
   if(viewer.type==="TENANT"&&viewer.role!=="OWNER"&&
     !hasProfessionalPermission(workspace.professionalProfiles[viewer.userId],"CREATE_APPOINTMENT"))
     redirect(agendaReturnHref(tenantCode,formData,{erro:"permissao"}));
@@ -526,6 +538,15 @@ export async function createAppointment(formData: FormData) {
       const fresh = await tx.barberShop.findUnique({ where: { id: shop.id } });
       if (!fresh) throw new Error("Shop not found");
       const latest = readWorkspace(fresh.enabledFeatures);
+      if(customerId && unitPolicy(latest,unitId).noShowBlockHours>0){
+        const lastNoShow=await tx.appointment.findFirst({where:{
+          barberShopId:shop.id,unitId,customerId,status:"NO_SHOW"},
+          orderBy:{updatedAt:"desc"},select:{updatedAt:true}});
+        const restrictedUntil=lastNoShow?noShowUntil(lastNoShow.updatedAt,
+          unitPolicy(latest,unitId).noShowBlockHours):null;
+        if(restrictedUntil&&restrictedUntil>new Date())
+          throw new Error("Cliente com bloqueio temporário por não comparecimento");
+      }
       if (!withinAgendaHours(startsAt, endsAt, latest.settings.openHour, latest.settings.closeHour)) throw new Error("Outside business hours");
       if (hasAgendaBlock(latest.agendaBlocks, barber?.id ?? "", startsAt, endsAt, unitId)) throw new Error("Blocked time");
       if(barber&&!professionalCanServeAt(latest.professionalProfiles[barber.id],

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { PROFESSIONAL_PERMISSION_OPTIONS, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
-import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
+import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto, uploadProfessionalContract } from "../../professional-actions";
 import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
 import { ProfessionalServiceBatchEditor } from "@/components/professional-service-batch-editor";
 import { ProfessionalWorkWeekEditor } from "@/components/professional-work-week-editor";
@@ -164,13 +164,30 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           style={{padding:10,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
           <div><strong>{contract.label}</strong><p className="small muted">{contract.validFrom||"Sem início informado"} · {contract.notes||"Documento vinculado"}</p></div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <a href={contract.url} target="_blank" rel="noopener noreferrer">Abrir contrato</a>
+            <a href={contract.url.includes(".private.blob.vercel-storage.com/")?
+                "/erp/"+encodeURIComponent(code)+"/equipe/"+encodeURIComponent(user.id)+
+                "/contrato/"+encodeURIComponent(contract.id):contract.url}
+              target="_blank" rel="noopener noreferrer">Abrir contrato</a>
             <form action={saveProfessionalSection}>{hidden(code,user.id,"contract-remove")}
               <input type="hidden" name="id" value={contract.id}/>
               <button className="btn secondary" type="submit">Remover</button></form>
           </div>
         </div>)}
         {!profile.contracts?.length&&<p className="small muted">Nenhum contrato vinculado.</p>}
+        <form action={uploadProfessionalContract} className="erp-compact-form"
+          style={{marginTop:10,padding:12,border:"1px solid var(--border,#333)",borderRadius:10}}>
+          {hidden(code,user.id)}
+          <strong>Enviar contrato PDF privado</strong>
+          <div className="professional-contract-grid">
+            <label>Nome do contrato<input className="input" name="label" required minLength={3} maxLength={140}/></label>
+            <label>Arquivo PDF (até 3 MB)<input className="input" type="file" name="contractPdf"
+              accept="application/pdf,.pdf" required/></label>
+            <label>Início da vigência<input className="input" name="validFrom" type="date"/></label>
+            <button className="btn secondary" type="submit">Enviar PDF protegido</button>
+          </div>
+          <p className="small muted">Armazenado em Blob privado, baixado somente com acesso de proprietário autorizado.
+            Requer GROMMA_PRIVATE_BLOB_TOKEN configurado na Vercel.</p>
+        </form>
         <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:10}}>
           {hidden(code,user.id,"contract-add")}
           <div className="professional-contract-grid">

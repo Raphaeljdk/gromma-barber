@@ -1,6 +1,9 @@
 import { CommissionSelectionTable } from "@/components/commission-selection-table";
 import { saveBranding } from "./branding-actions";
 import { saveBarbershopUnit } from "./unit-actions";
+import { UnitOperationsForm } from "@/components/unit-operations-form";
+import { unitPolicy } from "@/lib/unit-operations-policy";
+import { toggleFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
@@ -1248,6 +1251,7 @@ export async function TenantERPView({
           {actionOk === "fila-resolvida" && <div className="notice erp-inline-notice success">Cliente removido da fila de espera.</div>}
           {actionOk === "fila" && <div className="notice erp-inline-notice success">Cliente adicionado à lista de espera.</div>}
           {actionError === "agenda" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o agendamento. Revise os dados informados.</div>}
+          {actionError === "agenda-penalidade" && <div role="alert" className="notice erp-inline-notice error-notice">Este cliente está temporariamente bloqueado para novos agendamentos nesta unidade após não comparecimento. Consulte as regras da filial.</div>}
           {actionError === "agenda-conflito" && <div className="notice erp-inline-notice error-notice">O profissional já possui um atendimento nesse intervalo.</div>}
           {actionError === "fila" && <div className="notice erp-inline-notice error-notice">Revise os dados da lista de espera.</div>}
           {actionOk === "agenda-status" && <div className="notice erp-inline-notice success">Status do atendimento atualizado.</div>}
@@ -1473,7 +1477,9 @@ export async function TenantERPView({
                       lastVisit: commandHistories.find(h => h.customerId === command.customerId)?.visits._max.startsAt?.toISOString() || null,
                     }}
                     catalog={[...shop.services.map(i => ({ id: i.id, name: i.name, price: Number(i.price), kind: "SERVICE" })), ...checkoutProducts.map(i => ({ id: i.id, name: i.name, price: Number(i.salePrice), kind: "PRODUCT" }))]}
-                    session={workspace.cashSessions.find(session => session.unitId === command.unitId && !session.closedAt)} payment={workspace.commandPayments.find(p => p.commandId === command.id)} />
+                    session={workspace.cashSessions.find(session => session.unitId === command.unitId && !session.closedAt)}
+                    allowedPaymentMethods={unitPolicy(workspace,command.unitId).paymentMethods}
+                    payment={workspace.commandPayments.find(p => p.commandId === command.id)} />
                 </td>
               </tr>
             )) : <tr><td colSpan={7} className="muted">Nenhuma comanda encontrada.</td></tr>}</tbody>
@@ -2128,6 +2134,15 @@ export async function TenantERPView({
                 {isOwner && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/${encodeURIComponent(user.id)}`}>
                   Abrir ficha do profissional
                 </Link>}
+                {isOwner && ["BARBER","OWNER","MANAGER"].includes(user.role) && <form action={toggleFeaturedProfessional}
+                  style={{marginTop:8}}>
+                  <input type="hidden" name="tenantCode" value={tenantCode}/>
+                  <input type="hidden" name="userId" value={user.id}/>
+                  <input type="hidden" name="featured" value={workspace.featuredProfessionalIds.includes(user.id)?"no":"yes"}/>
+                  <button type="submit" className="btn secondary">
+                    {workspace.featuredProfessionalIds.includes(user.id)?"Remover destaque":"Destacar no aplicativo"}
+                  </button>
+                </form>}
               </article>
             ))}
           </div>
@@ -2190,6 +2205,8 @@ export async function TenantERPView({
                     <button className="btn secondary" type="submit">Salvar alterações</button>
                   </form>
                 </details>}
+                {isOwner && <UnitOperationsForm tenantCode={tenantCode} unitId={unit.id}
+                  policy={unitPolicy(workspace,unit.id)}/>}
               </article>
             ))}
           </div>
@@ -2612,6 +2629,20 @@ export async function TenantERPView({
               <label><span className="label">Descrição da assinatura</span>
                 <textarea className="input" name="clubDescription" rows={3} maxLength={500}
                   defaultValue={workspace.branding.clubDescription} placeholder="Apresente o clube e seus benefícios"/></label>
+              <h4>Apresentação no aplicativo do cliente</h4>
+              <p className="small muted">Página pública da barbearia:
+                <Link href={`/barbearia/${encodeURIComponent(tenantCode.toLowerCase())}`} target="_blank" rel="noopener noreferrer">
+                  Ver página do cliente
+                </Link>
+              </p>
+              <label>Título de apresentação<input className="input" name="heroTitle"
+                maxLength={110} defaultValue={workspace.branding.heroTitle}
+                placeholder="Seu melhor estilo começa aqui"/></label>
+              <label>Descrição de boas-vindas<textarea className="input" name="heroDescription"
+                rows={3} maxLength={600} defaultValue={workspace.branding.heroDescription}/></label>
+              <label>Imagem de capa (URL HTTPS)<input className="input" name="coverImageUrl"
+                type="url" maxLength={700} defaultValue={workspace.branding.coverImageUrl}
+                placeholder="https://..."/></label>
               <label><span className="label">URL HTTPS do logotipo</span>
                 <input className="input" name="logoUrl" type="url" maxLength={700}
                   defaultValue={workspace.branding.logoUrl} placeholder="https://..."/></label>

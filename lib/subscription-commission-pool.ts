@@ -1,9 +1,10 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { ClubMemberConfig, ErpWorkspace } from "./erp-workspace";
+import { potPercentForUnit } from "./unit-operations-policy";
 
 type Database = PrismaClient | Prisma.TransactionClient;
 type Receipt = { id: string; memberId: string; plan: string; amountCents: number; paidAt: string; unitId: string | null };
-type Refund = { id: string; amountCents: number; completedAt: string };
+type Refund = { id: string; amountCents: number; completedAt: string; unitId: string | null };
 export type PotDistribution = { sharePercent: number; amountCents: number; attendances: number };
 
 function moneyCents(amount: Prisma.Decimal): number {
@@ -91,7 +92,6 @@ export async function calculateSubscriptionPot(
   const eligible = new Set(eligibleProfessionalIds);
   const chargeByEntry = new Map(workspace.clubCharges.map(c => [c.entryId, c]));
   const ids = [...chargeByEntry.keys()];
-  const percent = workspace.subscriptionPot.percent;
   const entries = ids.length ? await prisma.financialEntry.findMany({
     where: { barberShopId: shopId, id: { in: ids }, type: "RECEIVABLE",
       category: "Clube de assinaturas", status: "PAID", paidAt: { lt: endExclusive } },
@@ -117,15 +117,36 @@ export async function calculateSubscriptionPot(
     if (refund?.completedAt) {
       const refundedAt = new Date(refund.completedAt);
       if (Number.isFinite(refundedAt.getTime()) && refundedAt >= start && refundedAt < endExclusive)
-        refunds.push({ id: entry.id, amountCents, completedAt: refundedAt.toISOString() });
+        refunds.push({ id: entry.id, amountCents, completedAt: refundedAt.toISOString(), unitId:entry.unitId });
     }
   }
   receipts.sort((a,b) => b.paidAt.localeCompare(a.paidAt));
   const paidCents = receipts.reduce((sum, r) => sum + r.amountCents, 0);
   const refundedCents = refunds.reduce((sum, r) => sum + r.amountCents, 0);
-  const netCents = Math.max(0, paidCents - refundedCents);
-  if (!Number.isFinite(percent) || percent < 0 || percent > 100) throw new Error("Percentual de pote inválido");
-  const potCents = Math.round(netCents * percent / 100);
+  // O percentual do pote é calculado separadamente por unidade para impedir
+  // que o caixa de uma filial subsidie comissões de outra filial.
+  const unitPaid = new Map<string,number>();
+  const unitRefunded = new Map<string,number>();
+  for(const receipt of receipts){
+    const key=receipt.unitId??"";
+    unitPaid.set(key,(unitPaid.get(key)??0)+receipt.amountCents);
+  }
+  for(const refund of refunds){
+    const key=refund.unitId??"";
+    unitRefunded.set(key,(unitRefunded.get(key)??0)+refund.amountCents);
+  }
+  const unitKeys=new Set([...unitPaid.keys(),...unitRefunded.keys()]);
+  const potByUnit = Object.fromEntries([...unitKeys].map(key=>{
+    const net=Math.max(0,(unitPaid.get(key)??0)-(unitRefunded.get(key)??0));
+    const rate=potPercentForUnit(workspace,key||null);
+    if(!Number.isFinite(rate)||rate<0||rate>100)throw new Error("Percentual de pote inválido");
+    return [key,Math.round(net*rate/100)];
+  })) as Record<string,number>;
+  const netCents = [...unitKeys].reduce((total,key)=>
+    total+Math.max(0,(unitPaid.get(key)??0)-(unitRefunded.get(key)??0)),0);
+  const potCents=Object.values(potByUnit).reduce((sum,value)=>sum+value,0);
+  const percent=unitId?potPercentForUnit(workspace,unitId):
+    netCents?Math.round((potCents/netCents)*10000)/100:workspace.subscriptionPot.percent;
 
   // O histórico do contrato, sozinho, não prova que o atendimento foi realizado
   // como assinante: um cliente inadimplente pode comprar um serviço avulso.
@@ -148,7 +169,7 @@ export async function calculateSubscriptionPot(
       startsAt: { gte: start, lt: endExclusive },
       customerId: { not: null }, barberId: { not: null },
       ...(unitId ? { unitId } : {}) },
-    select: { customerId: true, barberId: true, startsAt: true },
+    select: { customerId: true, barberId: true, startsAt: true, unitId: true },
   });
   const byCustomer = new Map<string, ClubMemberConfig[]>();
   for (const member of workspace.clubMembers) {
@@ -157,6 +178,8 @@ export async function calculateSubscriptionPot(
     byCustomer.set(member.customerId, group);
   }
   const attendanceCounts: Record<string, number> = {};
+  const attendanceByUnit:Record<string,Record<string,number>>={};
+  const uniqueReceiptUnits=[...new Set(receipts.map(r=>r.unitId).filter((id):id is string=>!!id))];
   let unassignedAttendances = 0;
   let nonSubscriberAttendances = 0;
   let unverifiedAttendances = 0;
@@ -171,11 +194,31 @@ export async function calculateSubscriptionPot(
     if (!verified) { unverifiedAttendances++; continue; }
     if (!eligible.has(appointment.barberId)) { unassignedAttendances++; continue; }
     attendanceCounts[appointment.barberId] = (attendanceCounts[appointment.barberId] ?? 0) + 1;
+    // Fixtures legados podem não incluir unitId; só inferir quando há uma única filial
+    // no período. Caso contrário não atribuir receita incerta a um profissional.
+    const sourceUnit=appointment.unitId??unitId??
+      (uniqueReceiptUnits.length===1?uniqueReceiptUnits[0]:"");
+    attendanceByUnit[sourceUnit]??={};
+    attendanceByUnit[sourceUnit][appointment.barberId]=
+      (attendanceByUnit[sourceUnit][appointment.barberId]??0)+1;
   }
-  const split = splitPotByProductivity(potCents, attendanceCounts);
+  const perUnit=Object.entries(potByUnit).map(([key,amount])=>
+    splitPotByProductivity(amount,attendanceByUnit[key]??{}));
+  const assignedCents=perUnit.reduce((sum,part)=>sum+part.assignedCents,0);
+  const remainingCents=potCents-assignedCents;
+  const distributionCents:Record<string,number>={};
+  for(const part of perUnit)for(const [userId,share] of Object.entries(part.distributions))
+    distributionCents[userId]=(distributionCents[userId]??0)+share.amountCents;
+  const shareBasis=assignedCents?splitPotByProductivity(10000,distributionCents).distributions:{};
+  const distributions=Object.fromEntries(Object.entries(distributionCents).map(([id,amountCents])=>[
+    id,{amountCents,sharePercent:shareBasis[id]?.sharePercent??0,
+      attendances:attendanceCounts[id]??0},
+  ])) as Record<string,PotDistribution>;
+  const totalAttendances=Object.values(attendanceCounts).reduce((sum,n)=>sum+n,0);
   return {
     paidCents, refundedCents, netCents, potCents,
-    ...split, attendanceCounts, unassignedAttendances, nonSubscriberAttendances, unverifiedAttendances,
+    assignedCents,remainingCents,totalAttendances,distributions,
+    attendanceCounts,unassignedAttendances,nonSubscriberAttendances,unverifiedAttendances,
     paymentCount: receipts.length, refundCount: refunds.length, unassignedCount, percent,
     receipts, refunds,
     // Compatibilidade temporária com consumidores anteriores; a regra fixa foi desativada.
