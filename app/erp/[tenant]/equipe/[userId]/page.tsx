@@ -180,7 +180,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <strong>Enviar contrato PDF privado</strong>
           <div className="professional-contract-grid">
             <label>Nome do contrato<input className="input" name="label" required minLength={3} maxLength={140}/></label>
-            <label>Arquivo PDF (até 8 MB)<input className="input" type="file" name="contractPdf"
+            <label>Arquivo PDF (até 3 MB)<input className="input" type="file" name="contractPdf"
               accept="application/pdf,.pdf" required/></label>
             <label>Início da vigência<input className="input" name="validFrom" type="date"/></label>
             <button className="btn secondary" type="submit">Enviar PDF protegido</button>
