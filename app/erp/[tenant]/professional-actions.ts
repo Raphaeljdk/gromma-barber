@@ -165,7 +165,7 @@ export async function saveProfessionalIdentity(form:FormData){
       accessToOtherUnits:checked(form,"accessToOtherUnits"),
       zipCode,street:text(form,"street",150),district:text(form,"district",100),
       city:text(form,"city",100),state,streetNumber:text(form,"streetNumber",20),
-      complement:text(form,"complement",100),photoUrl,
+      complement:text(form,"complement",100),...(form.has("photoUrl")?{photoUrl}:{}),
     });
     return {previous:{name:existing.name,email:existing.email,role:existing.role,active:existing.active,unitId:existing.unitId},
       next:{name,email,role:nextRole,active,unitId:unitId||null},
