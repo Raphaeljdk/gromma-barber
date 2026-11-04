@@ -37,7 +37,7 @@ export function isValidPixKey(key:string,type:UnitOperationsPolicy["pixType"],un
   }
 }
 export function potPercentForUnit(workspace:ErpWorkspace,unitId:string|null|undefined):number{
-  const own=unitId?workspace.unitPolicies[unitId]?.potPercent:null;
+  const own=unitId?workspace.unitPolicies?.[unitId]?.potPercent:null;
   return typeof own==="number"&&Number.isFinite(own)&&own>=0&&own<=100
     ?own:workspace.subscriptionPot.percent;
 }
