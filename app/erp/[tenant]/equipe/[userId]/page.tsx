@@ -6,6 +6,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { PROFESSIONAL_PERMISSION_OPTIONS, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
 import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
+import { ProfessionalServicesBatch } from "@/components/professional-services-batch";
 
 export const dynamic="force-dynamic";
 type Props={params:Promise<{tenant:string;userId:string}>;searchParams:Promise<Record<string,string|undefined>>};
@@ -124,7 +125,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
               <option value="ACCOUNTANT">Contabilidade</option>
             </select>}
           </label>
-          <label><span className={labelClass}>URL da foto do perfil (HTTPS)</span><input className="input" name="photoUrl" type="url" defaultValue={profile.photoUrl??""} placeholder="https://..."/></label>
+          
           <label><span className={labelClass}>CEP</span><input className="input" name="zipCode" inputMode="numeric" maxLength={9} defaultValue={profile.zipCode??""}/></label>
           <label><span className={labelClass}>Logradouro</span><input className="input" name="street" defaultValue={profile.street??""}/></label>
           <label><span className={labelClass}>Bairro</span><input className="input" name="district" defaultValue={profile.district??""}/></label>
@@ -137,7 +138,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="active" defaultChecked={user.active}/> Cadastro ativo</label>
         
         <button className="btn" type="submit">Salvar dados do profissional</button>
-        <p className="small muted">Alternativamente, a foto pode ser indicada por URL. O cadastro não altera a senha e não libera automaticamente o login.</p>
+        <p className="small muted">A foto é enviada no campo abaixo. Alterar os dados não remove a foto existente, não altera a senha e não libera automaticamente o login.</p>
       </form>
       <section className="erp-quick-create" style={{marginTop:14}}>
         <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
@@ -149,7 +150,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             <input type="checkbox" name="photoConsent" required/>
             Confirmo que tenho autorização para armazenar e exibir a foto do profissional em endereço público de imagem.
           </label>
-          <p className="small muted">O envio exige Vercel Blob configurado na produção. Caso esteja indisponível, você pode continuar usando a URL HTTPS do campo acima.</p>
+          <p className="small muted">O envio exige o armazenamento Vercel Blob configurado na produção. Se não estiver disponível, a foto anterior será mantida.</p>
           <button className="btn secondary" type="submit">Enviar foto autorizada</button>
         </form>
       </section>
@@ -208,25 +209,16 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </p>
       <form action={saveProfessionalSection} className="erp-compact-form">
         {hidden(code,user.id,"service-batch")}
-        <div className="table-wrap" style={{maxHeight:460,overflowY:"auto"}}>
-          <table style={{width:"100%"}}>
-            <thead><tr><th style={{width:74}}>Atende</th><th>Serviço</th><th>Duração</th><th>Preço</th><th style={{width:155}}>Comissão (%)</th></tr></thead>
-            <tbody>
-              {services.map(service=><tr key={service.id}>
-                <td><input type="checkbox" name="enabledServiceIds" value={service.id}
-                  aria-label={"Habilitar "+service.name}
-                  defaultChecked={!profile.enabledServices||profile.enabledServices.includes(service.id)}/></td>
-                <td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td>
-                <td>{currency(Number(service.price))}</td>
-                <td><input className="input" type="number" name={"rate_"+service.id}
-                  aria-label={"Comissão em porcentagem de "+service.name} min={0} max={100} step=".01"
-                  defaultValue={override[service.id]??workspace.serviceCommissionOverrides[service.id]??workspace.commissionRules.find(rule=>rule.userId===user.id)?.percent??workspace.settings.defaultCommissionPercent}
-                  required/></td>
-              </tr>)}
-              {!services.length&&<tr><td colSpan={5}>Cadastre os serviços em Empresa → Serviços para configurar comissões.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+        <ProfessionalServicesBatch
+          services={services.map(service=>({
+            id:service.id,name:service.name,durationMinutes:service.durationMinutes,
+            price:Number(service.price),
+            rate:override[service.id]??workspace.serviceCommissionOverrides[service.id]??
+              workspace.commissionRules.find(rule=>rule.userId===user.id)?.percent??
+              workspace.settings.defaultCommissionPercent,
+          }))}
+          enabledServiceIds={services.filter(service=>!profile.enabledServices||
+            profile.enabledServices.includes(service.id)).map(service=>service.id)}/>
         <div style={{display:"flex",gap:10,alignItems:"center",justifyContent:"flex-end",marginTop:10}}>
           <span className="small muted">{services.length} serviços no catálogo</span>
           <button className="btn" type="submit">Salvar serviços e comissões</button>
