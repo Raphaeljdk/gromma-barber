@@ -44,9 +44,26 @@ async function context(form:FormData,withUser=true):Promise<Ctx>{
 function fail(ctx:Ctx,msg:string):never{
   redirect(ctx.path+"?erro="+encodeURIComponent(msg));
 }
+/** Manter a pessoa na seção que foi editada depois do redirect do Server Action. */
+export function professionalSectionAnchor(section:string):string{
+  const anchors:Record<string,string>={
+    "dados":"dados-profissional","foto":"dados-profissional",
+    "contract-add":"contratos-profissional","contract-remove":"contratos-profissional",
+    "permissions":"permissoes-profissional",
+    "service-batch":"servicos-profissional","service":"servicos-profissional",
+    "remove-service":"servicos-profissional","enabled-services":"servicos-profissional",
+    "schedule":"jornada-profissional",
+    "break-add":"folgas-profissional","break-remove":"folgas-profissional",
+    "leave-add":"folgas-profissional","leave-remove":"folgas-profissional",
+    "product-category-rule":"produtos-profissional","product-category-reset":"produtos-profissional",
+    "base-commissions":"assinaturas-profissional","subscription-tiers":"assinaturas-profissional",
+  };
+  return anchors[section]??"";
+}
 function success(ctx:Ctx,msg:string):never{
   revalidatePath("/erp/"+encodeURIComponent(ctx.code),"layout");
-  redirect(ctx.path+"?ok="+encodeURIComponent(msg));
+  const anchor=professionalSectionAnchor(msg);
+  redirect(ctx.path+"?ok="+encodeURIComponent(msg)+(anchor?"#"+anchor:""));
 }
 /** Não salvar escala/pausa que invalide reservas já existentes.
  * A conferência é feita na mesma transação que grava o cadastro.
