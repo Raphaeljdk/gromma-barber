@@ -46,3 +46,11 @@ test("URL duplicada da foto removida sem apagar imagem existente ao salvar ident
   assert.match(profile,/type="hidden" name="photoUrl" value=\{profile\.photoUrl\?\?""\}/);
   assert.match(profile,/uploadProfessionalPhoto/);
 });
+
+test("salvamento retorna à seção da ficha em vez de deslocar a página ao topo",()=>{
+  assert.match(action,/function professionalSectionAnchor\(section:string\)/);
+  assert.match(action,/"schedule":"jornada-profissional"/);
+  assert.match(action,/"service-batch":"servicos-profissional"/);
+  assert.match(action,/"break-add":"folgas-profissional"/);
+  assert.match(action,/anchor\?"#"\+anchor:""/);
+});
