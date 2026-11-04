@@ -46,7 +46,21 @@ function fail(ctx:Ctx,msg:string):never{
 }
 function success(ctx:Ctx,msg:string):never{
   revalidatePath("/erp/"+encodeURIComponent(ctx.code),"layout");
-  redirect(ctx.path+"?ok="+encodeURIComponent(msg));
+  const anchors:Record<string,string>={
+    dados:"dados-profissional",foto:"dados-profissional",
+    "contract-add":"contratos-profissional","contract-remove":"contratos-profissional",
+    permissions:"permissoes-profissional","service-batch":"servicos-profissional",
+    "enabled-services":"servicos-profissional",service:"servicos-profissional",
+    "remove-service":"servicos-profissional",schedule:"jornada-profissional",
+    "break-add":"jornada-profissional","break-remove":"jornada-profissional",
+    "leave-add":"jornada-profissional","leave-remove":"jornada-profissional",
+    "product-category-reset":"produtos-profissional",
+    "product-category-rule":"produtos-profissional",
+    "base-commissions":"assinaturas-profissional",
+    "subscription-tiers":"assinaturas-profissional",
+  };
+  const anchor=anchors[msg];
+  redirect(ctx.path+"?ok="+encodeURIComponent(msg)+(anchor?"#"+anchor:""));
 }
 /** Não salvar escala/pausa que invalide reservas já existentes.
  * A conferência é feita na mesma transação que grava o cadastro.
@@ -97,16 +111,41 @@ export async function createProfessional(form:FormData){
   const email=cleanEmail(text(form,"email",180));
   const role=text(form,"role",30) as ShopUserRole;
   const unitId=text(form,"unitId",80);
-  if(name.length<2||!emailValid(email)||!roles.includes(role))fail(ctx,"dados");
+  const phone=text(form,"phone",28);
+  const cpf=text(form,"cpf",14).replace(/\D/g,"");
+  const cnpj=text(form,"cnpj",18).replace(/\D/g,"");
+  const zipCode=text(form,"zipCode",9).replace(/\D/g,"");
+  const birthDate=text(form,"birthDate",10);
+  const state=text(form,"state",2).toUpperCase();
+  const cadenceDays=form.has("cadenceDays")?num(form,"cadenceDays"):30;
+  if(name.length<2||!emailValid(email)||!roles.includes(role)||
+    (cpf&&cpf.length!==11)||(cnpj&&cnpj.length!==14)||
+    (zipCode&&zipCode.length!==8)||(birthDate&&!isDate(birthDate))||
+    (state&&!/^[A-Z]{2}$/.test(state))||!Number.isInteger(cadenceDays)||
+    cadenceDays<0||cadenceDays>365)fail(ctx,"dados");
   if(unitId && !(await prisma.barberShopUnit.findFirst({where:{
     id:unitId,barberShopId:ctx.shopId,active:true},select:{id:true}})))fail(ctx,"unidade");
   let newId="";
   try{
     const created=await prisma.$transaction(async tx=>{
       const user=await tx.shopUser.create({data:{
-        barberShopId:ctx.shopId,name,email,role,
+        barberShopId:ctx.shopId,name,email,phone:phone||null,role,
         unitId:unitId||null,active:true,passwordHash:null,
       }});
+      const fresh=await tx.barberShop.findUniqueOrThrow({
+        where:{id:ctx.shopId},select:{enabledFeatures:true},
+      });
+      const workspace=readWorkspace(fresh.enabledFeatures);
+      // PII is kept only in the protected profile, never in the audit log.
+      workspace.professionalProfiles[user.id]={
+        nickname:text(form,"nickname",100),cpf,cnpj,birthDate,
+        whatsapp:text(form,"whatsapp",28),zipCode,
+        street:text(form,"street",150),streetNumber:text(form,"streetNumber",20),
+        complement:text(form,"complement",100),district:text(form,"district",100),
+        city:text(form,"city",100),state,cadenceDays,
+      };
+      await tx.barberShop.update({where:{id:ctx.shopId},
+        data:{enabledFeatures:writeWorkspace(fresh.enabledFeatures,workspace)}});
       await tx.adminAuditLog.create({data:{barberShopId:ctx.shopId,adminEmail:ctx.actor,
         action:"PROFESSIONAL_CREATED",details:{userId:user.id,role,unitId:unitId||null,
           loginProvisioned:false}}});
