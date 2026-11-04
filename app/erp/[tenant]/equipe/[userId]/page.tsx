@@ -6,6 +6,8 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { PROFESSIONAL_PERMISSION_OPTIONS, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
 import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
+import { ProfessionalServiceBatchEditor } from "@/components/professional-service-batch-editor";
+import { ProfessionalWorkWeekEditor } from "@/components/professional-work-week-editor";
 
 export const dynamic="force-dynamic";
 type Props={params:Promise<{tenant:string;userId:string}>;searchParams:Promise<Record<string,string|undefined>>};
@@ -124,7 +126,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
               <option value="ACCOUNTANT">Contabilidade</option>
             </select>}
           </label>
-          <label><span className={labelClass}>URL da foto do perfil (HTTPS)</span><input className="input" name="photoUrl" type="url" defaultValue={profile.photoUrl??""} placeholder="https://..."/></label>
+          <input type="hidden" name="photoUrl" value={profile.photoUrl??""}/>
           <label><span className={labelClass}>CEP</span><input className="input" name="zipCode" inputMode="numeric" maxLength={9} defaultValue={profile.zipCode??""}/></label>
           <label><span className={labelClass}>Logradouro</span><input className="input" name="street" defaultValue={profile.street??""}/></label>
           <label><span className={labelClass}>Bairro</span><input className="input" name="district" defaultValue={profile.district??""}/></label>
@@ -137,7 +139,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="active" defaultChecked={user.active}/> Cadastro ativo</label>
         
         <button className="btn" type="submit">Salvar dados do profissional</button>
-        <p className="small muted">Alternativamente, a foto pode ser indicada por URL. O cadastro não altera a senha e não libera automaticamente o login.</p>
+        <p className="small muted">A foto é atualizada pelo envio de arquivo abaixo; salvar os dados não apaga a foto existente nem altera a senha.</p>
       </form>
       <section className="erp-quick-create" style={{marginTop:14}}>
         <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
@@ -149,7 +151,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             <input type="checkbox" name="photoConsent" required/>
             Confirmo que tenho autorização para armazenar e exibir a foto do profissional em endereço público de imagem.
           </label>
-          <p className="small muted">O envio exige Vercel Blob configurado na produção. Caso esteja indisponível, você pode continuar usando a URL HTTPS do campo acima.</p>
+          <p className="small muted">O envio exige Vercel Blob configurado. Se estiver indisponível, a foto já cadastrada será preservada.</p>
           <button className="btn secondary" type="submit">Enviar foto autorizada</button>
         </form>
       </section>
@@ -206,52 +208,21 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         Selecione os serviços que o profissional realiza e informe a comissão de cada um.
         Todos aparecem juntos; não precisa salvar serviço por serviço. O percentual de cada linha pode ser zero.
       </p>
-      <form action={saveProfessionalSection} className="erp-compact-form">
-        {hidden(code,user.id,"service-batch")}
-        <div className="table-wrap" style={{maxHeight:460,overflowY:"auto"}}>
-          <table style={{width:"100%"}}>
-            <thead><tr><th style={{width:74}}>Atende</th><th>Serviço</th><th>Duração</th><th>Preço</th><th style={{width:155}}>Comissão (%)</th></tr></thead>
-            <tbody>
-              {services.map(service=><tr key={service.id}>
-                <td><input type="checkbox" name="enabledServiceIds" value={service.id}
-                  aria-label={"Habilitar "+service.name}
-                  defaultChecked={!profile.enabledServices||profile.enabledServices.includes(service.id)}/></td>
-                <td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td>
-                <td>{currency(Number(service.price))}</td>
-                <td><input className="input" type="number" name={"rate_"+service.id}
-                  aria-label={"Comissão em porcentagem de "+service.name} min={0} max={100} step=".01"
-                  defaultValue={override[service.id]??workspace.serviceCommissionOverrides[service.id]??workspace.commissionRules.find(rule=>rule.userId===user.id)?.percent??workspace.settings.defaultCommissionPercent}
-                  required/></td>
-              </tr>)}
-              {!services.length&&<tr><td colSpan={5}>Cadastre os serviços em Empresa → Serviços para configurar comissões.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-        <div style={{display:"flex",gap:10,alignItems:"center",justifyContent:"flex-end",marginTop:10}}>
-          <span className="small muted">{services.length} serviços no catálogo</span>
-          <button className="btn" type="submit">Salvar serviços e comissões</button>
-        </div>
-      </form>
+      <ProfessionalServiceBatchEditor tenantCode={code} userId={user.id}
+        services={services.map(service=>({
+          id:service.id,name:service.name,price:Number(service.price),
+          durationMinutes:service.durationMinutes,
+          enabled:!profile.enabledServices||profile.enabledServices.includes(service.id),
+          rate:override[service.id]??workspace.serviceCommissionOverrides[service.id]??
+            workspace.commissionRules.find(rule=>rule.userId===user.id)?.percent??
+            workspace.settings.defaultCommissionPercent,
+        }))}/>
     </section>
 
     <section id="jornada-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>5. Jornada de trabalho</strong> <span className="muted"> · dias e horários de atendimento</span></h3>
-      <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
-        {hidden(code,user.id,"schedule")}
-        <p className="small muted">Marque os dias de trabalho e configure o período. A jornada será considerada no relatório de capacidade. Desmarcar todos os dias define agenda indisponível.</p>
-        {WEEK_DAYS.map(day=>{
-          const shift=shifts.find(x=>x.day===day.id);
-          return <div key={day.id} className="grid grid-3" style={{alignItems:"end"}}>
-            <label style={{display:"flex",gap:8,alignItems:"center"}}>
-              <input type="checkbox" name={"enabled"+day.id} defaultChecked={!!shift}/> {day.label}
-            </label>
-            <label>Das<input className="input" type="time" name={"start"+day.id} defaultValue={shift?.start??"08:00"}/></label>
-            <label>Até<input className="input" type="time" name={"end"+day.id} defaultValue={shift?.end??"20:00"}/></label>
-          </div>;
-        })}
-        
-        <button className="btn" type="submit">Salvar jornada semanal</button>
-      </form>
+      <ProfessionalWorkWeekEditor tenantCode={code} userId={user.id}
+        weekDays={WEEK_DAYS} shifts={shifts}/>
     </section>
 
     <section id="folgas-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
