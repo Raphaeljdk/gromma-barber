@@ -45,7 +45,7 @@ function fail(ctx:Ctx,msg:string):never{
   redirect(ctx.path+"?erro="+encodeURIComponent(msg));
 }
 /** Manter a pessoa na seção que foi editada depois do redirect do Server Action. */
-export function professionalSectionAnchor(section:string):string{
+function professionalSectionAnchor(section:string):string{
   const anchors:Record<string,string>={
     "dados":"dados-profissional","foto":"dados-profissional",
     "contract-add":"contratos-profissional","contract-remove":"contratos-profissional",
