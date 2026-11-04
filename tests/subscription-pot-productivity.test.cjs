@@ -10,7 +10,14 @@ const output = ts.transpileModule(source, { compilerOptions: {
   module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
 } }).outputText;
 const loaded = { exports: {} };
-new Function("require", "module", "exports", output)(require, loaded, loaded.exports);
+const helpers = { exports: {} };
+const unitSource = fs.readFileSync(path.resolve(__dirname,"../lib/unit-operations-policy.ts"),"utf8");
+const unitJs=ts.transpileModule(unitSource,{compilerOptions:{
+  module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
+}}).outputText;
+new Function("require","module","exports",unitJs)(require,helpers,helpers.exports);
+new Function("require", "module", "exports", output)(
+  id=>id==="./unit-operations-policy"?helpers.exports:require(id),loaded,loaded.exports);
 const { splitPotByProductivity, calculateSubscriptionPot } = loaded.exports;
 
 test("pote de R$ 3.000: produtividade 20/20/30/30 distribui exatamente 100%", () => {
@@ -75,4 +82,45 @@ test("rateio ignora percentuais fixos antigos e não conta agendamento avulso du
   assert.equal(result.distributions.felipe.sharePercent, 50);
   assert.equal(result.distributions.joao.amountCents, 1500);
   assert.equal(result.distributions.felipe.amountCents, 1500);
+});
+
+test("filiais com percentuais diferentes distribuem somente o próprio pote",async()=>{
+  const workspace={
+    subscriptionPot:{percent:30,shares:{}},
+    unitPolicies:{
+      "unit-a":{potPercent:20},
+      "unit-b":{potPercent:40},
+    },
+    clubMembers:[
+      {id:"m-a",customerId:"c-a",startedAt:"2026-10-01T00:00:00Z"},
+      {id:"m-b",customerId:"c-b",startedAt:"2026-10-01T00:00:00Z"},
+    ],
+    clubCharges:[
+      {entryId:"e-a",memberId:"m-a",planName:"A",periodStart:"2026-10-01T00:00:00Z",periodEnd:"2026-11-01T00:00:00Z"},
+      {entryId:"e-b",memberId:"m-b",planName:"B",periodStart:"2026-10-01T00:00:00Z",periodEnd:"2026-11-01T00:00:00Z"},
+    ],clubRefunds:[],
+  };
+  const fake={
+    financialEntry:{async findMany(){return [
+      {id:"e-a",amount:"100.00",unitId:"unit-a",paidAt:new Date("2026-10-02T12:00:00Z")},
+      {id:"e-b",amount:"100.00",unitId:"unit-b",paidAt:new Date("2026-10-02T12:00:00Z")},
+    ];}},
+    appointment:{async findMany({where}){const items=[
+      {unitId:"unit-a",barberId:"john",customerId:"c-a",startsAt:new Date("2026-10-12T12:00:00Z")},
+      {unitId:"unit-b",barberId:"jane",customerId:"c-b",startsAt:new Date("2026-10-12T12:00:00Z")},
+    ];return where.unitId?items.filter(x=>x.unitId===where.unitId):items;}},
+  };
+  const from=new Date("2026-10-01T00:00:00Z"),until=new Date("2026-11-01T00:00:00Z");
+  const global=await calculateSubscriptionPot(fake,"shop",workspace,from,until,["john","jane"]);
+  assert.equal(global.potCents,6000);
+  assert.equal(global.distributions.john.amountCents,2000);
+  assert.equal(global.distributions.jane.amountCents,4000);
+  const a=await calculateSubscriptionPot(fake,"shop",workspace,from,until,["john","jane"],"unit-a");
+  assert.equal(a.potCents,2000);
+  assert.equal(a.percent,20);
+  assert.equal(a.distributions.john.amountCents,2000);
+  assert.equal(a.distributions.jane,undefined);
+  const b=await calculateSubscriptionPot(fake,"shop",workspace,from,until,["john","jane"],"unit-b");
+  assert.equal(b.potCents,4000);
+  assert.equal(b.distributions.jane.amountCents,4000);
 });
