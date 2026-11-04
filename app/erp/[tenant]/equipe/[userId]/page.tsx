@@ -6,6 +6,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { PROFESSIONAL_PERMISSION_OPTIONS, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto } from "../../professional-actions";
 import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
+import { ProfessionalServiceBatchEditor } from "@/components/professional-service-batch-editor";
 
 export const dynamic="force-dynamic";
 type Props={params:Promise<{tenant:string;userId:string}>;searchParams:Promise<Record<string,string|undefined>>};
@@ -206,32 +207,15 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         Selecione os serviços que o profissional realiza e informe a comissão de cada um.
         Todos aparecem juntos; não precisa salvar serviço por serviço. O percentual de cada linha pode ser zero.
       </p>
-      <form action={saveProfessionalSection} className="erp-compact-form">
-        {hidden(code,user.id,"service-batch")}
-        <div className="table-wrap" style={{maxHeight:460,overflowY:"auto"}}>
-          <table style={{width:"100%"}}>
-            <thead><tr><th style={{width:74}}>Atende</th><th>Serviço</th><th>Duração</th><th>Preço</th><th style={{width:155}}>Comissão (%)</th></tr></thead>
-            <tbody>
-              {services.map(service=><tr key={service.id}>
-                <td><input type="checkbox" name="enabledServiceIds" value={service.id}
-                  aria-label={"Habilitar "+service.name}
-                  defaultChecked={!profile.enabledServices||profile.enabledServices.includes(service.id)}/></td>
-                <td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td>
-                <td>{currency(Number(service.price))}</td>
-                <td><input className="input" type="number" name={"rate_"+service.id}
-                  aria-label={"Comissão em porcentagem de "+service.name} min={0} max={100} step=".01"
-                  defaultValue={override[service.id]??workspace.serviceCommissionOverrides[service.id]??workspace.commissionRules.find(rule=>rule.userId===user.id)?.percent??workspace.settings.defaultCommissionPercent}
-                  required/></td>
-              </tr>)}
-              {!services.length&&<tr><td colSpan={5}>Cadastre os serviços em Empresa → Serviços para configurar comissões.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-        <div style={{display:"flex",gap:10,alignItems:"center",justifyContent:"flex-end",marginTop:10}}>
-          <span className="small muted">{services.length} serviços no catálogo</span>
-          <button className="btn" type="submit">Salvar serviços e comissões</button>
-        </div>
-      </form>
+      <ProfessionalServiceBatchEditor tenantCode={code} userId={user.id}
+        services={services.map(service=>({
+          id:service.id,name:service.name,price:Number(service.price),
+          durationMinutes:service.durationMinutes,
+          enabled:!profile.enabledServices||profile.enabledServices.includes(service.id),
+          rate:override[service.id]??workspace.serviceCommissionOverrides[service.id]??
+            workspace.commissionRules.find(rule=>rule.userId===user.id)?.percent??
+            workspace.settings.defaultCommissionPercent,
+        }))}/>
     </section>
 
     <section id="jornada-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
