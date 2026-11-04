@@ -247,6 +247,39 @@ export async function uploadProfessionalPhoto(form:FormData){
   success(ctx,"foto");
 }
 
+/** PDF confidencial: armazene sempre em Blob privado separado das fotos públicas.
+ * Nunca exponha o token ou o URL privado diretamente ao navegador.
+ */
+export async function uploadProfessionalContract(form:FormData){
+  const ctx=await context(form);
+  const label=text(form,"label",140);
+  const validFrom=text(form,"validFrom",10);
+  const notes=text(form,"notes",250);
+  const file=form.get("document");
+  if(label.length<3||(validFrom&&!isDate(validFrom))||
+    !(file instanceof File)||file.size===0||file.size>5*1024*1024||
+    file.type!=="application/pdf"||!file.name.toLowerCase().endsWith(".pdf"))
+    fail(ctx,"contrato");
+  const signature=new Uint8Array(await file.slice(0,5).arrayBuffer());
+  if(String.fromCharCode(...signature)!=="%PDF-")fail(ctx,"contrato");
+  const token=process.env.PROFESSIONAL_CONTRACTS_BLOB_READ_WRITE_TOKEN;
+  if(!token)fail(ctx,"armazenamento-privado");
+  let pathname="";
+  try{
+    const uploaded=await put(
+      "professional-contracts/"+ctx.shopId+"/"+ctx.userId+"/"+crypto.randomUUID()+".pdf",
+      file,{access:"private",contentType:"application/pdf",token});
+    pathname=uploaded.pathname;
+  }catch(error){console.error("Private contract upload failed",error);fail(ctx,"armazenamento-privado");}
+  await change(ctx,"PROFESSIONAL_CONTRACT_UPLOADED","PDF enviado pela administração",async(profile)=>{
+    const id=workspaceId("contract");
+    // URL lógica: o acesso real sempre passa por rota autenticada.
+    profile.contracts=[...(profile.contracts??[]),{id,label,url:"private:"+pathname,validFrom,notes}].slice(-30);
+    return {contractId:id,label,documentStoredPrivately:true};
+  });
+  success(ctx,"contract-add");
+}
+
 export async function saveProfessionalSection(form:FormData){
   const ctx=await context(form);
   const section=text(form,"section",40);
