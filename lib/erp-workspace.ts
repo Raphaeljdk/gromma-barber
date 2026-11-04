@@ -154,7 +154,27 @@ export type AgendaBlock = {
   status?: "OPEN" | "CLOSED";
 };
 
+export type UnitOperationsPolicy = {
+  legalDocument: string;
+  paymentEmail: string;
+  paymentPhone: string;
+  pixKey: string;
+  pixType: "CNPJ" | "EMAIL" | "PHONE" | "EVP" | "";
+  paymentMethods: ("PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER")[];
+  debitFeePercent: number;
+  creditFeePercent: number;
+  settlementDays: number;
+  potPercent: number | null;
+  cancellationMinutes: number;
+  noShowBlockHours: number;
+  coverImageUrl: string;
+  welcomeText: string;
+};
+
 export type BrandingSettings = {
+  heroTitle: string;
+  heroDescription: string;
+  coverImageUrl: string;
   logoUrl: string;
   accentColor: string;
   clubTitle: string;
@@ -175,6 +195,8 @@ export type OperationalSettings = {
 
 export type ErpWorkspace = {
   branding: BrandingSettings;
+  unitPolicies: Record<string,UnitOperationsPolicy>;
+  featuredProfessionalIds: string[];
   rolePermissions: StaffPermissions;
   professionalProfiles: Record<string, ProfessionalProfile>;
   clubEvents: ClubEvent[];
@@ -210,7 +232,10 @@ export type ErpWorkspace = {
 };
 
 export const DEFAULT_WORKSPACE: ErpWorkspace = {
-  branding: { logoUrl: "", accentColor: "#c69a49", clubTitle: "Clube de assinaturas", clubDescription: "" },
+  branding: { logoUrl: "", accentColor: "#c69a49", clubTitle: "Clube de assinaturas", clubDescription: "",
+    heroTitle: "", heroDescription: "", coverImageUrl: "" },
+  unitPolicies: {},
+  featuredProfessionalIds: [],
   rolePermissions: {},
   professionalProfiles: {},
   clubEvents: [],
@@ -273,6 +298,34 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
   const rolePermissions = Object.fromEntries(STAFF_PERMISSION_ROLES.filter(role => Array.isArray(rawPermissions[role])).map(role => [role, (rawPermissions[role] as unknown[]).filter((permission): permission is StaffPermission => typeof permission === "string" && (STAFF_PERMISSION_KEYS as readonly string[]).includes(permission))])) as Partial<Record<StaffPermissionRole, StaffPermission[]>>;
   return {
     rolePermissions,
+    unitPolicies: Object.fromEntries(Object.entries(record(operations.unitPolicies))
+      .filter(([id])=>id.length <= 100)
+      .map(([id,raw])=>{
+        const p=record(raw);
+        const percent=(v:unknown,max:number,otherwise:number)=>typeof v==="number"&&Number.isFinite(v)&&v>=0&&v<=max?v:otherwise;
+        const methods=["PIX","CASH","DEBIT","CREDIT","TRANSFER"] as const;
+        const list=Array.isArray(p.paymentMethods)?p.paymentMethods.filter((x): x is typeof methods[number] =>
+          typeof x==="string"&&(methods as readonly string[]).includes(x)):[];
+        const pot=p.potPercent;
+        return [id,{
+          legalDocument:typeof p.legalDocument==="string"?p.legalDocument.slice(0,14):"",
+          paymentEmail:typeof p.paymentEmail==="string"?p.paymentEmail.slice(0,180):"",
+          paymentPhone:typeof p.paymentPhone==="string"?p.paymentPhone.slice(0,24):"",
+          pixKey:typeof p.pixKey==="string"?p.pixKey.slice(0,150):"",
+          pixType:["CNPJ","EMAIL","PHONE","EVP"].includes(String(p.pixType))?p.pixType:"",
+          paymentMethods:list,
+          debitFeePercent:percent(p.debitFeePercent,100,0),
+          creditFeePercent:percent(p.creditFeePercent,100,0),
+          settlementDays:percent(p.settlementDays,90,0),
+          potPercent:pot===null?null:percent(pot,100,-1)===-1?null:pot as number,
+          cancellationMinutes:percent(p.cancellationMinutes,10080,0),
+          noShowBlockHours:percent(p.noShowBlockHours,720,0),
+          coverImageUrl:typeof p.coverImageUrl==="string"&&/^https:\/\//i.test(p.coverImageUrl)?p.coverImageUrl.slice(0,700):"",
+          welcomeText:typeof p.welcomeText==="string"?p.welcomeText.slice(0,280):"",
+        }];
+      })) as Record<string,UnitOperationsPolicy>,
+    featuredProfessionalIds: array<unknown>(operations.featuredProfessionalIds).filter(
+      (id):id is string => typeof id==="string"&&id.length<=100).slice(0,50),
     professionalProfiles: Object.fromEntries(Object.entries(record(operations.professionalProfiles))
       .map(([id, raw])=>[id, record(raw) as ProfessionalProfile])) as Record<string, ProfessionalProfile>,
     clubEvents: array<ClubEvent>(operations.clubEvents),
@@ -323,6 +376,10 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         ? source.accentColor : DEFAULT_WORKSPACE.branding.accentColor;
       return {
         logoUrl: logo, accentColor: accent,
+        heroTitle: typeof source.heroTitle==="string"?source.heroTitle.slice(0,110):"",
+        heroDescription: typeof source.heroDescription==="string"?source.heroDescription.slice(0,600):"",
+        coverImageUrl: typeof source.coverImageUrl==="string" && /^https:\/\//i.test(source.coverImageUrl)
+          ? source.coverImageUrl.slice(0,700) : "",
         clubTitle: typeof source.clubTitle === "string" ? source.clubTitle.slice(0,90) : DEFAULT_WORKSPACE.branding.clubTitle,
         clubDescription: typeof source.clubDescription === "string" ? source.clubDescription.slice(0,500) : "",
       };
