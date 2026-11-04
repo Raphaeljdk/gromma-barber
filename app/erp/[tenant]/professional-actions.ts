@@ -232,7 +232,7 @@ export async function uploadProfessionalContract(form:FormData){
   const validFrom=text(form,"validFrom",10);
   const file=form.get("contractPdf");
   if(label.length<3||(validFrom&&!isDate(validFrom))||
-    !(file instanceof File)||file.size===0||file.size>8*1024*1024||
+    !(file instanceof File)||file.size===0||file.size>3*1024*1024||
     (file.type&&file.type!=="application/pdf"))fail(ctx,"contrato");
   const signature=new Uint8Array(await file.slice(0,5).arrayBuffer());
   if(String.fromCharCode(...signature)!=="%PDF-")fail(ctx,"contrato");
