@@ -125,7 +125,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
               <option value="ACCOUNTANT">Contabilidade</option>
             </select>}
           </label>
-          <label><span className={labelClass}>URL da foto do perfil (HTTPS)</span><input className="input" name="photoUrl" type="url" defaultValue={profile.photoUrl??""} placeholder="https://..."/></label>
+          <input type="hidden" name="photoUrl" value={profile.photoUrl??""}/>
           <label><span className={labelClass}>CEP</span><input className="input" name="zipCode" inputMode="numeric" maxLength={9} defaultValue={profile.zipCode??""}/></label>
           <label><span className={labelClass}>Logradouro</span><input className="input" name="street" defaultValue={profile.street??""}/></label>
           <label><span className={labelClass}>Bairro</span><input className="input" name="district" defaultValue={profile.district??""}/></label>
@@ -138,7 +138,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="active" defaultChecked={user.active}/> Cadastro ativo</label>
         
         <button className="btn" type="submit">Salvar dados do profissional</button>
-        <p className="small muted">Alternativamente, a foto pode ser indicada por URL. O cadastro não altera a senha e não libera automaticamente o login.</p>
+        <p className="small muted">A foto é atualizada pelo envio de arquivo abaixo; salvar os dados não apaga a foto existente nem altera a senha.</p>
       </form>
       <section className="erp-quick-create" style={{marginTop:14}}>
         <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
@@ -150,7 +150,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             <input type="checkbox" name="photoConsent" required/>
             Confirmo que tenho autorização para armazenar e exibir a foto do profissional em endereço público de imagem.
           </label>
-          <p className="small muted">O envio exige Vercel Blob configurado na produção. Caso esteja indisponível, você pode continuar usando a URL HTTPS do campo acima.</p>
+          <p className="small muted">O envio exige Vercel Blob configurado. Se estiver indisponível, a foto já cadastrada será preservada.</p>
           <button className="btn secondary" type="submit">Enviar foto autorizada</button>
         </form>
       </section>
