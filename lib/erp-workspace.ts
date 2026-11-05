@@ -172,6 +172,9 @@ export type UnitOperationsPolicy = {
 };
 
 export type BrandingSettings = {
+  carouselImages: string[];
+  secondaryTitle: string;
+  secondaryDescription: string;
   heroTitle: string;
   heroDescription: string;
   coverImageUrl: string;
@@ -233,7 +236,8 @@ export type ErpWorkspace = {
 
 export const DEFAULT_WORKSPACE: ErpWorkspace = {
   branding: { logoUrl: "", accentColor: "#c69a49", clubTitle: "Clube de assinaturas", clubDescription: "",
-    heroTitle: "", heroDescription: "", coverImageUrl: "" },
+    heroTitle: "", heroDescription: "", coverImageUrl: "",
+    carouselImages: [], secondaryTitle: "", secondaryDescription: "" },
   unitPolicies: {},
   featuredProfessionalIds: [],
   rolePermissions: {},
@@ -378,6 +382,11 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         logoUrl: logo, accentColor: accent,
         heroTitle: typeof source.heroTitle==="string"?source.heroTitle.slice(0,110):"",
         heroDescription: typeof source.heroDescription==="string"?source.heroDescription.slice(0,600):"",
+        carouselImages: (Array.isArray(source.carouselImages)?source.carouselImages:[])
+          .filter((url): url is string=>typeof url==="string" && /^https:\/\//i.test(url))
+          .slice(0,3).map(url=>url.slice(0,700)),
+        secondaryTitle: typeof source.secondaryTitle==="string"?source.secondaryTitle.slice(0,110):"",
+        secondaryDescription: typeof source.secondaryDescription==="string"?source.secondaryDescription.slice(0,600):"",
         coverImageUrl: typeof source.coverImageUrl==="string" && /^https:\/\//i.test(source.coverImageUrl)
           ? source.coverImageUrl.slice(0,700) : "",
         clubTitle: typeof source.clubTitle === "string" ? source.clubTitle.slice(0,90) : DEFAULT_WORKSPACE.branding.clubTitle,
