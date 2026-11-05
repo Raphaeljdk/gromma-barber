@@ -19,6 +19,12 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
       <div><div className="eyebrow">Minha empresa / Cadastro</div><h2>Dados gerais do negócio</h2></div>
       <Link className="btn secondary" href={root+"/unidades"}>Ver cadastro de filiais</Link>
     </div>
+    <nav className="gromma-settings-nav" aria-label="Configurações da empresa">
+      <Link href={root + "/dados"} aria-current="page">Dados</Link>
+      <Link href={root + "/identidade"}>Identidade</Link>
+      <Link href={root + "/clube-config"}>Clube</Link>
+      <Link href={root + "/unidades"}>Filiais</Link>
+    </nav>
     <p className="small muted">Estes dados pertencem à empresa inteira. CNPJ, Pix, endereço e condições de recebimento de cada filial ficam em <strong>Empresa → Cadastro → Filiais</strong>.</p>
     {ok&&<p className="notice success" role="status">Informações {ok==="carrossel"?"do carrossel":ok==="apresentacao"?"da apresentação":"da empresa"} atualizadas.</p>}
     {error&&<p className="notice error-notice" role="alert">{error.slice(0,150)}</p>}

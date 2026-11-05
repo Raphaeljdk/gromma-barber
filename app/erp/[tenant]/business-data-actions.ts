@@ -148,8 +148,8 @@ export async function updateBusinessCarousel(form:FormData){
         enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
       await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
         action:remove?"BUSINESS_CAROUSEL_REMOVED":"BUSINESS_CAROUSEL_UPLOADED",
-        details:{position:slot+1,fileType:imageType||null,numberOfImages:images.length}
-          as Prisma.InputJsonValue}});
+        details:({position:slot+1,fileType:imageType||null,numberOfImages:images.length}
+          as Prisma.InputJsonValue)}});
     },{isolationLevel:"Serializable"});
     refresh(ctx);
   }catch(err){error=message(err);}

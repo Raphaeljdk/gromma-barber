@@ -36,5 +36,5 @@ test("carrossel publicado usa somente imagens normalizadas e limita a três", ()
 test("nova navegação não substitui o módulo de assinatura operacional", () => {
   const nav = read("lib/erp-navigation.ts");
   assert.match(nav, /route: "assinaturas"/);
-  assert.match(read("app/erp/[tenant]/page.tsx"), /moduleId === "clube-config"/);
+  assert.match(read("app/erp/[tenant]/page.tsx"), /moduleId === mode/);
 });
