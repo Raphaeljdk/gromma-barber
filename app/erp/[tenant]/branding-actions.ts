@@ -62,7 +62,7 @@ export async function saveBranding(form: FormData) {
       const workspace = readWorkspace(current.enabledFeatures);
       const before = workspace.branding;
       const logoUrl = removeLogo ? "" : uploadedUrl || logoInput;
-      workspace.branding = { logoUrl, accentColor, clubTitle, clubDescription,heroTitle,heroDescription,coverImageUrl };
+      workspace.branding = { ...before, logoUrl, accentColor, clubTitle, clubDescription,heroTitle,heroDescription,coverImageUrl };
       await tx.barberShop.update({ where: { id: shop.id }, data: {
         enabledFeatures: writeWorkspace(current.enabledFeatures, workspace),
       } });
