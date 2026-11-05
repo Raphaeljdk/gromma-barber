@@ -236,7 +236,7 @@ export async function uploadProfessionalContract(form:FormData){
     (file.type&&file.type!=="application/pdf"))fail(ctx,"contrato");
   const signature=new Uint8Array(await file.slice(0,5).arrayBuffer());
   if(String.fromCharCode(...signature)!=="%PDF-")fail(ctx,"contrato");
-  const privateToken=process.env.GROMMA_PRIVATE_BLOB_TOKEN;
+  const privateToken=(process.env.GROMMA_PRIVATE_BLOB_TOKEN || process.env.GROMMA_PRIVATE_BLOB_READ_WRITE_TOKEN);
   // Falhar fechado: nunca migrar documento sensível para o armazenamento público de fotos.
   if(!privateToken)fail(ctx,"armazenamento-privado");
   let url="";
