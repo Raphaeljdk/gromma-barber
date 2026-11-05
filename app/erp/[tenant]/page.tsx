@@ -2,6 +2,7 @@ import { CommissionSelectionTable } from "@/components/commission-selection-tabl
 import { saveBranding } from "./branding-actions";
 import { saveBarbershopUnit } from "./unit-actions";
 import { UnitOperationsForm } from "@/components/unit-operations-form";
+import { BusinessDataSection } from "@/components/business-data-section";
 import { unitPolicy } from "@/lib/unit-operations-policy";
 import { toggleFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
@@ -189,6 +190,7 @@ const MODULE_TITLES: Record<string, string> = {
   comissoes: "Comissões",
   equipe: "Profissionais",
   unidades: "Unidades",
+  dados: "Dados gerais do negócio",
   relatorios: "Relatórios",
   gerencial: "Gerencial",
   auditoria: "Auditoria",
@@ -2149,8 +2151,15 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`} searchParams={qs} param="equipePage" page={equipePage} total={professionalsTotal} pageSize={pageSize} hash="equipe" label="profissionais" />
         </section>
 
+        {(!moduleId || moduleId==="dados") && <div hidden={Boolean(moduleId && moduleId!=="dados")}>
+          <BusinessDataSection tenantCode={tenantCode} business={shop}
+            branding={workspace.branding} isOwner={isOwner}
+            ok={valueOf("dadosOk")} error={valueOf("dadosErro")}/>
+        </div>}
+
         <section id="unidades" className="demo-section" hidden={Boolean(moduleId && moduleId !== "unidades")}>
-          <div className="section-head"><div><div className="eyebrow">Estrutura</div><h2>Unidades</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Filiais</h2></div><StatusPill tone="ready">Por unidade</StatusPill></div>
+          <p className="small muted">Cada filial possui seu próprio endereço, CNPJ, conta de recebimento, pote de assinaturas e regras de atendimento. Os dados gerais da marca ficam em <Link href={`/erp/${encodeURIComponent(tenantCode)}/dados`}>Dados do negócio</Link>.</p>
           {valueOf("unidadeOk") && <p role="status" className="notice success">Unidade {valueOf("unidadeOk") === "cadastrada" ? "cadastrada" : "atualizada"} com sucesso. A alteração ficou registrada na auditoria.</p>}
           {valueOf("unidadeErro") && <p role="alert" className="notice error-notice">{valueOf("unidadeErro").slice(0,200)}</p>}
           {isOwner && <details className="card" style={{padding:14,marginBottom:14}}>
@@ -2176,9 +2185,9 @@ export async function TenantERPView({
             hash="unidades"
             search={{ param: "unidadesQ", value: unidadesQ, placeholder: "Buscar unidade, código ou cidade" }}
           />
-          <div className="demo-unit-grid">
+          <div className="gromma-units-list">
             {unitsPageItems.map((unit) => (
-              <article className="card demo-unit-card" key={unit.id}>
+              <article className="gromma-unit-row" key={unit.id}>
                 <div className="tenant-name"><strong>{unit.name}</strong><span className="badge approved">{unit.active ? "Ativa" : "Inativa"}</span></div>
                 <div className="demo-financial">
                   <div><span>Código</span><strong>{unit.code}</strong></div>
