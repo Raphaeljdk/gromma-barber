@@ -23,7 +23,7 @@ export async function GET(_request:Request,{params}:{
     c=>c.id===contractId)?.url;
   if(!url||!/^https:\/\/[^/]+\.private\.blob\.vercel-storage\.com\//.test(url))
     return new Response("Contrato não é documento privado",{status:404});
-  const token=process.env.GROMMA_PRIVATE_BLOB_TOKEN;
+  const token=(process.env.GROMMA_PRIVATE_BLOB_TOKEN || process.env.GROMMA_PRIVATE_BLOB_READ_WRITE_TOKEN);
   if(!token)return new Response("Armazenamento privado indisponível",{status:503});
   try{
     const result=await get(url,{access:"private",token});
