@@ -9339,3 +9339,82 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
     box-sizing:border-box;
   }
 }
+
+
+/* GROMMA | Empresa: leitura vertical, sem grade de cartões (desktop + iPhone). */
+.gromma-business-data,.gromma-brand-page { max-width:1050px; width:100%; min-width:0; }
+.gromma-settings-panel { background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:clamp(16px,2.5vw,26px); margin:14px 0; min-width:0; }
+.gromma-settings-heading { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px;
+  border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:16px; }
+.gromma-settings-heading h3 { margin:0; font-size:1.05rem; }
+.gromma-settings-form { display:flex; flex-direction:column; gap:13px; min-width:0; }
+.gromma-field-row { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:.9rem; font-weight:650; }
+.gromma-field-row :is(input,textarea) { max-width:100%; }
+.gromma-field-row textarea { resize:vertical; min-height:82px; }
+.gromma-settings-actions { display:flex; justify-content:flex-end; align-items:center; flex-wrap:wrap;
+  gap:14px; margin-top:10px; }
+.gromma-settings-actions a { color:var(--gold-2); text-decoration:underline; font-size:.9rem; }
+.gromma-settings-nav { display:flex; flex-wrap:wrap; gap:6px; border-bottom:1px solid var(--line);
+  padding:0 0 10px; margin-top:16px; }
+.gromma-settings-nav a { padding:9px 13px; border-radius:8px; font-size:.88rem;
+  color:var(--muted); border:1px solid transparent; }
+.gromma-settings-nav a[aria-current="page"] { color:var(--text); background:var(--surface-2);
+  border-color:var(--line); font-weight:750; }
+.gromma-settings-nav a:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+.gromma-brand-preview { display:flex; align-items:center; flex-wrap:wrap; gap:14px;
+  padding:12px 0 18px; }
+.gromma-brand-preview img,.gromma-brand-placeholder { width:72px; height:72px;
+  object-fit:contain; border-radius:12px; background:var(--surface-2);
+  border:1px solid var(--line); padding:8px; }
+.gromma-brand-placeholder { display:grid; place-items:center; font-size:.8rem; }
+.gromma-brand-preview div { display:flex; flex:1; flex-direction:column; gap:6px; min-width:150px; }
+.gromma-color-preview { display:inline-block; width:34px; height:34px; border:2px solid #888;
+  border-radius:50%; }
+.gromma-checkbox-row,.gromma-upload-consent { display:flex; gap:9px; align-items:flex-start;
+  font-weight:450; font-size:.88rem; }
+.gromma-checkbox-row input,.gromma-upload-consent input { width:17px; height:17px; flex:none; }
+.gromma-readonly-data { display:flex; flex-direction:column; gap:10px; }
+.gromma-readonly-data>div { display:flex; justify-content:space-between; gap:12px;
+  padding-bottom:10px; border-bottom:1px solid var(--line); }
+.gromma-readonly-data>div span { color:var(--muted); }
+.gromma-readonly-data strong { overflow-wrap:anywhere; text-align:right; }
+.gromma-business-carousel { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.gromma-carousel-slot { border:1px solid var(--line); border-radius:12px; padding:12px; min-width:0; }
+.gromma-carousel-preview { aspect-ratio:512/590; background:var(--surface-2);
+  overflow:hidden; border-radius:8px; }
+.gromma-carousel-preview img { width:100%; height:100%; object-fit:cover; }
+.gromma-carousel-placeholder { display:flex; flex-direction:column; align-items:center;
+  justify-content:center; height:100%; gap:6px; color:var(--muted); text-align:center; }
+.gromma-carousel-controls form { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+.gromma-carousel-controls input[type="file"] { font-size:.82rem; padding:8px; }
+.gromma-carousel-controls button { width:100%; font-size:.82rem; }
+.gromma-remove-photo { opacity:.85; }
+.gromma-units-list { display:flex; flex-direction:column; gap:10px; }
+.gromma-unit-row { display:block; border:1px solid var(--line); border-radius:12px;
+  padding:16px; background:var(--surface); min-width:0; }
+.gromma-unit-row .demo-financial { display:flex; flex-wrap:wrap; gap:8px 26px; margin-top:10px; }
+.gromma-unit-row .demo-financial>div { display:flex; flex-direction:column; gap:4px; }
+.gromma-unit-row :is(details,form) { max-width:100%; }
+.gromma-public-gallery { margin-top:22px; border-radius:18px; overflow:hidden;
+  background:#202124; border:1px solid #393b3d; }
+.gromma-public-gallery-photo { height:clamp(210px,42vw,440px); }
+.gromma-public-gallery-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+.gromma-public-gallery-controls { display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; font-size:.85rem; }
+.gromma-public-gallery-controls button { background:#323438; color:#f5f3ed;
+  border:1px solid #555; border-radius:8px; padding:8px 14px; }
+.gromma-public-gallery-controls button:focus-visible { outline:2px solid var(--gold-2); }
+@media(max-width:720px){
+  .gromma-business-carousel { grid-template-columns:1fr; }
+  .gromma-carousel-slot { display:grid; grid-template-columns:minmax(0,140px) minmax(0,1fr); gap:14px; }
+  .gromma-carousel-controls form { margin-top:0; }
+  .gromma-field-row,.gromma-field-row :is(input,textarea) { width:100%; }
+  .gromma-settings-actions { justify-content:stretch; }
+  .gromma-settings-actions .btn { width:100%; }
+  .gromma-unit-row .demo-financial { display:grid; grid-template-columns:1fr; }
+}
+@media(max-width:400px){
+  .gromma-carousel-slot { grid-template-columns:1fr; }
+  .gromma-carousel-preview { max-height:270px; aspect-ratio:512/590; }
+}

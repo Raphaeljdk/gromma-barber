@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicBusinessCarousel } from "@/components/public-business-carousel";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { readWorkspace } from "@/lib/erp-workspace";
@@ -48,6 +49,11 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
             {brand.heroDescription||"Conheça nossos profissionais e unidades. Entre em contato para agendar seu atendimento."}</p>
         </div>
       </section>
+      <PublicBusinessCarousel images={brand.carouselImages} tradeName={shop.tradeName} />
+      {(brand.secondaryTitle || brand.secondaryDescription) && <section style={{marginTop:28,padding:"20px 4px"}}>
+        {brand.secondaryTitle && <h2 style={{fontSize:"clamp(22px,3vw,30px)"}}>{brand.secondaryTitle}</h2>}
+        {brand.secondaryDescription && <p style={{maxWidth:760,opacity:.8}}>{brand.secondaryDescription}</p>}
+      </section>}
       <section style={{marginTop:42}}>
         <h2 style={{fontSize:25}}>Nossos profissionais</h2>
         <p style={{opacity:.72}}>Os destaques são definidos pela barbearia.</p>
