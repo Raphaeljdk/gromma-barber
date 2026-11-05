@@ -77,3 +77,15 @@ test("checkout exibe apenas meios habilitados e backend impede bypass",()=>{
   assert.match(screen,/methods\.map\(method/);
   assert.match(erp,/allowedPaymentMethods=\{unitPolicy\(workspace,command\.unitId\)\.paymentMethods\}/);
 });
+
+test("contratos aceitam o nome de token privado gerado pela conexão Vercel sem reutilizar o Blob público",()=>{
+  const whole=source("app/erp/[tenant]/professional-actions.ts");
+  const upload=whole.slice(whole.indexOf("export async function uploadProfessionalContract"),whole.indexOf("export async function saveProfessionalSection"));
+  const download=source("app/erp/[tenant]/equipe/[userId]/contrato/[contractId]/route.ts");
+  assert.ok(upload.includes("GROMMA_PRIVATE_BLOB_TOKEN"));
+  for(const code of [upload,download]){
+    assert.match(code,/process\.env\.GROMMA_PRIVATE_BLOB_READ_WRITE_TOKEN/);
+    assert.match(code,/process\.env\.GROMMA_PRIVATE_BLOB_TOKEN/);
+    assert.doesNotMatch(code,/process\.env\.BLOB_READ_WRITE_TOKEN/);
+  }
+});
