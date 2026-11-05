@@ -1,8 +1,8 @@
 import { CommissionSelectionTable } from "@/components/commission-selection-table";
-import { saveBranding } from "./branding-actions";
 import { saveBarbershopUnit } from "./unit-actions";
 import { UnitOperationsForm } from "@/components/unit-operations-form";
 import { BusinessDataSection } from "@/components/business-data-section";
+import { BrandingSettingsSection } from "@/components/branding-settings-section";
 import { unitPolicy } from "@/lib/unit-operations-policy";
 import { toggleFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
@@ -191,6 +191,8 @@ const MODULE_TITLES: Record<string, string> = {
   equipe: "Profissionais",
   unidades: "Unidades",
   dados: "Dados gerais do negócio",
+  identidade: "Identidade visual",
+  "clube-config": "Apresentação do Clube",
   relatorios: "Relatórios",
   gerencial: "Gerencial",
   auditoria: "Auditoria",
@@ -2606,67 +2608,18 @@ export async function TenantERPView({
               <p className="erp-integration-note">WhatsApp automático, gateway de pagamento e emissão fiscal dependem de credenciais/provedores externos. O ERP mantém a configuração e os fluxos internos prontos sem fingir uma integração que ainda não existe.</p>
             </article>
           </div>
-          <article className="card erp-workspace-card" style={{marginTop:14}}>
-            <div className="erp-card-title"><div><span>Marca e Clube</span>
-              <strong>Identidade visual do estabelecimento</strong></div>
-              <StatusPill tone="ready">Salvo por empresa</StatusPill></div>
-            <p className="small muted">Personalize o logotipo, a cor de destaque e o conteúdo visto
-              pelo cliente no link seguro de contratação do Clube.</p>
-            {valueOf("brandingOk")==="1" && <p role="status" className="notice success">Identidade visual atualizada.</p>}
-            {valueOf("brandingErro") && <p role="alert" className="notice error-notice">{valueOf("brandingErro").slice(0,160)}</p>}
-            <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",margin:"12px 0"}}>
-              {workspace.branding.logoUrl
-                ? <img src={workspace.branding.logoUrl} width={84} height={84} alt={"Logotipo de "+shop.tradeName}
-                    style={{width:84,height:84,objectFit:"contain",borderRadius:10,border:"1px solid #ddd",padding:6}}/>
-                : <span className="small muted">Logotipo ainda não configurado</span>}
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span aria-hidden="true" style={{width:26,height:26,display:"inline-block",borderRadius:8,
-                  background:workspace.branding.accentColor,border:"1px solid #888"}}/>
-                <span className="small muted">Cor atual: {workspace.branding.accentColor}</span>
-              </div>
-            </div>
-            {isOwner ? <form action={saveBranding} className="erp-compact-form">
-              <input type="hidden" name="tenantCode" value={tenantCode}/>
-              <div className="grid grid-2">
-                <label><span className="label">Cor de destaque</span>
-                  <input className="input" type="color" name="accentColor"
-                    defaultValue={workspace.branding.accentColor} required/></label>
-                <label><span className="label">Título do clube</span>
-                  <input className="input" name="clubTitle" maxLength={90} minLength={3}
-                    defaultValue={workspace.branding.clubTitle} required/></label>
-              </div>
-              <label><span className="label">Descrição da assinatura</span>
-                <textarea className="input" name="clubDescription" rows={3} maxLength={500}
-                  defaultValue={workspace.branding.clubDescription} placeholder="Apresente o clube e seus benefícios"/></label>
-              <h4>Apresentação no aplicativo do cliente</h4>
-              <p className="small muted">Página pública da barbearia:
-                <Link href={`/barbearia/${encodeURIComponent(tenantCode.toLowerCase())}`} target="_blank" rel="noopener noreferrer">
-                  Ver página do cliente
-                </Link>
-              </p>
-              <label>Título de apresentação<input className="input" name="heroTitle"
-                maxLength={110} defaultValue={workspace.branding.heroTitle}
-                placeholder="Seu melhor estilo começa aqui"/></label>
-              <label>Descrição de boas-vindas<textarea className="input" name="heroDescription"
-                rows={3} maxLength={600} defaultValue={workspace.branding.heroDescription}/></label>
-              <label>Imagem de capa (URL HTTPS)<input className="input" name="coverImageUrl"
-                type="url" maxLength={700} defaultValue={workspace.branding.coverImageUrl}
-                placeholder="https://..."/></label>
-              <label><span className="label">URL HTTPS do logotipo</span>
-                <input className="input" name="logoUrl" type="url" maxLength={700}
-                  defaultValue={workspace.branding.logoUrl} placeholder="https://..."/></label>
-              <label><span className="label">Ou enviar nova imagem (até 3 MB)</span>
-                <input className="input" name="logoFile" type="file" accept="image/jpeg,image/png,image/webp"/></label>
-              <label style={{display:"flex",gap:8,alignItems:"start"}}>
-                <input type="checkbox" name="logoConsent"/>
-                Confirmo que tenho autorização para usar a imagem enviada como logotipo.</label>
-              <label style={{display:"flex",gap:8,alignItems:"start"}}>
-                <input type="checkbox" name="removeLogo"/>
-                Remover logotipo atual (mantém as demais configurações)</label>
-              <button className="btn" type="submit">Salvar identidade visual</button>
-            </form> : <p className="small muted">Somente o proprietário pode alterar a identidade da marca.</p>}
-          </article>
+          
         </section>
+
+
+        {(["identidade", "clube-config"] as const).map(mode =>
+          (!moduleId || moduleId === mode) && (
+            <BrandingSettingsSection key={mode} mode={mode}
+              tenantCode={tenantCode} branding={workspace.branding}
+              tradeName={shop.tradeName} isOwner={isOwner}
+              ok={valueOf("brandingOk")} error={valueOf("brandingErro")} />
+          )
+        )}
 
         <section id="plano" className="demo-section" hidden={Boolean(moduleId && moduleId !== "plano")}>
           <div className="section-head"><div><div className="eyebrow">Contrato</div><h2>Plano e recursos liberados</h2></div><strong>{features.length} recursos</strong></div>

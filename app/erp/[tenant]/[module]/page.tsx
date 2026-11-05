@@ -36,6 +36,8 @@ const MODULES = new Set([
   "equipe",
   "unidades",
   "dados",
+  "identidade",
+  "clube-config",
   "relatorios",
   "gerencial",
   "auditoria",
