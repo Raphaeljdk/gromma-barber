@@ -347,6 +347,10 @@ export async function saveProfessionalSection(form:FormData){
     const day=num(form,"day"),start=text(form,"start",5),end=text(form,"end",5);
     if(!Number.isInteger(day)||day<0||day>6||!validInterval(start,end))fail(ctx,"intervalo");
     await change(ctx,"PROFESSIONAL_BREAK_ADDED",reason,async(profile,tx)=>{
+      // Evita novos intervalos idênticos ou sobrepostos no mesmo dia;
+      // registros antigos continuam disponíveis para remoção manual.
+      if((profile.breaks??[]).some(item=>item.day===day &&
+        start<item.end && end>item.start))fail(ctx,"intervalo");
       const id=workspaceId("break");
       const breaks:ProfessionalBreak[]=[...(profile.breaks??[]),{id,day,start,end}];
       await assertNoConflictingBookings(tx,ctx,{...profile,breaks});
