@@ -412,3 +412,36 @@
     padding-inline: 4px !important;
   }
 }
+
+.tenant-erp .professional-registration-page .professional-legacy-contacts {
+  margin: 0 0 14px;
+  border: 1px solid var(--profile-line);
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: var(--erp-panel-2, #141414);
+}
+.tenant-erp .professional-registration-page .professional-legacy-contacts summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: .9rem;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contacts summary:focus-visible {
+  outline: 2px solid var(--profile-highlight);
+  outline-offset: 3px;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contact-list {
+  margin-top: 10px;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--profile-line);
+  font-size: .84rem;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contact-row span {
+  color: var(--profile-muted);
+  overflow-wrap: anywhere;
+}
