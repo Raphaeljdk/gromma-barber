@@ -598,3 +598,74 @@
   .tenant-erp .professional-registration-page :is(.btn,.input,.select,.textarea) { min-height: 42px; }
   .tenant-erp .professional-registration-page .professional-compact-entry { flex-wrap: wrap; }
 }
+
+
+.tenant-erp .professional-registration-page .professional-product-editor {
+  max-width: 820px;
+  min-width: 0;
+}
+.tenant-erp .professional-registration-page .professional-editor-help {
+  font-size: .8rem;
+  margin: 0 0 10px;
+}
+.tenant-erp .professional-registration-page .professional-editor-help summary {
+  cursor: pointer;
+  color: var(--profile-muted);
+}
+.tenant-erp .professional-registration-page .professional-editor-help p { margin: 6px 0; }
+.tenant-erp .professional-registration-page .professional-product-rules-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 6px 0;
+  margin-bottom: 8px;
+  font-size: .77rem;
+}
+.tenant-erp .professional-registration-page .professional-category-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 370px;
+  font-size: .79rem;
+  color: var(--profile-text);
+}
+.tenant-erp .professional-registration-page .professional-product-form {
+  border: 1px solid var(--profile-line);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 9px;
+}
+.tenant-erp .professional-registration-page .professional-product-form-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px;
+  align-items: end;
+}
+.tenant-erp .professional-registration-page .professional-product-form-fields > label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: .8rem;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contacts {
+  padding: 10px 12px;
+}
+.tenant-erp .professional-registration-page .table-wrap :is(th,td) {
+  padding: 7px 9px;
+}
+.tenant-erp .professional-registration-page .erp-quick-create {
+  padding: 10px;
+}
+.tenant-erp .professional-registration-page > article.card:not(.professional-hero-card) {
+  padding: 12px 14px !important;
+  margin-bottom: 9px !important;
+}
+@media(max-width:620px) {
+  .tenant-erp .professional-registration-page .professional-product-form-fields {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .tenant-erp .professional-registration-page .professional-category-select {
+    max-width: none;
+  }
+}
