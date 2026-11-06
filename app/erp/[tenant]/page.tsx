@@ -2121,34 +2121,33 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
-          <div className="notice">
-            <strong>Pote de assinaturas por produtividade:</strong> a participação individual não é mais digitada no cadastro.
-            O sistema calcula automaticamente pelo número de atendimentos concluídos de assinantes no período.
-            Os percentuais fixos antigos foram preservados apenas no histórico, sem efeito na distribuição.
-            Confira o resultado em <Link href={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}>Gerar Comissões</Link>.
-          </div>
-          <p className="small muted">Comissões por serviços, produtos e metas de assinaturas agora são configuradas na ficha de cada profissional. O pote é calculado automaticamente pelo volume de atendimentos de assinantes, sem editar o montante recebido.</p>
-          <div className="demo-team-grid">
-            {professionals.map((user) => (
-              <article className="card demo-team-card" key={user.id}>
-                <div className="demo-avatar">{user.name.slice(0,1)}</div>
-                <div><strong>{user.name}</strong><span>{user.email}</span></div>
-                <strong className="demo-revenue">{ROLE_LABELS[user.role] ?? user.role}</strong>
-                <small>{user.active ? "Cadastro ativo" : "Cadastro inativo"}</small>
-                {isOwner && <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/${encodeURIComponent(user.id)}`}>
-                  Abrir ficha do profissional
-                </Link>}
-                {isOwner && ["BARBER","OWNER","MANAGER"].includes(user.role) && <form action={toggleFeaturedProfessional}
-                  style={{marginTop:8}}>
-                  <input type="hidden" name="tenantCode" value={tenantCode}/>
-                  <input type="hidden" name="userId" value={user.id}/>
-                  <input type="hidden" name="featured" value={workspace.featuredProfessionalIds.includes(user.id)?"no":"yes"}/>
-                  <button type="submit" className="btn secondary">
-                    {workspace.featuredProfessionalIds.includes(user.id)?"Remover destaque":"Destacar no aplicativo"}
-                  </button>
-                </form>}
-              </article>
-            ))}
+          <details className="erp-directory-help">
+            <summary>Como funcionam as comissões e o pote de assinaturas?</summary>
+            <p className="small muted">A participação individual no pote é calculada automaticamente pelos atendimentos de assinantes concluídos. As antigas configurações fixas ficam preservadas apenas no histórico. Consulte <Link href={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}>Gerar Comissões</Link> para conferir o resultado.</p>
+            <p className="small muted">Comissões por serviço, produto e metas de assinaturas são configuradas na ficha individual do profissional.</p>
+          </details>
+          <div className="table-wrap erp-compact-directory">
+            <table>
+              <thead><tr><th>Profissional</th><th>Função</th><th>Situação</th><th>Destaque</th><th>Ações</th></tr></thead>
+              <tbody>{professionals.map(user=><tr key={user.id}>
+                <td><strong>{user.name}</strong><span className="erp-directory-secondary">{user.email}</span></td>
+                <td>{ROLE_LABELS[user.role]??user.role}</td>
+                <td><span className={"badge "+(user.active?"approved":"")}>{user.active?"Ativo":"Inativo"}</span></td>
+                <td>{workspace.featuredProfessionalIds.includes(user.id)?"Em destaque":"—"}</td>
+                <td><div className="erp-directory-actions">
+                  {isOwner&&<Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/${encodeURIComponent(user.id)}`}>Abrir ficha</Link>}
+                  {isOwner&&["BARBER","OWNER","MANAGER"].includes(user.role)&&<form action={toggleFeaturedProfessional}>
+                    <input type="hidden" name="tenantCode" value={tenantCode}/>
+                    <input type="hidden" name="userId" value={user.id}/>
+                    <input type="hidden" name="featured" value={workspace.featuredProfessionalIds.includes(user.id)?"no":"yes"}/>
+                    <button type="submit" className="btn secondary">{workspace.featuredProfessionalIds.includes(user.id)?"Remover destaque":"Destacar"}</button>
+                  </form>}
+                  {!isOwner&&<span className="small muted">Somente consulta</span>}
+                </div></td>
+              </tr>)}
+              {!professionals.length&&<tr><td colSpan={5} className="small muted">Nenhum profissional corresponde à pesquisa.</td></tr>}
+              </tbody>
+            </table>
           </div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`} searchParams={qs} param="equipePage" page={equipePage} total={professionalsTotal} pageSize={pageSize} hash="equipe" label="profissionais" />
         </section>
