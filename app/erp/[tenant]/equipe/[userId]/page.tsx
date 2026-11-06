@@ -157,6 +157,19 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </section>
     </section>
 
+    {(profile.contacts?.length??0)>0&&<details className="professional-legacy-contacts" aria-label="Contatos adicionais antigos">
+      <summary>Contatos adicionais arquivados ({profile.contacts?.length??0})</summary>
+      <p className="small muted">Contatos antigos preservados apenas para consulta administrativa. O cadastro de novos contatos adicionais permanece desativado.</p>
+      <div className="professional-legacy-contact-list">
+        {(profile.contacts??[]).map(contact=><div key={contact.id} className="professional-legacy-contact-row">
+          <strong>{contact.name}</strong>
+          <span>{contact.relation||"Vínculo não informado"}</span>
+          <span>{contact.phone||"Telefone não informado"}</span>
+          {contact.email&&<span>{contact.email}</span>}
+        </div>)}
+      </div>
+    </details>}
+
     <section id="contratos-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>2. Contratos do profissional</strong> <span className="muted"> · documentos vinculados</span></h3>
       <div style={{marginTop:12}}>
