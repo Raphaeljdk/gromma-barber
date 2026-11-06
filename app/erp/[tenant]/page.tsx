@@ -5,6 +5,7 @@ import { BusinessDataSection } from "@/components/business-data-section";
 import { BrandingSettingsSection } from "@/components/branding-settings-section";
 import { unitPolicy } from "@/lib/unit-operations-policy";
 import { toggleFeaturedProfessional } from "./featured-professional-actions";
+import { createProfessional } from "./professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
@@ -2109,10 +2110,29 @@ export async function TenantERPView({
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
-          {isOwner && <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:14}}>
-            <Link className="btn" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/novo`}><Plus size={16}/> Cadastrar profissional</Link>
-            <span className="small muted">Abre uma página dedicada para cadastrar e depois configurar a ficha completa.</span>
-          </div>}
+          {isOwner && <details className="erp-quick-create erp-directory-create">
+            <summary><Plus size={15}/> Novo profissional <small>Cadastro e edição na mesma área</small></summary>
+            <form action={createProfessional} className="erp-quick-form">
+              <input name="tenantCode" type="hidden" value={tenantCode}/>
+              <div className="erp-directory-create-fields">
+                <label>Nome completo<input name="name" className="input" minLength={2} maxLength={120} required/></label>
+                <label>E-mail de identificação<input name="email" className="input" type="email" required/></label>
+                <label>Função<select name="role" className="select" defaultValue="BARBER">
+                  <option value="BARBER">Barbeiro / Profissional</option>
+                  <option value="RECEPTIONIST">Recepção</option>
+                  <option value="MANAGER">Gestor</option>
+                  <option value="ACCOUNTANT">Contabilidade</option>
+                </select></label>
+                <label>Unidade<select name="unitId" className="select"><option value="">Definir depois</option>
+                  {shop.units.filter(unit=>unit.active).map(unit=><option key={unit.id} value={unit.id}>{unit.name}</option>)}
+                </select></label>
+              </div>
+              <div className="erp-directory-create-actions"><button className="btn" type="submit">Criar e abrir ficha completa</button>
+                <Link href={`/erp/${encodeURIComponent(tenantCode)}/equipe/novo`} className="btn secondary">Abrir cadastro em página separada</Link>
+              </div>
+              <p className="small muted">O profissional é criado sem senha. Complete contratos, permissões e comissões na ficha individual.</p>
+            </form>
+          </details>}
           {actionError==="cadastro"&&<p role="alert" className="notice error-notice">Não foi possível cadastrar o profissional. Confira se o e-mail já está em uso nesta empresa.</p>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`}
