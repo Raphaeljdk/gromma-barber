@@ -9540,3 +9540,34 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
   .tenant-erp .erp-main .erp-directory-actions { justify-content: flex-start; }
   .tenant-erp .erp-main .erp-directory-actions .btn { min-height: 42px; }
 }
+
+
+.tenant-erp .erp-main .erp-directory-create[open] > summary {
+  border-bottom: 1px solid var(--erp-border);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+.tenant-erp .erp-main .erp-directory-create-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px 12px;
+}
+.tenant-erp .erp-main .erp-directory-create-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: .79rem;
+  color: var(--erp-text);
+}
+.tenant-erp .erp-main .erp-directory-create-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+@media (max-width:620px) {
+  .tenant-erp .erp-main .erp-directory-create-fields {
+    grid-template-columns: 1fr;
+  }
+}
