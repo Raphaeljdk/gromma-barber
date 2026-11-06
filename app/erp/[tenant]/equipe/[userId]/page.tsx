@@ -48,12 +48,12 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
     <header className="section-head professional-page-header">
       <div>
         <span className="eyebrow">Empresa / Cadastros / Profissionais</span>
-        <h1>Cadastro do profissional</h1>
-        <p className="muted">{shop.tradeName} · Informações e configurações do colaborador</p>
+        <h1>Ficha do profissional</h1>
+        <p className="muted">{shop.tradeName} · Cadastro, serviços, comissões e acesso em uma única ficha</p>
       </div>
       <Link href={teamPath} className="btn secondary">Voltar aos profissionais</Link>
     </header>
-    <nav aria-label="Ir para uma seção do profissional" style={{display:"flex",gap:7,
+    <nav className="professional-section-nav" aria-label="Ir para uma seção do profissional" style={{display:"flex",gap:7,
       flexWrap:"wrap",alignItems:"center",padding:"8px 0 13px",marginBottom:8}}>
       <a key="dados-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
           href="#dados-profissional">Dados</a>
@@ -156,6 +156,19 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         </form>
       </section>
     </section>
+
+    {(profile.contacts?.length??0)>0&&<details className="professional-legacy-contacts" aria-label="Contatos adicionais antigos">
+      <summary>Contatos adicionais arquivados ({profile.contacts?.length??0})</summary>
+      <p className="small muted">Contatos antigos preservados apenas para consulta administrativa. O cadastro de novos contatos adicionais permanece desativado.</p>
+      <div className="professional-legacy-contact-list">
+        {(profile.contacts??[]).map(contact=><div key={contact.id} className="professional-legacy-contact-row">
+          <strong>{contact.name}</strong>
+          <span>{contact.relation||"Vínculo não informado"}</span>
+          <span>{contact.phone||"Telefone não informado"}</span>
+          {contact.email&&<span>{contact.email}</span>}
+        </div>)}
+      </div>
+    </details>}
 
     <section id="contratos-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
       <h3 className="professional-section-title"><strong>2. Contratos do profissional</strong> <span className="muted"> · documentos vinculados</span></h3>

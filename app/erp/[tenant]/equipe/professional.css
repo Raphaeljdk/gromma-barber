@@ -329,3 +329,119 @@
     font-size: 1rem;
   }
 }
+
+
+/* Ficha 2026: leitura vertical, controles discretos e tabelas densas. */
+.tenant-erp .professional-registration-page {
+  max-width: 1120px;
+  margin-inline: auto !important;
+}
+.tenant-erp .professional-registration-page .professional-section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex-wrap: nowrap !important;
+  padding: 10px 0 12px !important;
+  margin-bottom: 12px !important;
+  background: var(--erp-bg, #101010);
+  scrollbar-width: thin;
+}
+.tenant-erp .professional-registration-page .professional-section-nav a {
+  flex: 0 0 auto;
+  border-radius: 7px;
+  min-height: 34px;
+  font-weight: 550;
+  border-color: var(--profile-line);
+}
+.tenant-erp .professional-registration-page .professional-section-nav a:focus-visible,
+.tenant-erp .professional-registration-page .professional-section-nav a:hover {
+  outline: 2px solid var(--profile-highlight);
+  outline-offset: 1px;
+}
+.tenant-erp .professional-registration-page > section.card {
+  scroll-margin-top: 82px !important;
+  border-radius: 10px;
+  padding: 16px 18px !important;
+}
+.tenant-erp .professional-registration-page .professional-hero-card {
+  border-radius: 10px;
+  padding: 14px 18px !important;
+}
+.tenant-erp .professional-registration-page .professional-section-title {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+}
+.tenant-erp .professional-registration-page .professional-identity-grid {
+  grid-template-columns: repeat(2, minmax(0,1fr));
+}
+.tenant-erp .professional-registration-page .professional-contract-grid,
+.tenant-erp .professional-registration-page .professional-permissions-grid {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+.tenant-erp .professional-registration-page .professional-identity-grid :is(input,select),
+.tenant-erp .professional-registration-page .professional-contract-grid :is(input,select) {
+  width: 100%;
+}
+.tenant-erp .professional-registration-page .table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.tenant-erp .professional-registration-page .table-wrap :is(th,td) {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--profile-line);
+  vertical-align: middle;
+}
+.tenant-erp .professional-registration-page .table-wrap tbody tr:hover {
+  background: color-mix(in srgb, var(--profile-highlight) 5%, transparent);
+}
+@media(max-width: 700px) {
+  .tenant-erp .professional-registration-page .professional-identity-grid,
+  .tenant-erp .professional-registration-page .professional-contract-grid,
+  .tenant-erp .professional-registration-page .professional-permissions-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .tenant-erp .professional-registration-page > section.card,
+  .tenant-erp .professional-registration-page .professional-hero-card {
+    padding: 14px !important;
+  }
+  .tenant-erp .professional-registration-page .professional-section-nav {
+    margin-inline: -4px;
+    padding-inline: 4px !important;
+  }
+}
+
+.tenant-erp .professional-registration-page .professional-legacy-contacts {
+  margin: 0 0 14px;
+  border: 1px solid var(--profile-line);
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: var(--erp-panel-2, #141414);
+}
+.tenant-erp .professional-registration-page .professional-legacy-contacts summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: .9rem;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contacts summary:focus-visible {
+  outline: 2px solid var(--profile-highlight);
+  outline-offset: 3px;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contact-list {
+  margin-top: 10px;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--profile-line);
+  font-size: .84rem;
+}
+.tenant-erp .professional-registration-page .professional-legacy-contact-row span {
+  color: var(--profile-muted);
+  overflow-wrap: anywhere;
+}
