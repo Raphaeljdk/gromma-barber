@@ -9418,3 +9418,156 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
   .gromma-carousel-slot { grid-template-columns:1fr; }
   .gromma-carousel-preview { max-height:270px; aspect-ratio:512/590; }
 }
+
+
+/* GROMMA 2026: densidade empresarial consistente em todos os módulos ERP.
+   Preserva a hierarquia visual, os estados de formulário e os alvos móveis. */
+.tenant-erp .erp-main .demo-section:not([hidden]) {
+  padding-top: 13px;
+  padding-bottom: 3px;
+}
+.tenant-erp .erp-main .demo-section > .section-head {
+  margin-bottom: 12px;
+  gap: 10px;
+}
+.tenant-erp .erp-main .demo-section > .section-head h2 {
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  line-height: 1.3;
+}
+.tenant-erp .erp-main .demo-section :is(.card,.erp-quick-create) {
+  border-radius: 10px;
+  box-shadow: none;
+}
+.tenant-erp .erp-main .demo-section .card {
+  padding: 12px 14px;
+}
+.tenant-erp .erp-main .demo-section > :is(.erp-quick-create,.notice,.table-wrap,.erp-list-toolbar,.erp-directory-help) {
+  margin-block: 8px;
+}
+.tenant-erp .erp-main .demo-section .erp-quick-create {
+  padding: 10px 12px;
+}
+.tenant-erp .erp-main .demo-section .erp-quick-create > summary {
+  min-height: 27px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .86rem;
+}
+.tenant-erp .erp-main .demo-section .erp-quick-form,
+.tenant-erp .erp-main .demo-section .erp-compact-form {
+  gap: 9px;
+}
+.tenant-erp .erp-main .demo-section :is(.input,.select,.textarea) {
+  min-height: 37px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: .85rem;
+}
+.tenant-erp .erp-main .demo-section .btn {
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: .82rem;
+}
+.tenant-erp .erp-main .demo-section .table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.tenant-erp .erp-main .demo-section .table-wrap :is(th,td) {
+  padding: 9px 11px;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+.tenant-erp .erp-main .demo-section .table-wrap th {
+  font-size: .7rem;
+  letter-spacing: .035em;
+}
+.tenant-erp .erp-main .demo-section .table-wrap tbody tr:hover {
+  background: color-mix(in srgb, var(--erp-gold) 4%, transparent);
+}
+.tenant-erp .erp-main .erp-compact-directory {
+  overflow-x: auto;
+  border: 1px solid var(--erp-border);
+  border-radius: 10px;
+}
+.tenant-erp .erp-main .erp-compact-directory th:last-child,
+.tenant-erp .erp-main .erp-compact-directory td:last-child { min-width: 180px; }
+.tenant-erp .erp-main .erp-directory-secondary {
+  display: block;
+  color: var(--erp-muted);
+  font-size: .76rem;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.tenant-erp .erp-main .erp-directory-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tenant-erp .erp-main .erp-directory-actions .btn {
+  min-height: 32px;
+  padding: 5px 9px;
+  font-size: .76rem;
+}
+.tenant-erp .erp-main .erp-directory-help {
+  border: 1px solid var(--erp-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: var(--erp-panel-2);
+  font-size: .83rem;
+}
+.tenant-erp .erp-main .erp-directory-help summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.tenant-erp .erp-main .erp-directory-help summary:focus-visible {
+  outline: 2px solid var(--erp-gold);
+  outline-offset: 3px;
+}
+.tenant-erp .erp-main .erp-directory-help[open] p { margin: 8px 0; }
+.tenant-erp .erp-sidebar .erp-nav-tree-row > .erp-nav-item {
+  min-height: 35px;
+  font-size: .81rem;
+}
+.tenant-erp .erp-sidebar .erp-nav-tree-toggle { min-height: 35px; height: 35px; }
+@media (max-width: 620px) {
+  .tenant-erp .erp-main .demo-section .card { padding: 11px; }
+  .tenant-erp .erp-main .demo-section :is(.input,.select,.textarea,.btn) { min-height: 42px; }
+  .tenant-erp .erp-main .demo-section .table-wrap :is(th,td) { padding: 9px 8px; }
+  .tenant-erp .erp-main .erp-directory-actions { justify-content: flex-start; }
+  .tenant-erp .erp-main .erp-directory-actions .btn { min-height: 42px; }
+}
+
+
+.tenant-erp .erp-main .erp-directory-create[open] > summary {
+  border-bottom: 1px solid var(--erp-border);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+.tenant-erp .erp-main .erp-directory-create-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px 12px;
+}
+.tenant-erp .erp-main .erp-directory-create-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: .79rem;
+  color: var(--erp-text);
+}
+.tenant-erp .erp-main .erp-directory-create-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+@media (max-width:620px) {
+  .tenant-erp .erp-main .erp-directory-create-fields {
+    grid-template-columns: 1fr;
+  }
+}

@@ -149,7 +149,11 @@ export function ErpSidebar({
   function renderNavItem(item: ErpNavigationNode, depth = 0): React.ReactNode {
     if ((item.adminOnly && !canManage) || (item.ownerOnly && !isOwner)) return null;
 
-    const visibleChildren = item.children?.filter((child) => (!child.adminOnly || canManage) && (!child.ownerOnly || isOwner)) ?? [];
+    // Profissionais e Serviços têm uma única entrada no menu. Cadastro,
+    // edição e destaque continuam acessíveis dentro de suas páginas.
+    const compactModule = item.id === "empresa-profissionais" || item.id === "empresa-servicos";
+    const visibleChildren = compactModule ? [] :
+      item.children?.filter((child) => (!child.adminOnly || canManage) && (!child.ownerOnly || isOwner)) ?? [];
     const hasChildren = visibleChildren.length > 0;
     const activeItem = item.route === active;
     const activeInside = hasChildren && visibleChildren.some((child) => itemIncludesRoute(child, active));

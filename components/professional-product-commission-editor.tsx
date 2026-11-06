@@ -15,20 +15,19 @@ type Props={
 };
 export function ProfessionalProductCommissionEditor({tenantCode,userId,rules}:Props){
   const [category,setCategory]=useState<ProductCommissionCategory>("COSMETICS");
-  return <section aria-label="Configurar comissão de cosméticos e bebidas">
-    <p className="small muted" style={{margin:"10px 0"}}>
-      Escolha a categoria e o formato de comissão. Na opção fixa, informe apenas um percentual.
-      Na opção escalonada, cadastre faixas de faturamento do profissional nessa categoria no período.
-      Serviços não entram aqui, pois já possuem comissão individual.
-    </p>
-    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
+  return <section className="professional-product-editor" aria-label="Configurar comissão de cosméticos e bebidas">
+    <details className="professional-editor-help">
+      <summary>Como funcionam as comissões por categoria?</summary>
+      <p className="small muted">Selecione cosméticos ou bebidas. A regra fixa usa um único percentual; a escalonada aplica faixas de faturamento da categoria no período. Os serviços têm comissões individuais.</p>
+    </details>
+    <div className="professional-product-rules-status">
       {PRODUCT_COMMISSION_CATEGORIES.map(item=><span key={item.id} className="small muted">
         <strong>{item.label}</strong>: {rules[item.id]?
           (rules[item.id]?.mode==="FIXED"?`Fixa · ${rules[item.id]?.fixedPercent}%`:
             `Escalonada · ${rules[item.id]?.tiers.length} faixa(s)`):"Usa regra padrão"}
       </span>)}
     </div>
-    <label>Categoria de produto
+    <label className="professional-category-select">Categoria de produto
       <select className="select" value={category} onChange={e=>setCategory(e.target.value as ProductCommissionCategory)}>
         {PRODUCT_COMMISSION_CATEGORIES.map(c=><option value={c.id} key={c.id}>{c.label}</option>)}
       </select>
@@ -66,14 +65,12 @@ function CategoryRuleForm({tenantCode,userId,category,rule}:{
   tenantCode:string;userId:string;category:ProductCommissionCategory;rule?:ProductCommissionRule;
 }){
   const [mode,setMode]=useState<"FIXED"|"SCALED">(rule?.mode??"FIXED");
-  return <form action={saveProfessionalSection} className="erp-compact-form"
-    style={{marginTop:12,padding:12,border:"1px solid var(--border,#ddd)",borderRadius:10}}>
+  return <form action={saveProfessionalSection} className="erp-compact-form professional-product-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="userId" value={userId}/>
     <input type="hidden" name="section" value="product-category-rule"/>
     <input type="hidden" name="category" value={category}/>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",
-      alignItems:"end",gap:12}}>
+    <div className="professional-product-form-fields">
       <label>Formato da comissão
         <select className="select" name="mode" value={mode}
           onChange={e=>setMode(e.target.value as "FIXED"|"SCALED")}>
