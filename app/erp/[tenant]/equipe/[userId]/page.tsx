@@ -100,7 +100,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <p className="professional-profile-footnote">Dados pessoais restritos à administração. Alterações sensíveis são registradas na auditoria e os históricos de atendimentos e comissões são preservados.</p>
     </article>
 
-    <section id="dados-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
+    <section id="dados-profissional" className="card">
       <h3 className="professional-section-title"><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></h3>
       <form action={saveProfessionalIdentity} className="erp-compact-form" style={{marginTop:10}}>
         {hidden(code,user.id)}
@@ -127,6 +127,10 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             </select>}
           </label>
           <input type="hidden" name="photoUrl" value={profile.photoUrl??""}/>
+        </div>
+        <details className="professional-subsection professional-optional-address">
+          <summary>Endereço e dados complementares</summary>
+          <div className="professional-identity-grid professional-extra-fields">
           <label><span className={labelClass}>CEP</span><input className="input" name="zipCode" inputMode="numeric" maxLength={9} defaultValue={profile.zipCode??""}/></label>
           <label><span className={labelClass}>Logradouro</span><input className="input" name="street" defaultValue={profile.street??""}/></label>
           <label><span className={labelClass}>Bairro</span><input className="input" name="district" defaultValue={profile.district??""}/></label>
@@ -134,14 +138,17 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <label><span className={labelClass}>Estado (UF)</span><input className="input" name="state" maxLength={2} defaultValue={profile.state??""}/></label>
           <label><span className={labelClass}>Número</span><input className="input" name="streetNumber" defaultValue={profile.streetNumber??""}/></label>
           <label><span className={labelClass}>Complemento</span><input className="input" name="complement" defaultValue={profile.complement??""}/></label>
-        </div>
+          </div>
+        </details>
         <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="accessToOtherUnits" defaultChecked={profile.accessToOtherUnits??false}/> Indicar acesso a dados de outras unidades (ainda sujeito às permissões gerais do ERP)</label>
         <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="active" defaultChecked={user.active}/> Cadastro ativo</label>
         
         <button className="btn" type="submit">Salvar dados do profissional</button>
         <p className="small muted">A foto é atualizada pelo envio de arquivo abaixo; salvar os dados não apaga a foto existente nem altera a senha.</p>
       </form>
-      <section className="erp-quick-create" style={{marginTop:14}}>
+      <details className="professional-subsection professional-photo-upload">
+        <summary>Atualizar foto do profissional</summary>
+        <section className="erp-quick-create" style={{marginTop:10}}>
         <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
         <form action={uploadProfessionalPhoto} className="erp-compact-form">
           {hidden(code,user.id)}
@@ -154,7 +161,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <p className="small muted">O envio exige Vercel Blob configurado. Se estiver indisponível, a foto já cadastrada será preservada.</p>
           <button className="btn secondary" type="submit">Enviar foto autorizada</button>
         </form>
-      </section>
+        </section>
+      </details>
     </section>
 
     {(profile.contacts?.length??0)>0&&<details className="professional-legacy-contacts" aria-label="Contatos adicionais antigos">
@@ -170,7 +178,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </div>
     </details>}
 
-    <section id="contratos-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
+    <section id="contratos-profissional" className="card">
       <h3 className="professional-section-title"><strong>2. Contratos do profissional</strong> <span className="muted"> · documentos vinculados</span></h3>
       <div style={{marginTop:12}}>
         {(profile.contracts??[]).map(contract=><div key={contract.id} className="card"
@@ -187,6 +195,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           </div>
         </div>)}
         {!profile.contracts?.length&&<p className="small muted">Nenhum contrato vinculado.</p>}
+        <details className="professional-subsection"><summary>Enviar contrato PDF privado</summary>
         <form action={uploadProfessionalContract} className="erp-compact-form"
           style={{marginTop:10,padding:12,border:"1px solid var(--border,#333)",borderRadius:10}}>
           {hidden(code,user.id)}
@@ -201,6 +210,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <p className="small muted">Armazenado em Blob privado, baixado somente com acesso de proprietário autorizado.
             Requer GROMMA_PRIVATE_BLOB_TOKEN configurado na Vercel.</p>
         </form>
+        </details>
+        <details className="professional-subsection"><summary>Vincular contrato por endereço (link)</summary>
         <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:10}}>
           {hidden(code,user.id,"contract-add")}
           <div className="professional-contract-grid">
@@ -212,10 +223,11 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           </div>
         </form>
         <p className="small muted">O arquivo continua no armazenamento de origem. O sistema salva apenas seu endereço.</p>
+        </details>
       </div>
     </section>
 
-    <section id="permissoes-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
+    <section id="permissoes-profissional" className="card">
       <h3 className="professional-section-title"><strong>3. Permissões individuais</strong> <span className="muted"> · controle por profissional</span></h3>
       <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"permissions")}
@@ -232,7 +244,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </form>
     </section>
 
-    <section id="servicos-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
+    <section id="servicos-profissional" className="card">
       <h3 className="professional-section-title"><strong>4. Serviços e comissões</strong> <span className="muted"> · configure tudo de uma vez</span></h3>
       <p className="small muted" style={{margin:"10px 0"}}>
         Selecione os serviços que o profissional realiza e informe a comissão de cada um.
@@ -249,53 +261,63 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         }))}/>
     </section>
 
-    <section id="jornada-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
+    <section id="jornada-profissional" className="card">
       <h3 className="professional-section-title"><strong>5. Jornada de trabalho</strong> <span className="muted"> · dias e horários de atendimento</span></h3>
       <ProfessionalWorkWeekEditor tenantCode={code} userId={user.id}
         weekDays={WEEK_DAYS} shifts={shifts}/>
     </section>
 
-    <section id="folgas-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
+    <section id="folgas-profissional" className="card professional-breaks-panel">
       <h3 className="professional-section-title"><strong>6. Intervalos e folgas</strong> <span className="muted"> · pausas recorrentes e ausências</span></h3>
-      <div className="grid grid-2" style={{marginTop:18}}>
-        <section><h3>Intervalos da semana</h3>
-          {(profile.breaks??[]).map(entry=><div className="card" style={{padding:12,marginBottom:8}} key={entry.id}>
-            <strong>{WEEK_DAYS.find(d=>d.id===entry.day)?.label}</strong> · {entry.start} às {entry.end}
-            <form action={saveProfessionalSection}>{hidden(code,user.id,"break-remove")}
-              <input name="id" type="hidden" value={entry.id}/><button className="btn secondary" type="submit">Remover</button>
-            </form>
-          </div>)}
-          {!profile.breaks?.length&&<p className="small muted">Sem intervalo recorrente.</p>}
-          <form action={saveProfessionalSection} className="erp-compact-form">
+      <div className="professional-breaks-columns">
+        <section aria-labelledby="intervals-heading" className="professional-schedule-column">
+          <h4 id="intervals-heading">Intervalos da semana</h4>
+          <form action={saveProfessionalSection} className="erp-compact-form professional-inline-editor">
             {hidden(code,user.id,"break-add")}
-            <label>Dia da semana<select className="select" name="day">{WEEK_DAYS.map(day=><option key={day.id} value={day.id}>{day.label}</option>)}</select></label>
-            <div className="grid grid-2">
+            <div className="professional-break-fields">
+              <label>Dia da semana<select className="select" name="day">{WEEK_DAYS.map(day=><option key={day.id} value={day.id}>{day.label}</option>)}</select></label>
               <label>Início<input className="input" name="start" type="time" defaultValue="12:00" required/></label>
               <label>Fim<input className="input" name="end" type="time" defaultValue="13:00" required/></label>
+              <button className="btn secondary" type="submit">Adicionar intervalo</button>
             </div>
-            <button className="btn secondary" type="submit">Adicionar intervalo</button>
           </form>
+          <div className="professional-saved-items">
+            <p className="small muted">Intervalos cadastrados ({profile.breaks?.length??0})</p>
+            {(profile.breaks??[]).slice().sort((a,b)=>a.day-b.day||a.start.localeCompare(b.start)).map(entry=><div className="professional-compact-entry" key={entry.id}>
+              <span><strong>{WEEK_DAYS.find(d=>d.id===entry.day)?.label}</strong> · {entry.start} às {entry.end}</span>
+              <form action={saveProfessionalSection}>{hidden(code,user.id,"break-remove")}
+                <input name="id" type="hidden" value={entry.id}/><button className="btn secondary" type="submit" aria-label={`Remover intervalo de ${WEEK_DAYS.find(d=>d.id===entry.day)?.label}, ${entry.start} às ${entry.end}`}>Remover</button>
+              </form>
+            </div>)}
+            {!profile.breaks?.length&&<p className="small muted">Nenhum intervalo cadastrado.</p>}
+          </div>
         </section>
-        <section><h3>Folgas e férias</h3>
-          {(profile.leaves??[]).map(entry=><div key={entry.id} className="card" style={{padding:12,marginBottom:8}}>
-            <strong>{entry.reason}</strong><p className="small muted">{entry.from} até {entry.to}</p>
-            <form action={saveProfessionalSection}>{hidden(code,user.id,"leave-remove")}
-              <input name="id" type="hidden" value={entry.id}/><button className="btn secondary" type="submit">Remover</button>
-            </form>
-          </div>)}
-          {!profile.leaves?.length&&<p className="small muted">Nenhuma ausência cadastrada.</p>}
-          <form action={saveProfessionalSection} className="erp-compact-form">
+        <section aria-labelledby="leaves-heading" className="professional-schedule-column">
+          <h4 id="leaves-heading">Folgas e férias</h4>
+          <form action={saveProfessionalSection} className="erp-compact-form professional-inline-editor">
             {hidden(code,user.id,"leave-add")}
-            <div className="grid grid-2"><label>De<input className="input" name="from" type="date" required/></label>
-              <label>Até<input className="input" name="to" type="date" required/></label></div>
-            <label>Motivo<input className="input" name="label" placeholder="Férias, folga, afastamento" required/></label>
-            <button className="btn secondary" type="submit">Adicionar ausência</button>
+            <div className="professional-leave-fields">
+              <label>De<input className="input" name="from" type="date" required/></label>
+              <label>Até<input className="input" name="to" type="date" required/></label>
+              <label className="professional-leave-reason">Motivo<input className="input" name="label" placeholder="Férias, folga, afastamento" required/></label>
+              <button className="btn secondary" type="submit">Adicionar ausência</button>
+            </div>
           </form>
+          <div className="professional-saved-items">
+            <p className="small muted">Ausências cadastradas ({profile.leaves?.length??0})</p>
+            {(profile.leaves??[]).map(entry=><div key={entry.id} className="professional-compact-entry">
+              <span><strong>{entry.reason}</strong> · {entry.from.split("-").reverse().join("/")} até {entry.to.split("-").reverse().join("/")}</span>
+              <form action={saveProfessionalSection}>{hidden(code,user.id,"leave-remove")}
+                <input name="id" type="hidden" value={entry.id}/><button className="btn secondary" type="submit" aria-label={`Remover ausência ${entry.reason}`}>Remover</button>
+              </form>
+            </div>)}
+            {!profile.leaves?.length&&<p className="small muted">Nenhuma ausência cadastrada.</p>}
+          </div>
         </section>
       </div>
     </section>
 
-    <section id="produtos-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
+    <section id="produtos-profissional" className="card">
       <h3 className="professional-section-title"><strong>7. Comissão de produtos</strong> <span className="muted"> · Cosméticos e Bebidas</span></h3>
       <ProfessionalProductCommissionEditor tenantCode={code} userId={user.id}
         rules={profile.productCommissionRules??{}}/>
@@ -304,7 +326,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         Itens ainda sem categoria continuam com a regra anterior, sem alterar históricos.
       </p>
     </section>
-    <section id="assinaturas-profissional" className="card" style={{padding:14,marginBottom:10,scrollMarginTop:24}}>
+    <section id="assinaturas-profissional" className="card">
       <h3 className="professional-section-title"><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></h3>
       <p className="small muted" style={{marginTop:14}}>O pote de assinaturas é distribuído automaticamente por produtividade. Uma bonificação adicional pela venda de um plano novo é opcional e só aparece na apuração se estiver habilitada abaixo.</p>
       <form action={saveProfessionalSection} className="erp-compact-form">
@@ -324,8 +346,10 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         
         <button className="btn" type="submit">Salvar percentuais de vendas</button>
       </form>
-      <section className="erp-quick-create" style={{marginTop:14}}>
-        <h3 className="professional-section-title">Metas por venda de planos novos (somente se o bônus estiver habilitado)</h3>
+      <details className="professional-subsection" open={(workspace.subscriptionCommissionTiers[user.id]??[]).length>0}>
+        <summary>Metas por venda de planos novos (opcional)</summary>
+        <section className="erp-quick-create" style={{marginTop:10}}>
+        <h3 className="professional-section-title">Metas por venda de planos novos</h3>
         <p className="small muted">Exemplo: vendas confirmadas de R$ 500 até R$ 1.000, comissão de 5%. Quando existirem faixas, elas substituem o percentual fixo de venda de assinatura dentro das condições definidas.</p>
         <form action={saveProfessionalSection} className="erp-compact-form">
           {hidden(code,user.id,"subscription-tiers")}
@@ -340,12 +364,13 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           
           <button className="btn secondary" type="submit">Salvar faixas comerciais</button>
         </form>
-      </section>
+        </section>
+      </details>
     </section>
-    <article className="card" style={{padding:16}}>
-      <h3>Pote de assinaturas</h3>
+    <details className="professional-subsection professional-pot-note">
+      <summary>Como funciona o pote de assinaturas?</summary>
       <p className="small muted">A participação de cada profissional continua sendo calculada automaticamente pelos atendimentos de assinantes elegíveis. Nenhum percentual fixo de participação é editado neste cadastro.</p>
       <Link href={"/erp/"+encodeURIComponent(code)+"/comissoes"}>Conferir apuração de comissões</Link>
-    </article>
+    </details>
   </main>;
 }
