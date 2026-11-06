@@ -48,12 +48,12 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
     <header className="section-head professional-page-header">
       <div>
         <span className="eyebrow">Empresa / Cadastros / Profissionais</span>
-        <h1>Cadastro do profissional</h1>
-        <p className="muted">{shop.tradeName} · Informações e configurações do colaborador</p>
+        <h1>Ficha do profissional</h1>
+        <p className="muted">{shop.tradeName} · Cadastro, serviços, comissões e acesso em uma única ficha</p>
       </div>
       <Link href={teamPath} className="btn secondary">Voltar aos profissionais</Link>
     </header>
-    <nav aria-label="Ir para uma seção do profissional" style={{display:"flex",gap:7,
+    <nav className="professional-section-nav" aria-label="Ir para uma seção do profissional" style={{display:"flex",gap:7,
       flexWrap:"wrap",alignItems:"center",padding:"8px 0 13px",marginBottom:8}}>
       <a key="dados-profissional" className="btn secondary" style={{padding:"7px 11px",fontSize:12}}
           href="#dados-profissional">Dados</a>
