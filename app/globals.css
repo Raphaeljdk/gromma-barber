@@ -9621,3 +9621,46 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
   .tenant-erp .professional-registration-page .table-wrap { max-width: 100%; overflow-x: auto; }
   .tenant-erp .gromma-settings-panel { padding: 14px; margin: 10px 0; }
 }
+
+
+/* Services: one compact vertical flow, consistent with employee registration. */
+.tenant-erp .gromma-services-registration {
+  max-width: 1160px;
+  min-width: 0;
+}
+.tenant-erp .gromma-services-registration > :is(.erp-quick-create,.table-wrap) {
+  margin-block: 8px;
+  border-radius: 10px;
+}
+.tenant-erp .gromma-services-registration .erp-quick-create > summary {
+  min-height: 42px;
+  padding: 10px 12px;
+}
+.tenant-erp .gromma-services-registration .erp-quick-form {
+  gap: 10px;
+  padding: 12px;
+}
+.tenant-erp .gromma-services-registration .erp-quick-form .grid {
+  gap: 10px;
+}
+.tenant-erp .gromma-services-registration .gromma-services-list table {
+  width: 100%;
+  min-width: 560px;
+}
+.tenant-erp .gromma-services-registration .gromma-services-list :is(th,td) {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+.tenant-erp .gromma-services-registration .gromma-services-list td:first-child {
+  width: 50%;
+}
+@media (max-width: 850px) {
+  .tenant-erp .gromma-services-registration .gromma-services-list {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tenant-erp .gromma-services-registration .erp-quick-form .grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
