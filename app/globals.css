@@ -9664,3 +9664,107 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
     grid-template-columns: minmax(0,1fr);
   }
 }
+
+
+/* Second visual pass: compact vertical reading, without adding navigation. */
+.tenant-erp .gromma-settings-collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tenant-erp .gromma-settings-collapsible > summary::-webkit-details-marker { display: none; }
+.tenant-erp .gromma-settings-collapsible > summary::after {
+  content: "+";
+  font-size: 20px;
+  font-weight: 500;
+  flex: none;
+}
+.tenant-erp .gromma-settings-collapsible[open] > summary::after { content: "−"; }
+.tenant-erp .gromma-settings-collapsible[open] > summary { margin-bottom: 12px; }
+.tenant-erp .gromma-settings-collapsible > summary:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+@media (min-width: 851px) {
+  .tenant-erp .gromma-business-data .gromma-settings-form {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 10px 16px;
+  }
+  .tenant-erp .gromma-business-data .gromma-settings-form > .gromma-settings-actions,
+  .tenant-erp .gromma-business-data .gromma-settings-form > .gromma-field-row:has(textarea) {
+    grid-column: 1 / -1;
+  }
+  .tenant-erp .gromma-business-data .gromma-settings-form .gromma-field-row { min-width: 0; }
+  .tenant-erp .gromma-business-data .gromma-settings-panel { padding: 16px 20px; }
+}
+@media (max-width: 850px) {
+  .tenant-erp .gromma-business-data .gromma-settings-form { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .tenant-erp .gromma-settings-collapsible > summary { align-items: flex-start; }
+}
+
+
+/* Stage 3: low-risk consistency pass across existing ERP screens.
+   No navigation, form logic, data model, or business rules are changed. */
+@media (min-width: 851px) {
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) > .section-head {
+    margin-bottom: 12px;
+  }
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .table-wrap {
+    max-width: 100%;
+    border-radius: 10px;
+  }
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .table-wrap :is(th,td) {
+    padding-block: 9px;
+    vertical-align: middle;
+  }
+  .tenant-erp :is(#clientes,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .erp-kpi-row {
+    gap: 10px;
+    margin-block: 12px 14px;
+  }
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .erp-quick-create {
+    margin-bottom: 10px;
+  }
+}
+@media (max-width: 850px) {
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) {
+    min-width: 0;
+  }
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+
+/* Stage 4: gentle, presentation-only refinements to management and reports. */
+@media (min-width: 851px) {
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) > .section-head {
+    margin-bottom: 12px;
+    gap: 12px;
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-workspace-card {
+    padding: 16px;
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-card-title {
+    margin-bottom: 10px;
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-compact-form {
+    gap: 10px;
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-executive-grid {
+    gap: 12px;
+  }
+}
+@media (max-width: 850px) {
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-executive-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-workspace-card {
+    min-width: 0;
+  }
+}
