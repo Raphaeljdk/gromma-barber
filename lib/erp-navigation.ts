@@ -137,16 +137,8 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "empresa-categorias", label: "Categorias" },
         { id: "empresa-filiais", label: "Filiais", route: "unidades" },
         { id: "empresa-produtos", label: "Produtos", route: "estoque" },
-        { id: "empresa-profissionais", label: "Profissionais", route: "equipe", children: [
-          { id: "empresa-profissionais-cadastro", label: "Cadastrar profissional", route: "equipe/novo", ownerOnly: true },
-          { id: "empresa-profissionais-exibicao", label: "Exibição do profissional", route: "equipe" },
-          { id: "empresa-profissionais-destaque", label: "Destacar profissional" },
-        ] },
-        { id: "empresa-servicos", label: "Serviços", route: "servicos", children: [
-          { id: "empresa-servicos-cadastro", label: "Cadastrar serviço", route: "servicos" },
-          { id: "empresa-servicos-exibicao", label: "Exibição do serviço", route: "servicos" },
-          { id: "empresa-servicos-destaque", label: "Destacar serviço" },
-        ] },
+        { id: "empresa-profissionais", label: "Profissionais", route: "equipe" },
+        { id: "empresa-servicos", label: "Serviços", route: "servicos" },
 
         { id: "empresa-grupos-acesso", label: "Grupo de acesso", route: "configuracoes", ownerOnly: true },
 
