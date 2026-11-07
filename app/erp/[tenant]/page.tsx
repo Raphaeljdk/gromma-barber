@@ -2127,7 +2127,6 @@ export async function TenantERPView({
                 </select></label>
               </div>
               <div className="erp-directory-create-actions"><button className="btn" type="submit">Criar e abrir ficha completa</button>
-                <Link href={`/erp/${encodeURIComponent(tenantCode)}/equipe/novo`} className="btn secondary">Abrir cadastro em página separada</Link>
               </div>
               <p className="small muted">O profissional é criado sem senha. Complete contratos, permissões e comissões na ficha individual.</p>
             </form>

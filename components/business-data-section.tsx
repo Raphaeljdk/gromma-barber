@@ -21,8 +21,6 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
     </div>
     <nav className="gromma-settings-nav" aria-label="Configurações da empresa">
       <Link href={root + "/dados"} aria-current="page">Dados</Link>
-      <Link href={root + "/identidade"}>Identidade</Link>
-      <Link href={root + "/clube-config"}>Clube</Link>
       <Link href={root + "/unidades"}>Filiais</Link>
     </nav>
     <p className="small muted">Estes dados pertencem à empresa inteira. CNPJ, Pix, endereço e condições de recebimento de cada filial ficam em <strong>Empresa → Cadastro → Filiais</strong>.</p>
