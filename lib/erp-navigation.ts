@@ -134,8 +134,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     items: [
       { id: "empresa-cadastro", label: "Cadastro", children: [
         { id: "empresa-dados", label: "Dados", route: "dados" },
-        { id: "empresa-identidade", label: "Identidade", route: "identidade" },
-        { id: "empresa-clube", label: "Clube", route: "clube-config" },
         { id: "empresa-categorias", label: "Categorias" },
         { id: "empresa-filiais", label: "Filiais", route: "unidades" },
         { id: "empresa-produtos", label: "Produtos", route: "estoque" },
