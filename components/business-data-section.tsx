@@ -67,11 +67,8 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
       </div>}
     </div>
 
-    <div className="gromma-settings-panel">
-      <div className="gromma-settings-heading">
-        <h3>Imagens do carrossel</h3>
-        <span className="small muted">Até 3 imagens para a apresentação do negócio · recomendado 512 × 590 px</span>
-      </div>
+    <details className="gromma-settings-panel gromma-settings-collapsible">
+      <summary className="gromma-settings-heading"><strong>Imagens do carrossel</strong><span className="small muted">Até 3 imagens · recomendado 512 × 590 px</span></summary>
       <div className="gromma-business-carousel">
         {Array.from({length:3},(_,index)=><article className="gromma-carousel-slot" key={index}>
           <div className="gromma-carousel-preview">
@@ -108,7 +105,7 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
         </article>)}
       </div>
       <p className="small muted">Cada arquivo pode ter até 2 MB. As imagens enviadas aqui são públicas, para divulgação da barbearia. Não envie documentos, informações pessoais ou fotos sem autorização.</p>
-    </div>
+    </details>
 
     <div className="gromma-settings-panel">
       <div className="gromma-settings-heading">
