@@ -9739,3 +9739,32 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
     -webkit-overflow-scrolling: touch;
   }
 }
+
+
+/* Stage 4: gentle, presentation-only refinements to management and reports. */
+@media (min-width: 851px) {
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) > .section-head {
+    margin-bottom: 12px;
+    gap: 12px;
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-workspace-card {
+    padding: 16px;
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-card-title {
+    margin-bottom: 10px;
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-compact-form {
+    gap: 10px;
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-executive-grid {
+    gap: 12px;
+  }
+}
+@media (max-width: 850px) {
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-executive-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .tenant-erp :is(#gerencial,#financeiro,#estoque,#comissoes,#auditoria,#indicadores-consolidados) .erp-workspace-card {
+    min-width: 0;
+  }
+}
