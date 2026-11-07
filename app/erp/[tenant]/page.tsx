@@ -1405,7 +1405,7 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/clientes`} searchParams={qs} param="clientesPage" page={clientesPage} total={customersTotal} pageSize={pageSize} hash="clientes" label="clientes" />
         </section>
 
-        <section id="servicos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "servicos")}>
+        <section id="servicos" className="demo-section gromma-services-registration" hidden={Boolean(moduleId && moduleId !== "servicos")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
           {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
@@ -1441,7 +1441,7 @@ export async function TenantERPView({
             </form>
             <p className="small muted">Alterações nas regras afetam apenas prévias ainda não quitadas. Não utilize esta tela para recalcular pagamentos históricos.</p>
           </details>}
-          <div className="table-wrap"><table>
+          <div className="table-wrap gromma-services-list"><table>
             <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
             <tbody>{servicesTotal ? services.map((service) => (
               <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
