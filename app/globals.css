@@ -9571,3 +9571,28 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Compact administrative density — scoped to the existing admin shell.
+   Public marketing pages and application business logic are unchanged. */
+@media (min-width: 769px) {
+  .admin-shell { grid-template-columns: 220px minmax(0, 1fr); }
+  .admin-shell .sidebar { padding: 18px 12px; }
+  .admin-shell .sidebar .nav { margin-top: 18px; gap: 3px; }
+  .admin-shell .sidebar .nav a,
+  .admin-shell .sidebar .nav button { padding: 9px 10px; }
+  .admin-shell .admin-main { min-width: 0; padding: 20px 22px; }
+  .admin-shell .page-head { margin-bottom: 14px; }
+  .admin-shell .stats { gap: 9px; margin: 12px 0 16px; }
+  .admin-shell .stat { padding: 12px; }
+  .admin-shell .stat strong { font-size: 1.45rem; }
+  .admin-shell .card { padding: 16px; border-radius: 12px; }
+  .admin-shell .grid { gap: 12px; }
+  .admin-shell .table-wrap { border-radius: 12px; }
+  .admin-shell th, .admin-shell td { padding: 10px 12px; }
+  .admin-shell .detail-grid { gap: 12px; }
+}
+@media (max-width: 768px) {
+  .admin-shell .admin-main { min-width: 0; }
+  .admin-shell .table-wrap { max-width: 100%; overflow-x: auto; }
+}
