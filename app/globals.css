@@ -9705,3 +9705,37 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
   .tenant-erp .gromma-business-data .gromma-settings-form { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; }
   .tenant-erp .gromma-settings-collapsible > summary { align-items: flex-start; }
 }
+
+
+/* Stage 3: low-risk consistency pass across existing ERP screens.
+   No navigation, form logic, data model, or business rules are changed. */
+@media (min-width: 851px) {
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) > .section-head {
+    margin-bottom: 12px;
+  }
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .table-wrap {
+    max-width: 100%;
+    border-radius: 10px;
+  }
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .table-wrap :is(th,td) {
+    padding-block: 9px;
+    vertical-align: middle;
+  }
+  .tenant-erp :is(#clientes,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .erp-kpi-row {
+    gap: 10px;
+    margin-block: 12px 14px;
+  }
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .erp-quick-create {
+    margin-bottom: 10px;
+  }
+}
+@media (max-width: 850px) {
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) {
+    min-width: 0;
+  }
+  .tenant-erp :is(#clientes,#agenda,#assinaturas,#comissoes,#financeiro,#estoque,#auditoria) .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
