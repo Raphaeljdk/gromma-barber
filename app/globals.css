@@ -9596,3 +9596,28 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
   .admin-shell .admin-main { min-width: 0; }
   .admin-shell .table-wrap { max-width: 100%; overflow-x: auto; }
 }
+
+
+/* Targeted visual pass: professional registration and business settings.
+   Preserve DOM order, functionality, existing tabs and mobile tap targets. */
+@media (min-width: 851px) {
+  .tenant-erp .professional-registration-page { padding-bottom: 24px; }
+  .tenant-erp .professional-registration-page .card { padding: 12px 14px; border-radius: 10px; box-shadow: none; }
+  .tenant-erp .professional-registration-page :is(.grid,.grid-2,.grid-3) { gap: 10px; }
+  .tenant-erp .professional-registration-page :is(.input,.select,.textarea) { padding: 9px 11px; }
+  .tenant-erp .professional-registration-page :is(th,td) { padding: 9px 11px; }
+  .tenant-erp .professional-registration-page .table-wrap { max-width: 100%; overflow-x: auto; }
+  .tenant-erp :is(.gromma-business-data,.gromma-brand-page) { max-width: 1100px; }
+  .tenant-erp .gromma-settings-panel { padding: 14px 18px; margin: 10px 0; border-radius: 10px; }
+  .tenant-erp .gromma-settings-heading { padding-bottom: 9px; margin-bottom: 11px; }
+  .tenant-erp .gromma-settings-form { gap: 10px; }
+  .tenant-erp .gromma-field-row { gap: 5px; }
+  .tenant-erp .gromma-field-row textarea { min-height: 72px; }
+  .tenant-erp .gromma-settings-nav { margin-top: 10px; padding-bottom: 8px; }
+}
+@media (max-width: 850px) {
+  .tenant-erp .professional-registration-page,
+  .tenant-erp :is(.gromma-business-data,.gromma-brand-page) { min-width: 0; max-width: 100%; }
+  .tenant-erp .professional-registration-page .table-wrap { max-width: 100%; overflow-x: auto; }
+  .tenant-erp .gromma-settings-panel { padding: 14px; margin: 10px 0; }
+}
