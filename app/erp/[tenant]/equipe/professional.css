@@ -669,3 +669,42 @@
     max-width: none;
   }
 }
+
+
+/* Unified professional record: visually continuous vertical sections.
+   Keep separate server actions, contract storage, permissions and schedules intact. */
+@media (min-width: 851px) {
+  .tenant-erp .professional-registration-page > section.card {
+    border-radius: 0;
+    border-bottom: 0;
+    margin-block: 0;
+    padding: 14px 18px;
+    box-shadow: none;
+  }
+  .tenant-erp .professional-registration-page > section.card:first-of-type {
+    border-radius: 12px 12px 0 0;
+  }
+  .tenant-erp .professional-registration-page > section.card:last-of-type {
+    border-bottom: 1px solid var(--profile-line);
+    border-radius: 0 0 12px 12px;
+  }
+  .tenant-erp .professional-registration-page .professional-section-title {
+    margin: 0 0 9px;
+    line-height: 1.35;
+  }
+  .tenant-erp .professional-registration-page .professional-identity-grid,
+  .tenant-erp .professional-registration-page .professional-contract-grid,
+  .tenant-erp .professional-registration-page .professional-permissions-grid {
+    gap: 10px;
+  }
+  .tenant-erp .professional-registration-page .professional-breaks-columns {
+    gap: 12px;
+  }
+}
+@media (max-width: 850px) {
+  .tenant-erp .professional-registration-page > section.card {
+    padding: 13px 12px;
+    margin-block: 8px;
+    box-shadow: none;
+  }
+}
