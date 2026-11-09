@@ -823,6 +823,11 @@ export async function TenantERPView({
   const receivables = Number(receivableAggregate._sum.amount ?? 0);
   const payables = Number(payableAggregate._sum.amount ?? 0);
   const cashBalance = receivables - payables;
+  const financeTotals = activeModule === "financeiro"
+    ? await prisma.financialEntry.groupBy({by:["type","status"],where:{barberShopId:shop.id},_sum:{amount:true}})
+    : [];
+  const financeValue = (type:"RECEIVABLE"|"PAYABLE",status:"PENDING"|"PAID") =>
+    Number(financeTotals.find(row=>row.type===type&&row.status===status)?._sum.amount??0);
 
   const serviceNameById = new Map(shop.services.map((service) => [service.id, service.name]));
   const waitlist = workspace.waitlist.map((item) => ({
@@ -1031,9 +1036,14 @@ export async function TenantERPView({
     (avaliacoesPage - 1) * pageSize,
     avaliacoesPage * pageSize,
   );
-  const trainingPageRows = workspace.training.slice(
-    (treinamentosPage - 1) * pageSize,
-    treinamentosPage * pageSize,
+  const treinamentoBusca = valueOf("treinamentosQ").trim().toLocaleLowerCase("pt-BR");
+  const treinamentoTipo = ["VIDEO","COURSE","MEDIA"].includes(valueOf("treinamentosTipo"))?valueOf("treinamentosTipo"):"";
+  const filteredTraining = workspace.training.filter(item=>
+    (!treinamentoTipo||item.kind===treinamentoTipo)&&
+    (!treinamentoBusca||[item.title,item.description].some(text=>text.toLocaleLowerCase("pt-BR").includes(treinamentoBusca)))
+  );
+  const trainingPageRows = filteredTraining.slice(
+    (treinamentosPage - 1) * pageSize, treinamentosPage * pageSize,
   );
 
   const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
@@ -1807,16 +1817,23 @@ export async function TenantERPView({
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/promocoes`} searchParams={qs} param="promocoesPage" page={promocoesPage} total={Math.max(promotionCampaigns.length, workspace.coupons.length)} pageSize={pageSize} label="itens comerciais" />
         </section>
 
-        <section id="financeiro" className="demo-section" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
+        <section id="financeiro" className="demo-section gromma-financial-workspace" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
           <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <p className="small muted gromma-module-description">Acompanhe os lançamentos por situação. Os valores abaixo refletem os registros internos, sem conciliação bancária automática.</p>
+          <div className="gromma-finance-kpis">
+            <div><span>A receber · pendente</span><strong>{brl(financeValue("RECEIVABLE","PENDING"))}</strong></div>
+            <div><span>A pagar · pendente</span><strong>{brl(financeValue("PAYABLE","PENDING"))}</strong></div>
+            <div><span>Recebimentos confirmados</span><strong>{brl(financeValue("RECEIVABLE","PAID"))}</strong></div>
+            <div><span>Pagamentos confirmados</span><strong>{brl(financeValue("PAYABLE","PAID"))}</strong></div>
+          </div>
           {actionOk === "financeiro" && <div className="notice erp-inline-notice success">Lançamento financeiro criado com sucesso.</div>}
           {actionError === "financeiro" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o lançamento. Revise descrição e valor.</div>}
           {actionOk === "financeiro-pago" && <div className="notice erp-inline-notice success">Lançamento marcado como pago.</div>}
           {actionError === "financeiro-status" && <div className="notice erp-inline-notice error-notice">Não foi possível atualizar o lançamento financeiro.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {isOwner && (
-          <details className="erp-quick-create">
-            <summary><Plus size={15} /> Novo lançamento <small>Receber ou pagar</small></summary>
+          <details className="erp-quick-create gromma-finance-new">
+            <summary><Plus size={15} /> Novo lançamento <small>Contas a pagar e receber</small></summary>
             <form action={createFinancialEntry} className="erp-quick-form">
               <input type="hidden" name="tenantCode" value={tenantCode} />
               <label><span className="label">Descrição</span><input className="input" name="description" required maxLength={180} placeholder="Descrição do lançamento" /></label>
@@ -1844,19 +1861,22 @@ export async function TenantERPView({
               { param: "financeiroStatus", value: financeiroStatus, label: "Status", options: FINANCIAL_STATUS_OPTIONS },
             ]}
           />
-          <div className="table-wrap"><table>
+          <div className="table-wrap gromma-finance-table"><table>
             <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Vencimento</th><th>Unidade</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>{financialEntries.length ? financialEntries.map((entry) => (
               <tr key={entry.id}>
                 <td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{entry.dueDate ? new Intl.DateTimeFormat("pt-BR").format(entry.dueDate) : "—"}</td><td>{entry.unit?.name ?? "Geral"}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td>
                 <td>
                   {entry.status === "PENDING" && isOwner ? (
-                    <form action={markFinancialPaid}>
-                      <input type="hidden" name="tenantCode" value={tenantCode} />
-                      <input type="hidden" name="entryId" value={entry.id} />
-                      <input className="input" name="reason" minLength={5} maxLength={600} required placeholder="Motivo / referência do pagamento" aria-label="Motivo da baixa manual"/>
-                      <button className="btn secondary" type="submit">Confirmar pagamento</button>
-                    </form>
+                    <details className="gromma-finance-confirm">
+                      <summary>Dar baixa</summary>
+                      <form action={markFinancialPaid}>
+                        <input type="hidden" name="tenantCode" value={tenantCode} />
+                        <input type="hidden" name="entryId" value={entry.id} />
+                        <input className="input" name="reason" minLength={5} maxLength={600} required placeholder="Referência e motivo da confirmação" aria-label="Motivo da baixa manual"/>
+                        <button className="btn secondary" type="submit">Confirmar baixa</button>
+                      </form>
+                    </details>
                   ) : <span className="muted small">—</span>}
                 </td>
               </tr>
@@ -2503,43 +2523,41 @@ export async function TenantERPView({
           </div>
         </section>
 
-        <section id="treinamentos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "treinamentos")}>
+        <section id="treinamentos" className="demo-section gromma-training-library" hidden={Boolean(moduleId && moduleId !== "treinamentos")}>
           <div className="section-head">
-            <div><div className="eyebrow">Treinamentos</div><h2>Vídeos, cursos e materiais</h2></div>
-            <StatusPill tone="ready">Biblioteca ativa</StatusPill>
+            <div><div className="eyebrow">Empresa / Capacitação</div><h2>Tutoriais e cursos</h2></div>
+            <span className="small muted">{workspace.training.length} conteúdo(s) cadastrado(s)</span>
           </div>
-
-          {actionOk === "conteudo" && <div className="notice erp-inline-notice success">Conteúdo adicionado à biblioteca.</div>}
-          {actionError === "conteudo" && <div className="notice erp-inline-notice error-notice">Informe título e link válido.</div>}
-
-          <div className="erp-two-column-workspace">
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Novo conteúdo</span><strong>Desenvolvimento da equipe</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-              {canManage && (
-                <form action={saveTrainingItem} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <label><span className="label">Título</span><input className="input" name="title" required placeholder="Ex.: Padrão de atendimento" /></label>
-                  <label><span className="label">Tipo</span><select className="select" name="kind"><option value="VIDEO">Vídeo tutorial</option><option value="COURSE">Curso / trilha</option><option value="MEDIA">Material de divulgação</option></select></label>
-                  <label><span className="label">Link</span><input className="input" name="url" type="url" required placeholder="https://..." /></label>
-                  <label><span className="label">Descrição</span><textarea className="textarea" name="description" placeholder="Objetivo, público e instruções." /></label>
-                  <button className="btn" type="submit">Adicionar conteúdo</button>
-                </form>
-              )}
-            </article>
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Biblioteca</span><strong>{workspace.training.length} item(ns)</strong></div><StatusPill tone="ready">Organizada</StatusPill></div>
-              <div className="erp-training-grid">
-                {trainingPageRows.map((item) => (
-                  <a href={item.url} target="_blank" rel="noreferrer" key={item.id}>
-                    <span>{item.kind === "VIDEO" ? "▶" : item.kind === "COURSE" ? "✓" : "▣"}</span>
-                    <div><strong>{item.title}</strong><small>{item.description || item.kind}</small></div>
-                  </a>
-                ))}
-                {!workspace.training.length && <small className="muted">Adicione tutoriais, cursos ou materiais da barbearia.</small>}
+          <p className="small muted gromma-module-description">Biblioteca interna de treinamento e materiais de apoio da equipe, com acesso aos links cadastrados.</p>
+          {actionOk==="conteudo"&&<p className="notice success" role="status">Conteúdo adicionado à biblioteca.</p>}
+          {actionError==="conteudo"&&<p className="notice error-notice" role="alert">Confira o título e o endereço do conteúdo.</p>}
+          {canManage&&<details className="erp-quick-create gromma-training-new">
+            <summary><Plus size={15}/> Adicionar conteúdo <small>Vídeo, curso ou material</small></summary>
+            <form action={saveTrainingItem} className="erp-quick-form gromma-training-editor">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <label><span className="label">Título do conteúdo</span><input className="input" name="title" required maxLength={180} placeholder="Ex.: Padrão de atendimento"/></label>
+              <div className="grid grid-2">
+                <label><span className="label">Categoria</span><select name="kind" className="select"><option value="VIDEO">Vídeo tutorial</option><option value="COURSE">Curso / trilha</option><option value="MEDIA">Material de apoio</option></select></label>
+                <label><span className="label">Link do conteúdo</span><input name="url" type="url" className="input" required placeholder="https://..."/></label>
               </div>
-            </article>
+              <label><span className="label">Orientações para a equipe</span><textarea className="textarea" name="description" maxLength={1000} rows={2} placeholder="Objetivo, público e instruções"/></label>
+              <button className="btn" type="submit">Salvar conteúdo</button>
+            </form>
+          </details>}
+          <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/treinamentos`} className="gromma-training-toolbar">
+            <label><span className="label">Pesquisar</span><input name="treinamentosQ" className="input" type="search" defaultValue={valueOf("treinamentosQ")} placeholder="Título ou descrição"/></label>
+            <label><span className="label">Tipo</span><select name="treinamentosTipo" className="select" defaultValue={treinamentoTipo}><option value="">Todos</option><option value="VIDEO">Vídeos</option><option value="COURSE">Cursos</option><option value="MEDIA">Materiais</option></select></label>
+            <button type="submit" className="btn secondary">Filtrar</button>
+          </form>
+          <div className="gromma-training-list">
+            {trainingPageRows.map(item=><a href={item.url} target="_blank" rel="noopener noreferrer" className="gromma-training-item" key={item.id}>
+              <span className="gromma-training-kind">{item.kind==="VIDEO"?"Vídeo":item.kind==="COURSE"?"Curso":"Material"}</span>
+              <span className="gromma-training-content"><strong>{item.title}</strong><small>{item.description||"Material para consulta da equipe"}</small></span>
+              <span className="gromma-training-open">Abrir material ↗</span>
+            </a>)}
+            {!trainingPageRows.length&&<div className="gromma-training-empty"><strong>Nenhum conteúdo encontrado</strong><span>{workspace.training.length?"Ajuste a pesquisa ou os filtros.":"Adicione o primeiro vídeo, curso ou material da equipe."}</span></div>}
           </div>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/treinamentos`} searchParams={qs} param="treinamentosPage" page={treinamentosPage} total={workspace.training.length} pageSize={pageSize} label="conteúdos" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/treinamentos`} searchParams={qs} param="treinamentosPage" page={treinamentosPage} total={filteredTraining.length} pageSize={pageSize} label="conteúdos"/>
         </section>
 
         <section id="auditoria" className="demo-section" hidden={Boolean(moduleId && moduleId !== "auditoria")}>
