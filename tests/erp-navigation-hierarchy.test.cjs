@@ -45,10 +45,6 @@ const EXPECTED = {
       "Clientes ausentes", "Clientes sem preferência", "Clientes novos",
     ],
   },
-  empresa: {
-    "empresa-profissionais": ["Cadastrar profissional", "Exibição do profissional", "Destacar profissional"],
-    "empresa-servicos": ["Cadastrar serviço", "Exibição do serviço", "Destacar serviço"],
-  },
 };
 
 function flatten(nodes) {
@@ -81,8 +77,8 @@ test("every referenced subitem remains in its exact hierarchy", () => {
   ]);
   const company = flattened.find(item => item.id === "empresa-cadastro");
   assert.deepEqual(company.children.map(x => x.label), [
-    "Dados", "Identidade", "Clube", "Categorias", "Filiais", "Produtos",
-    "Profissionais", "Serviços", "Grupo de acesso", "Meu plano", "Fatura",
+    "Dados", "Filiais", "Profissionais", "Funcionários em destaque",
+    "Serviços", "Grupos de acesso", "Meu plano", "Fatura",
   ]);
 });
 
@@ -91,7 +87,7 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
     "dashboard", "agenda", "clientes", "caixa", "comandas", "estoque", "assinaturas",
     "assinaturas-trocas", "assinaturas-cancelados", "assinaturas-transacoes", "assinaturas-vendas", "assinaturas-origem",
     "assinantes", "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
-    "servicos", "unidades", "dados", "identidade", "clube-config", "equipe/novo", "plano", "configuracoes", "financeiro", "gerencial",
+    "servicos", "unidades", "dados", "identidade", "clube-config", "equipe/novo", "plano", "fatura", "grupos-acesso", "funcionarios-destaque", "configuracoes", "financeiro", "gerencial",
     "alertas", "mensagens", "documentos", "treinamentos", "totem",
     "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "auditoria-agendamentos", "auditoria-fechamento-caixa", "auditoria-produtividade", "notificacoes",
   ]);
