@@ -47,6 +47,9 @@ const MODULES = new Set([
   "treinamentos",
   "configuracoes",
   "plano",
+  "fatura",
+  "grupos-acesso",
+  "funcionarios-destaque",
 ]);
 
 export default async function ErpModulePage({
