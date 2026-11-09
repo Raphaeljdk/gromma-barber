@@ -6,6 +6,7 @@ import { BrandingSettingsSection } from "@/components/branding-settings-section"
 import { unitPolicy } from "@/lib/unit-operations-policy";
 import { toggleFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
+import { ClubManagementPanels, CLUB_MANAGEMENT_MODULES, type ClubManagementModule } from "@/components/erp-club-management";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
 import type { Prisma } from "@prisma/client";
@@ -174,6 +175,15 @@ const MODULE_TITLES: Record<string, string> = {
   servicos: "Serviços",
   comandas: "Comandas",
   assinaturas: "Clube / Assinaturas",
+  "clube-pag": "Dashboard Gromma Pag",
+  "clube-reajustes": "Programar reajuste",
+  "clube-pagamentos": "Calendário de pagamentos",
+  "clube-recebiveis": "Calendário de recebíveis",
+  "clube-cancelados": "Clientes cancelados",
+  "clube-pote": "Distribuição do pote",
+  "clube-inadimplentes": "Inadimplentes",
+  "clube-saques": "Solicitar saque",
+  "clube-transacoes": "Transações financeiras",
   mensagens: "Mensagens",
   promocoes: "Promoções / Cupons",
   financeiro: "Financeiro",
@@ -343,7 +353,9 @@ export async function TenantERPView({
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
 
   const workspace = readWorkspace(shop.enabledFeatures);
-  const controlledModulePermission = activeModule === "financeiro" ? "VIEW_FINANCE"
+  const controlledModulePermission = ["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(activeModule) ? "VIEW_FINANCE"
+    : ["clube-cancelados","clube-inadimplentes"].includes(activeModule) ? "VIEW_REPORTS"
+    : activeModule === "financeiro" ? "VIEW_FINANCE"
     : activeModule === "comissoes" ? "VIEW_COMMISSIONS"
     : activeModule === "relatorios" || Boolean(SUBSCRIPTION_REPORTS[activeModule]) ? "VIEW_REPORTS"
     : activeModule.startsWith("auditoria") ? "VIEW_AUDIT" : null;
@@ -797,7 +809,7 @@ export async function TenantERPView({
   const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
   const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
-  if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura"].includes(activeModule)) notFound();
+  if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura","clube-reajustes","clube-saques"].includes(activeModule)) notFound();
   const canManageCampaigns = hasStaffPermission(viewerRole, workspace.rolePermissions, "MANAGE_CAMPAIGNS");
   const inventoryNotices = isOwner
     ? await loadInventoryNotifications(shop.id, tenantCode, shop.units.map(unit => ({
@@ -1494,6 +1506,11 @@ export async function TenantERPView({
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
+
+        {CLUB_MANAGEMENT_MODULES.includes(activeModule as ClubManagementModule) &&
+          <ClubManagementPanels tenantCode={tenantCode} shopId={shop.id} workspace={workspace}
+            view={activeModule as ClubManagementModule} month={valueOf("clubeMes")}
+            isOwner={isOwner} ok={actionOk} error={actionError}/>}
 
         {SUBSCRIPTION_REPORTS[activeModule] && <SubscriptionReports report={activeModule} tenantCode={tenantCode} shopId={shop.id} workspace={workspace} canFinance={isOwner} searchParams={qs} />}
 
