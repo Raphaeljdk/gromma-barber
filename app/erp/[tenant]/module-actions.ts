@@ -128,7 +128,7 @@ export async function addUnitHoliday(formData: FormData) {
 
 export async function saveRolePermissions(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
-  const path = modulePath(tenantCode, "equipe");
+  const path = modulePath(tenantCode, "grupos-acesso");
   if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   const role = value(formData, "role", 30);
   if (!isPermissionRole(role)) redirect(`${path}?erro=permissao`);

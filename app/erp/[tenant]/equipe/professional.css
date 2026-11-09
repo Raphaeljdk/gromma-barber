@@ -708,3 +708,60 @@
     box-shadow: none;
   }
 }
+
+
+/* Empresa 2026: compact professional forms, preserving the same server actions. */
+.tenant-erp .professional-registration-page .gromma-week-editor { margin-top: 8px; }
+.tenant-erp .professional-registration-page .gromma-week-presets {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 8px 0 12px;
+}
+.tenant-erp .professional-registration-page .gromma-week-grid { max-width: 750px; border: 1px solid var(--profile-line); border-radius: 10px; overflow: hidden; }
+.tenant-erp .professional-registration-page .gromma-week-grid-heading,
+.tenant-erp .professional-registration-page .gromma-week-row {
+  display: grid; grid-template-columns: minmax(140px,1.25fr) repeat(2,minmax(110px,1fr)); gap: 10px; align-items: center; padding: 6px 12px;
+}
+.tenant-erp .professional-registration-page .gromma-week-grid-heading {
+  background: var(--erp-panel-3,#171613); color: var(--profile-muted);
+  font-size: .72rem; font-weight: 700; letter-spacing: .035em;
+}
+.tenant-erp .professional-registration-page .gromma-week-row { border-top: 1px solid var(--profile-line); transition: opacity .15s ease; }
+.tenant-erp .professional-registration-page .gromma-week-row.is-inactive { opacity: .68; }
+.tenant-erp .professional-registration-page .gromma-week-row:focus-within { opacity: 1; background: color-mix(in srgb,var(--profile-highlight) 6%,transparent); }
+.tenant-erp .professional-registration-page .gromma-week-day { display: flex; align-items: center; gap: 9px; font-weight: 600; min-width: 0; }
+.tenant-erp .professional-registration-page .gromma-week-input-label { display: none; }
+.tenant-erp .professional-registration-page .gromma-week-row label { min-width: 0; }
+.tenant-erp .professional-registration-page .gromma-week-row .input { min-height: 34px; padding-block: 4px; }
+.tenant-erp .professional-registration-page .gromma-week-actions { display: flex; justify-content: flex-end; max-width: 750px; margin-top: 10px; }
+.tenant-erp .professional-registration-page .professional-break-fields {
+  grid-template-columns: minmax(110px,1.1fr) repeat(2,minmax(90px,1fr)); gap: 7px;
+}
+.tenant-erp .professional-registration-page .professional-break-fields > :first-child { grid-column: auto; }
+.tenant-erp .professional-registration-page .professional-break-fields > button { grid-column: 1 / -1; }
+.tenant-erp .professional-registration-page .professional-leave-fields { gap: 7px; }
+.tenant-erp .professional-registration-page .professional-inline-editor { padding: 9px; }
+.tenant-erp .professional-registration-page .professional-saved-items { margin-top: 8px; }
+.tenant-erp .professional-registration-page .gromma-professional-bonus-form { display: grid; grid-template-columns: minmax(0,1fr) minmax(200px,270px); align-items: end; gap: 9px 18px; }
+.tenant-erp .professional-registration-page .gromma-bonus-toggle { display: flex; align-items: center; gap: 10px; padding: 8px 0; min-width: 0; }
+.tenant-erp .professional-registration-page .gromma-bonus-toggle strong { font-size: .82rem; line-height: 1.4; }
+.tenant-erp .professional-registration-page .gromma-bonus-percent { min-width: 0; }
+.tenant-erp .professional-registration-page .gromma-bonus-percent label { display: grid; gap: 4px; font-size: .78rem; }
+.tenant-erp .professional-registration-page .gromma-professional-bonus-form > button { grid-column: 1 / -1; justify-self: end; }
+.tenant-erp .professional-registration-page .gromma-commission-tiers { padding: 10px 12px; }
+.tenant-erp .professional-registration-page .gromma-tier-form { gap: 5px; }
+.tenant-erp .professional-registration-page .gromma-tier-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; padding: 4px 0; }
+.tenant-erp .professional-registration-page .gromma-tier-row label { display: grid; gap: 3px; min-width: 0; font-size: .75rem; }
+.tenant-erp .professional-registration-page .gromma-tier-form > button { justify-self: end; margin-top: 7px; }
+@media(max-width:750px) {
+  .tenant-erp .professional-registration-page .gromma-week-grid-heading { display: none; }
+  .tenant-erp .professional-registration-page .gromma-week-row { grid-template-columns: minmax(0,1fr) minmax(0,1fr); padding: 9px; }
+  .tenant-erp .professional-registration-page .gromma-week-day { grid-column: 1 / -1; }
+  .tenant-erp .professional-registration-page .gromma-week-input-label { display: block; font-size: .72rem; }
+  .tenant-erp .professional-registration-page .gromma-professional-bonus-form { grid-template-columns: minmax(0,1fr); }
+  .tenant-erp .professional-registration-page .gromma-professional-bonus-form > button { grid-column: 1; }
+}
+@media(max-width:550px) {
+  .tenant-erp .professional-registration-page .professional-break-fields { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .tenant-erp .professional-registration-page .professional-break-fields > :first-child { grid-column: 1 / -1; }
+  .tenant-erp .professional-registration-page .gromma-tier-row { gap: 5px; }
+  .tenant-erp .professional-registration-page .gromma-week-presets .btn { flex: 1 1 auto; }
+}

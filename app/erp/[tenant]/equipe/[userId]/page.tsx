@@ -329,16 +329,16 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
     <section id="assinaturas-profissional" className="card">
       <h3 className="professional-section-title"><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></h3>
       <p className="small muted" style={{marginTop:14}}>O pote de assinaturas é distribuído automaticamente por produtividade. Uma bonificação adicional pela venda de um plano novo é opcional e só aparece na apuração se estiver habilitada abaixo.</p>
-      <form action={saveProfessionalSection} className="erp-compact-form">
+      <form action={saveProfessionalSection} className="erp-compact-form gromma-professional-bonus-form">
         {hidden(code,user.id,"base-commissions")}
-        <label style={{display:"flex",gap:10,alignItems:"center",padding:"10px 0"}}>
+        <label className="gromma-bonus-toggle">
           <input type="checkbox" name="salesSubscriptionCommissionEnabled"
             defaultChecked={subscriptionSalesEnabled(profile,
               workspace.professionalExtraRates[user.id]?.subscriptionPercent??0,
               workspace.subscriptionCommissionTiers[user.id]??[])}/>
           <strong>Habilitar bônus por venda de assinatura para este profissional</strong>
         </label>
-        <div className="grid grid-2">
+        <div className="gromma-bonus-percent">
           <label>Comissão por venda de assinatura (%)<input className="input" type="number" step=".01" min={0} max={100}
             name="subscriptionPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}/></label>
 
@@ -348,14 +348,13 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       </form>
       <details className="professional-subsection" open={(workspace.subscriptionCommissionTiers[user.id]??[]).length>0}>
         <summary>Metas por venda de planos novos (opcional)</summary>
-        <section className="erp-quick-create" style={{marginTop:10}}>
-        <h3 className="professional-section-title">Metas por venda de planos novos</h3>
+        <section className="erp-quick-create gromma-commission-tiers" style={{marginTop:10}}>
         <p className="small muted">Exemplo: vendas confirmadas de R$ 500 até R$ 1.000, comissão de 5%. Quando existirem faixas, elas substituem o percentual fixo de venda de assinatura dentro das condições definidas.</p>
-        <form action={saveProfessionalSection} className="erp-compact-form">
+        <form action={saveProfessionalSection} className="erp-compact-form gromma-tier-form">
           {hidden(code,user.id,"subscription-tiers")}
           {[0,1,2,3,4].map(index=>{
             const tier=(workspace.subscriptionCommissionTiers[user.id]??[])[index];
-            return <div key={index} className="grid grid-3">
+            return <div key={index} className="gromma-tier-row">
               <label>De (R$)<input className="input" type="number" name="tierMin" step=".01" min={0} defaultValue={tier?.min??""}/></label>
               <label>Até (R$)<input className="input" type="number" name="tierMax" step=".01" min={0} defaultValue={tier?.max??""}/></label>
               <label>Comissão (%)<input className="input" type="number" name="tierPercent" step=".01" min={0} max={100} defaultValue={tier?.percent??""}/></label>

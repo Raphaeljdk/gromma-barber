@@ -9,8 +9,11 @@ test("dados, identidade e clube abrem em rotas distintas", () => {
   for (const route of ["dados", "identidade", "clube-config", "unidades"])
     assert.match(modules, new RegExp('"' + route + '"'));
   const nav = read("lib/erp-navigation.ts");
-  assert.match(nav, /route: "identidade"/);
-  assert.match(nav, /route: "clube-config"/);
+  // As rotas continuam acessíveis pelo buscador, sem recriar subabas em Empresa.
+  const palette = read("components/erp-command-palette.tsx");
+  assert.match(nav, /route: "dados"/);
+  assert.match(palette, /id: "identidade"/);
+  assert.match(palette, /id: "clube-config"/);
 });
 
 test("formulários da identidade e clube usam salvamentos independentes", () => {

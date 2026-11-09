@@ -36,7 +36,7 @@ test("cadastros de equipe e serviços compartilham menu sem submenus repetidos",
   assert.match(modulePage,/id="equipe"/);
   assert.match(modulePage,/erp-compact-directory/);
   assert.match(modulePage,/createService/);
-  assert.match(modulePage,/equipe\/novo/);
+  assert.match(read("app/erp/[tenant]/equipe/novo/page.tsx"),/createProfessional/);
   assert.match(modulePage,/toggleFeaturedProfessional/);
 });
 

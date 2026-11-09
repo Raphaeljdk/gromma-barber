@@ -134,16 +134,15 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     items: [
       { id: "empresa-cadastro", label: "Cadastro", children: [
         { id: "empresa-dados", label: "Dados", route: "dados" },
-        { id: "empresa-categorias", label: "Categorias" },
         { id: "empresa-filiais", label: "Filiais", route: "unidades" },
-        { id: "empresa-produtos", label: "Produtos", route: "estoque" },
         { id: "empresa-profissionais", label: "Profissionais", route: "equipe" },
+        { id: "empresa-destaques", label: "Funcionários em destaque", route: "funcionarios-destaque", ownerOnly: true },
         { id: "empresa-servicos", label: "Serviços", route: "servicos" },
 
-        { id: "empresa-grupos-acesso", label: "Grupo de acesso", route: "configuracoes", ownerOnly: true },
+        { id: "empresa-grupos-acesso", label: "Grupos de acesso", route: "grupos-acesso", ownerOnly: true },
 
         { id: "empresa-meu-plano", label: "Meu plano", route: "plano" },
-        { id: "empresa-fatura", label: "Fatura" },
+        { id: "empresa-fatura", label: "Fatura", route: "fatura", ownerOnly: true },
       ] },
     ],
   },

@@ -203,6 +203,9 @@ const MODULE_TITLES: Record<string, string> = {
   totem: "Totem / Check-in",
   configuracoes: "Configurações",
   plano: "Plano",
+  "funcionarios-destaque": "Funcionários em destaque",
+  "grupos-acesso": "Grupos de acesso",
+  fatura: "Fatura",
 };
 
 const APPOINTMENT_NEXT_ACTION: Record<string, { action: string; label: string }> = {
@@ -794,6 +797,7 @@ export async function TenantERPView({
   const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
   const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
+  if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura"].includes(activeModule)) notFound();
   const canManageCampaigns = hasStaffPermission(viewerRole, workspace.rolePermissions, "MANAGE_CAMPAIGNS");
   const inventoryNotices = isOwner
     ? await loadInventoryNotifications(shop.id, tenantCode, shop.units.map(unit => ({
@@ -2108,7 +2112,7 @@ export async function TenantERPView({
         </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
-          <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {isOwner && <details className="erp-quick-create erp-directory-create">
             <summary><Plus size={15}/> Novo profissional <small>Cadastro e edição na mesma área</small></summary>
             <form action={createProfessional} className="erp-quick-form">
@@ -2146,28 +2150,74 @@ export async function TenantERPView({
           </details>
           <div className="table-wrap erp-compact-directory">
             <table>
-              <thead><tr><th>Profissional</th><th>Função</th><th>Situação</th><th>Destaque</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Profissional</th><th>Função</th><th>Situação</th><th>Ações</th></tr></thead>
               <tbody>{professionals.map(user=><tr key={user.id}>
                 <td><strong>{user.name}</strong><span className="erp-directory-secondary">{user.email}</span></td>
                 <td>{ROLE_LABELS[user.role]??user.role}</td>
                 <td><span className={"badge "+(user.active?"approved":"")}>{user.active?"Ativo":"Inativo"}</span></td>
-                <td>{workspace.featuredProfessionalIds.includes(user.id)?"Em destaque":"—"}</td>
                 <td><div className="erp-directory-actions">
                   {isOwner&&<Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/${encodeURIComponent(user.id)}`}>Abrir ficha</Link>}
-                  {isOwner&&["BARBER","OWNER","MANAGER"].includes(user.role)&&<form action={toggleFeaturedProfessional}>
-                    <input type="hidden" name="tenantCode" value={tenantCode}/>
-                    <input type="hidden" name="userId" value={user.id}/>
-                    <input type="hidden" name="featured" value={workspace.featuredProfessionalIds.includes(user.id)?"no":"yes"}/>
-                    <button type="submit" className="btn secondary">{workspace.featuredProfessionalIds.includes(user.id)?"Remover destaque":"Destacar"}</button>
-                  </form>}
                   {!isOwner&&<span className="small muted">Somente consulta</span>}
                 </div></td>
               </tr>)}
-              {!professionals.length&&<tr><td colSpan={5} className="small muted">Nenhum profissional corresponde à pesquisa.</td></tr>}
+              {!professionals.length&&<tr><td colSpan={4} className="small muted">Nenhum profissional corresponde à pesquisa.</td></tr>}
               </tbody>
             </table>
           </div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`} searchParams={qs} param="equipePage" page={equipePage} total={professionalsTotal} pageSize={pageSize} hash="equipe" label="profissionais" />
+        </section>
+
+        
+        <section id="funcionarios-destaque" className="demo-section gromma-featured-staff" hidden={Boolean(moduleId && moduleId !== "funcionarios-destaque")}>
+          <div className="section-head">
+            <div><div className="eyebrow">Empresa / Cadastro</div><h2>Funcionários em destaque</h2></div>
+            <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe`}>Todos os profissionais</Link>
+          </div>
+          <p className="small muted">Defina quais profissionais aparecem em destaque na apresentação da barbearia. Até 12 perfis ativos podem ser selecionados; isso não muda permissões nem comissões.</p>
+          {actionError==="destaque"&&<p className="notice error-notice" role="alert">Não foi possível atualizar o destaque. Confira o limite e a situação do profissional.</p>}
+          {actionOk==="destaque"&&<p className="notice success" role="status">Destaques atualizados.</p>}
+          <div className="gromma-staff-summary"><strong>{workspace.featuredProfessionalIds.length}</strong><span>de 12 destaques selecionados</span></div>
+          <div className="table-wrap gromma-admin-table"><table>
+            <thead><tr><th>Profissional</th><th>Função</th><th>Visibilidade</th><th>Ação</th></tr></thead>
+            <tbody>{shop.users.filter(user=>["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>{
+              const featured=workspace.featuredProfessionalIds.includes(user.id);
+              return <tr key={user.id}>
+                <td><strong>{user.name}</strong><span className="erp-directory-secondary">{user.email}</span></td>
+                <td>{ROLE_LABELS[user.role]??user.role}</td>
+                <td><span className={"badge "+(featured?"approved":"")}>{featured?"Em destaque":"Padrão"}</span></td>
+                <td>{isOwner&&<form action={toggleFeaturedProfessional}>
+                  <input type="hidden" name="tenantCode" value={tenantCode}/>
+                  <input type="hidden" name="userId" value={user.id}/>
+                  <input type="hidden" name="featured" value={featured?"no":"yes"}/>
+                  <button type="submit" className="btn secondary" disabled={!featured&&workspace.featuredProfessionalIds.length>=12}>{featured?"Remover destaque":"Colocar em destaque"}</button>
+                </form>}</td>
+              </tr>;
+            })}
+            {!shop.users.some(user=>["OWNER","MANAGER","BARBER"].includes(user.role))&&<tr><td colSpan={4}>Nenhum profissional elegível cadastrado.</td></tr>}</tbody>
+          </table></div>
+        </section>
+
+        
+        <section id="grupos-acesso" className="demo-section gromma-access-groups" hidden={Boolean(moduleId && moduleId !== "grupos-acesso")}>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Segurança</div><h2>Grupos de acesso</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe`}>Gerenciar profissionais</Link></div>
+          <p className="small muted">Defina as permissões de consulta e gestão por função. A função de cada funcionário é atribuída na ficha profissional. O proprietário mantém acesso integral.</p>
+          {actionOk==="permissoes"&&<p className="notice success" role="status">Permissões do grupo atualizadas.</p>}
+          {actionError==="permissao"&&<p className="notice error-notice" role="alert">Não foi possível atualizar as permissões. Verifique seu acesso.</p>}
+          <div className="gromma-access-role-list">
+            {STAFF_PERMISSION_ROLES.map(role=><form key={role} action={saveRolePermissions} className="gromma-access-role">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <input type="hidden" name="role" value={role}/>
+              <div className="gromma-access-role-heading">
+                <div><strong>{ROLE_LABELS[role]}</strong><span className="small muted">{shop.users.filter(user=>user.role===role).length} funcionário(s) ativo(s)</span></div>
+                <button className="btn secondary" type="submit">Salvar permissões</button>
+              </div>
+              <div className="gromma-access-permissions">{STAFF_PERMISSION_KEYS.map(permission=><label key={permission}>
+                <input type="checkbox" name="permissions" value={permission} defaultChecked={permissionsForRole(role,workspace.rolePermissions).includes(permission)}/>
+                <span>{STAFF_PERMISSION_LABELS[permission]}</span>
+              </label>)}</div>
+            </form>)}
+          </div>
+          <p className="small muted">As permissões são registradas na auditoria. A alteração pode afetar o acesso de todos os funcionários desta função.</p>
         </section>
 
         {(!moduleId || moduleId==="dados") && <div hidden={Boolean(moduleId && moduleId!=="dados")}>
@@ -2176,15 +2226,15 @@ export async function TenantERPView({
             ok={valueOf("dadosOk")} error={valueOf("dadosErro")}/>
         </div>}
 
-        <section id="unidades" className="demo-section" hidden={Boolean(moduleId && moduleId !== "unidades")}>
+        <section id="unidades" className="demo-section gromma-company-units" hidden={Boolean(moduleId && moduleId !== "unidades")}>
           <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Filiais</h2></div><StatusPill tone="ready">Por unidade</StatusPill></div>
           <p className="small muted">Cada filial possui seu próprio endereço, CNPJ, conta de recebimento, pote de assinaturas e regras de atendimento. Os dados gerais da marca ficam em <Link href={`/erp/${encodeURIComponent(tenantCode)}/dados`}>Dados do negócio</Link>.</p>
           {valueOf("unidadeOk") && <p role="status" className="notice success">Unidade {valueOf("unidadeOk") === "cadastrada" ? "cadastrada" : "atualizada"} com sucesso. A alteração ficou registrada na auditoria.</p>}
           {valueOf("unidadeErro") && <p role="alert" className="notice error-notice">{valueOf("unidadeErro").slice(0,200)}</p>}
-          {isOwner && <details className="card" style={{padding:14,marginBottom:14}}>
+          {isOwner && <details className="card gromma-unit-create" style={{padding:14,marginBottom:14}}>
             <summary style={{cursor:"pointer",fontWeight:700}}>Cadastrar nova filial</summary>
             <p className="small muted" style={{marginTop:10}}>Filiais têm operações e caixas próprios. Respeite o limite do seu plano; nenhuma nova cobrança é feita nesta tela.</p>
-            <form action={saveBarbershopUnit} className="erp-compact-form" style={{marginTop:12}}>
+            <form action={saveBarbershopUnit} className="erp-compact-form gromma-unit-create-form" style={{marginTop:12}}>
               <input type="hidden" name="tenantCode" value={tenantCode}/>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
                 <label>Nome da filial<input className="input" name="name" maxLength={120} required minLength={2}/></label>
@@ -2206,7 +2256,7 @@ export async function TenantERPView({
           />
           <div className="gromma-units-list">
             {unitsPageItems.map((unit) => (
-              <article className="gromma-unit-row" key={unit.id}>
+              <article className="gromma-unit-row gromma-unit-enterprise-row" key={unit.id}>
                 <div className="tenant-name"><strong>{unit.name}</strong><span className="badge approved">{unit.active ? "Ativa" : "Inativa"}</span></div>
                 <div className="demo-financial">
                   <div><span>Código</span><strong>{unit.code}</strong></div>
@@ -2339,7 +2389,7 @@ export async function TenantERPView({
           </div>
         </section>
 
-        <section id="documentos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "documentos")}>
+        <section id="documentos" className="demo-section gromma-company-documents" hidden={Boolean(moduleId && moduleId !== "documentos")}>
           <div className="section-head">
             <div><div className="eyebrow">Documentos</div><h2>Central documental</h2></div>
             <StatusPill tone="ready">Catálogo ativo</StatusPill>
@@ -2348,9 +2398,9 @@ export async function TenantERPView({
           {actionOk === "documento" && <div className="notice erp-inline-notice success">Documento adicionado à central.</div>}
           {actionError === "documento" && <div className="notice erp-inline-notice error-notice">Informe um título e um link válido.</div>}
 
-          <div className="erp-two-column-workspace">
+          <div className="erp-two-column-workspace gromma-documents-layout">
             <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Novo documento</span><strong>Link ou arquivo externo</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
+              <div className="erp-card-title"><div><span>Cadastrar documento</span><strong>Vincular documento externo</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
               {canManage && (
                 <form action={saveDocument} className="erp-compact-form">
                   <input type="hidden" name="tenantCode" value={tenantCode} />
@@ -2363,24 +2413,17 @@ export async function TenantERPView({
                   <button className="btn" type="submit">Adicionar documento</button>
                 </form>
               )}
-              <p className="erp-integration-note">A central já organiza links e documentos hospedados externamente. Upload binário próprio exige storage dedicado e não é simulado.</p>
-              <div className="erp-amenities-block">
-                <span>Comodidades do local</span>
-                <div>
-                  {workspace.settings.amenities
-                    ? workspace.settings.amenities.split(",").map((item) => item.trim()).filter(Boolean).map((item) => <span key={item}>{item}</span>)
-                    : <small className="muted">Cadastre as comodidades em Configurações.</small>}
-                </div>
-              </div>
+              <p className="erp-integration-note">Os arquivos permanecem no serviço de origem. Cadastre apenas endereços confiáveis e com acesso autorizado.</p>
+
             </article>
 
             <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Biblioteca</span><strong>{workspace.documents.length} documento(s)</strong></div><StatusPill tone="ready">Organizada</StatusPill></div>
+              <div className="erp-card-title"><div><span>Biblioteca</span><strong>{workspace.documents.length} documento(s) cadastrado(s)</strong></div><StatusPill tone="ready">Organizada</StatusPill></div>
               <div className="erp-document-list">
                 {documentPageRows.map((document) => (
                   <a href={document.url} target="_blank" rel="noreferrer" key={document.id}>
                     <FileText size={17} />
-                    <div><strong>{document.title}</strong><span>{document.category} · {document.reference ?? "Sem referência"}</span></div>
+                    <div><strong>{document.title}</strong><span>{({CUSTOMER:"Cliente",PROFESSIONAL:"Profissional",UNIT:"Filial",GENERAL:"Geral"} as Record<string,string>)[document.category]??document.category} · {document.reference ?? "Sem referência"}</span></div>
                     <span>↗</span>
                   </a>
                 ))}
@@ -2638,24 +2681,34 @@ export async function TenantERPView({
           )
         )}
 
-        <section id="plano" className="demo-section" hidden={Boolean(moduleId && moduleId !== "plano")}>
-          <div className="section-head"><div><div className="eyebrow">Contrato</div><h2>Plano e recursos liberados</h2></div><strong>{features.length} recursos</strong></div>
-          <div className="grid grid-2">
-            <div className="card">
-              <div className="kv"><span>Plano</span><strong>{plan.name}</strong></div>
-              <div className="kv"><span>Mensalidade</span><strong>{brl(plan.monthlyFee)}</strong></div>
-              <div className="kv"><span>{plan.setupLabel}</span><strong>{brl(plan.setupFee)}</strong></div>
-              <div className="kv"><span>Limite de unidades</span><strong>{plan.maxUnits ?? "Sem limite"}</strong></div>
-            </div>
-            <div className="card">
-              <div className="demo-feature-grid">
-                {features.map((feature) => <div className="demo-feature-item" key={feature}><span>✓</span><strong>{feature}</strong></div>)}
-              </div>
-            </div>
+
+        <section id="plano" className="demo-section gromma-company-plan" hidden={Boolean(moduleId && moduleId !== "plano")}>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Contrato</div><h2>Meu plano</h2></div><StatusPill tone="ready">{plan.name}</StatusPill></div>
+          <p className="small muted">Informações do plano contratado e recursos previstos. A disponibilidade de algumas funções depende de integrações e configurações externas.</p>
+          <div className="gromma-plan-summary">
+            <div><span>Plano atual</span><strong>{plan.name}</strong></div>
+            <div><span>Mensalidade</span><strong>{brl(plan.monthlyFee)}</strong></div>
+            <div><span>{plan.setupLabel}</span><strong>{brl(plan.setupFee)}</strong></div>
+            <div><span>Limite de filiais</span><strong>{plan.maxUnits ?? "Sem limite"}</strong></div>
+          </div>
+          <div className="gromma-plan-actions"><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/fatura`}>Consultar fatura</Link></div>
+          <details className="gromma-plan-features">
+            <summary><strong>Recursos do plano ({features.length})</strong><span className="small muted">Clique para consultar a relação completa</span></summary>
+            <div className="gromma-plan-features-grid">{features.map(feature=><div key={feature} className="gromma-plan-feature"><span aria-hidden="true">✓</span><span>{feature}</span></div>)}</div>
+          </details>
+        </section>
+
+        <section id="fatura" className="demo-section gromma-company-billing" hidden={Boolean(moduleId && moduleId !== "fatura")}>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Financeiro do contrato</div><h2>Fatura</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/plano`}>Voltar ao plano</Link></div>
+          <div className="gromma-billing-summary"><div><span>Plano vinculado</span><strong>{plan.name}</strong></div><div><span>Mensalidade contratada</span><strong>{brl(plan.monthlyFee)}</strong></div></div>
+          <div className="card gromma-billing-notice">
+            <h3>Faturas e segunda via</h3>
+            <p>O histórico de cobrança e a emissão de faturas ainda não estão integrados a esta área. Os valores exibidos são condições do contrato, não comprovantes de pagamento.</p>
+            <a className="btn" href={supportHref}>Solicitar fatura ao suporte</a>
           </div>
         </section>
 
-        <Link className="erp-floating-cash" href={`/erp/${encodeURIComponent(tenantCode)}/caixa`} aria-label="Abrir caixa">
+                <Link className="erp-floating-cash" href={`/erp/${encodeURIComponent(tenantCode)}/caixa`} aria-label="Abrir caixa">
           <WalletCards size={19} />
           <span>Caixa</span>
         </Link>
