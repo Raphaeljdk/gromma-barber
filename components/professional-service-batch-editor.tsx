@@ -56,12 +56,12 @@ export function ProfessionalServiceBatchEditor({tenantCode,userId,services}:Prop
     setBulkError("");
   }
 
-  return <form action={saveProfessionalSection} className="erp-compact-form">
+  return <form action={saveProfessionalSection} className="erp-compact-form gromma-service-editor">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="userId" value={userId}/>
     <input type="hidden" name="section" value="service-batch"/>
-    <div style={{display:"flex",flexWrap:"wrap",alignItems:"end",gap:10,margin:"10px 0 12px"}}>
-      <label style={{flex:"1 1 220px",minWidth:0}}>
+    <div className="gromma-service-controls">
+      <label className="gromma-service-search">
         <span className="label">Buscar serviço</span>
         <input className="input" type="search" value={search}
           onChange={e=>setSearch(e.target.value)} placeholder="Nome do serviço"
@@ -71,9 +71,7 @@ export function ProfessionalServiceBatchEditor({tenantCode,userId,services}:Prop
         disabled={!shown.length}>Selecionar {search?"resultados":"todos"}</button>
       <button type="button" className="btn secondary" onClick={()=>changeVisible(false)}
         disabled={!shown.length}>Desmarcar {search?"resultados":"todos"}</button>
-    </div>
-    <div style={{display:"flex",gap:10,alignItems:"end",flexWrap:"wrap",marginBottom:12}}>
-      <label style={{width:"min(100%,200px)"}}>
+      <label className="gromma-service-bulk">
         <span className="label">Comissão em lote (%)</span>
         <input className="input" type="number" min="0" max="100" step=".01"
           value={bulkRate} onChange={e=>{setBulkRate(e.target.value);setBulkError("");}}
@@ -84,17 +82,17 @@ export function ProfessionalServiceBatchEditor({tenantCode,userId,services}:Prop
       <span className="small muted" aria-live="polite">{count} de {services.length} serviços habilitados</span>
     </div>
     {bulkError&&<p className="small" role="alert">{bulkError}</p>}
-    <div className="table-wrap" style={{maxHeight:460,overflowY:"auto"}}>
+    <div className="table-wrap gromma-service-editor-table" style={{maxHeight:460,overflowY:"auto"}}>
       <table style={{width:"100%"}}>
         <thead><tr>
-          <th style={{width:74}}>
+          <th className="gromma-service-checkbox-col">
             <input type="checkbox" aria-label="Selecionar ou desmarcar serviços visíveis"
               checked={shown.length>0 && selectedVisible===shown.length}
               onChange={e=>changeVisible(e.target.checked)}
               disabled={!shown.length}/>
           </th>
           <th>Serviço</th><th>Duração</th><th>Preço</th>
-          <th style={{width:155}}>Comissão (%)</th>
+          <th className="gromma-service-rate-col">Comissão (%)</th>
         </tr></thead>
         <tbody>
           {shown.map(service=><tr key={service.id}>
@@ -126,7 +124,7 @@ export function ProfessionalServiceBatchEditor({tenantCode,userId,services}:Prop
     </span>)}
     {shown.map(s=><input type="hidden" key={s.id} name={"rate_"+s.id}
       value={rates[s.id]??""}/>)}
-    <div style={{display:"flex",gap:10,alignItems:"center",justifyContent:"flex-end",marginTop:10,flexWrap:"wrap"}}>
+    <div className="gromma-service-editor-footer">
       <span className="small muted">{services.length} serviços no catálogo</span>
       <button className="btn" type="submit">Salvar serviços e comissões</button>
     </div>
