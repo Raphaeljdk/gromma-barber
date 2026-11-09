@@ -6,6 +6,7 @@ import { BrandingSettingsSection } from "@/components/branding-settings-section"
 import { unitPolicy } from "@/lib/unit-operations-policy";
 import { toggleFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
+import { ClubManagementPanels, CLUB_MANAGEMENT_MODULES, type ClubManagementModule } from "@/components/erp-club-management";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
 import { createClubInvite } from "./subscription-actions";
 import type { Prisma } from "@prisma/client";
@@ -174,6 +175,15 @@ const MODULE_TITLES: Record<string, string> = {
   servicos: "Serviços",
   comandas: "Comandas",
   assinaturas: "Clube / Assinaturas",
+  "clube-pag": "Dashboard Gromma Pag",
+  "clube-reajustes": "Programar reajuste",
+  "clube-pagamentos": "Calendário de pagamentos",
+  "clube-recebiveis": "Calendário de recebíveis",
+  "clube-cancelados": "Clientes cancelados",
+  "clube-pote": "Distribuição do pote",
+  "clube-inadimplentes": "Inadimplentes",
+  "clube-saques": "Solicitar saque",
+  "clube-transacoes": "Transações financeiras",
   mensagens: "Mensagens",
   promocoes: "Promoções / Cupons",
   financeiro: "Financeiro",
@@ -343,7 +353,9 @@ export async function TenantERPView({
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
 
   const workspace = readWorkspace(shop.enabledFeatures);
-  const controlledModulePermission = activeModule === "financeiro" ? "VIEW_FINANCE"
+  const controlledModulePermission = ["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(activeModule) ? "VIEW_FINANCE"
+    : ["clube-cancelados","clube-inadimplentes"].includes(activeModule) ? "VIEW_REPORTS"
+    : activeModule === "financeiro" ? "VIEW_FINANCE"
     : activeModule === "comissoes" ? "VIEW_COMMISSIONS"
     : activeModule === "relatorios" || Boolean(SUBSCRIPTION_REPORTS[activeModule]) ? "VIEW_REPORTS"
     : activeModule.startsWith("auditoria") ? "VIEW_AUDIT" : null;
@@ -797,7 +809,7 @@ export async function TenantERPView({
   const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
   const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
-  if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura"].includes(activeModule)) notFound();
+  if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura","clube-reajustes","clube-saques"].includes(activeModule)) notFound();
   const canManageCampaigns = hasStaffPermission(viewerRole, workspace.rolePermissions, "MANAGE_CAMPAIGNS");
   const inventoryNotices = isOwner
     ? await loadInventoryNotifications(shop.id, tenantCode, shop.units.map(unit => ({
@@ -811,6 +823,11 @@ export async function TenantERPView({
   const receivables = Number(receivableAggregate._sum.amount ?? 0);
   const payables = Number(payableAggregate._sum.amount ?? 0);
   const cashBalance = receivables - payables;
+  const financeTotals = activeModule === "financeiro"
+    ? await prisma.financialEntry.groupBy({by:["type","status"],where:{barberShopId:shop.id},_sum:{amount:true}})
+    : [];
+  const financeValue = (type:"RECEIVABLE"|"PAYABLE",status:"PENDING"|"PAID") =>
+    Number(financeTotals.find(row=>row.type===type&&row.status===status)?._sum.amount??0);
 
   const serviceNameById = new Map(shop.services.map((service) => [service.id, service.name]));
   const waitlist = workspace.waitlist.map((item) => ({
@@ -1019,9 +1036,14 @@ export async function TenantERPView({
     (avaliacoesPage - 1) * pageSize,
     avaliacoesPage * pageSize,
   );
-  const trainingPageRows = workspace.training.slice(
-    (treinamentosPage - 1) * pageSize,
-    treinamentosPage * pageSize,
+  const treinamentoBusca = valueOf("treinamentosQ").trim().toLocaleLowerCase("pt-BR");
+  const treinamentoTipo = ["VIDEO","COURSE","MEDIA"].includes(valueOf("treinamentosTipo"))?valueOf("treinamentosTipo"):"";
+  const filteredTraining = workspace.training.filter(item=>
+    (!treinamentoTipo||item.kind===treinamentoTipo)&&
+    (!treinamentoBusca||[item.title,item.description].some(text=>text.toLocaleLowerCase("pt-BR").includes(treinamentoBusca)))
+  );
+  const trainingPageRows = filteredTraining.slice(
+    (treinamentosPage - 1) * pageSize, treinamentosPage * pageSize,
   );
 
   const supportEmail = process.env.SUPPORT_EMAIL || "raphaelfreitasdossantos651@gmail.com";
@@ -1063,9 +1085,7 @@ export async function TenantERPView({
           <div className="erp-breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">GROMMA</Link>
             <span>/</span>
-            <span>{plan.name}</span>
-            <span>/</span>
-            <strong>{shop.tradeName}</strong>
+            <span>{shop.tradeName}</span>
             <span>/</span>
             <strong>{activeModuleTitle}</strong>
           </div>
@@ -1080,34 +1100,25 @@ export async function TenantERPView({
           </div>
         </div>
 
-        <div className="erp-enterprise-context">
-          <div>
-            <span className="erp-context-dot" />
-            <div><small>Ambiente</small><strong>{process.env.VERCEL_ENV === "production" ? "Produção" : "Preview"}</strong></div>
+        <div className="erp-enterprise-context gromma-context-strip">
+          <div className="gromma-context-business">
+            <strong>{shop.tradeName}</strong>
+            <small>{shop.city}/{shop.state} · {shop.units.length} {shop.units.length===1?"filial":"filiais"}</small>
           </div>
-          <div>
-            <div><small>Sessão</small><strong>{viewer.type === "ADMIN" ? "Administrativa" : "Cliente autenticado"}</strong></div>
-          </div>
-          <div>
-            <div><small>Plano</small><strong>{plan.name}</strong></div>
-          </div>
+          <div className="gromma-context-environment"><span className="erp-context-dot"/><span>{process.env.VERCEL_ENV === "production" ? "Produção" : "Prévia"}</span></div>
+          <div className="gromma-context-plan">Plano {plan.name}</div>
         </div>
 
-        <header className={`demo-header erp-hero-header ${activeModule === "dashboard" ? "" : "compact"}`}>
+        <header className={`demo-header erp-hero-header gromma-module-header ${activeModule==="dashboard"?"":"compact"}`}>
           <div>
-            <div className="eyebrow">ERP · {plan.name}</div>
+            <div className="eyebrow">{activeModule==="dashboard"?"Painel principal":"Gestão do negócio"}</div>
             <h1>{moduleId === "dashboard" ? shop.tradeName : activeModuleTitle}</h1>
-            <p>
-              {moduleId === "dashboard"
-                ? "Gestão operacional centralizada por tenant, com módulos organizados para rotina, atendimento, financeiro e expansão da barbearia."
-                : `${shop.tradeName} · módulo ${activeModuleTitle}.`}
-            </p>
+            {activeModule === "dashboard" && <p>Acompanhe a operação, os atendimentos e as pendências em um único lugar.</p>}
           </div>
-          <div className="demo-header-actions">
+          {activeModule==="dashboard" && <div className="demo-header-actions">
             <span className="badge approved">Operação ativa</span>
-            <span className="badge">Assinatura {subscription?.status ?? "—"}</span>
-            {isPro && <span className="badge">Experiência Pro</span>}
-          </div>
+            <span className="badge">Plano {plan.name}</span>
+          </div>}
         </header>
 
         {(["agenda-feriados", "clientes-bloqueados", "clientes-ranking"] as const).includes(activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking") && (
@@ -1495,6 +1506,11 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
+        {CLUB_MANAGEMENT_MODULES.includes(activeModule as ClubManagementModule) &&
+          <ClubManagementPanels tenantCode={tenantCode} shopId={shop.id} workspace={workspace}
+            view={activeModule as ClubManagementModule} month={valueOf("clubeMes")}
+            isOwner={isOwner} ok={actionOk} error={actionError}/>}
+
         {SUBSCRIPTION_REPORTS[activeModule] && <SubscriptionReports report={activeModule} tenantCode={tenantCode} shopId={shop.id} workspace={workspace} canFinance={isOwner} searchParams={qs} />}
 
         <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
@@ -1801,16 +1817,23 @@ export async function TenantERPView({
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/promocoes`} searchParams={qs} param="promocoesPage" page={promocoesPage} total={Math.max(promotionCampaigns.length, workspace.coupons.length)} pageSize={pageSize} label="itens comerciais" />
         </section>
 
-        <section id="financeiro" className="demo-section" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
+        <section id="financeiro" className="demo-section gromma-financial-workspace" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
           <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <p className="small muted gromma-module-description">Acompanhe os lançamentos por situação. Os valores abaixo refletem os registros internos, sem conciliação bancária automática.</p>
+          <div className="gromma-finance-kpis">
+            <div><span>A receber · pendente</span><strong>{brl(financeValue("RECEIVABLE","PENDING"))}</strong></div>
+            <div><span>A pagar · pendente</span><strong>{brl(financeValue("PAYABLE","PENDING"))}</strong></div>
+            <div><span>Recebimentos confirmados</span><strong>{brl(financeValue("RECEIVABLE","PAID"))}</strong></div>
+            <div><span>Pagamentos confirmados</span><strong>{brl(financeValue("PAYABLE","PAID"))}</strong></div>
+          </div>
           {actionOk === "financeiro" && <div className="notice erp-inline-notice success">Lançamento financeiro criado com sucesso.</div>}
           {actionError === "financeiro" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o lançamento. Revise descrição e valor.</div>}
           {actionOk === "financeiro-pago" && <div className="notice erp-inline-notice success">Lançamento marcado como pago.</div>}
           {actionError === "financeiro-status" && <div className="notice erp-inline-notice error-notice">Não foi possível atualizar o lançamento financeiro.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {isOwner && (
-          <details className="erp-quick-create">
-            <summary><Plus size={15} /> Novo lançamento <small>Receber ou pagar</small></summary>
+          <details className="erp-quick-create gromma-finance-new">
+            <summary><Plus size={15} /> Novo lançamento <small>Contas a pagar e receber</small></summary>
             <form action={createFinancialEntry} className="erp-quick-form">
               <input type="hidden" name="tenantCode" value={tenantCode} />
               <label><span className="label">Descrição</span><input className="input" name="description" required maxLength={180} placeholder="Descrição do lançamento" /></label>
@@ -1838,19 +1861,22 @@ export async function TenantERPView({
               { param: "financeiroStatus", value: financeiroStatus, label: "Status", options: FINANCIAL_STATUS_OPTIONS },
             ]}
           />
-          <div className="table-wrap"><table>
+          <div className="table-wrap gromma-finance-table"><table>
             <thead><tr><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Vencimento</th><th>Unidade</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>{financialEntries.length ? financialEntries.map((entry) => (
               <tr key={entry.id}>
                 <td><strong>{entry.description}</strong></td><td>{STATUS_LABELS[entry.type] ?? entry.type}</td><td>{entry.category}</td><td>{entry.dueDate ? new Intl.DateTimeFormat("pt-BR").format(entry.dueDate) : "—"}</td><td>{entry.unit?.name ?? "Geral"}</td><td>{brl(Number(entry.amount))}</td><td>{operationalBadge(entry.status)}</td>
                 <td>
                   {entry.status === "PENDING" && isOwner ? (
-                    <form action={markFinancialPaid}>
-                      <input type="hidden" name="tenantCode" value={tenantCode} />
-                      <input type="hidden" name="entryId" value={entry.id} />
-                      <input className="input" name="reason" minLength={5} maxLength={600} required placeholder="Motivo / referência do pagamento" aria-label="Motivo da baixa manual"/>
-                      <button className="btn secondary" type="submit">Confirmar pagamento</button>
-                    </form>
+                    <details className="gromma-finance-confirm">
+                      <summary>Dar baixa</summary>
+                      <form action={markFinancialPaid}>
+                        <input type="hidden" name="tenantCode" value={tenantCode} />
+                        <input type="hidden" name="entryId" value={entry.id} />
+                        <input className="input" name="reason" minLength={5} maxLength={600} required placeholder="Referência e motivo da confirmação" aria-label="Motivo da baixa manual"/>
+                        <button className="btn secondary" type="submit">Confirmar baixa</button>
+                      </form>
+                    </details>
                   ) : <span className="muted small">—</span>}
                 </td>
               </tr>
@@ -2497,43 +2523,41 @@ export async function TenantERPView({
           </div>
         </section>
 
-        <section id="treinamentos" className="demo-section" hidden={Boolean(moduleId && moduleId !== "treinamentos")}>
+        <section id="treinamentos" className="demo-section gromma-training-library" hidden={Boolean(moduleId && moduleId !== "treinamentos")}>
           <div className="section-head">
-            <div><div className="eyebrow">Treinamentos</div><h2>Vídeos, cursos e materiais</h2></div>
-            <StatusPill tone="ready">Biblioteca ativa</StatusPill>
+            <div><div className="eyebrow">Empresa / Capacitação</div><h2>Tutoriais e cursos</h2></div>
+            <span className="small muted">{workspace.training.length} conteúdo(s) cadastrado(s)</span>
           </div>
-
-          {actionOk === "conteudo" && <div className="notice erp-inline-notice success">Conteúdo adicionado à biblioteca.</div>}
-          {actionError === "conteudo" && <div className="notice erp-inline-notice error-notice">Informe título e link válido.</div>}
-
-          <div className="erp-two-column-workspace">
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Novo conteúdo</span><strong>Desenvolvimento da equipe</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-              {canManage && (
-                <form action={saveTrainingItem} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <label><span className="label">Título</span><input className="input" name="title" required placeholder="Ex.: Padrão de atendimento" /></label>
-                  <label><span className="label">Tipo</span><select className="select" name="kind"><option value="VIDEO">Vídeo tutorial</option><option value="COURSE">Curso / trilha</option><option value="MEDIA">Material de divulgação</option></select></label>
-                  <label><span className="label">Link</span><input className="input" name="url" type="url" required placeholder="https://..." /></label>
-                  <label><span className="label">Descrição</span><textarea className="textarea" name="description" placeholder="Objetivo, público e instruções." /></label>
-                  <button className="btn" type="submit">Adicionar conteúdo</button>
-                </form>
-              )}
-            </article>
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Biblioteca</span><strong>{workspace.training.length} item(ns)</strong></div><StatusPill tone="ready">Organizada</StatusPill></div>
-              <div className="erp-training-grid">
-                {trainingPageRows.map((item) => (
-                  <a href={item.url} target="_blank" rel="noreferrer" key={item.id}>
-                    <span>{item.kind === "VIDEO" ? "▶" : item.kind === "COURSE" ? "✓" : "▣"}</span>
-                    <div><strong>{item.title}</strong><small>{item.description || item.kind}</small></div>
-                  </a>
-                ))}
-                {!workspace.training.length && <small className="muted">Adicione tutoriais, cursos ou materiais da barbearia.</small>}
+          <p className="small muted gromma-module-description">Biblioteca interna de treinamento e materiais de apoio da equipe, com acesso aos links cadastrados.</p>
+          {actionOk==="conteudo"&&<p className="notice success" role="status">Conteúdo adicionado à biblioteca.</p>}
+          {actionError==="conteudo"&&<p className="notice error-notice" role="alert">Confira o título e o endereço do conteúdo.</p>}
+          {canManage&&<details className="erp-quick-create gromma-training-new">
+            <summary><Plus size={15}/> Adicionar conteúdo <small>Vídeo, curso ou material</small></summary>
+            <form action={saveTrainingItem} className="erp-quick-form gromma-training-editor">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <label><span className="label">Título do conteúdo</span><input className="input" name="title" required maxLength={180} placeholder="Ex.: Padrão de atendimento"/></label>
+              <div className="grid grid-2">
+                <label><span className="label">Categoria</span><select name="kind" className="select"><option value="VIDEO">Vídeo tutorial</option><option value="COURSE">Curso / trilha</option><option value="MEDIA">Material de apoio</option></select></label>
+                <label><span className="label">Link do conteúdo</span><input name="url" type="url" className="input" required placeholder="https://..."/></label>
               </div>
-            </article>
+              <label><span className="label">Orientações para a equipe</span><textarea className="textarea" name="description" maxLength={1000} rows={2} placeholder="Objetivo, público e instruções"/></label>
+              <button className="btn" type="submit">Salvar conteúdo</button>
+            </form>
+          </details>}
+          <form method="get" action={`/erp/${encodeURIComponent(tenantCode)}/treinamentos`} className="gromma-training-toolbar">
+            <label><span className="label">Pesquisar</span><input name="treinamentosQ" className="input" type="search" defaultValue={valueOf("treinamentosQ")} placeholder="Título ou descrição"/></label>
+            <label><span className="label">Tipo</span><select name="treinamentosTipo" className="select" defaultValue={treinamentoTipo}><option value="">Todos</option><option value="VIDEO">Vídeos</option><option value="COURSE">Cursos</option><option value="MEDIA">Materiais</option></select></label>
+            <button type="submit" className="btn secondary">Filtrar</button>
+          </form>
+          <div className="gromma-training-list">
+            {trainingPageRows.map(item=><a href={item.url} target="_blank" rel="noopener noreferrer" className="gromma-training-item" key={item.id}>
+              <span className="gromma-training-kind">{item.kind==="VIDEO"?"Vídeo":item.kind==="COURSE"?"Curso":"Material"}</span>
+              <span className="gromma-training-content"><strong>{item.title}</strong><small>{item.description||"Material para consulta da equipe"}</small></span>
+              <span className="gromma-training-open">Abrir material ↗</span>
+            </a>)}
+            {!trainingPageRows.length&&<div className="gromma-training-empty"><strong>Nenhum conteúdo encontrado</strong><span>{workspace.training.length?"Ajuste a pesquisa ou os filtros.":"Adicione o primeiro vídeo, curso ou material da equipe."}</span></div>}
           </div>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/treinamentos`} searchParams={qs} param="treinamentosPage" page={treinamentosPage} total={workspace.training.length} pageSize={pageSize} label="conteúdos" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/treinamentos`} searchParams={qs} param="treinamentosPage" page={treinamentosPage} total={filteredTraining.length} pageSize={pageSize} label="conteúdos"/>
         </section>
 
         <section id="auditoria" className="demo-section" hidden={Boolean(moduleId && moduleId !== "auditoria")}>
@@ -2621,56 +2645,47 @@ export async function TenantERPView({
           </>}
         </section>
 
-        <section id="configuracoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "configuracoes")}>
-          <div className="section-head">
-            <div><div className="eyebrow">Configurações</div><h2>Ajustes da operação</h2></div>
-            <StatusPill tone="ready">Persistente</StatusPill>
-          </div>
-
-          {actionOk === "configuracoes" && <div className="notice erp-inline-notice success">Configurações atualizadas.</div>}
-          {actionError === "banco" && <div className="notice erp-inline-notice error-notice">Não foi possível salvar as configurações.</div>}
-
-          <div className="erp-two-column-workspace">
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Agenda e atendimento</span><strong>Preferências operacionais</strong></div><StatusPill tone="ready">Aplicado</StatusPill></div>
-              {canManage ? (
-                <form action={saveOperationalSettings} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <div className="grid grid-3">
-                    <label><span className="label">Abertura</span><input className="input" name="openHour" type="number" min="0" max="23" defaultValue={workspace.settings.openHour} /></label>
-                    <label><span className="label">Fechamento</span><input className="input" name="closeHour" type="number" min="1" max="24" defaultValue={workspace.settings.closeHour} /></label>
-                    <label><span className="label">Intervalo da agenda</span><select className="select" name="slotMinutes" defaultValue={workspace.settings.slotMinutes}><option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></label>
-                  </div>
-                  <div className="grid grid-2">
-                    <label><span className="label">Comissão padrão (%)</span><input className="input" name="defaultCommissionPercent" type="number" min="0" max="100" step="0.01" defaultValue={workspace.settings.defaultCommissionPercent} /></label>
-                    <label><span className="label">WhatsApp da operação</span><input className="input" name="whatsappNumber" defaultValue={workspace.settings.whatsappNumber} placeholder="5511999999999" /></label>
-                  </div>
-                  <label><span className="label">Emissor fiscal / referência</span><input className="input" name="invoiceProvider" defaultValue={workspace.settings.invoiceProvider} placeholder="Nome do emissor ou integração planejada" /></label>
-                  <label><span className="label">Comodidades das unidades</span><input className="input" name="amenities" defaultValue={workspace.settings.amenities} placeholder="Wi-Fi, café, estacionamento, acessibilidade..." /></label>
-                  <div className="erp-switch-grid">
-                    <label><input type="checkbox" name="rotationEnabled" defaultChecked={workspace.settings.rotationEnabled} /><span><strong>Rodízio de profissionais</strong><small>Ativa regra operacional de distribuição.</small></span></label>
-                    <label><input type="checkbox" name="autoConfirm" defaultChecked={workspace.settings.autoConfirm} /><span><strong>Confirmação automática</strong><small>Preferência pronta para automação de mensagens.</small></span></label>
-                  </div>
-                  <button className="btn" type="submit">Salvar configurações</button>
-                </form>
-              ) : <p className="muted small">Somente proprietário ou gerente pode alterar estas configurações.</p>}
-            </article>
-
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Integrações</span><strong>Status técnico</strong></div><StatusPill tone="pending">Conexões externas</StatusPill></div>
-              <div className="erp-health-list">
-                <div><span>WhatsApp</span><strong>{workspace.settings.whatsappNumber ? "Número configurado" : "Configuração pendente"}</strong></div>
-                <div><span>Nota fiscal</span><strong>{workspace.settings.invoiceProvider || "Emissor não conectado"}</strong></div>
-                <div><span>Rodízio</span><strong>{workspace.settings.rotationEnabled ? "Ativo" : "Desativado"}</strong></div>
-                <div><span>Confirmação automática</span><strong>{workspace.settings.autoConfirm ? "Preferência ativa" : "Manual"}</strong></div>
-                <div><span>Comodidades</span><strong>{workspace.settings.amenities || "Não cadastradas"}</strong></div>
+        <section id="configuracoes" className="demo-section gromma-settings-enterprise" hidden={Boolean(moduleId && moduleId !== "configuracoes")}>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Administração</div><h2>Configurações operacionais</h2></div><StatusPill tone="ready">Configurações salvas no ERP</StatusPill></div>
+          <p className="small muted gromma-module-description">Defina horários, critérios de atendimento e preferências gerais. Integrações externas somente operam quando estiverem conectadas.</p>
+          {actionOk==="configuracoes"&&<p className="notice success" role="status">Configurações atualizadas.</p>}
+          {actionError==="banco"&&<p className="notice error-notice" role="alert">Não foi possível salvar as configurações.</p>}
+          <article className="card gromma-settings-main">
+            <div className="erp-card-title"><div><span>Preferências da barbearia</span><strong>Rotina de atendimento e funcionamento</strong></div></div>
+            {canManage?<form action={saveOperationalSettings} className="gromma-settings-editor">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <fieldset><legend>Agenda e atendimento</legend><div className="gromma-settings-fields three">
+                <label><span className="label">Abertura (hora)</span><input className="input" name="openHour" type="number" min="0" max="23" defaultValue={workspace.settings.openHour}/></label>
+                <label><span className="label">Fechamento (hora)</span><input className="input" name="closeHour" type="number" min="1" max="24" defaultValue={workspace.settings.closeHour}/></label>
+                <label><span className="label">Intervalo entre agendamentos</span><select className="select" name="slotMinutes" defaultValue={workspace.settings.slotMinutes}><option value="15">15 minutos</option><option value="20">20 minutos</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">60 minutos</option></select></label>
+              </div></fieldset>
+              <fieldset><legend>Comissões e contato</legend><div className="gromma-settings-fields two">
+                <label><span className="label">Comissão padrão (%)</span><input className="input" name="defaultCommissionPercent" type="number" min="0" max="100" step="0.01" defaultValue={workspace.settings.defaultCommissionPercent}/></label>
+                <label><span className="label">WhatsApp da operação</span><input className="input" name="whatsappNumber" defaultValue={workspace.settings.whatsappNumber} placeholder="5511999999999"/></label>
+              </div></fieldset>
+              <fieldset><legend>Recursos e integrações</legend><div className="gromma-settings-fields two">
+                <label><span className="label">Emissor fiscal / referência</span><input className="input" name="invoiceProvider" defaultValue={workspace.settings.invoiceProvider} placeholder="Nome do emissor ou integração planejada"/></label>
+                <label><span className="label">Comodidades das unidades</span><input className="input" name="amenities" defaultValue={workspace.settings.amenities} placeholder="Wi-Fi, café, estacionamento..."/></label>
               </div>
-              <p className="erp-integration-note">WhatsApp automático, gateway de pagamento e emissão fiscal dependem de credenciais/provedores externos. O ERP mantém a configuração e os fluxos internos prontos sem fingir uma integração que ainda não existe.</p>
-            </article>
-          </div>
-          
+              <div className="gromma-settings-options">
+                <label><input type="checkbox" name="rotationEnabled" defaultChecked={workspace.settings.rotationEnabled}/><span><strong>Rodízio de profissionais</strong><small>Aplicar a preferência operacional de distribuição</small></span></label>
+                <label><input type="checkbox" name="autoConfirm" defaultChecked={workspace.settings.autoConfirm}/><span><strong>Preferência de confirmação automática</strong><small>Exige integração externa para envio efetivo de mensagens</small></span></label>
+              </div></fieldset>
+              <div className="gromma-settings-submit"><button className="btn" type="submit">Salvar configurações</button></div>
+            </form>:<p className="small muted">Somente proprietário ou gerente pode alterar estas preferências.</p>}
+          </article>
+          <details className="gromma-settings-connection-status">
+            <summary><strong>Conferir status das integrações</strong><span className="small muted">WhatsApp, fiscal e preferências operacionais</span></summary>
+            <div className="erp-health-list">
+              <div><span>WhatsApp</span><strong>{workspace.settings.whatsappNumber?"Número cadastrado":"Pendente de configuração"}</strong></div>
+              <div><span>Nota fiscal</span><strong>{workspace.settings.invoiceProvider||"Emissor não conectado"}</strong></div>
+              <div><span>Rodízio</span><strong>{workspace.settings.rotationEnabled?"Preferência habilitada":"Desativado"}</strong></div>
+              <div><span>Confirmações automáticas</span><strong>{workspace.settings.autoConfirm?"Preferência habilitada":"Manual"}</strong></div>
+              <div><span>Comodidades</span><strong>{workspace.settings.amenities||"Não cadastradas"}</strong></div>
+            </div>
+            <p className="small muted">Uma configuração preenchida não garante conexão ativa com WhatsApp, gateway de pagamentos ou emissor fiscal.</p>
+          </details>
         </section>
-
 
         {(["identidade", "clube-config"] as const).map(mode =>
           (!moduleId || moduleId === mode) && (

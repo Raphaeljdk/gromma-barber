@@ -269,34 +269,20 @@ export function ErpSidebar({
           </button>
         </div>
 
-        <div className="erp-company-card">
-          <div className="erp-company-logo">{business.slice(0, 1).toUpperCase()}</div>
-          <div className="erp-company-copy">
-            <div className="erp-company-title-row">
-              <strong>{business}</strong>
-              <span className="erp-online-dot" title="Tenant ativo" />
-            </div>
-            <small>{city}/{state} · {units} {units === 1 ? "unidade" : "unidades"} · {users} usuários</small>
-          </div>
+        <div className="gromma-sidebar-business">
+          <span className="gromma-sidebar-monogram" aria-hidden="true">{business.slice(0,1).toUpperCase()}</span>
+          <span className="gromma-sidebar-business-copy">
+            <strong title={business}>{business}</strong>
+            <small>{city}/{state} · {units} {units === 1 ? "filial" : "filiais"}</small>
+          </span>
         </div>
-
-        <div className="erp-sidebar-shortcuts">
-          {isOwner && <Link href={routeFor(tenantCode, "notificacoes")} title="Notificações de solicitações de compra" onClick={() => setMobileOpen(false)}>
-            <BellRing size={16} />
-            <span className="erp-sidebar-label">Notificações {notificationCount > 0 ? "(" + notificationCount + ")" : ""}</span>
-          </Link>}
-          <button type="button" onClick={goBack} title="Voltar">
-            <ChevronLeft size={16} />
-            <span className="erp-sidebar-label">Voltar</span>
-          </button>
-          <a href={supportHref} title="Enviar mensagem para o suporte">
-            <MessageCircle size={16} />
-            <span className="erp-sidebar-label">Suporte</span>
-          </a>
+        <div className="gromma-sidebar-quicklinks">
+          {isOwner && <Link href={routeFor(tenantCode,"notificacoes")} onClick={()=>setMobileOpen(false)} title="Notificações da empresa"><BellRing size={16}/><span className="erp-sidebar-label">Avisos {notificationCount>0?`(${notificationCount})`:""}</span></Link>}
+          <a href={supportHref} title="Suporte"><MessageCircle size={16}/><span className="erp-sidebar-label">Suporte</span></a>
+          <button type="button" onClick={goBack} title="Voltar"><ChevronLeft size={16}/><span className="erp-sidebar-label">Voltar</span></button>
         </div>
 
         <nav className="erp-nav" aria-label="Módulos do ERP">
-          <p className="erp-nav-plan-note">Em cinza: funcionalidades previstas para as próximas etapas.</p>
           {NAV_GROUPS.map((group) => {
             // A single permanent link below Financeiro, not a new expandable
             // menu section. Respect the existing PRO permission in renderNavItem.
