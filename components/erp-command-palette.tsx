@@ -76,12 +76,15 @@ const MODULES = [
   { id: "clube-config", label: "Apresentação do Clube", group: "Empresa", icon: BadgeDollarSign },
   { id: "unidades", label: "Unidades / Filiais", group: "Empresa", icon: Building2 },
   { id: "equipe", label: "Profissionais", group: "Empresa", icon: UserRoundCog },
+  { id: "funcionarios-destaque", label: "Funcionários em destaque", group: "Empresa", icon: Star, ownerOnly: true },
+  { id: "grupos-acesso", label: "Grupos de acesso", group: "Empresa", icon: Users, ownerOnly: true },
   { id: "equipe/novo", label: "Cadastrar profissional", group: "Empresa", icon: UserRoundCog, ownerOnly: true },
   { id: "servicos", label: "Serviços", group: "Empresa", icon: Store },
   { id: "documentos", label: "Documentos", group: "Empresa", icon: FileText },
   { id: "treinamentos", label: "Tutoriais / Cursos", group: "Empresa", icon: BookOpenCheck },
   { id: "configuracoes", label: "Configurações", group: "Empresa", icon: Settings2 },
   { id: "plano", label: "Meu plano", group: "Empresa", icon: BadgeDollarSign },
+  { id: "fatura", label: "Fatura", group: "Empresa", icon: FileText, ownerOnly: true },
   { id: "financeiro", label: "Financeiro", group: "Financeiro", icon: WalletCards },
 ] as const;
 
