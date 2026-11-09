@@ -8,6 +8,7 @@ import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPh
 import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
 import { ProfessionalServiceBatchEditor } from "@/components/professional-service-batch-editor";
 import { ProfessionalWorkWeekEditor } from "@/components/professional-work-week-editor";
+import { ProfessionalPhotoPicker } from "@/components/professional-photo-picker";
 
 export const dynamic="force-dynamic";
 type Props={params:Promise<{tenant:string;userId:string}>;searchParams:Promise<Record<string,string|undefined>>};
@@ -102,7 +103,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
 
     <section id="dados-profissional" className="card">
       <h3 className="professional-section-title"><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></h3>
-      <form action={saveProfessionalIdentity} className="erp-compact-form" style={{marginTop:10}}>
+      <form action={saveProfessionalIdentity} className="erp-compact-form gromma-profile-identity">
         {hidden(code,user.id)}
         <div className="professional-identity-grid">
           <label><span className={labelClass}>Nome completo</span><input className="input" name="name" required minLength={2} maxLength={120} defaultValue={user.name}/></label>
@@ -130,7 +131,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         </div>
         <details className="professional-subsection professional-optional-address">
           <summary>Endereço e dados complementares</summary>
-          <div className="professional-identity-grid professional-extra-fields">
+          <div className="professional-identity-grid professional-extra-fields gromma-address-grid">
           <label><span className={labelClass}>CEP</span><input className="input" name="zipCode" inputMode="numeric" maxLength={9} defaultValue={profile.zipCode??""}/></label>
           <label><span className={labelClass}>Logradouro</span><input className="input" name="street" defaultValue={profile.street??""}/></label>
           <label><span className={labelClass}>Bairro</span><input className="input" name="district" defaultValue={profile.district??""}/></label>
@@ -140,28 +141,23 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <label><span className={labelClass}>Complemento</span><input className="input" name="complement" defaultValue={profile.complement??""}/></label>
           </div>
         </details>
-        <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="accessToOtherUnits" defaultChecked={profile.accessToOtherUnits??false}/> Indicar acesso a dados de outras unidades (ainda sujeito às permissões gerais do ERP)</label>
-        <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="active" defaultChecked={user.active}/> Cadastro ativo</label>
+        <label className="gromma-profile-toggle"><input type="checkbox" name="accessToOtherUnits" defaultChecked={profile.accessToOtherUnits??false}/> Indicar acesso a dados de outras unidades (ainda sujeito às permissões gerais do ERP)</label>
+        <label className="gromma-profile-toggle"><input type="checkbox" name="active" defaultChecked={user.active}/> Cadastro ativo</label>
         
-        <button className="btn" type="submit">Salvar dados do profissional</button>
-        <p className="small muted">A foto é atualizada pelo envio de arquivo abaixo; salvar os dados não apaga a foto existente nem altera a senha.</p>
+        <div className="gromma-profile-save"><span className="small muted">Dados salvos independentemente da foto e da senha.</span><button className="btn" type="submit">Salvar dados do profissional</button></div>
       </form>
       <details className="professional-subsection professional-photo-upload">
-        <summary>Atualizar foto do profissional</summary>
-        <section className="erp-quick-create" style={{marginTop:10}}>
-        <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
-        <form action={uploadProfessionalPhoto} className="erp-compact-form">
+        <summary>Foto do profissional</summary>
+        <form action={uploadProfessionalPhoto} className="erp-compact-form gromma-photo-form">
           {hidden(code,user.id)}
-          <label><span className="label">Foto JPEG, PNG ou WebP (máximo 3 MB)</span>
-            <input className="input" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required/></label>
-          <label style={{display:"flex",gap:8,alignItems:"center"}}>
-            <input type="checkbox" name="photoConsent" required/>
-            Confirmo que tenho autorização para armazenar e exibir a foto do profissional em endereço público de imagem.
-          </label>
-          <p className="small muted">O envio exige Vercel Blob configurado. Se estiver indisponível, a foto já cadastrada será preservada.</p>
-          <button className="btn secondary" type="submit">Enviar foto autorizada</button>
+          <ProfessionalPhotoPicker name={user.name} currentPhotoUrl={profile.photoUrl??""}/>
+          <div className="gromma-photo-footer">
+            <label className="gromma-profile-toggle"><input type="checkbox" name="photoConsent" required/>
+              Tenho autorização para armazenar e exibir a foto profissional.</label>
+            <button className="btn secondary" type="submit">Salvar foto autorizada</button>
+          </div>
+          <p className="small muted">O envio exige Vercel Blob. Caso esteja indisponível, a foto anterior será preservada.</p>
         </form>
-        </section>
       </details>
     </section>
 
@@ -180,7 +176,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
 
     <section id="contratos-profissional" className="card">
       <h3 className="professional-section-title"><strong>2. Contratos do profissional</strong> <span className="muted"> · documentos vinculados</span></h3>
-      <div style={{marginTop:12}}>
+      <div className="gromma-contracts-wrapper">
         {(profile.contracts??[]).map(contract=><div key={contract.id} className="card"
           style={{padding:10,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
           <div><strong>{contract.label}</strong><p className="small muted">{contract.validFrom||"Sem início informado"} · {contract.notes||"Documento vinculado"}</p></div>
@@ -195,11 +191,9 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           </div>
         </div>)}
         {!profile.contracts?.length&&<p className="small muted">Nenhum contrato vinculado.</p>}
-        <details className="professional-subsection"><summary>Enviar contrato PDF privado</summary>
-        <form action={uploadProfessionalContract} className="erp-compact-form"
-          style={{marginTop:10,padding:12,border:"1px solid var(--border,#333)",borderRadius:10}}>
+        <div className="gromma-contract-options"><details className="professional-subsection"><summary>Enviar contrato PDF privado</summary>
+        <form action={uploadProfessionalContract} className="erp-compact-form gromma-contract-form">
           {hidden(code,user.id)}
-          <strong>Enviar contrato PDF privado</strong>
           <div className="professional-contract-grid">
             <label>Nome do contrato<input className="input" name="label" required minLength={3} maxLength={140}/></label>
             <label>Arquivo PDF (até 3 MB)<input className="input" type="file" name="contractPdf"
@@ -211,8 +205,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             Requer GROMMA_PRIVATE_BLOB_TOKEN configurado na Vercel.</p>
         </form>
         </details>
-        <details className="professional-subsection"><summary>Vincular contrato por endereço (link)</summary>
-        <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:10}}>
+        <details className="professional-subsection"><summary>Vincular contrato por link</summary>
+        <form action={saveProfessionalSection} className="erp-compact-form gromma-contract-form">
           {hidden(code,user.id,"contract-add")}
           <div className="professional-contract-grid">
             <label>Nome do contrato<input className="input" name="label" required maxLength={140} placeholder="Contrato de prestação de serviços"/></label>
@@ -222,34 +216,39 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             <button className="btn secondary" type="submit">Vincular contrato</button>
           </div>
         </form>
-        <p className="small muted">O arquivo continua no armazenamento de origem. O sistema salva apenas seu endereço.</p>
-        </details>
+        <p className="small muted">O arquivo permanece no serviço de origem; o ERP salva somente seu endereço.</p>
+        </details></div>
       </div>
     </section>
 
     <section id="permissoes-profissional" className="card">
       <h3 className="professional-section-title"><strong>3. Permissões individuais</strong> <span className="muted"> · controle por profissional</span></h3>
-      <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
+      <form action={saveProfessionalSection} className="erp-compact-form gromma-permissions-form">
         {hidden(code,user.id,"permissions")}
-        <p className="small muted">Sem uma regra individual salva, o profissional herda as permissões do seu papel. Alterações financeiras continuam exclusivas do administrador. As restrições de agendamentos, observações e lançamento de itens já são verificadas no servidor. O acesso do próprio barbeiro para criar bloqueios ou remover folgas pelo aplicativo ainda está em preparação; estas duas opções ficam cadastradas para essa próxima etapa.</p>
-        <div className="professional-permissions-grid">
-          {PROFESSIONAL_PERMISSION_OPTIONS.map(permission=><label key={permission.id} style={{display:"flex",gap:8,alignItems:"center"}}>
+        <p className="small muted gromma-permissions-help">Sem regra individual, valem as permissões do cargo. Ações financeiras continuam restritas ao administrador. Bloqueios e folgas pelo aplicativo dependem de uma etapa futura.</p>
+        <div className="professional-permissions-grid gromma-permissions-list">
+          {PROFESSIONAL_PERMISSION_OPTIONS.map(permission=><label key={permission.id} className="gromma-permission-row">
             <input type="checkbox" name="permissions" value={permission.id}
               defaultChecked={profilePermissions?profilePermissions.includes(permission.id):["CREATE_APPOINTMENT","EDIT_APPOINTMENT","ADD_PRODUCT","ADD_SERVICE"].includes(permission.id)}/>
-            {permission.label}
+            <span><strong>{permission.label}</strong><small>{({
+              CREATE_APPOINTMENT:"Permite registrar novos horários.",
+              EDIT_APPOINTMENT:"Permite alterar agendamentos existentes.",
+              ADD_PRODUCT:"Lança produtos nas comandas.",
+              ADD_SERVICE:"Inclui serviços nas comandas.",
+              MANAGE_BLOCKS:"Controle de bloqueios da agenda (aplicativo em preparação).",
+              MANAGE_LEAVES:"Gerenciamento de folgas (aplicativo em preparação).",
+              EDIT_APPOINTMENT_NOTES:"Permite editar observações dos atendimentos.",
+            } as Record<string,string>)[permission.id]??"Permissão individual do profissional."}</small></span>
           </label>)}
         </div>
-        
-        <button className="btn" type="submit">Salvar permissões</button>
+        <div className="gromma-permissions-save">          <button className="btn" type="submit">Salvar permissões</button>
+        </div>
       </form>
     </section>
 
     <section id="servicos-profissional" className="card">
       <h3 className="professional-section-title"><strong>4. Serviços e comissões</strong> <span className="muted"> · configure tudo de uma vez</span></h3>
-      <p className="small muted" style={{margin:"10px 0"}}>
-        Selecione os serviços que o profissional realiza e informe a comissão de cada um.
-        Todos aparecem juntos; não precisa salvar serviço por serviço. O percentual de cada linha pode ser zero.
-      </p>
+      <p className="small muted gromma-prof-services-intro">Selecione os serviços e ajuste as comissões individuais ou em lote. As alterações são salvas juntas.</p>
       <ProfessionalServiceBatchEditor tenantCode={code} userId={user.id}
         services={services.map(service=>({
           id:service.id,name:service.name,price:Number(service.price),
@@ -326,9 +325,9 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         Itens ainda sem categoria continuam com a regra anterior, sem alterar históricos.
       </p>
     </section>
-    <section id="assinaturas-profissional" className="card">
-      <h3 className="professional-section-title"><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></h3>
-      <p className="small muted" style={{marginTop:14}}>O pote de assinaturas é distribuído automaticamente por produtividade. Uma bonificação adicional pela venda de um plano novo é opcional e só aparece na apuração se estiver habilitada abaixo.</p>
+    <section id="assinaturas-profissional" className="card gromma-subscription-bonus">
+      <h3 className="professional-section-title"><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · comissão adicional</span></h3>
+      <p className="small muted gromma-bonus-intro">A bonificação comercial é opcional e independente do pote distribuído por produtividade.</p>
       <form action={saveProfessionalSection} className="erp-compact-form gromma-professional-bonus-form">
         {hidden(code,user.id,"base-commissions")}
         <label className="gromma-bonus-toggle">
@@ -336,34 +335,33 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             defaultChecked={subscriptionSalesEnabled(profile,
               workspace.professionalExtraRates[user.id]?.subscriptionPercent??0,
               workspace.subscriptionCommissionTiers[user.id]??[])}/>
-          <strong>Habilitar bônus por venda de assinatura para este profissional</strong>
+          <span><strong>Ativar bonificação por venda</strong><small>Incluir o bônus nas apurações quando habilitado</small></span>
         </label>
-        <div className="gromma-bonus-percent">
-          <label>Comissão por venda de assinatura (%)<input className="input" type="number" step=".01" min={0} max={100}
-            name="subscriptionPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}/></label>
-
-        </div>
-        
-        <button className="btn" type="submit">Salvar percentuais de vendas</button>
+        <label className="gromma-bonus-percent">
+          <span className="label">Comissão fixa (%)</span>
+          <input className="input" type="number" step=".01" min={0} max={100}
+            name="subscriptionPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}/>
+        </label>
+        <button className="btn" type="submit">Salvar bonificação</button>
       </form>
-      <details className="professional-subsection" open={(workspace.subscriptionCommissionTiers[user.id]??[]).length>0}>
-        <summary>Metas por venda de planos novos (opcional)</summary>
-        <section className="erp-quick-create gromma-commission-tiers" style={{marginTop:10}}>
-        <p className="small muted">Exemplo: vendas confirmadas de R$ 500 até R$ 1.000, comissão de 5%. Quando existirem faixas, elas substituem o percentual fixo de venda de assinatura dentro das condições definidas.</p>
-        <form action={saveProfessionalSection} className="erp-compact-form gromma-tier-form">
-          {hidden(code,user.id,"subscription-tiers")}
-          {[0,1,2,3,4].map(index=>{
-            const tier=(workspace.subscriptionCommissionTiers[user.id]??[])[index];
-            return <div key={index} className="gromma-tier-row">
-              <label>De (R$)<input className="input" type="number" name="tierMin" step=".01" min={0} defaultValue={tier?.min??""}/></label>
-              <label>Até (R$)<input className="input" type="number" name="tierMax" step=".01" min={0} defaultValue={tier?.max??""}/></label>
-              <label>Comissão (%)<input className="input" type="number" name="tierPercent" step=".01" min={0} max={100} defaultValue={tier?.percent??""}/></label>
-            </div>;
-          })}
-          
-          <button className="btn secondary" type="submit">Salvar faixas comerciais</button>
-        </form>
-        </section>
+      <details className="professional-subsection gromma-bonus-tier-details" open={(workspace.subscriptionCommissionTiers[user.id]??[]).length>0}>
+        <summary>Faixas de metas por novos planos (opcional)</summary>
+        <div className="gromma-commission-tiers">
+          <p className="small muted">Quando houver faixas definidas, a comissão por meta substitui a comissão fixa dentro das condições configuradas.</p>
+          <form action={saveProfessionalSection} className="erp-compact-form gromma-tier-form">
+            {hidden(code,user.id,"subscription-tiers")}
+            <div className="gromma-tier-headings" aria-hidden="true"><span>De (R$)</span><span>Até (R$)</span><span>Comissão (%)</span></div>
+            {[0,1,2,3,4].map(index=>{
+              const tier=(workspace.subscriptionCommissionTiers[user.id]??[])[index];
+              return <div key={index} className="gromma-tier-row">
+                <label><span className="gromma-tier-mobile-label">De (R$)</span><input aria-label={`Faixa ${index+1} — valor inicial`} className="input" type="number" name="tierMin" step=".01" min={0} defaultValue={tier?.min??""}/></label>
+                <label><span className="gromma-tier-mobile-label">Até (R$)</span><input aria-label={`Faixa ${index+1} — valor final`} className="input" type="number" name="tierMax" step=".01" min={0} defaultValue={tier?.max??""}/></label>
+                <label><span className="gromma-tier-mobile-label">Comissão (%)</span><input aria-label={`Faixa ${index+1} — percentual`} className="input" type="number" name="tierPercent" step=".01" min={0} max={100} defaultValue={tier?.percent??""}/></label>
+              </div>;
+            })}
+            <button className="btn secondary" type="submit">Salvar faixas comerciais</button>
+          </form>
+        </div>
       </details>
     </section>
     <details className="professional-subsection professional-pot-note">

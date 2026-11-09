@@ -4,7 +4,7 @@ import { UnitOperationsForm } from "@/components/unit-operations-form";
 import { BusinessDataSection } from "@/components/business-data-section";
 import { BrandingSettingsSection } from "@/components/branding-settings-section";
 import { unitPolicy } from "@/lib/unit-operations-policy";
-import { toggleFeaturedProfessional } from "./featured-professional-actions";
+import { toggleFeaturedProfessional, moveFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { ClubManagementPanels, CLUB_MANAGEMENT_MODULES, type ClubManagementModule } from "@/components/erp-club-management";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
@@ -2203,23 +2203,54 @@ export async function TenantERPView({
           {actionError==="destaque"&&<p className="notice error-notice" role="alert">Não foi possível atualizar o destaque. Confira o limite e a situação do profissional.</p>}
           {actionOk==="destaque"&&<p className="notice success" role="status">Destaques atualizados.</p>}
           <div className="gromma-staff-summary"><strong>{workspace.featuredProfessionalIds.length}</strong><span>de 12 destaques selecionados</span></div>
-          <div className="table-wrap gromma-admin-table"><table>
-            <thead><tr><th>Profissional</th><th>Função</th><th>Visibilidade</th><th>Ação</th></tr></thead>
-            <tbody>{shop.users.filter(user=>["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>{
-              const featured=workspace.featuredProfessionalIds.includes(user.id);
+          <div className="table-wrap gromma-admin-table gromma-featured-table"><table>
+            <thead><tr><th>Ordem no site</th><th>Profissional</th><th>Função</th><th>Visibilidade</th><th>Ações</th></tr></thead>
+            <tbody>{shop.users.filter(user=>user.active&&["OWNER","MANAGER","BARBER"].includes(user.role))
+              .sort((a,b)=>{
+                const posA=workspace.featuredProfessionalIds.indexOf(a.id);
+                const posB=workspace.featuredProfessionalIds.indexOf(b.id);
+                if(posA>=0&&posB>=0)return posA-posB;
+                if(posA>=0)return -1;
+                if(posB>=0)return 1;
+                return a.name.localeCompare(b.name,"pt-BR");
+              }).map(user=>{
+              const featuredPosition=workspace.featuredProfessionalIds.indexOf(user.id);
+              const featured=featuredPosition>=0;
+              const photoUrl=workspace.professionalProfiles[user.id]?.photoUrl;
               return <tr key={user.id}>
-                <td><strong>{user.name}</strong><span className="erp-directory-secondary">{user.email}</span></td>
+                <td><span className={"gromma-featured-position"+(featured?" is-featured":"")} aria-label={featured?"Posição "+(featuredPosition+1):"Sem posição"}>
+                  {featured?String(featuredPosition+1).padStart(2,"0"):"—"}
+                </span></td>
+                <td><div className="gromma-featured-person">
+                  {photoUrl?<img src={photoUrl} alt={"Foto de "+user.name} width={38} height={38} className="gromma-featured-avatar"/>:
+                    <span className="gromma-featured-avatar gromma-featured-initial" aria-hidden="true">{user.name.slice(0,1).toUpperCase()}</span>}
+                  <div><strong>{user.name}</strong><span className="erp-directory-secondary">{user.email}</span></div>
+                </div></td>
                 <td>{ROLE_LABELS[user.role]??user.role}</td>
                 <td><span className={"badge "+(featured?"approved":"")}>{featured?"Em destaque":"Padrão"}</span></td>
-                <td>{isOwner&&<form action={toggleFeaturedProfessional}>
-                  <input type="hidden" name="tenantCode" value={tenantCode}/>
-                  <input type="hidden" name="userId" value={user.id}/>
-                  <input type="hidden" name="featured" value={featured?"no":"yes"}/>
-                  <button type="submit" className="btn secondary" disabled={!featured&&workspace.featuredProfessionalIds.length>=12}>{featured?"Remover destaque":"Colocar em destaque"}</button>
-                </form>}</td>
+                <td>{isOwner&&<div className="gromma-featured-actions">
+                  {featured&&<div className="gromma-featured-order-controls" aria-label={"Ordenar "+user.name}>
+                    {(["up","down"] as const).map(direction=><form key={direction} action={moveFeaturedProfessional}>
+                      <input type="hidden" name="tenantCode" value={tenantCode}/>
+                      <input type="hidden" name="userId" value={user.id}/>
+                      <input type="hidden" name="direction" value={direction}/>
+                      <button type="submit" className="btn secondary" title={direction==="up"?"Subir posição":"Descer posição"}
+                        aria-label={(direction==="up"?"Subir":"Descer")+" "+user.name}
+                        disabled={direction==="up"?featuredPosition===0:featuredPosition===workspace.featuredProfessionalIds.length-1}>
+                        {direction==="up"?"↑":"↓"}
+                      </button>
+                    </form>)}
+                  </div>}
+                  <form action={toggleFeaturedProfessional}>
+                    <input type="hidden" name="tenantCode" value={tenantCode}/>
+                    <input type="hidden" name="userId" value={user.id}/>
+                    <input type="hidden" name="featured" value={featured?"no":"yes"}/>
+                    <button type="submit" className="btn secondary" disabled={!featured&&workspace.featuredProfessionalIds.length>=12}>{featured?"Remover destaque":"Destacar"}</button>
+                  </form>
+                </div>}</td>
               </tr>;
             })}
-            {!shop.users.some(user=>["OWNER","MANAGER","BARBER"].includes(user.role))&&<tr><td colSpan={4}>Nenhum profissional elegível cadastrado.</td></tr>}</tbody>
+            {!shop.users.some(user=>user.active&&["OWNER","MANAGER","BARBER"].includes(user.role))&&<tr><td colSpan={5}>Nenhum profissional elegível cadastrado.</td></tr>}</tbody>
           </table></div>
         </section>
 
