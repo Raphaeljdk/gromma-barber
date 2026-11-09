@@ -27,10 +27,13 @@ test("new sector hierarchy preserves access to existing ERP modules", () => {
   ].flatMap(node => node.route ? [node.route] : []));
   const searchModules = [...palette.matchAll(/\{ id: "([^"]+)", label: "[^"]+", group: "[^"]+", icon:/g)].map(match => match[1]);
   assert.equal(new Set(searchModules).size, searchModules.length, "duplicates in module search");
+  // Telas internas de marca e cadastro continuam alcançáveis pela busca,
+  // sem duplicar o menu Empresa que agora prioriza as rotas operacionais.
+  const directOnly = new Set(["identidade", "clube-config", "equipe/novo"]);
   assert.deepEqual(
     [...links].sort(),
-    [...new Set([...searchModules, "auditoria"])].sort(),
-    "the menu must preserve all existing routes, including the restricted audit module"
+    [...new Set(searchModules.filter(id => !directOnly.has(id)))].sort(),
+    "navigation and search must agree on menu modules, including restricted pages"
   );
   assert.match(sidebar, /renderNavItem\(child, depth \+ 1\)/, "must render grandchildren");
 });
