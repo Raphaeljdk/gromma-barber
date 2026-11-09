@@ -797,6 +797,7 @@ export async function TenantERPView({
   const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
   const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
+  if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura"].includes(activeModule)) notFound();
   const canManageCampaigns = hasStaffPermission(viewerRole, workspace.rolePermissions, "MANAGE_CAMPAIGNS");
   const inventoryNotices = isOwner
     ? await loadInventoryNotifications(shop.id, tenantCode, shop.units.map(unit => ({
