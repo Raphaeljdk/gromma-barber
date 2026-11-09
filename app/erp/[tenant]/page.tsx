@@ -2112,7 +2112,7 @@ export async function TenantERPView({
         </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
-          <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Profissionais e permissões</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {isOwner && <details className="erp-quick-create erp-directory-create">
             <summary><Plus size={15}/> Novo profissional <small>Cadastro e edição na mesma área</small></summary>
             <form action={createProfessional} className="erp-quick-form">
@@ -2413,7 +2413,7 @@ export async function TenantERPView({
                   <button className="btn" type="submit">Adicionar documento</button>
                 </form>
               )}
-              <p className="erp-integration-note">A central já organiza links e documentos hospedados externamente. Upload binário próprio exige storage dedicado e não é simulado.</p>
+              <p className="erp-integration-note">Os arquivos permanecem no serviço de origem. Cadastre apenas endereços confiáveis e com acesso autorizado.</p>
 
             </article>
 
@@ -2423,7 +2423,7 @@ export async function TenantERPView({
                 {documentPageRows.map((document) => (
                   <a href={document.url} target="_blank" rel="noreferrer" key={document.id}>
                     <FileText size={17} />
-                    <div><strong>{document.title}</strong><span>{document.category} · {document.reference ?? "Sem referência"}</span></div>
+                    <div><strong>{document.title}</strong><span>{({CUSTOMER:"Cliente",PROFESSIONAL:"Profissional",UNIT:"Filial",GENERAL:"Geral"} as Record<string,string>)[document.category]??document.category} · {document.reference ?? "Sem referência"}</span></div>
                     <span>↗</span>
                   </a>
                 ))}
