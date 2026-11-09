@@ -13,17 +13,11 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
   isOwner:boolean;ok:string;error:string;
 }){
   const images=branding.carouselImages??[];
-  const root="/erp/"+encodeURIComponent(tenantCode);
   return <section id="dados" className="demo-section gromma-business-data">
     <div className="section-head">
-      <div><div className="eyebrow">Minha empresa / Cadastro</div><h2>Dados gerais do negócio</h2></div>
-      <Link className="btn secondary" href={root+"/unidades"}>Ver cadastro de filiais</Link>
+      <div><div className="eyebrow">Empresa / Cadastro</div><h2>Cadastro da empresa</h2></div>
     </div>
-    <nav className="gromma-settings-nav" aria-label="Configurações da empresa">
-      <Link href={root + "/dados"} aria-current="page">Dados</Link>
-      <Link href={root + "/unidades"}>Filiais</Link>
-    </nav>
-    <p className="small muted">Estes dados pertencem à empresa inteira. CNPJ, Pix, endereço e condições de recebimento de cada filial ficam em <strong>Empresa → Cadastro → Filiais</strong>.</p>
+    <p className="small muted">Dados institucionais e de contato da marca. As informações operacionais de cada filial são editadas exclusivamente na área Filiais.</p>
     {ok&&<p className="notice success" role="status">Informações {ok==="carrossel"?"do carrossel":ok==="apresentacao"?"da apresentação":"da empresa"} atualizadas.</p>}
     {error&&<p className="notice error-notice" role="alert">{error.slice(0,150)}</p>}
 
@@ -107,11 +101,8 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
       <p className="small muted">Cada arquivo pode ter até 2 MB. As imagens enviadas aqui são públicas, para divulgação da barbearia. Não envie documentos, informações pessoais ou fotos sem autorização.</p>
     </details>
 
-    <div className="gromma-settings-panel">
-      <div className="gromma-settings-heading">
-        <h3>Títulos e subtítulos de introdução</h3>
-        <span className="small muted">Textos exibidos na apresentação do estabelecimento.</span>
-      </div>
+    <details className="gromma-settings-panel gromma-settings-collapsible">
+      <summary className="gromma-settings-heading"><strong>Apresentação da empresa</strong><span className="small muted">Títulos e subtítulos exibidos aos clientes</span></summary>
       {isOwner?<form action={saveBusinessIntroduction} className="gromma-settings-form">
         <input type="hidden" name="tenantCode" value={tenantCode}/>
         <label className="gromma-field-row"><span>1º título</span>
@@ -138,6 +129,6 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
         <div><span>2º título</span><strong>{branding.secondaryTitle||"Não definido"}</strong></div>
         <div><span>2º subtítulo</span><strong>{branding.secondaryDescription||"Não definido"}</strong></div>
       </div>}
-    </div>
+    </details>
   </section>;
 }
