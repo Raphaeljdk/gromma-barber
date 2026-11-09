@@ -1075,9 +1075,7 @@ export async function TenantERPView({
           <div className="erp-breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">GROMMA</Link>
             <span>/</span>
-            <span>{plan.name}</span>
-            <span>/</span>
-            <strong>{shop.tradeName}</strong>
+            <span>{shop.tradeName}</span>
             <span>/</span>
             <strong>{activeModuleTitle}</strong>
           </div>
@@ -1092,34 +1090,25 @@ export async function TenantERPView({
           </div>
         </div>
 
-        <div className="erp-enterprise-context">
-          <div>
-            <span className="erp-context-dot" />
-            <div><small>Ambiente</small><strong>{process.env.VERCEL_ENV === "production" ? "Produção" : "Preview"}</strong></div>
+        <div className="erp-enterprise-context gromma-context-strip">
+          <div className="gromma-context-business">
+            <strong>{shop.tradeName}</strong>
+            <small>{shop.city}/{shop.state} · {shop.units.length} {shop.units.length===1?"filial":"filiais"}</small>
           </div>
-          <div>
-            <div><small>Sessão</small><strong>{viewer.type === "ADMIN" ? "Administrativa" : "Cliente autenticado"}</strong></div>
-          </div>
-          <div>
-            <div><small>Plano</small><strong>{plan.name}</strong></div>
-          </div>
+          <div className="gromma-context-environment"><span className="erp-context-dot"/><span>{process.env.VERCEL_ENV === "production" ? "Produção" : "Prévia"}</span></div>
+          <div className="gromma-context-plan">Plano {plan.name}</div>
         </div>
 
-        <header className={`demo-header erp-hero-header ${activeModule === "dashboard" ? "" : "compact"}`}>
+        <header className={`demo-header erp-hero-header gromma-module-header ${activeModule==="dashboard"?"":"compact"}`}>
           <div>
-            <div className="eyebrow">ERP · {plan.name}</div>
+            <div className="eyebrow">{activeModule==="dashboard"?"Painel principal":"Gestão do negócio"}</div>
             <h1>{moduleId === "dashboard" ? shop.tradeName : activeModuleTitle}</h1>
-            <p>
-              {moduleId === "dashboard"
-                ? "Gestão operacional centralizada por tenant, com módulos organizados para rotina, atendimento, financeiro e expansão da barbearia."
-                : `${shop.tradeName} · módulo ${activeModuleTitle}.`}
-            </p>
+            {activeModule === "dashboard" && <p>Acompanhe a operação, os atendimentos e as pendências em um único lugar.</p>}
           </div>
-          <div className="demo-header-actions">
+          {activeModule==="dashboard" && <div className="demo-header-actions">
             <span className="badge approved">Operação ativa</span>
-            <span className="badge">Assinatura {subscription?.status ?? "—"}</span>
-            {isPro && <span className="badge">Experiência Pro</span>}
-          </div>
+            <span className="badge">Plano {plan.name}</span>
+          </div>}
         </header>
 
         {(["agenda-feriados", "clientes-bloqueados", "clientes-ranking"] as const).includes(activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking") && (
