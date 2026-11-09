@@ -11,7 +11,7 @@ export async function toggleFeaturedProfessional(form:FormData){
   const tenant=String(form.get("tenantCode")??"").trim().toUpperCase().slice(0,80);
   const userId=String(form.get("userId")??"").trim().slice(0,100);
   const enabled=form.get("featured")==="yes";
-  const path="/erp/"+encodeURIComponent(tenant)+"/equipe#equipe";
+  const path="/erp/"+encodeURIComponent(tenant)+"/funcionarios-destaque#funcionarios-destaque";
   try{
     const viewer=await requireTenantAccess(tenant);
     const shop=await prisma.barberShop.findUnique({where:{tenantCode:tenant},
@@ -38,9 +38,10 @@ export async function toggleFeaturedProfessional(form:FormData){
     },{isolationLevel:"Serializable"});
     revalidatePath("/barbearia/"+encodeURIComponent(tenant));
     revalidatePath("/erp/"+encodeURIComponent(tenant)+"/equipe");
+    revalidatePath("/erp/"+encodeURIComponent(tenant)+"/funcionarios-destaque");
   }catch(error){
     console.error("Featured professional update failed",error);
-    redirect("/erp/"+encodeURIComponent(tenant)+"/equipe?erro=destaque#equipe");
+    redirect("/erp/"+encodeURIComponent(tenant)+"/funcionarios-destaque?erro=destaque#funcionarios-destaque");
   }
   redirect(path);
 }
