@@ -2645,56 +2645,47 @@ export async function TenantERPView({
           </>}
         </section>
 
-        <section id="configuracoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "configuracoes")}>
-          <div className="section-head">
-            <div><div className="eyebrow">Configurações</div><h2>Ajustes da operação</h2></div>
-            <StatusPill tone="ready">Persistente</StatusPill>
-          </div>
-
-          {actionOk === "configuracoes" && <div className="notice erp-inline-notice success">Configurações atualizadas.</div>}
-          {actionError === "banco" && <div className="notice erp-inline-notice error-notice">Não foi possível salvar as configurações.</div>}
-
-          <div className="erp-two-column-workspace">
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Agenda e atendimento</span><strong>Preferências operacionais</strong></div><StatusPill tone="ready">Aplicado</StatusPill></div>
-              {canManage ? (
-                <form action={saveOperationalSettings} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <div className="grid grid-3">
-                    <label><span className="label">Abertura</span><input className="input" name="openHour" type="number" min="0" max="23" defaultValue={workspace.settings.openHour} /></label>
-                    <label><span className="label">Fechamento</span><input className="input" name="closeHour" type="number" min="1" max="24" defaultValue={workspace.settings.closeHour} /></label>
-                    <label><span className="label">Intervalo da agenda</span><select className="select" name="slotMinutes" defaultValue={workspace.settings.slotMinutes}><option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></label>
-                  </div>
-                  <div className="grid grid-2">
-                    <label><span className="label">Comissão padrão (%)</span><input className="input" name="defaultCommissionPercent" type="number" min="0" max="100" step="0.01" defaultValue={workspace.settings.defaultCommissionPercent} /></label>
-                    <label><span className="label">WhatsApp da operação</span><input className="input" name="whatsappNumber" defaultValue={workspace.settings.whatsappNumber} placeholder="5511999999999" /></label>
-                  </div>
-                  <label><span className="label">Emissor fiscal / referência</span><input className="input" name="invoiceProvider" defaultValue={workspace.settings.invoiceProvider} placeholder="Nome do emissor ou integração planejada" /></label>
-                  <label><span className="label">Comodidades das unidades</span><input className="input" name="amenities" defaultValue={workspace.settings.amenities} placeholder="Wi-Fi, café, estacionamento, acessibilidade..." /></label>
-                  <div className="erp-switch-grid">
-                    <label><input type="checkbox" name="rotationEnabled" defaultChecked={workspace.settings.rotationEnabled} /><span><strong>Rodízio de profissionais</strong><small>Ativa regra operacional de distribuição.</small></span></label>
-                    <label><input type="checkbox" name="autoConfirm" defaultChecked={workspace.settings.autoConfirm} /><span><strong>Confirmação automática</strong><small>Preferência pronta para automação de mensagens.</small></span></label>
-                  </div>
-                  <button className="btn" type="submit">Salvar configurações</button>
-                </form>
-              ) : <p className="muted small">Somente proprietário ou gerente pode alterar estas configurações.</p>}
-            </article>
-
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Integrações</span><strong>Status técnico</strong></div><StatusPill tone="pending">Conexões externas</StatusPill></div>
-              <div className="erp-health-list">
-                <div><span>WhatsApp</span><strong>{workspace.settings.whatsappNumber ? "Número configurado" : "Configuração pendente"}</strong></div>
-                <div><span>Nota fiscal</span><strong>{workspace.settings.invoiceProvider || "Emissor não conectado"}</strong></div>
-                <div><span>Rodízio</span><strong>{workspace.settings.rotationEnabled ? "Ativo" : "Desativado"}</strong></div>
-                <div><span>Confirmação automática</span><strong>{workspace.settings.autoConfirm ? "Preferência ativa" : "Manual"}</strong></div>
-                <div><span>Comodidades</span><strong>{workspace.settings.amenities || "Não cadastradas"}</strong></div>
+        <section id="configuracoes" className="demo-section gromma-settings-enterprise" hidden={Boolean(moduleId && moduleId !== "configuracoes")}>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Administração</div><h2>Configurações operacionais</h2></div><StatusPill tone="ready">Configurações salvas no ERP</StatusPill></div>
+          <p className="small muted gromma-module-description">Defina horários, critérios de atendimento e preferências gerais. Integrações externas somente operam quando estiverem conectadas.</p>
+          {actionOk==="configuracoes"&&<p className="notice success" role="status">Configurações atualizadas.</p>}
+          {actionError==="banco"&&<p className="notice error-notice" role="alert">Não foi possível salvar as configurações.</p>}
+          <article className="card gromma-settings-main">
+            <div className="erp-card-title"><div><span>Preferências da barbearia</span><strong>Rotina de atendimento e funcionamento</strong></div></div>
+            {canManage?<form action={saveOperationalSettings} className="gromma-settings-editor">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <fieldset><legend>Agenda e atendimento</legend><div className="gromma-settings-fields three">
+                <label><span className="label">Abertura (hora)</span><input className="input" name="openHour" type="number" min="0" max="23" defaultValue={workspace.settings.openHour}/></label>
+                <label><span className="label">Fechamento (hora)</span><input className="input" name="closeHour" type="number" min="1" max="24" defaultValue={workspace.settings.closeHour}/></label>
+                <label><span className="label">Intervalo entre agendamentos</span><select className="select" name="slotMinutes" defaultValue={workspace.settings.slotMinutes}><option value="15">15 minutos</option><option value="20">20 minutos</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">60 minutos</option></select></label>
+              </div></fieldset>
+              <fieldset><legend>Comissões e contato</legend><div className="gromma-settings-fields two">
+                <label><span className="label">Comissão padrão (%)</span><input className="input" name="defaultCommissionPercent" type="number" min="0" max="100" step="0.01" defaultValue={workspace.settings.defaultCommissionPercent}/></label>
+                <label><span className="label">WhatsApp da operação</span><input className="input" name="whatsappNumber" defaultValue={workspace.settings.whatsappNumber} placeholder="5511999999999"/></label>
+              </div></fieldset>
+              <fieldset><legend>Recursos e integrações</legend><div className="gromma-settings-fields two">
+                <label><span className="label">Emissor fiscal / referência</span><input className="input" name="invoiceProvider" defaultValue={workspace.settings.invoiceProvider} placeholder="Nome do emissor ou integração planejada"/></label>
+                <label><span className="label">Comodidades das unidades</span><input className="input" name="amenities" defaultValue={workspace.settings.amenities} placeholder="Wi-Fi, café, estacionamento..."/></label>
               </div>
-              <p className="erp-integration-note">WhatsApp automático, gateway de pagamento e emissão fiscal dependem de credenciais/provedores externos. O ERP mantém a configuração e os fluxos internos prontos sem fingir uma integração que ainda não existe.</p>
-            </article>
-          </div>
-          
+              <div className="gromma-settings-options">
+                <label><input type="checkbox" name="rotationEnabled" defaultChecked={workspace.settings.rotationEnabled}/><span><strong>Rodízio de profissionais</strong><small>Aplicar a preferência operacional de distribuição</small></span></label>
+                <label><input type="checkbox" name="autoConfirm" defaultChecked={workspace.settings.autoConfirm}/><span><strong>Preferência de confirmação automática</strong><small>Exige integração externa para envio efetivo de mensagens</small></span></label>
+              </div></fieldset>
+              <div className="gromma-settings-submit"><button className="btn" type="submit">Salvar configurações</button></div>
+            </form>:<p className="small muted">Somente proprietário ou gerente pode alterar estas preferências.</p>}
+          </article>
+          <details className="gromma-settings-connection-status">
+            <summary><strong>Conferir status das integrações</strong><span className="small muted">WhatsApp, fiscal e preferências operacionais</span></summary>
+            <div className="erp-health-list">
+              <div><span>WhatsApp</span><strong>{workspace.settings.whatsappNumber?"Número cadastrado":"Pendente de configuração"}</strong></div>
+              <div><span>Nota fiscal</span><strong>{workspace.settings.invoiceProvider||"Emissor não conectado"}</strong></div>
+              <div><span>Rodízio</span><strong>{workspace.settings.rotationEnabled?"Preferência habilitada":"Desativado"}</strong></div>
+              <div><span>Confirmações automáticas</span><strong>{workspace.settings.autoConfirm?"Preferência habilitada":"Manual"}</strong></div>
+              <div><span>Comodidades</span><strong>{workspace.settings.amenities||"Não cadastradas"}</strong></div>
+            </div>
+            <p className="small muted">Uma configuração preenchida não garante conexão ativa com WhatsApp, gateway de pagamentos ou emissor fiscal.</p>
+          </details>
         </section>
-
 
         {(["identidade", "clube-config"] as const).map(mode =>
           (!moduleId || moduleId === mode) && (
