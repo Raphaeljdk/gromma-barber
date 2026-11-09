@@ -9893,3 +9893,158 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
   .tenant-erp .gromma-company-billing .gromma-billing-summary > div { border-right: 0; border-bottom: 1px solid var(--erp-border,#36322c); }
   .tenant-erp .gromma-company-billing .gromma-billing-summary > div:last-child { border-bottom: 0; }
 }
+
+
+/* GROMMA 2026 | calm, compact enterprise shell — existing functionality preserved */
+.tenant-erp .gromma-sidebar-business {
+  display:flex; align-items:center; gap:10px; min-width:0;
+  padding:12px 13px 10px; margin:6px 8px 0;
+  border-bottom:1px solid var(--erp-border,#302f2b);
+}
+.tenant-erp .gromma-sidebar-monogram {
+  display:grid; place-items:center; width:31px; height:31px;
+  flex:0 0 31px; border:1px solid color-mix(in srgb,var(--erp-gold,#d2ac57) 40%,transparent);
+  background:color-mix(in srgb,var(--erp-gold,#d2ac57) 9%,transparent);
+  border-radius:6px; color:var(--erp-gold,#d2ac57); font-weight:750; font-size:.88rem;
+}
+.tenant-erp .gromma-sidebar-business-copy { display:grid; min-width:0; gap:2px; }
+.tenant-erp .gromma-sidebar-business-copy strong {font-size:.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tenant-erp .gromma-sidebar-business-copy small {font-size:.67rem; color:var(--erp-muted,#b4b0a8); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.tenant-erp .gromma-sidebar-quicklinks {display:flex; flex-wrap:wrap; gap:4px; padding:9px 12px; }
+.tenant-erp .gromma-sidebar-quicklinks :is(a,button) {
+  flex:1 1 auto; display:inline-flex; justify-content:center; align-items:center; gap:5px;
+  padding:6px 8px; min-height:32px; font-size:.72rem;
+  color:inherit; background:transparent; border:1px solid var(--erp-border,#302f2b);
+  border-radius:7px; cursor:pointer; text-decoration:none;
+}
+.tenant-erp .gromma-sidebar-quicklinks :is(a,button):hover {background:color-mix(in srgb,var(--erp-gold,#d2ac57) 8%,transparent);}
+.tenant-erp .gromma-context-strip {
+  display:flex !important; flex-wrap:wrap; align-items:center; gap:12px;
+  min-height:50px; margin-bottom:12px; padding:9px 13px !important;
+  border-radius:10px; background:var(--erp-panel-2,#151513);
+}
+.tenant-erp .gromma-context-strip > div {
+  display:flex !important; align-items:center; flex:initial !important; min-width:0;
+  border:0 !important; padding:0 !important; gap:7px;
+}
+.tenant-erp .gromma-context-strip .gromma-context-business { flex:1 1 auto !important; flex-wrap:wrap; gap:7px 11px; }
+.tenant-erp .gromma-context-strip .gromma-context-business strong {font-size:.8rem;}
+.tenant-erp .gromma-context-strip .gromma-context-business small {font-size:.71rem; color:var(--erp-muted,#aaa69f);}
+.tenant-erp .gromma-context-strip :is(.gromma-context-environment,.gromma-context-plan) {font-size:.72rem; color:var(--erp-muted,#aaa69f);}
+.tenant-erp .gromma-context-strip .erp-context-dot {width:7px; height:7px; flex:0 0 7px;}
+.tenant-erp .gromma-module-header {align-items:center; margin-bottom:17px !important; padding-bottom:14px !important;}
+.tenant-erp .gromma-module-header.compact h1 {font-size:clamp(1.6rem,2.7vw,2.2rem)!important; line-height:1.1; margin:2px 0!important;}
+.tenant-erp .gromma-module-header.compact .eyebrow {font-size:.67rem; letter-spacing:.09em;}
+.tenant-erp .gromma-module-header:not(.compact) h1 {font-size:clamp(1.8rem,3vw,2.8rem)!important;}
+.tenant-erp .gromma-module-description {max-width:850px; margin:0 0 12px; font-size:.78rem; line-height:1.5;}
+/* Clube: real source data, administrative workflows and clearly separated statuses. */
+.tenant-erp .club-management-page {min-width:0;}
+.tenant-erp .club-management-page > h3 {font-size:.96rem; margin:18px 0 9px;}
+.tenant-erp .club-management-page .section-head {gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+.tenant-erp .club-notice {
+  padding:10px 12px; margin:0 0 13px; border:1px solid var(--erp-border,#35322e);
+  border-left:2px solid var(--erp-gold,#d2ac57); background:var(--erp-panel-2,#161513);
+  border-radius:7px; font-size:.77rem; line-height:1.5; color:var(--erp-muted,#b1aea6);
+}
+.tenant-erp .club-period-filter {display:flex; flex-wrap:wrap; align-items:end; gap:8px; margin-bottom:11px;}
+.tenant-erp .club-period-filter label {display:grid; gap:5px; font-size:.74rem; color:var(--erp-muted,#b1aea6);}
+.tenant-erp .club-period-filter .input {min-height:36px;}
+.tenant-erp .club-kpis {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:10px 0 16px;
+}
+.tenant-erp .club-kpi {border:1px solid var(--erp-border,#35322e);border-radius:9px;padding:12px 14px;display:grid;gap:4px;min-width:0;background:var(--erp-panel-2,#151513);}
+.tenant-erp .club-kpi > span {font-size:.72rem;color:var(--erp-muted,#b1aea6);}
+.tenant-erp .club-kpi > strong {font-size:clamp(.98rem,1.4vw,1.35rem);font-weight:750;}
+.tenant-erp .club-kpi > small {font-size:.69rem;color:var(--erp-muted,#b1aea6);}
+.tenant-erp .club-management-page .table-wrap {max-width:100%;overflow:auto;border-radius:10px;}
+.tenant-erp .club-management-page .table-wrap table {width:100%;}
+.tenant-erp .club-management-page .table-wrap :is(td,th) {padding:10px 12px;}
+.tenant-erp .club-list {display:grid;gap:0;border:1px solid var(--erp-border,#35322e);border-radius:10px;overflow:hidden;}
+.tenant-erp .club-list > :is(a,.club-row) {
+  padding:11px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  color:inherit;text-decoration:none;border-bottom:1px solid var(--erp-border,#35322e);background:var(--erp-panel-2,#161513);
+}
+.tenant-erp .club-list > :last-child {border-bottom:0;}
+.tenant-erp .club-list > a:hover {background:color-mix(in srgb,var(--erp-gold,#d2ac57) 8%,transparent);}
+.tenant-erp .club-list > a span {color:var(--erp-gold,#d2ac57);font-size:.8rem;}
+.tenant-erp .club-row > div:first-child {display:grid;gap:4px;min-width:0;}
+.tenant-erp .club-row > div:first-child small {color:var(--erp-muted,#b1aea6);font-size:.76rem;}
+.tenant-erp .club-row-actions {display:flex;flex-wrap:wrap;gap:7px;}
+.tenant-erp .club-admin-form {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;
+  padding:14px;border:1px solid var(--erp-border,#35322e);border-radius:10px;margin-bottom:14px;
+}
+.tenant-erp .club-admin-form label {display:grid;gap:5px;font-size:.78rem;min-width:0;}
+.tenant-erp .club-admin-form :is(.input,.select) {min-height:37px;width:100%;}
+.tenant-erp .club-admin-form > button {justify-self:start;}
+.tenant-erp .club-empty {padding:17px 14px;margin:0;font-size:.83rem;color:var(--erp-muted,#b1aea6);}
+.tenant-erp .club-management-page button:disabled {opacity:.45;cursor:not-allowed;}
+/* Financeiro: no oversized repeated settlement forms; clear financial totals. */
+.tenant-erp .gromma-finance-kpis {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 14px;}
+.tenant-erp .gromma-finance-kpis > div {border:1px solid var(--erp-border,#35322e);border-radius:9px;min-width:0;padding:11px 13px;background:var(--erp-panel-2,#151513);display:grid;gap:5px;}
+.tenant-erp .gromma-finance-kpis span {font-size:.71rem;color:var(--erp-muted,#b1aea6);}
+.tenant-erp .gromma-finance-kpis strong {font-size:clamp(.95rem,1.3vw,1.2rem);}
+.tenant-erp .gromma-financial-workspace .gromma-finance-new {margin-bottom:9px;}
+.tenant-erp .gromma-financial-workspace .gromma-finance-table {max-width:100%;overflow:auto;border-radius:10px;}
+.tenant-erp .gromma-financial-workspace .gromma-finance-table table {width:100%;}
+.tenant-erp .gromma-financial-workspace .gromma-finance-table :is(td,th) {padding:9px 10px;vertical-align:middle;}
+.tenant-erp .gromma-finance-confirm {min-width:165px;}
+.tenant-erp .gromma-finance-confirm > summary {padding:6px 8px;cursor:pointer;border-radius:6px;border:1px solid var(--erp-border,#35322e);font-size:.73rem;white-space:nowrap;}
+.tenant-erp .gromma-finance-confirm[open] {min-width:210px;}
+.tenant-erp .gromma-finance-confirm form {display:grid;gap:6px;margin-top:7px;}
+.tenant-erp .gromma-finance-confirm .input {min-width:180px;max-width:280px;min-height:33px;font-size:.74rem;}
+/* Training: dense searchable library */
+.tenant-erp .gromma-training-library .gromma-training-new {margin-bottom:10px;}
+.tenant-erp .gromma-training-library .gromma-training-editor {gap:9px;}
+.tenant-erp .gromma-training-toolbar {display:flex;gap:8px;align-items:end;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--erp-border,#35322e);border-radius:10px;margin-bottom:9px;}
+.tenant-erp .gromma-training-toolbar label {display:grid;gap:4px;min-width:150px;font-size:.73rem;}
+.tenant-erp .gromma-training-toolbar label:first-child {flex:1 1 300px;}
+.tenant-erp .gromma-training-toolbar label:nth-child(2) {flex:0 1 180px;}
+.tenant-erp .gromma-training-toolbar :is(.input,.select) {min-height:36px;}
+.tenant-erp .gromma-training-list {border:1px solid var(--erp-border,#35322e);border-radius:10px;overflow:hidden;}
+.tenant-erp .gromma-training-item {display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid var(--erp-border,#35322e);color:inherit;text-decoration:none;}
+.tenant-erp .gromma-training-item:last-child {border-bottom:0;}
+.tenant-erp .gromma-training-item:hover {background:color-mix(in srgb,var(--erp-gold,#d2ac57) 6%,transparent);}
+.tenant-erp .gromma-training-kind {font-size:.7rem;border:1px solid var(--erp-border,#35322e);border-radius:5px;padding:5px 8px;min-width:65px;text-align:center;}
+.tenant-erp .gromma-training-content {flex:1 1 auto;display:grid;gap:4px;min-width:0;}
+.tenant-erp .gromma-training-content strong {font-size:.86rem;}
+.tenant-erp .gromma-training-content small {font-size:.73rem;color:var(--erp-muted,#b1aea6);overflow-wrap:anywhere;}
+.tenant-erp .gromma-training-open {color:var(--erp-gold,#d2ac57);font-size:.72rem;white-space:nowrap;}
+.tenant-erp .gromma-training-empty {display:grid;gap:6px;padding:20px 16px;}
+.tenant-erp .gromma-training-empty span {color:var(--erp-muted,#b1aea6);font-size:.78rem;}
+/* Settings: one vertical decision flow rather than two tall unrelated cards. */
+.tenant-erp .gromma-settings-enterprise .gromma-settings-main {padding:14px 16px;border-radius:10px;margin-bottom:9px;max-width:1100px;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-editor {display:grid;gap:6px;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-editor fieldset {border:0;border-top:1px solid var(--erp-border,#35322e);padding:11px 0;margin:0;min-width:0;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-editor legend {padding-right:12px;font-size:.8rem;font-weight:700;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-fields {display:grid;gap:10px;min-width:0;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-fields.three {grid-template-columns:repeat(3,minmax(0,1fr));}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-fields.two {grid-template-columns:repeat(2,minmax(0,1fr));}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-fields label {display:grid;gap:4px;min-width:0;font-size:.77rem;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-fields :is(.input,.select) {min-height:36px;width:100%;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-options label {display:flex;align-items:center;gap:9px;padding:10px;border:1px solid var(--erp-border,#35322e);border-radius:8px;min-width:0;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-options label > span {display:grid;gap:4px;min-width:0;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-options strong {font-size:.79rem;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-options small {font-size:.7rem;color:var(--erp-muted,#b1aea6);}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-submit {display:flex;justify-content:flex-end;padding:9px 0 1px;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-connection-status {
+  border:1px solid var(--erp-border,#35322e);border-radius:10px;padding:13px 16px;max-width:1100px;
+}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-connection-status > summary {cursor:pointer;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;font-size:.86rem;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-connection-status[open] > summary {margin-bottom:12px;}
+.tenant-erp .gromma-settings-enterprise .gromma-settings-connection-status > p {margin:9px 0 0;font-size:.74rem;}
+@media(max-width:920px) {
+ .tenant-erp .club-kpis,.tenant-erp .gromma-finance-kpis {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .tenant-erp .club-admin-form {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:680px) {
+ .tenant-erp .gromma-context-strip {gap:7px 14px;}
+ .tenant-erp .gromma-context-strip .gromma-context-business {flex-basis:100% !important;}
+ .tenant-erp .club-kpis,.tenant-erp .gromma-finance-kpis {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .tenant-erp .club-admin-form {grid-template-columns:minmax(0,1fr);}
+ .tenant-erp .gromma-settings-enterprise .gromma-settings-fields.three,.tenant-erp .gromma-settings-enterprise .gromma-settings-fields.two {grid-template-columns:minmax(0,1fr);}
+ .tenant-erp .gromma-settings-enterprise .gromma-settings-options {grid-template-columns:minmax(0,1fr);}
+ .tenant-erp .gromma-training-toolbar label:first-child {flex-basis:100%;}
+ .tenant-erp .gromma-training-open {display:none;}
+}
