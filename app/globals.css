@@ -10048,3 +10048,58 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
  .tenant-erp .gromma-training-toolbar label:first-child {flex-basis:100%;}
  .tenant-erp .gromma-training-open {display:none;}
 }
+
+
+/* Compactação fina pedida em 09/11: priorizar leitura, sem esconder controles. */
+@media (min-width: 900px) {
+  .tenant-erp .erp-topbar { min-height: 51px; padding-block: 7px; gap: 12px; }
+  .tenant-erp .gromma-context-strip { min-height: 40px; padding: 7px 11px !important; margin-bottom: 8px; }
+  .tenant-erp .gromma-module-header.compact { padding: 7px 0 10px !important; margin-bottom: 10px !important; }
+  .tenant-erp .gromma-module-header.compact .eyebrow { margin: 0 0 3px; }
+  .tenant-erp .gromma-module-header.compact h1 { font-size: clamp(1.45rem,2.25vw,1.85rem) !important; }
+  .tenant-erp .erp-nav-sector-heading { min-height: 41px; padding-block: 8px; }
+  .tenant-erp .erp-nav-sector-copy small { font-size: .65rem; line-height: 1.2; }
+  .tenant-erp .erp-nav-tree-row { min-height: 34px; }
+  .tenant-erp .erp-nav-tree-row .erp-nav-item { min-height: 33px; padding-block: 6px; }
+  .tenant-erp .erp-nav-tree-children { margin-block: 2px; }
+  .tenant-erp .gromma-sidebar-business { padding-block: 7px; }
+  .tenant-erp .gromma-sidebar-quicklinks { padding-block: 7px; }
+}
+.tenant-erp .gromma-financial-workspace .section-head,
+.tenant-erp .gromma-settings-enterprise .section-head,
+.tenant-erp .gromma-training-library .section-head,
+.tenant-erp .club-management-page .section-head { margin-bottom: 8px; }
+.tenant-erp .gromma-financial-workspace .gromma-finance-kpis,
+.tenant-erp .club-management-page .club-kpis { gap: 7px; margin: 8px 0 11px; }
+.tenant-erp .gromma-financial-workspace .gromma-finance-kpis > div,
+.tenant-erp .club-management-page .club-kpi { padding: 9px 11px; gap: 3px; border-radius: 8px; }
+.tenant-erp .gromma-financial-workspace .gromma-finance-kpis strong,
+.tenant-erp .club-management-page .club-kpi strong { line-height: 1.25; }
+.tenant-erp .gromma-financial-workspace .erp-quick-create > summary,
+.tenant-erp .gromma-training-library .erp-quick-create > summary { min-height: 37px; padding: 7px 12px; }
+.tenant-erp .gromma-financial-workspace .gromma-finance-table :is(th,td),
+.tenant-erp .club-management-page .table-wrap :is(th,td) { padding: 8px 10px; }
+.tenant-erp .gromma-training-library .gromma-training-toolbar { padding: 8px 10px; gap: 7px; }
+.tenant-erp .gromma-training-library .gromma-training-item { padding: 10px 13px; min-height: 49px; }
+.tenant-erp .gromma-training-library .gromma-training-kind { padding-block: 4px; }
+.tenant-erp .gromma-settings-enterprise .gromma-settings-main { padding: 12px 15px; }
+.tenant-erp .gromma-settings-enterprise .gromma-settings-editor fieldset { padding: 9px 0; }
+.tenant-erp .gromma-settings-enterprise .gromma-settings-fields { gap: 8px; }
+.tenant-erp .gromma-settings-enterprise .gromma-settings-options { margin-top: 8px; gap: 7px; }
+.tenant-erp .gromma-settings-enterprise .gromma-settings-options label { padding: 8px 10px; }
+.tenant-erp .gromma-settings-enterprise .gromma-settings-connection-status { padding: 11px 14px; }
+.tenant-erp .club-management-page .club-notice { padding: 8px 10px; margin-bottom: 10px; }
+.tenant-erp .club-management-page .club-list > :is(a,.club-row) { padding: 9px 12px; }
+.tenant-erp .club-management-page .club-admin-form { padding: 10px 12px; gap: 9px; margin-bottom: 10px; }
+.tenant-erp .club-management-page > h3 { margin: 14px 0 8px; }
+.tenant-erp .gromma-module-description { margin-bottom: 9px; }
+@media (max-width: 680px) {
+  .tenant-erp .gromma-context-strip { padding: 8px 10px !important; }
+  .tenant-erp .gromma-module-header.compact { margin-bottom: 10px !important; }
+  .tenant-erp .gromma-financial-workspace .gromma-finance-kpis,
+  .tenant-erp .club-management-page .club-kpis { gap: 6px; }
+  .tenant-erp .gromma-financial-workspace .gromma-finance-kpis > div,
+  .tenant-erp .club-management-page .club-kpi { padding: 9px; }
+  .tenant-erp .gromma-training-toolbar label:nth-child(2) { flex: 1 1 140px; }
+  .tenant-erp .club-management-page .table-wrap { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+}
