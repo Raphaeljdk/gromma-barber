@@ -22,9 +22,15 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
   if(!shop)notFound();
   const ws=readWorkspace(shop.enabledFeatures);
   const brand=ws.branding;
-  const featured=new Set(ws.featuredProfessionalIds);
-  const ordered=[...shop.users].sort((a,b)=>Number(featured.has(b.id))-Number(featured.has(a.id))||
-    a.name.localeCompare(b.name,"pt-BR"));
+  const featuredOrder=new Map(ws.featuredProfessionalIds.map((id,index)=>[id,index]));
+  const featured=new Set(featuredOrder.keys());
+  const ordered=[...shop.users].sort((a,b)=>{
+    const aRank=featuredOrder.get(a.id),bRank=featuredOrder.get(b.id);
+    if(aRank!==undefined&&bRank!==undefined)return aRank-bRank;
+    if(aRank!==undefined)return -1;
+    if(bRank!==undefined)return 1;
+    return a.name.localeCompare(b.name,"pt-BR");
+  });
   return <main style={{minHeight:"100vh",background:"#0f1012",color:"#f5f3ed",fontFamily:"system-ui,sans-serif"}}>
     <div style={{height:6,background:brand.accentColor}}/>
     <div style={{maxWidth:1060,margin:"0 auto",padding:"24px clamp(16px,4vw,48px) 80px"}}>
