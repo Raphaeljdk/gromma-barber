@@ -54,6 +54,9 @@ export type ClubRefund = {
   id: string; entryId: string; requestedAt: string; reason: string;
   status: "REQUESTED" | "COMPLETED"; completedAt?: string; expenseId?: string;
 };
+export type ClubPriceAdjustment = { id: string; planId: string; newAmount: number; effectiveDate: string; createdAt: string; status: "SCHEDULED" | "APPLIED" | "CANCELED"; appliedAt?: string };
+export type ClubWithdrawalRequest = { id: string; amount: number; reason: string; requestedAt: string; requestedBy: string; status: "REQUESTED" | "CANCELED"; };
+
 export type ClubInvite = {
   hash: string; customerId: string; expiresAt: string; usedAt?: string;
 };
@@ -206,6 +209,8 @@ export type ErpWorkspace = {
   clubSales: ClubSale[];
   clubCharges: ClubCharge[];
   clubRefunds: ClubRefund[];
+  clubPriceAdjustments: ClubPriceAdjustment[];
+  clubWithdrawalRequests: ClubWithdrawalRequest[];
   clubInvites: ClubInvite[];
   clubPlans: ClubPlanConfig[];
   clubMembers: ClubMemberConfig[];
@@ -246,6 +251,8 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   clubSales: [],
   clubCharges: [],
   clubRefunds: [],
+  clubPriceAdjustments: [],
+  clubWithdrawalRequests: [],
   clubInvites: [],
   clubPlans: [],
   clubMembers: [],
@@ -336,6 +343,8 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     clubSales: array<ClubSale>(operations.clubSales),
     clubCharges: array<ClubCharge>(operations.clubCharges),
     clubRefunds: array<ClubRefund>(operations.clubRefunds),
+    clubPriceAdjustments: array<ClubPriceAdjustment>(operations.clubPriceAdjustments),
+    clubWithdrawalRequests: array<ClubWithdrawalRequest>(operations.clubWithdrawalRequests),
     clubInvites: array<ClubInvite>(operations.clubInvites),
     clubPlans: array<ClubPlanConfig>(operations.clubPlans),
     clubMembers: array<ClubMemberConfig>(operations.clubMembers),
