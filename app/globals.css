@@ -10103,3 +10103,77 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
   .tenant-erp .gromma-training-toolbar label:nth-child(2) { flex: 1 1 140px; }
   .tenant-erp .club-management-page .table-wrap { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
 }
+
+
+/* 09/11 UX pass — tighter density without changing underlying business actions. */
+@media (min-width: 851px) {
+  .tenant-erp .gromma-business-data .gromma-settings-panel {padding:11px 14px;max-width:1260px;margin-bottom:7px;}
+  .tenant-erp .gromma-business-data .gromma-settings-heading {min-height:26px;gap:6px 13px;margin-bottom:7px;}
+  .tenant-erp .gromma-business-data .gromma-settings-heading h3 {font-size:.88rem;margin:0;}
+  .tenant-erp .gromma-business-data .gromma-settings-form {grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 11px;}
+  .tenant-erp .gromma-business-data .gromma-settings-form .gromma-field-row {gap:3px;}
+  .tenant-erp .gromma-business-data .gromma-settings-form .gromma-field-row > span {font-size:.73rem;line-height:1.2;}
+  .tenant-erp .gromma-business-data .gromma-settings-form .input {min-height:32px;padding:5px 9px;font-size:.78rem;}
+  .tenant-erp .gromma-business-data .gromma-settings-actions {padding-top:6px;gap:9px;}
+  .tenant-erp .gromma-business-data .gromma-settings-actions .small {font-size:.7rem;}
+  .tenant-erp .gromma-business-data > p.small {margin:0 0 8px;font-size:.73rem;}
+}
+.tenant-erp .gromma-business-data .gromma-settings-collapsible {padding:7px 12px;}
+.tenant-erp .gromma-business-data .gromma-settings-collapsible > summary {min-height:28px;padding:0;gap:8px;}
+.tenant-erp .gromma-business-data .gromma-settings-collapsible > summary strong {font-size:.8rem;}
+.tenant-erp .gromma-business-data .gromma-settings-collapsible > summary .small {font-size:.7rem;}
+.tenant-erp .gromma-business-data .gromma-settings-collapsible[open] > summary {margin-bottom:8px;}
+.tenant-erp #equipe > .section-head,
+.tenant-erp #servicos > .section-head,
+.tenant-erp #funcionarios-destaque > .section-head,
+.tenant-erp #financeiro > .section-head {margin-bottom:8px;gap:9px;}
+.tenant-erp #equipe :is(.erp-directory-create,.erp-directory-help),
+.tenant-erp #servicos > .erp-quick-create {margin-bottom:7px;}
+.tenant-erp #equipe .erp-directory-create > summary,
+.tenant-erp #servicos > .erp-quick-create > summary {min-height:35px;padding:7px 11px;font-size:.78rem;}
+.tenant-erp #equipe .erp-list-toolbar,
+.tenant-erp #servicos .erp-list-toolbar,
+.tenant-erp #financeiro .erp-list-toolbar {gap:7px;margin-bottom:7px;padding:7px 9px;}
+.tenant-erp #equipe .erp-directory-help {padding:6px 10px;font-size:.75rem;}
+.tenant-erp #equipe .erp-directory-help > summary {padding:3px 0;min-height:24px;}
+.tenant-erp #equipe .erp-compact-directory {border-radius:8px;max-width:1280px;}
+.tenant-erp #equipe .erp-compact-directory :is(td,th) {padding:6px 10px;}
+.tenant-erp #equipe .erp-compact-directory td {font-size:.77rem;vertical-align:middle;}
+.tenant-erp #equipe .erp-compact-directory .erp-directory-secondary {font-size:.68rem;}
+.tenant-erp #equipe .erp-compact-directory .btn {min-height:28px;padding:5px 9px;font-size:.71rem;}
+.tenant-erp #servicos .gromma-services-list {max-width:1280px;}
+.tenant-erp #servicos .gromma-services-list :is(td,th) {padding:7px 10px;}
+.tenant-erp #servicos .gromma-services-list td {font-size:.78rem;}
+.tenant-erp #servicos .erp-quick-form {gap:8px;padding:9px 11px;}
+.tenant-erp #servicos .erp-quick-form :is(.input,.select) {min-height:34px;font-size:.78rem;}
+.tenant-erp #financeiro .gromma-finance-kpis {margin:7px 0 9px;gap:7px;}
+.tenant-erp #financeiro .gromma-finance-kpis > div {padding:8px 11px;gap:3px;}
+.tenant-erp #financeiro .gromma-finance-kpis strong {font-size:1.02rem;}
+.tenant-erp #financeiro .gromma-module-description {margin-bottom:6px;}
+.tenant-erp #financeiro .gromma-finance-new {margin-bottom:7px;}
+.tenant-erp #financeiro .gromma-finance-table :is(td,th) {padding:7px 9px;}
+.tenant-erp #financeiro .erp-inline-notice {font-size:.75rem;padding:7px 10px;margin:5px 0 8px;border-radius:7px;line-height:1.4;}
+.tenant-erp #financeiro .error-notice {border-left-width:2px;}
+.tenant-erp #funcionarios-destaque > p.small {font-size:.75rem;margin:0 0 9px;}
+.tenant-erp #funcionarios-destaque .gromma-staff-summary {padding:6px 10px;margin:6px 0 9px;}
+.tenant-erp #funcionarios-destaque .gromma-featured-table {max-width:1300px;}
+.tenant-erp #funcionarios-destaque .gromma-featured-table :is(td,th) {padding:7px 9px;vertical-align:middle;}
+.tenant-erp #funcionarios-destaque .gromma-featured-person {display:flex;align-items:center;gap:10px;min-width:210px;}
+.tenant-erp #funcionarios-destaque .gromma-featured-person > div {min-width:0;display:grid;gap:2px;}
+.tenant-erp #funcionarios-destaque .gromma-featured-person strong {font-size:.82rem;}
+.tenant-erp #funcionarios-destaque .gromma-featured-avatar {display:grid;place-items:center;width:36px;height:36px;min-width:36px;border-radius:50%;object-fit:cover;}
+.tenant-erp #funcionarios-destaque .gromma-featured-initial {background:color-mix(in srgb,var(--erp-gold,#d7af5a) 11%,transparent);border:1px solid color-mix(in srgb,var(--erp-gold,#d7af5a) 42%,transparent);color:var(--erp-gold,#d7af5a);font-weight:750;font-size:.83rem;}
+.tenant-erp #funcionarios-destaque .gromma-featured-position {display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--erp-border,#34312b);font-size:.78rem;font-weight:750;color:var(--erp-muted,#aaa);}
+.tenant-erp #funcionarios-destaque .gromma-featured-position.is-featured {border-color:var(--erp-gold,#d7af5a);background:color-mix(in srgb,var(--erp-gold,#d7af5a) 11%,transparent);color:var(--erp-gold,#d7af5a);}
+.tenant-erp #funcionarios-destaque .gromma-featured-actions {display:flex;align-items:center;gap:7px;justify-content:flex-start;flex-wrap:wrap;}
+.tenant-erp #funcionarios-destaque .gromma-featured-actions .btn {min-height:30px;padding:5px 8px;font-size:.71rem;}
+.tenant-erp #funcionarios-destaque .gromma-featured-order-controls {display:flex;align-items:center;gap:4px;}
+.tenant-erp #funcionarios-destaque .gromma-featured-order-controls .btn {min-width:28px;padding:4px 7px;font-size:1rem;line-height:1.2;}
+.tenant-erp #funcionarios-destaque .gromma-featured-order-controls .btn:disabled {opacity:.36;cursor:not-allowed;}
+@media(max-width:850px){
+  .tenant-erp .gromma-business-data .gromma-settings-panel {padding:10px 12px;margin-bottom:7px;}
+  .tenant-erp .gromma-business-data .gromma-settings-form {gap:8px;}
+  .tenant-erp #funcionarios-destaque .gromma-featured-table {overflow-x:auto;}
+  .tenant-erp #equipe .erp-compact-directory {overflow-x:auto;}
+  .tenant-erp #financeiro .gromma-finance-kpis {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
