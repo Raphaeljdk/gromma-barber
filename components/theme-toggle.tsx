@@ -9,7 +9,7 @@ function preferredTheme(): Theme {
   if (typeof window === "undefined") return "dark";
   const saved = window.localStorage.getItem("gromma-theme");
   if (saved === "light" || saved === "dark") return saved;
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 export function ThemeToggle() {
