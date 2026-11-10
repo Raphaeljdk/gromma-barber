@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ERP_NAVIGATION, ERP_NAVIGATION_EXTRA, type ErpNavigationNode, type ErpNavigationSector } from "@/lib/erp-navigation";
+import { ERP_NAVIGATION, ERP_NAVIGATION_EXTRA, primaryNavigationItemId, type ErpNavigationNode, type ErpNavigationSector } from "@/lib/erp-navigation";
 
 type Props = {
   business: string;
@@ -87,8 +87,8 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   plano: BadgeDollarSign, financeiro: WalletCards, alertas: BellRing, totem: Store,
 };
 
-function itemIncludesRoute(node: ErpNavigationNode, route: string): boolean {
-  return node.route === route || Boolean(node.children?.some((child) => itemIncludesRoute(child, route)));
+function itemIncludesNavId(node: ErpNavigationNode, id: string | undefined): boolean {
+  return Boolean(id) && (node.id === id || Boolean(node.children?.some((child) => itemIncludesNavId(child, id))));
 }
 
 
@@ -130,8 +130,9 @@ export function ErpSidebar({
     return segment || "dashboard";
   }, [pathname, tenantCode]);
 
+  const activeNavItemId = useMemo(() => primaryNavigationItemId(active), [active]);
   const activeGroup = NAV_GROUPS.find((group) =>
-    group.items.some((item) => itemIncludesRoute(item, active))
+    group.items.some((item) => itemIncludesNavId(item, activeNavItemId))
   )?.id;
 
   useEffect(() => {
@@ -142,6 +143,7 @@ export function ErpSidebar({
   }, [mobileOpen]);
 
   function goBack() {
+    setMobileOpen(false);
     if (window.history.length > 1) router.back();
     else router.push("/login");
   }
@@ -155,8 +157,8 @@ export function ErpSidebar({
     const visibleChildren = compactModule ? [] :
       item.children?.filter((child) => (!child.adminOnly || canManage) && (!child.ownerOnly || isOwner)) ?? [];
     const hasChildren = visibleChildren.length > 0;
-    const activeItem = item.route === active;
-    const activeInside = hasChildren && visibleChildren.some((child) => itemIncludesRoute(child, active));
+    const activeItem = item.id === activeNavItemId;
+    const activeInside = hasChildren && visibleChildren.some((child) => itemIncludesNavId(child, activeNavItemId));
     const expanded = expandedNodes[item.id] ?? (activeInside || activeItem && hasChildren);
     const isLocked = Boolean(item.proOnly && planKey !== "PRO");
     const Icon = MODULE_ICONS[item.route ?? ""] ?? (hasChildren ? FolderOpen : FileText);
