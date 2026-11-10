@@ -107,14 +107,17 @@ function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule}:{
             value={tier.percent} onChange={e=>updateTier(index,"percent",e.target.value)}
             required/>
         </label>
-        {index===tiers.length-1 && tiers.length<10
-          ?<button className="btn secondary professional-tier-add" type="button" onClick={addTier}
-              aria-label="Adicionar faixa escalonada" title="Adicionar faixa">
-              <Plus size={17} aria-hidden="true"/><span>+</span>
-            </button>
-          :index>0?<button className="btn secondary professional-tier-remove" type="button" onClick={()=>removeTier(index)}
-              aria-label={"Remover faixa "+(index+1)}><Trash2 size={15} aria-hidden="true"/></button>
-          :<span className="professional-tier-empty-action" aria-hidden="true"/>}
+        <span className="professional-tier-row-actions">
+          {index===tiers.length-1 && tiers.length<10&&<button
+            className="btn secondary professional-tier-add" type="button"
+            onClick={addTier} aria-label="Adicionar faixa escalonada" title="Adicionar faixa">
+            <Plus size={17} aria-hidden="true"/>
+          </button>}
+          {index>0&&<button className="btn secondary professional-tier-remove" type="button"
+            onClick={()=>removeTier(index)} aria-label={"Remover faixa "+(index+1)}>
+            <Trash2 size={15} aria-hidden="true"/>
+          </button>}
+        </span>
       </div>)}
     </div>}
     <div className="professional-product-save">
