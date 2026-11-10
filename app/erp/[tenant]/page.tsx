@@ -2254,6 +2254,8 @@ export async function TenantERPView({
         {(!moduleId || moduleId==="dados") && <div hidden={Boolean(moduleId && moduleId!=="dados")}>
           <BusinessDataSection tenantCode={tenantCode} business={shop}
             branding={workspace.branding} isOwner={isOwner}
+            hasBranches={workspace.hasBranches || shop.units.length>1}
+            registeredBranches={Math.max(0,shop.units.length-1)}
             ok={valueOf("dadosOk")} error={valueOf("dadosErro")}/>
         </div>}
 
