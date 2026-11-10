@@ -488,3 +488,52 @@ export async function saveProfessionalSection(form:FormData){
   }else fail(ctx,"secao");
   success(ctx,section);
 }
+
+/**
+ * Exclusão segura: retira a conta da lista operacional e revoga seu acesso,
+ * sem apagar atendimentos, pagamentos, comissões e auditoria.
+ * Somente o proprietário ou administrador autorizado pode executar.
+ */
+export async function archiveProfessional(form:FormData){
+  const ctx=await context(form);
+  const listPath="/erp/"+encodeURIComponent(ctx.code)+"/equipe";
+  let blocked="";
+  try {
+    await prisma.$transaction(async tx=>{
+      const professional=await tx.shopUser.findFirst({
+        where:{id:ctx.userId,barberShopId:ctx.shopId},
+        select:{id:true,name:true,role:true,email:true,active:true},
+      });
+      if(!professional||!professional.active){blocked="excluir-invalido";return;}
+      if(professional.role==="OWNER"||professional.email.toLowerCase()===ctx.actor.toLowerCase()){
+        blocked="excluir-protegido";return;
+      }
+      const future=await tx.appointment.count({where:{
+        barberShopId:ctx.shopId,
+        barberId:ctx.userId,
+        startsAt:{gte:new Date()},
+        status:{in:["SCHEDULED","CONFIRMED","CHECKED_IN","IN_SERVICE"]},
+      }});
+      if(future){blocked="excluir-agenda";return;}
+      // No deletes or cascades. All historical foreign keys stay intact.
+      await tx.shopUser.update({where:{id:professional.id},data:{active:false}});
+      const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx.shopId}});
+      const ws=readWorkspace(shop.enabledFeatures);
+      ws.featuredProfessionalIds=ws.featuredProfessionalIds.filter(id=>id!==professional.id);
+      await tx.barberShop.update({where:{id:ctx.shopId},data:{
+        enabledFeatures:writeWorkspace(shop.enabledFeatures,ws),
+      }});
+      await tx.adminAuditLog.create({data:{
+        barberShopId:ctx.shopId,adminEmail:ctx.actor,action:"PROFESSIONAL_ARCHIVED",
+        details:{userId:professional.id,role:professional.role,accessRevoked:true,historicalRecordsKept:true},
+      }});
+    },{isolationLevel:"Serializable"});
+  }catch(error){
+    console.error("Professional archive failed",error);
+    redirect(listPath+"?erro=excluir-falhou#equipe");
+  }
+  if(blocked)redirect(listPath+"?erro="+blocked+"#equipe");
+  revalidatePath(listPath);
+  revalidatePath("/erp/"+encodeURIComponent(ctx.code),"layout");
+  redirect(listPath+"?ok=excluido#equipe");
+}
