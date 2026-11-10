@@ -60,8 +60,8 @@ export function ProfessionalServiceBatchEditor({tenantCode,userId,services}:Prop
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="userId" value={userId}/>
     <input type="hidden" name="section" value="service-batch"/>
-    <div style={{display:"flex",flexWrap:"wrap",alignItems:"end",gap:10,margin:"10px 0 12px"}}>
-      <label style={{flex:"1 1 220px",minWidth:0}}>
+    <div className="professional-service-toolbar">
+      <label className="professional-service-search">
         <span className="label">Buscar serviço</span>
         <input className="input" type="search" value={search}
           onChange={e=>setSearch(e.target.value)} placeholder="Nome do serviço"
@@ -72,8 +72,8 @@ export function ProfessionalServiceBatchEditor({tenantCode,userId,services}:Prop
       <button type="button" className="btn secondary" onClick={()=>changeVisible(false)}
         disabled={!shown.length}>Desmarcar {search?"resultados":"todos"}</button>
     </div>
-    <div style={{display:"flex",gap:10,alignItems:"end",flexWrap:"wrap",marginBottom:12}}>
-      <label style={{width:"min(100%,200px)"}}>
+    <div className="professional-service-bulk-toolbar">
+      <label className="professional-service-bulk-rate">
         <span className="label">Comissão em lote (%)</span>
         <input className="input" type="number" min="0" max="100" step=".01"
           value={bulkRate} onChange={e=>{setBulkRate(e.target.value);setBulkError("");}}
@@ -84,7 +84,7 @@ export function ProfessionalServiceBatchEditor({tenantCode,userId,services}:Prop
       <span className="small muted" aria-live="polite">{count} de {services.length} serviços habilitados</span>
     </div>
     {bulkError&&<p className="small" role="alert">{bulkError}</p>}
-    <div className="table-wrap" style={{maxHeight:460,overflowY:"auto"}}>
+    <div className="table-wrap professional-service-table" style={{maxHeight:460,overflowY:"auto"}}>
       <table style={{width:"100%"}}>
         <thead><tr>
           <th style={{width:74}}>
