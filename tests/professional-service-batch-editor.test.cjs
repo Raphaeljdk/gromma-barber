@@ -51,7 +51,7 @@ test("busca abre lista e permite adicionar e remover serviços individualmente",
 
 test("validação financeira do formulário permanece no servidor",()=>{
   assert.match(action,/if\(raw===null\|\|String\(raw\)\.trim\(\)===\x22\x22\|\|!moneyPercent\(parsed\)\)/);
-  assert.match(editor,/percent<0\|\|percent>100/);
+  assert.match(editor,/percent<0\s*\|\|\s*percent>100/);
   assert.match(editor,/Math\.round\(percent\*100\)\/100/);
 });
 
