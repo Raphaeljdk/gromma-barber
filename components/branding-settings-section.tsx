@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Crown, Image as ImageIcon } from "lucide-react";
 import type { BrandingSettings } from "@/lib/erp-workspace";
 import { saveBrandVisual, saveClubPresentation } from "@/app/erp/[tenant]/branding-actions";
 
@@ -22,7 +23,7 @@ export function BrandingSettingsSection({
       <div className="section-head">
         <div>
           <div className="eyebrow">Empresa / Cadastro</div>
-          <h2>{isIdentity ? "Identidade visual" : "Apresentação do Clube"}</h2>
+          <h2>{isIdentity ? "Identidade visual e apresentação" : "Apresentação do Clube"}</h2>
         </div>
         <Link className="btn secondary" href={root + "/dados"}>Dados gerais</Link>
       </div>
@@ -37,8 +38,8 @@ export function BrandingSettingsSection({
       {isIdentity ? (
         <div className="gromma-settings-panel">
           <div className="gromma-settings-heading">
-            <h3>Logotipo e cor</h3>
-            <span className="small muted">Identidade usada na página da barbearia e no Clube.</span>
+            <span className="gromma-heading-icon"><ImageIcon size={19} aria-hidden="true"/></span>
+            <span className="gromma-heading-copy"><h3>Logotipo e cor</h3><span className="small muted">Identidade usada na página da barbearia e no Clube.</span></span>
           </div>
           <div className="gromma-brand-preview">
             {branding.logoUrl
@@ -79,8 +80,8 @@ export function BrandingSettingsSection({
       ) : (
         <div className="gromma-settings-panel">
           <div className="gromma-settings-heading">
-            <h3>Conteúdo do Clube</h3>
-            <span className="small muted">Textos e capa vistos pelos clientes.</span>
+            <span className="gromma-heading-icon"><Crown size={19} aria-hidden="true"/></span>
+            <span className="gromma-heading-copy"><h3>Conteúdo do Clube</h3><span className="small muted">Textos e capa vistos pelos clientes.</span></span>
           </div>
           {isOwner ? (
             <form action={saveClubPresentation} className="gromma-settings-form">

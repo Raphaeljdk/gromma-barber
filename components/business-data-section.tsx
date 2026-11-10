@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Images, MapPin, Store, Type } from "lucide-react";
 import type { BrandingSettings } from "@/lib/erp-workspace";
 import { saveBusinessIdentity,saveBusinessIntroduction,updateBusinessCarousel } from "@/app/erp/[tenant]/business-data-actions";
 
@@ -15,7 +16,7 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
   const images=branding.carouselImages??[];
   return <section id="dados" className="demo-section gromma-business-data">
     <div className="section-head">
-      <div><div className="eyebrow">Empresa / Cadastro</div><h2>Cadastro da empresa</h2></div>
+      <div><div className="eyebrow">Minha Empresa / Dados</div><h2>Dados gerais do negócio</h2></div>
     </div>
     <p className="small muted">Dados institucionais e de contato da marca. As informações operacionais de cada filial são editadas exclusivamente na área Filiais.</p>
     {ok&&<p className="notice success" role="status">Informações {ok==="carrossel"?"do carrossel":ok==="apresentacao"?"da apresentação":"da empresa"} atualizadas.</p>}
@@ -23,8 +24,8 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
 
     <div className="gromma-settings-panel">
       <div className="gromma-settings-heading">
-        <h3>Cadastro geral</h3>
-        <span className="small muted">Identificação e contato institucional</span>
+        <span className="gromma-heading-icon"><Store size={19} aria-hidden="true"/></span>
+        <span className="gromma-heading-copy"><h3>Cadastro geral</h3><span className="small muted">Informações principais da sua barbearia.</span></span>
       </div>
       {isOwner?<form action={saveBusinessIdentity} className="gromma-settings-form">
         <input type="hidden" name="tenantCode" value={tenantCode}/>
@@ -42,6 +43,7 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
           <input className="input" name="phone" maxLength={30} minLength={8} required defaultValue={business.phone}/></label>
         <label className="gromma-field-row"><span>WhatsApp institucional</span>
           <input className="input" name="whatsapp" maxLength={30} defaultValue={business.whatsapp??""}/></label>
+        <div className="gromma-data-divider"><span className="gromma-heading-icon"><MapPin size={18} aria-hidden="true"/></span><span className="gromma-heading-copy"><strong>Endereço e presença</strong><small>Localização e endereço de referência da barbearia.</small></span></div>
         <label className="gromma-field-row"><span>Endereço de referência</span>
           <input className="input" name="address" maxLength={240} defaultValue={business.address??""}/></label>
         <label className="gromma-field-row"><span>Cidade</span>
@@ -62,7 +64,7 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
     </div>
 
     <details className="gromma-settings-panel gromma-settings-collapsible">
-      <summary className="gromma-settings-heading"><strong>Imagens do carrossel</strong><span className="small muted">Até 3 imagens · recomendado 512 × 590 px</span></summary>
+      <summary className="gromma-settings-heading"><span className="gromma-heading-icon"><Images size={18} aria-hidden="true"/></span><span className="gromma-heading-copy"><strong>Imagens do carrossel</strong><span className="small muted">Até 3 imagens da apresentação · recomendado 512 × 590 px</span></span></summary>
       <div className="gromma-business-carousel">
         {Array.from({length:3},(_,index)=><article className="gromma-carousel-slot" key={index}>
           <div className="gromma-carousel-preview">
@@ -102,7 +104,7 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
     </details>
 
     <details className="gromma-settings-panel gromma-settings-collapsible">
-      <summary className="gromma-settings-heading"><strong>Apresentação da empresa</strong><span className="small muted">Títulos e subtítulos exibidos aos clientes</span></summary>
+      <summary className="gromma-settings-heading"><span className="gromma-heading-icon"><Type size={18} aria-hidden="true"/></span><span className="gromma-heading-copy"><strong>Apresentação da empresa</strong><span className="small muted">Títulos e subtítulos exibidos aos clientes</span></span></summary>
       {isOwner?<form action={saveBusinessIntroduction} className="gromma-settings-form">
         <input type="hidden" name="tenantCode" value={tenantCode}/>
         <label className="gromma-field-row"><span>1º título</span>

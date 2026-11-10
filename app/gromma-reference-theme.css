@@ -1,0 +1,361 @@
+/* GROMMA BARBER — camada visual inspirada nas referências aprovadas (10/11/2026).
+   Somente o ERP: sem alteração de rotas, permissões, dados ou ações.
+   O layout escuro continua disponível pelo seletor de tema. */
+html .tenant-erp {
+  --gx-page:#edf0f6;
+  --gx-paper:#fff;
+  --gx-paper-soft:#f6f8fc;
+  --gx-sidebar:#fff;
+  --gx-ink:#17212e;
+  --gx-secondary:#697387;
+  --gx-stroke:#e3e7ee;
+  --gx-stroke-strong:#cbd2dd;
+  --gx-selection:#e7eaf5;
+  --gx-purple:#6154d5;
+  --gx-button:#172733;
+  --gx-on-button:#fff;
+  --bg:var(--gx-page);
+  --surface:var(--gx-paper);
+  --surface-2:var(--gx-paper-soft);
+  --text:var(--gx-ink);
+  --muted:var(--gx-secondary);
+  --line:var(--gx-stroke);
+  --erp-text:var(--gx-ink);
+  --erp-muted:var(--gx-secondary);
+  --erp-panel:var(--gx-paper);
+  --erp-panel-2:var(--gx-paper-soft);
+  --erp-card:var(--gx-paper);
+  --erp-border:var(--gx-stroke);
+  --erp-border-strong:var(--gx-stroke-strong);
+  --erp-gold:var(--gx-purple);
+  color-scheme:light;
+  background:var(--gx-page);
+  color:var(--gx-ink);
+  font-family:Arial,Helvetica,sans-serif;
+  grid-template-columns:210px minmax(0,1fr);
+  width:100%;
+  max-width:100%;
+}
+html[data-theme="dark"] .tenant-erp {
+  --gx-page:#171d28;
+  --gx-paper:#212b37;
+  --gx-paper-soft:#273341;
+  --gx-sidebar:#1d2734;
+  --gx-ink:#f1f4f8;
+  --gx-secondary:#b0bac7;
+  --gx-stroke:#384555;
+  --gx-stroke-strong:#526278;
+  --gx-selection:#374359;
+  --gx-purple:#aaa0ff;
+  --gx-button:#e4eaf3;
+  --gx-on-button:#17212d;
+  color-scheme:dark;
+}
+html .tenant-erp:has(.erp-sidebar.is-collapsed) { grid-template-columns:72px minmax(0,1fr); }
+html .tenant-erp .erp-sidebar {
+  width:100%;
+  padding:0 8px 12px;
+  gap:5px;
+  border-right:1px solid var(--gx-stroke);
+  border-radius:0;
+  background:var(--gx-sidebar);
+  box-shadow:none;
+  color:var(--gx-ink);
+  scrollbar-color:#c7cdda transparent;
+}
+html .tenant-erp .erp-sidebar-head {
+  min-height:66px;
+  margin:0 -8px 8px;
+  padding:10px 10px 10px 15px;
+  gap:5px;
+  background:#152633;
+  color:#fff;
+}
+html .tenant-erp .erp-brand {gap:8px;color:#f5f7f9;font-size:.88rem;letter-spacing:.04em;}
+html .tenant-erp .erp-brand .brand-mark {
+  width:36px;height:36px;flex-basis:36px;
+  display:grid;place-items:center;
+  border:none;background:transparent;
+  color:#d4b279;font-family:Georgia,serif;
+  font-size:1.6rem;font-weight:700;font-style:italic;
+}
+html .tenant-erp .erp-collapse,
+html .tenant-erp .erp-mobile-close {
+  width:26px;height:28px;flex-basis:26px;
+  border-color:#3b4b56;background:transparent;color:#d1dae1;
+}
+html .tenant-erp .gromma-sidebar-business {
+  margin:0 6px 4px;padding:6px 5px;
+  border-bottom:1px solid var(--gx-stroke);
+}
+html .tenant-erp .gromma-sidebar-monogram {
+  width:26px;height:26px;flex-basis:26px;
+  border:1px solid var(--gx-stroke);color:var(--gx-secondary);
+  background:var(--gx-paper-soft);
+}
+html .tenant-erp .gromma-sidebar-business-copy strong {color:var(--gx-ink);font-size:.74rem;}
+html .tenant-erp .gromma-sidebar-business-copy small {color:var(--gx-secondary);font-size:.64rem;}
+html .tenant-erp .gromma-sidebar-quicklinks {padding:4px 4px 6px;gap:4px;}
+html .tenant-erp .gromma-sidebar-quicklinks :is(a,button) {
+  min-height:29px;border:1px solid var(--gx-stroke);color:var(--gx-secondary);
+  border-radius:7px;background:var(--gx-paper);padding:5px 6px;font-size:.67rem;
+}
+html .tenant-erp .gromma-sidebar-quicklinks :is(a,button):hover {background:var(--gx-selection);color:var(--gx-ink);}
+html .tenant-erp .erp-nav {gap:3px;padding:0 2px 10px;}
+html .tenant-erp .erp-nav-sector {gap:3px;border-bottom:1px solid var(--gx-stroke);padding-bottom:3px;}
+html .tenant-erp .erp-nav-sector-heading {
+  min-height:36px;padding:7px 9px;border:0;border-radius:8px;
+  background:transparent;color:var(--gx-ink);box-shadow:none;
+}
+html .tenant-erp .erp-nav-sector-heading:hover,
+html .tenant-erp .erp-nav-sector.has-active-module > .erp-nav-sector-heading {
+  background:var(--gx-selection);color:var(--gx-ink);
+}
+html .tenant-erp .erp-nav-sector-copy strong {color:inherit;font-size:.78rem;font-weight:750;}
+html .tenant-erp .erp-nav-sector-copy small {display:none;}
+html .tenant-erp .erp-nav-sector-items {gap:1px;padding:1px 0 3px;}
+html .tenant-erp .erp-nav-tree-row > .erp-nav-item {
+  min-height:31px;
+  padding:5px 7px;
+  grid-template-columns:21px minmax(0,1fr) auto;
+  gap:5px;
+  border:1px solid transparent;border-radius:7px;
+  color:var(--gx-ink);font-size:.75rem;font-weight:500;
+  background:transparent;box-shadow:none;transform:none;
+}
+html .tenant-erp .erp-nav-tree-row > .erp-nav-item:hover {background:var(--gx-paper-soft);color:var(--gx-ink);}
+html .tenant-erp .erp-nav-tree-row > .erp-nav-item.active,
+html .tenant-erp .erp-nav-tree-row > .erp-nav-item.has-active-child {
+  background:var(--gx-selection);border-color:transparent;
+  color:var(--gx-ink);box-shadow:none;font-weight:760;
+}
+html .tenant-erp .erp-nav-icon {height:21px;width:21px;background:transparent;color:var(--gx-secondary);}
+html .tenant-erp .erp-nav-icon svg {width:16px;height:16px;}
+html .tenant-erp .erp-nav-item.active .erp-nav-icon {background:transparent;color:var(--gx-ink);}
+html .tenant-erp .erp-nav-active-dot {height:5px;width:5px;background:var(--gx-purple);box-shadow:none;}
+html .tenant-erp .erp-nav-tree-children {border-left:1px solid var(--gx-stroke);margin-left:13px;padding-left:7px;}
+html .tenant-erp .erp-nav-tree-item.is-nested .erp-nav-tree-row > .erp-nav-item {min-height:28px;font-size:.72rem;}
+html .tenant-erp .erp-nav-tree-toggle {color:var(--gx-secondary);}
+html .tenant-erp .erp-sidebar-bottom {border-color:var(--gx-stroke);gap:5px;padding-top:8px;}
+html .tenant-erp .erp-plan-summary,
+html .tenant-erp .erp-user-card {
+  padding:8px;border:1px solid var(--gx-stroke);background:var(--gx-paper-soft);
+  color:var(--gx-ink);border-radius:8px;box-shadow:none;
+}
+html .tenant-erp .erp-plan-summary strong,
+html .tenant-erp .erp-user-copy strong {color:var(--gx-ink);}
+html .tenant-erp .erp-plan-kicker,
+html .tenant-erp .erp-user-copy span,
+html .tenant-erp .erp-plan-summary small {color:var(--gx-secondary);}
+html .tenant-erp .erp-user-avatar {background:var(--gx-selection);color:var(--gx-ink);border-color:var(--gx-stroke);}
+html .tenant-erp .erp-main {
+  display:block;min-width:0;
+  max-width:none;width:100%;margin:0;
+  padding:0 clamp(16px,2vw,32px) 48px;
+  color:var(--gx-ink);
+  background:var(--gx-page);
+}
+html .tenant-erp .erp-topbar {
+  min-height:54px;
+  margin:0 calc(-1 * clamp(16px,2vw,32px)) 13px;
+  padding:7px clamp(16px,2vw,32px);
+  border-bottom:1px solid var(--gx-stroke);
+  background:var(--gx-paper);
+  box-shadow:none;
+}
+html .tenant-erp .erp-breadcrumbs,
+html .tenant-erp .erp-breadcrumbs a {color:var(--gx-secondary);font-size:.76rem;}
+html .tenant-erp .erp-breadcrumbs strong {color:var(--gx-ink);font-weight:750;}
+html .tenant-erp .gromma-context-strip {
+  min-height:35px;
+  margin-bottom:8px;
+  padding:6px 10px!important;
+  background:var(--gx-paper-soft);
+  border:1px solid var(--gx-stroke);
+  border-radius:8px;color:var(--gx-secondary);
+}
+html .tenant-erp .gromma-context-strip strong {color:var(--gx-ink);}
+html .tenant-erp .erp-hero-header,
+html .tenant-erp .gromma-module-header {
+  margin:0 0 11px!important;
+  padding:9px 0 8px!important;
+  border:0;background:transparent;
+}
+html .tenant-erp .erp-hero-header h1,
+html .tenant-erp .gromma-module-header.compact h1 {
+  color:var(--gx-ink);
+  font-size:clamp(1.32rem,2.4vw,1.8rem)!important;
+  font-weight:760;letter-spacing:-.035em;line-height:1.18;
+}
+html .tenant-erp .erp-hero-header .eyebrow {font-size:.65rem;color:var(--gx-secondary);letter-spacing:.07em;}
+html .tenant-erp .demo-section:not([hidden]) {
+  width:100%;max-width:none;
+  padding:12px 0 8px;
+  color:var(--gx-ink);
+}
+html .tenant-erp .section-head {margin-bottom:12px;gap:10px;align-items:center;}
+html .tenant-erp .section-head h2,
+html .tenant-erp .demo-section h2 {font-size:1.2rem;color:var(--gx-ink);margin:0;letter-spacing:-.025em;}
+html .tenant-erp .eyebrow {color:var(--gx-secondary);}
+html .tenant-erp .small.muted,
+html .tenant-erp .muted,
+html .tenant-erp p {color:var(--gx-secondary);}
+html .tenant-erp :is(.card,.erp-workspace-card,.erp-module-card,.erp-profile-panel,.gromma-settings-panel,.erp-quick-create,.gromma-unit-row,.erp-kpi-row > *) {
+  background:var(--gx-paper);
+  color:var(--gx-ink);
+  border:1px solid var(--gx-stroke);
+  border-radius:10px;
+  box-shadow:none;
+}
+html .tenant-erp .card strong,
+html .tenant-erp .erp-module-card-head strong {color:var(--gx-ink);}
+html .tenant-erp :is(.card,.erp-workspace-card,.erp-module-card) {padding:14px 16px;}
+html .tenant-erp .gromma-settings-panel {padding:15px 18px;margin:9px 0;}
+html .tenant-erp .gromma-settings-heading {
+  display:flex;align-items:center;gap:5px 14px;
+  padding-bottom:10px;margin-bottom:11px;
+  border-bottom:1px solid var(--gx-stroke);
+}
+html .tenant-erp .gromma-settings-heading h3,
+html .tenant-erp .gromma-settings-heading strong {color:var(--gx-ink);font-size:.96rem;font-weight:770;}
+html .tenant-erp .gromma-settings-heading .muted {color:var(--gx-secondary);font-size:.72rem;}
+html .tenant-erp .gromma-business-data,
+html .tenant-erp .gromma-brand-page {max-width:none;}
+html .tenant-erp .gromma-settings-form {gap:9px;}
+html .tenant-erp .gromma-business-data .gromma-settings-form {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px 15px;}
+html .tenant-erp .gromma-business-data .gromma-settings-form > .gromma-field-row:nth-of-type(8) {grid-column:1 / -1;}
+html .tenant-erp .gromma-business-data .gromma-settings-actions {grid-column:1 / -1;}
+html .tenant-erp .gromma-field-row {gap:4px;color:var(--gx-ink);font-size:.73rem;font-weight:730;}
+html .tenant-erp :is(.input,.select,.textarea),
+html .tenant-erp input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="hidden"]),
+html .tenant-erp textarea,
+html .tenant-erp select {
+  min-height:36px;max-width:100%;
+  padding:7px 10px;border:1px solid var(--gx-stroke-strong);
+  border-radius:6px;background:var(--gx-paper);
+  color:var(--gx-ink);font-size:.79rem;
+  box-shadow:none;
+}
+html .tenant-erp input[readonly] {background:var(--gx-paper-soft)!important;color:var(--gx-secondary)!important;}
+html .tenant-erp :is(input,select,textarea):focus-visible,
+html .tenant-erp :is(button,a):focus-visible {outline:2px solid var(--gx-purple);outline-offset:2px;}
+html .tenant-erp input[type="checkbox"],
+html .tenant-erp input[type="radio"] {accent-color:var(--gx-purple);}
+html .tenant-erp :is(.input,.select,.textarea):focus {border-color:var(--gx-purple);box-shadow:0 0 0 2px color-mix(in srgb,var(--gx-purple) 12%,transparent);}
+html .tenant-erp .gromma-field-row textarea {min-height:58px;resize:vertical;}
+html .tenant-erp .btn:not(.danger),
+html .tenant-erp button.btn:not(.danger) {
+  min-height:34px;padding:7px 12px;border:1px solid var(--gx-button);
+  border-radius:7px;background:var(--gx-button);
+  color:var(--gx-on-button);font-size:.77rem;font-weight:740;
+  box-shadow:none;transform:none;
+}
+html .tenant-erp .btn.secondary {
+  background:var(--gx-paper);color:var(--gx-ink);
+  border:1px solid var(--gx-stroke-strong);
+}
+html .tenant-erp .btn.secondary:hover {background:var(--gx-paper-soft);color:var(--gx-ink);}
+html .tenant-erp .gromma-settings-actions {margin-top:6px;gap:9px;}
+html .tenant-erp .gromma-settings-actions a:not(.btn) {color:var(--gx-purple);}
+html .tenant-erp .gromma-settings-nav {gap:5px;padding-bottom:7px;border-color:var(--gx-stroke);margin-top:8px;}
+html .tenant-erp .gromma-settings-nav a {padding:7px 12px;color:var(--gx-secondary);font-size:.77rem;}
+html .tenant-erp .gromma-settings-nav a[aria-current="page"] {background:var(--gx-selection);color:var(--gx-ink);border-color:var(--gx-stroke);}
+html .tenant-erp .gromma-settings-collapsible {padding:11px 17px;}
+html .tenant-erp .gromma-settings-collapsible:not([open]) > summary {margin:0;padding:2px 0;border:0;cursor:pointer;}
+html .tenant-erp .gromma-settings-collapsible[open] > summary {cursor:pointer;}
+html .tenant-erp .gromma-brand-preview {padding:6px 0 10px;gap:12px;}
+html .tenant-erp .gromma-brand-preview img,
+html .tenant-erp .gromma-brand-placeholder {border-color:var(--gx-stroke);background:var(--gx-paper-soft);}
+html .tenant-erp .gromma-business-carousel {gap:9px;}
+html .tenant-erp .gromma-carousel-slot {background:var(--gx-paper-soft);border-color:var(--gx-stroke);padding:9px;border-radius:8px;}
+html .tenant-erp .gromma-carousel-preview {aspect-ratio:16/9;max-height:160px;background:var(--gx-paper-soft);}
+html .tenant-erp .gromma-carousel-controls form {gap:6px;margin-top:7px;}
+html .tenant-erp .gromma-readonly-data > div {border-color:var(--gx-stroke);}
+html .tenant-erp .gromma-readonly-data strong {color:var(--gx-ink);}
+html .tenant-erp .table-wrap,
+html .tenant-erp .erp-inner-table {border:1px solid var(--gx-stroke);background:var(--gx-paper);border-radius:9px;}
+html .tenant-erp table {background:var(--gx-paper);}
+html .tenant-erp table thead th {background:var(--gx-paper-soft);color:var(--gx-secondary);border-color:var(--gx-stroke);font-size:.7rem;}
+html .tenant-erp table tbody td {color:var(--gx-ink);border-color:var(--gx-stroke);padding:9px 11px;}
+html .tenant-erp table tbody tr:hover td {background:var(--gx-paper-soft);}
+html .tenant-erp .erp-quick-create > summary {color:var(--gx-ink);background:var(--gx-paper-soft);}
+html .tenant-erp .notice:not(.error-notice) {border-color:var(--gx-stroke);background:var(--gx-paper-soft);color:var(--gx-secondary);}
+html .tenant-erp .theme-toggle,
+html .tenant-erp .nav-quiet-link,
+html .tenant-erp .nav-back,
+html .tenant-erp .erp-command-trigger {
+  border:1px solid var(--gx-stroke);background:var(--gx-paper);
+  color:var(--gx-ink);border-radius:7px;box-shadow:none;
+}
+html .tenant-erp .theme-toggle:hover,
+html .tenant-erp .nav-quiet-link:hover,
+html .tenant-erp .nav-back:hover,
+html .tenant-erp .erp-command-trigger:hover {background:var(--gx-paper-soft);color:var(--gx-ink);}
+html .tenant-erp .badge,
+html .tenant-erp .erp-plan-badge {border:1px solid var(--gx-stroke);background:var(--gx-paper-soft);color:var(--gx-secondary);}
+@media (min-width:851px) {
+  html .tenant-erp:has(.professional-registration-page) {grid-template-columns:210px minmax(0,1fr);}
+  html .tenant-erp:has(.professional-registration-page):has(.erp-sidebar.is-collapsed) {grid-template-columns:72px minmax(0,1fr);}
+  html .tenant-erp:has(.professional-registration-page) > .erp-main {padding:0 clamp(16px,2vw,32px) 48px;}
+}
+@media (max-width:1180px) and (min-width:851px) {
+  html .tenant-erp {grid-template-columns:200px minmax(0,1fr);}
+  html .tenant-erp .gromma-business-data .gromma-settings-form {grid-template-columns:repeat(2,minmax(0,1fr));}
+  html .tenant-erp .gromma-business-data .gromma-settings-form > .gromma-field-row:nth-of-type(8) {grid-column:1 / -1;}
+}
+@media (max-width:850px) {
+  html .tenant-erp {display:block;grid-template-columns:minmax(0,1fr);}
+  html .tenant-erp .erp-sidebar {width:min(300px,85vw);padding:0 9px 18px;}
+  html .tenant-erp .erp-sidebar-head {margin:0 -9px 9px;}
+  html .tenant-erp .erp-main {padding:calc(66px + env(safe-area-inset-top,0px)) 12px 34px;}
+  html .tenant-erp .erp-topbar {margin:0 -12px 9px;padding:8px 12px;}
+  html .tenant-erp .erp-mobile-trigger,
+  html .tenant-erp .erp-floating-cash {
+    background:#152633;color:#fff;border:1px solid #435667;
+    border-radius:9px;box-shadow:0 5px 15px rgba(9,16,29,.12);
+  }
+  html .tenant-erp .gromma-business-data .gromma-settings-form {grid-template-columns:repeat(2,minmax(0,1fr));}
+  html .tenant-erp .gromma-business-data .gromma-settings-form > .gromma-field-row:nth-of-type(8) {grid-column:1 / -1;}
+  html .tenant-erp .gromma-settings-panel {padding:13px;}
+}
+@media (max-width:620px) {
+  html .tenant-erp .gromma-business-data .gromma-settings-form {grid-template-columns:minmax(0,1fr);}
+  html .tenant-erp .gromma-business-data .gromma-settings-form > .gromma-field-row:nth-of-type(8) {grid-column:auto;}
+  html .tenant-erp .gromma-business-data .gromma-settings-actions {grid-column:auto;}
+  html .tenant-erp .gromma-business-carousel {grid-template-columns:minmax(0,1fr);}
+  html .tenant-erp .gromma-carousel-slot {grid-template-columns:minmax(0,120px) minmax(0,1fr);}
+  html .tenant-erp .gromma-settings-actions {justify-content:stretch;}
+  html .tenant-erp .gromma-settings-actions .btn {width:100%;}
+  html .tenant-erp .erp-breadcrumbs {display:none;}
+  html .tenant-erp .erp-topbar {min-height:44px;}
+  html .tenant-erp .gromma-context-strip {gap:4px 8px;}
+}
+@media (prefers-reduced-motion:reduce) {
+  html .tenant-erp *,
+  html .tenant-erp *::before,
+  html .tenant-erp *::after {animation-duration:.01ms!important;transition-duration:.01ms!important;}
+}
+
+/* Iconografia e agrupamento editorial dos cadastros, sem novas abas. */
+html .tenant-erp .gromma-heading-icon {
+  display:inline-grid;place-items:center;
+  width:38px;height:38px;flex:0 0 38px;
+  border-radius:9px;background:var(--gx-selection);
+  color:var(--gx-ink);
+}
+html .tenant-erp .gromma-heading-copy {
+  display:grid;align-content:center;gap:2px;min-width:0;
+}
+html .tenant-erp .gromma-heading-copy h3,
+html .tenant-erp .gromma-heading-copy strong {margin:0;line-height:1.25;}
+html .tenant-erp .gromma-heading-copy .muted,
+html .tenant-erp .gromma-heading-copy small {color:var(--gx-secondary);font-size:.72rem;font-weight:400;}
+html .tenant-erp .gromma-business-data .gromma-data-divider {
+  display:flex;grid-column:1 / -1;align-items:center;gap:10px;
+  padding:10px 0 3px;margin-top:2px;border-top:1px solid var(--gx-stroke);
+}
+html .tenant-erp .gromma-data-divider strong {display:block;font-size:.88rem;color:var(--gx-ink);}
+html .tenant-erp .gromma-data-divider .gromma-heading-icon {width:31px;height:31px;flex-basis:31px;}
+html .tenant-erp .gromma-settings-heading:has(.gromma-heading-icon) {align-items:center;gap:10px;}
+html .tenant-erp summary.gromma-settings-heading .gromma-heading-copy {flex:1;}
+html .tenant-erp .gromma-settings-collapsible:not([open]) > summary .gromma-heading-icon {width:32px;height:32px;flex-basis:32px;}
