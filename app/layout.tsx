@@ -4,6 +4,7 @@ import "./agenda-multiunit-history.css";
 import "./customer-directory.css";
 import "./management-audit.css";
 import "./agenda-people-filters.css";
+import "./gromma-reference-theme.css";
 
 export const metadata = {
   title: "GROMMA BARBER",
@@ -14,9 +15,10 @@ const themeScript = `
 (() => {
   try {
     const saved = localStorage.getItem("gromma-theme");
+    const isErp = window.location.pathname.startsWith("/erp/");
     const theme = saved === "light" || saved === "dark"
       ? saved
-      : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      : (isErp ? "light" : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
     document.documentElement.dataset.theme = theme;
   } catch {
     document.documentElement.dataset.theme = "dark";
