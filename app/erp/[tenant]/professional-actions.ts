@@ -511,8 +511,10 @@ export async function archiveProfessional(form:FormData){
       const future=await tx.appointment.count({where:{
         barberShopId:ctx.shopId,
         barberId:ctx.userId,
-        startsAt:{gte:new Date()},
-        status:{in:["SCHEDULED","CONFIRMED","CHECKED_IN","IN_SERVICE"]},
+        OR:[
+          {startsAt:{gte:new Date()},status:{in:["SCHEDULED","CONFIRMED","CHECKED_IN","IN_SERVICE"]}},
+          {status:{in:["CHECKED_IN","IN_SERVICE"]}},
+        ],
       }});
       if(future){blocked="excluir-agenda";return;}
       // No deletes or cascades. All historical foreign keys stay intact.
