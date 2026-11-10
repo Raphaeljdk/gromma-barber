@@ -8,6 +8,7 @@ import "./gromma-reference-theme.css";
 import "./gromma-navigation-polish.css";
 import "./gromma-unified-shell.css";
 import "./gromma-professional-fast-ai.css";
+import "./gromma-business-compact.css";
 
 export const metadata = {
   title: "GROMMA BARBER",
