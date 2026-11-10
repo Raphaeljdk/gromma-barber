@@ -173,6 +173,9 @@ export function ErpSidebar({
         {item.route ? (
           <Link
             href={routeFor(tenantCode, isLocked ? "plano" : item.route)}
+            prefetch={true}
+            onMouseEnter={() => router.prefetch(routeFor(tenantCode, isLocked ? "plano" : item.route!))}
+            onFocus={() => router.prefetch(routeFor(tenantCode, isLocked ? "plano" : item.route!))}
             className={["erp-nav-item", activeItem ? "active" : "", isLocked ? "locked" : ""].join(" ")}
             onClick={() => setMobileOpen(false)}
             aria-current={activeItem ? "page" : undefined}
