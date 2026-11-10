@@ -36,9 +36,10 @@ export function ProfessionalServiceBatchEditor({ tenantCode, userId, services }:
   const searchBoxRef = useRef<HTMLDivElement>(null);
 
   const selected = useMemo(() => services.filter(service => enabled[service.id]), [services,enabled]);
-  const available = useMemo(() => services.filter(service =>
-    !enabled[service.id] && normalize(service.name).includes(normalize(search))
-  ), [services,enabled,search]);
+  const matching = useMemo(() => services.filter(service =>
+    normalize(service.name).includes(normalize(search))
+  ), [services,search]);
+  const available = matching.filter(service => !enabled[service.id]);
   const money = (value:number) => new Intl.NumberFormat("pt-BR",{
     style:"currency",currency:"BRL"
   }).format(value);
@@ -103,12 +104,13 @@ export function ProfessionalServiceBatchEditor({ tenantCode, userId, services }:
           <ChevronDown size={15} aria-hidden="true"/>
         </div>
         {showSuggestions && <div id="professional-service-options" className="professional-service-options" role="listbox" aria-label="Serviços disponíveis para adicionar">
-          {available.map(service=><button key={service.id} type="button" role="option"
-            aria-selected={false} onClick={() => addService(service.id)}>
-            <span><strong>{service.name}</strong><small>{service.durationMinutes} min · {money(service.price)}</small></span>
-            <Plus size={17} aria-hidden="true"/>
+          {matching.map(service=><button key={service.id} type="button" role="option"
+            aria-selected={!!enabled[service.id]} disabled={!!enabled[service.id]}
+            onClick={() => addService(service.id)}>
+            <span><strong>{service.name}</strong><small>{service.durationMinutes} min · {money(service.price)}{enabled[service.id]?" · Adicionado":""}</small></span>
+            {enabled[service.id] ? <Check size={17} aria-hidden="true"/> : <Plus size={17} aria-hidden="true"/>}
           </button>)}
-          {!available.length && <p>{search.trim()?"Nenhum serviço disponível corresponde à busca.":"Todos os serviços disponíveis já foram adicionados."}</p>}
+          {!matching.length && <p>{search.trim()?"Nenhum serviço corresponde à busca.":"Não há serviços cadastrados no catálogo."}</p>}
         </div>}
       </div>
       <label className="professional-service-bulk-rate">
