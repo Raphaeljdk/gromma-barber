@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { saveProfessionalSection } from "@/app/erp/[tenant]/professional-actions";
 import {
   PRODUCT_COMMISSION_CATEGORIES,
@@ -13,31 +14,23 @@ type Props={
   tenantCode:string;userId:string;
   rules:Partial<Record<ProductCommissionCategory,ProductCommissionRule>>;
 };
+type ProductTier={min:string;percent:string};
+
 export function ProfessionalProductCommissionEditor({tenantCode,userId,rules}:Props){
   const [category,setCategory]=useState<ProductCommissionCategory>("COSMETICS");
   return <section className="professional-product-editor" aria-label="Configurar comissão de cosméticos e bebidas">
-    <details className="professional-editor-help">
-      <summary>Como funcionam as comissões por categoria?</summary>
-      <p className="small muted">Selecione cosméticos ou bebidas. A regra fixa usa um único percentual; a escalonada aplica faixas de faturamento da categoria no período. Os serviços têm comissões individuais.</p>
-    </details>
     <div className="professional-product-rules-status">
       {PRODUCT_COMMISSION_CATEGORIES.map(item=><span key={item.id} className="small muted">
         <strong>{item.label}</strong>: {rules[item.id]?
-          (rules[item.id]?.mode==="FIXED"?`Fixa · ${rules[item.id]?.fixedPercent}%`:
-            `Escalonada · ${rules[item.id]?.tiers.length} faixa(s)`):"Usa regra padrão"}
+          (rules[item.id]?.mode==="FIXED"?"Fixa · "+(rules[item.id]?.fixedPercent??0)+"%":
+            "Escalonada · "+(rules[item.id]?.tiers.length??0)+" faixa(s)"):"Usa regra padrão"}
       </span>)}
     </div>
-    <label className="professional-category-select">Categoria de produto
-      <select className="select" value={category} onChange={e=>setCategory(e.target.value as ProductCommissionCategory)}>
-        {PRODUCT_COMMISSION_CATEGORIES.map(c=><option value={c.id} key={c.id}>{c.label}</option>)}
-      </select>
-    </label>
     <CategoryRuleForm key={category} tenantCode={tenantCode} userId={userId}
-      category={category} rule={rules[category]}/>
-    {rules[category]&&<div style={{marginTop:12,padding:"10px 12px",
-      border:"1px solid var(--border,#ddd)",borderRadius:10}}>
+      category={category} onCategoryChange={setCategory} rule={rules[category]}/>
+    {rules[category]&&<div className="professional-product-saved-preview">
       <strong className="small">Prévia da regra salva · {PRODUCT_COMMISSION_CATEGORIES.find(c=>c.id===category)?.label}</strong>
-      <div className="table-wrap" style={{marginTop:8}}><table>
+      <div className="table-wrap"><table>
         <thead><tr><th>Vendas da categoria no período</th><th>Percentual aplicado</th></tr></thead>
         <tbody>{[0,500,1000,2000].map(total=><tr key={total}>
           <td>{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(total)}</td>
@@ -47,7 +40,7 @@ export function ProfessionalProductCommissionEditor({tenantCode,userId,rules}:Pr
       <form action={saveProfessionalSection} onSubmit={event=>{
         if(!window.confirm("Restaurar a regra padrão desta categoria? Os pagamentos anteriores serão preservados."))
           event.preventDefault();
-      }} style={{marginTop:10}}>
+      }}>
         <input type="hidden" name="tenantCode" value={tenantCode}/>
         <input type="hidden" name="userId" value={userId}/>
         <input type="hidden" name="section" value="product-category-reset"/>
@@ -55,25 +48,41 @@ export function ProfessionalProductCommissionEditor({tenantCode,userId,rules}:Pr
         <button className="btn secondary" type="submit">Restaurar comissão padrão</button>
       </form>
     </div>}
-    <p className="small muted" style={{marginTop:10}}>
-      A prévia é ilustrativa. A comissão real utiliza somente recebimentos confirmados;
-      regras novas não reescrevem os demonstrativos já quitados.
-    </p>
   </section>;
 }
-function CategoryRuleForm({tenantCode,userId,category,rule}:{
-  tenantCode:string;userId:string;category:ProductCommissionCategory;rule?:ProductCommissionRule;
+
+function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule}:{
+  tenantCode:string;userId:string;category:ProductCommissionCategory;
+  onCategoryChange:(category:ProductCommissionCategory)=>void;
+  rule?:ProductCommissionRule;
 }){
   const [mode,setMode]=useState<"FIXED"|"SCALED">(rule?.mode??"FIXED");
+  const [tiers,setTiers]=useState<ProductTier[]>(()=>{
+    const existing=rule?.mode==="SCALED"?rule.tiers:[];
+    return existing.length?existing.map(tier=>({min:String(tier.min),percent:String(tier.percent)})):
+      [{min:"0",percent:""}];
+  });
+  function addTier(){setTiers(current=>current.length<10?[...current,{min:"",percent:""}]:current);}
+  function updateTier(index:number,field:keyof ProductTier,value:string){
+    setTiers(current=>current.map((tier,i)=>i===index?{...tier,[field]:value}:tier));
+  }
+  function removeTier(index:number){
+    if(index===0)return;
+    setTiers(current=>current.filter((_,i)=>i!==index));
+  }
   return <form action={saveProfessionalSection} className="erp-compact-form professional-product-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="userId" value={userId}/>
     <input type="hidden" name="section" value="product-category-rule"/>
     <input type="hidden" name="category" value={category}/>
-    <div className="professional-product-form-fields">
+    <div className="professional-product-form-fields professional-product-top-row">
+      <label>Categoria de produto
+        <select className="select" value={category} onChange={e=>onCategoryChange(e.target.value as ProductCommissionCategory)}>
+          {PRODUCT_COMMISSION_CATEGORIES.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
+        </select>
+      </label>
       <label>Formato da comissão
-        <select className="select" name="mode" value={mode}
-          onChange={e=>setMode(e.target.value as "FIXED"|"SCALED")}>
+        <select className="select" name="mode" value={mode} onChange={e=>setMode(e.target.value as "FIXED"|"SCALED")}>
           <option value="FIXED">Fixa</option>
           <option value="SCALED">Escalonada</option>
         </select>
@@ -83,25 +92,32 @@ function CategoryRuleForm({tenantCode,userId,category,rule}:{
           defaultValue={rule?.mode==="FIXED"?rule.fixedPercent:0} required/>
       </label>}
     </div>
-    {mode==="SCALED"&&<div style={{marginTop:10}}>
-      <p className="small muted">Exemplo: a partir de R$ 0 → 5%; a partir de R$ 500 → 8%.
-        A faixa é definida pelo total vendido da categoria pelo profissional, no período da comissão.</p>
-      <div className="table-wrap"><table style={{width:"100%"}}>
-        <thead><tr><th>Faixa</th><th>A partir de (R$)</th><th>Comissão (%)</th></tr></thead>
-        <tbody>{Array.from({length:6},(_,i)=>{
-          const tier=rule?.mode==="SCALED"?rule.tiers[i]:undefined;
-          return <tr key={i}><td>{i+1}</td>
-            <td><input className="input" name="tierMin" type="number" min={0} step=".01"
-              aria-label={`Valor mínimo da faixa ${i+1}`}
-              defaultValue={tier?.min??(i===0?0:"")} required={i===0}/></td>
-            <td><input className="input" name="tierPercent" type="number" min={0} max={100} step=".01"
-              aria-label={`Comissão da faixa ${i+1}`}
-              defaultValue={tier?.percent??""} required={i===0}/></td>
-          </tr>;
-        })}</tbody>
-      </table></div>
+    {mode==="SCALED"&&<div className="professional-scaled-editor">
+      <h4>Comissão escalonada</h4>
+      {tiers.map((tier,index)=><div className="professional-scaled-tier-row" key={index}>
+        <label>A partir de (R$)
+          <input className="input" name="tierMin" type="number" min={0} step=".01"
+            aria-label={"Valor mínimo da faixa "+(index+1)}
+            value={tier.min} onChange={e=>updateTier(index,"min",e.target.value)}
+            required/>
+        </label>
+        <label>Comissão (%)
+          <input className="input" name="tierPercent" type="number" min={0} max={100} step=".01"
+            aria-label={"Comissão da faixa "+(index+1)}
+            value={tier.percent} onChange={e=>updateTier(index,"percent",e.target.value)}
+            required/>
+        </label>
+        {index===tiers.length-1 && tiers.length<10
+          ?<button className="btn secondary professional-tier-add" type="button" onClick={addTier}
+              aria-label="Adicionar faixa escalonada" title="Adicionar faixa">
+              <Plus size={17} aria-hidden="true"/><span>+</span>
+            </button>
+          :index>0?<button className="btn secondary professional-tier-remove" type="button" onClick={()=>removeTier(index)}
+              aria-label={"Remover faixa "+(index+1)}><Trash2 size={15} aria-hidden="true"/></button>
+          :<span className="professional-tier-empty-action" aria-hidden="true"/>}
+      </div>)}
     </div>}
-    <div style={{display:"flex",justifyContent:"flex-end",marginTop:10}}>
+    <div className="professional-product-save">
       <button className="btn" type="submit">Salvar comissão da categoria</button>
     </div>
   </form>;
