@@ -335,3 +335,27 @@ html .tenant-erp .erp-plan-badge {border:1px solid var(--gx-stroke);background:v
   html .tenant-erp *::before,
   html .tenant-erp *::after {animation-duration:.01ms!important;transition-duration:.01ms!important;}
 }
+
+/* Iconografia e agrupamento editorial dos cadastros, sem novas abas. */
+html .tenant-erp .gromma-heading-icon {
+  display:inline-grid;place-items:center;
+  width:38px;height:38px;flex:0 0 38px;
+  border-radius:9px;background:var(--gx-selection);
+  color:var(--gx-ink);
+}
+html .tenant-erp .gromma-heading-copy {
+  display:grid;align-content:center;gap:2px;min-width:0;
+}
+html .tenant-erp .gromma-heading-copy h3,
+html .tenant-erp .gromma-heading-copy strong {margin:0;line-height:1.25;}
+html .tenant-erp .gromma-heading-copy .muted,
+html .tenant-erp .gromma-heading-copy small {color:var(--gx-secondary);font-size:.72rem;font-weight:400;}
+html .tenant-erp .gromma-business-data .gromma-data-divider {
+  display:flex;grid-column:1 / -1;align-items:center;gap:10px;
+  padding:10px 0 3px;margin-top:2px;border-top:1px solid var(--gx-stroke);
+}
+html .tenant-erp .gromma-data-divider strong {display:block;font-size:.88rem;color:var(--gx-ink);}
+html .tenant-erp .gromma-data-divider .gromma-heading-icon {width:31px;height:31px;flex-basis:31px;}
+html .tenant-erp .gromma-settings-heading:has(.gromma-heading-icon) {align-items:center;gap:10px;}
+html .tenant-erp summary.gromma-settings-heading .gromma-heading-copy {flex:1;}
+html .tenant-erp .gromma-settings-collapsible:not([open]) > summary .gromma-heading-icon {width:32px;height:32px;flex-basis:32px;}
