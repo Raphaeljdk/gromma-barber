@@ -2178,11 +2178,6 @@ export async function TenantERPView({
             hash="equipe"
             search={{ param: "equipeQ", value: equipeQ, placeholder: "Buscar profissional, e-mail ou função" }}
           />
-          <details className="erp-directory-help">
-            <summary>Como funcionam as comissões e o pote de assinaturas?</summary>
-            <p className="small muted">A participação individual no pote é calculada automaticamente pelos atendimentos de assinantes concluídos. As antigas configurações fixas ficam preservadas apenas no histórico. Consulte <Link href={`/erp/${encodeURIComponent(tenantCode)}/comissoes`}>Gerar Comissões</Link> para conferir o resultado.</p>
-            <p className="small muted">Comissões por serviço, produto e metas de assinaturas são configuradas na ficha individual do profissional.</p>
-          </details>
           <div className="table-wrap erp-compact-directory">
             <table>
               <thead><tr><th>Profissional</th><th>Função</th><th>Situação</th><th>Ações</th></tr></thead>
