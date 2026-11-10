@@ -220,3 +220,224 @@ html[data-theme] .tenant-erp .professional-registration-page .professional-commi
   border-color:var(--profile-line);
   background:var(--gx-paper,#fff);
 }
+
+/* Contratos PDF e link: todos os campos + ação na mesma linha. */
+html[data-theme] .tenant-erp .professional-registration-page .professional-contract-grid.professional-contract-upload-grid {
+  display:grid!important;
+  grid-template-columns:minmax(140px,1.2fr) minmax(180px,1.3fr) minmax(135px,.8fr) max-content!important;
+  gap:8px!important;align-items:end;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-contract-grid.professional-contract-link-grid {
+  display:grid!important;
+  grid-template-columns:minmax(130px,1.05fr) minmax(200px,1.55fr) minmax(135px,.9fr) minmax(120px,1fr) max-content!important;
+  gap:8px!important;align-items:end;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) > label {
+  min-width:0;
+  display:flex;flex-direction:column;gap:4px;
+  color:var(--profile-text);font-size:.74rem;font-weight:650;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) > label .input {
+  width:100%!important;min-width:0;height:35px!important;min-height:35px!important;
+  padding:6px 9px!important;
+  font-size:.76rem!important;
+  background:var(--gx-paper,#fff)!important;color:var(--profile-text)!important;
+  border:1px solid var(--profile-line)!important;border-radius:6px!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) > button {
+  min-height:35px;height:35px;
+  padding:6px 10px;align-self:end;
+  white-space:nowrap;font-size:.73rem;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-subsection:has(.professional-contract-grid) {
+  padding:10px 12px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-subsection:has(.professional-contract-grid) p.small {
+  font-size:.69rem;
+  margin-top:6px;
+}
+
+/* Serviços: busca curta; linhas e nomes com contraste e tamanhos legíveis. */
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-toolbar,
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-bulk-toolbar {
+  display:flex;flex-wrap:wrap;align-items:end;gap:7px 9px;
+  margin:8px 0 10px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-search {
+  flex:0 1 240px;min-width:170px;max-width:265px;
+  display:flex;flex-direction:column;gap:4px;
+  color:var(--profile-text);
+  font-size:.76rem;font-weight:670;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-search .input {
+  height:34px;min-height:34px;width:100%;
+  font-size:.78rem;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-bulk-rate {
+  flex:0 1 155px;
+  min-width:110px;
+  display:flex;flex-direction:column;gap:4px;
+  font-size:.76rem;color:var(--profile-text);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-bulk-rate .input {
+  min-height:34px;height:34px;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-service-toolbar,.professional-service-bulk-toolbar) button {
+  min-height:34px;padding:6px 10px;font-size:.75rem;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-table {
+  background:var(--gx-paper,#fff)!important;
+  border:1px solid var(--profile-line);
+  border-radius:8px;max-width:100%;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-table table {width:100%;border-collapse:collapse;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-table thead th {
+  font-size:.77rem!important;font-weight:780;color:var(--profile-text)!important;
+  background:var(--gx-paper-soft,#f6f8fc)!important;
+  border-bottom:1px solid var(--profile-line);
+  padding:10px 11px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-table tbody td {
+  font-size:.84rem!important;color:var(--profile-text)!important;
+  background:var(--gx-paper,#fff)!important;
+  padding:8px 11px!important;border-bottom:1px solid var(--profile-line);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-table tbody td strong {
+  color:var(--profile-text)!important;font-size:.85rem!important;font-weight:740;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-table tbody td .input {
+  min-height:33px!important;height:33px!important;
+  font-size:.8rem!important;
+  color:var(--profile-text)!important;
+}
+
+/* Jornada: usar a largura integral do mesmo painel de Serviços e centralizar a tabela. */
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-editor,
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-grid,
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-actions {
+  width:100%!important;max-width:none!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-grid {
+  border:1px solid var(--profile-line);
+  border-radius:9px;background:var(--gx-paper,#fff);overflow:hidden;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-grid-heading,
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  text-align:center;justify-items:stretch;
+  gap:10px;padding:10px 15px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-grid-heading {
+  background:var(--gx-paper-soft,#f6f8fc);
+  color:var(--profile-text)!important;
+  font-size:.86rem;font-weight:780;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row {
+  background:var(--gx-paper,#fff);
+  border-top:1px solid var(--profile-line);
+  font-size:.84rem;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row .gromma-week-day {
+  display:flex;align-items:center;justify-content:center;
+  font-size:.87rem;font-weight:720;color:var(--profile-text);
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row > label {
+  width:100%;min-width:0;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row input[type="time"] {
+  display:block;
+  height:37px;min-height:37px;
+  width:100%;max-width:260px;
+  margin-inline:auto;
+  background:var(--gx-paper,#fff)!important;
+  color:var(--profile-text)!important;
+  border:1px solid var(--profile-line)!important;
+  text-align:center;
+  font-size:.87rem!important;font-weight:650;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-presets {
+  gap:7px;margin:7px 0 11px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-presets .small.muted {
+  font-size:.8rem!important;color:var(--profile-text)!important;font-weight:700;
+}
+
+/* Intervalos e férias: hierarquia de leitura, motivo em evidência, horas em destaque. */
+html[data-theme] .tenant-erp .professional-registration-page .professional-breaks-panel .professional-section-title strong {
+  font-size:1.03rem;font-weight:800;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-schedule-column > h4 {
+  color:var(--profile-text);
+  font-size:1.05rem!important;font-weight:800;
+  letter-spacing:-.014em;
+  margin:4px 0 10px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-schedule-column .professional-inline-editor label {
+  color:var(--profile-text)!important;font-size:.82rem;font-weight:720;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-leave-fields .professional-leave-reason {
+  font-weight:800;font-size:.87rem;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-leave-fields .professional-leave-reason .input {
+  border:1px solid var(--gx-purple,#6254d5)!important;
+  background:var(--gx-paper,#fff)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-saved-items > p {
+  font-size:.81rem!important;font-weight:700;color:var(--profile-text)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-compact-entry {
+  padding:10px 7px!important;
+  color:var(--profile-text);
+  font-size:.83rem!important;
+  gap:9px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-compact-entry > span {
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-compact-entry strong {
+  font-size:.85rem;font-weight:800;color:var(--profile-text);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-break-hours {
+  display:inline-flex;align-items:center;
+  min-height:27px;
+  background:var(--gx-selection,#eae9f7);
+  color:var(--gx-purple,#6254d5);
+  border:1px solid var(--profile-line);
+  border-radius:6px;padding:4px 9px;
+  font-size:.87rem;font-weight:800;letter-spacing:.015em;
+  font-variant-numeric:tabular-nums;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-leave-reason-highlight {
+  padding:5px 9px;
+  background:var(--gx-selection,#eae9f7);
+  color:var(--gx-ink,#192536)!important;
+  border:1px solid var(--profile-line);
+  border-radius:6px;font-size:.87rem!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-leave-date {
+  color:var(--profile-text);font-size:.82rem;font-weight:610;
+}
+@media(max-width:1300px) {
+  html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) {
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) > button {
+    justify-self:end;
+  }
+}
+@media(max-width:720px) {
+  html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) {
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) > button {
+    justify-self:stretch;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .professional-service-search {
+    flex:1 1 100%;max-width:none;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .gromma-week-grid-heading {display:none;}
+  html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row {
+    grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row .gromma-week-day {grid-column:1 / -1;justify-content:flex-start;}
+}
