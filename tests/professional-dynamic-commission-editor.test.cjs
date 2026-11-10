@@ -43,7 +43,7 @@ test("subscription bonus uses switch, percent next to it, tiers start at one row
  assert.match(subscription,/bonusEnabled\?<label/);
  assert.match(subscription,/name="subscriptionPercent"/);
  assert.match(subscription,/enabled:boolean/);
- assert.match(subscription,/tiers\.length\?tiers\.map/);
+ assert.match(subscription,/return tiers\.map\(/);
  assert.match(subscription,/\[\{id:0,min:"",max:"",percent:""\}\]/);
  assert.match(subscription,/setRows\(current=>current\.length>=8/);
  assert.match(subscription,/Adicionar faixa de metas/);
