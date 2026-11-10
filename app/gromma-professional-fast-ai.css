@@ -1,0 +1,173 @@
+/* GROMMA — edição de profissionais e pesquisa inteligente, sem tocar nos dados. */
+html[data-theme] .tenant-erp .professional-registration-page {
+  --profile-line:var(--gx-stroke,var(--gromma-stroke,#e1e6ee));
+  --profile-text:var(--gx-ink,var(--gromma-ink,#192536));
+  --profile-muted:var(--gx-secondary,var(--gromma-muted,#647188));
+  --profile-highlight:var(--gx-purple,var(--gromma-accent,#6254d5));
+  --erp-panel:var(--gx-paper,#fff);
+  --erp-panel-2:var(--gx-paper-soft,#f6f8fc);
+  --erp-panel-3:var(--gx-paper-soft,#f6f8fc);
+  color:var(--profile-text);
+  background:transparent;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(>section.card,>.professional-hero-card) {
+  background:var(--gx-paper,var(--gromma-paper));
+  color:var(--profile-text);
+  border-color:var(--profile-line);
+  box-shadow:none;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-subsection,.erp-quick-create,.professional-inline-editor,.gromma-commission-tiers,.professional-legacy-contacts,.professional-pot-note) {
+  background:var(--gx-paper,var(--gromma-paper))!important;
+  color:var(--profile-text);
+  border:1px solid var(--profile-line);
+  border-radius:9px;
+  box-shadow:none;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-subsection,.professional-legacy-contacts) {
+  margin:9px 0;
+  padding:11px 13px;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-subsection,.professional-legacy-contacts) > h4 {
+  margin:0 0 9px;
+  font-size:.83rem;
+  font-weight:740;
+  color:var(--profile-text);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-identity-grid.professional-general-fields,
+html[data-theme] .tenant-erp .professional-registration-page .professional-identity-grid.professional-address-grid {
+  display:grid!important;
+  grid-template-columns:repeat(12,minmax(0,1fr))!important;
+  gap:9px 12px;
+  align-items:end;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-general-fields,.professional-address-grid) > label {
+  grid-column:span 4;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-fullname {grid-column:span 5;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-nickname {grid-column:span 4;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-birthdate {grid-column:span 3;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-cnpj {grid-column:span 4;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-cpf {grid-column:span 3;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-email {grid-column:span 5;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-phone,
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-whatsapp {grid-column:span 6;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-role,
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-unit {grid-column:span 6;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-cadence {grid-column:span 3;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-section {
+  margin:15px 0 10px;
+  padding-top:13px;
+  border-top:1px solid var(--profile-line);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-section h4 {
+  margin:0 0 10px;
+  font-size:.85rem;
+  font-weight:740;
+  color:var(--profile-text);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-grid .professional-field-zip {grid-column:span 3;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-grid .professional-field-street {grid-column:span 6;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-grid .professional-field-district {grid-column:span 3;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-grid .professional-field-city {grid-column:span 4;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-grid .professional-field-state {grid-column:span 2;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-grid .professional-field-number {grid-column:span 2;}
+html[data-theme] .tenant-erp .professional-registration-page .professional-address-grid .professional-field-complement {grid-column:span 4;}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-general-fields,.professional-address-grid) :is(input,select) {
+  box-sizing:border-box;
+  min-width:0;
+  width:100%!important;
+  height:35px!important;
+  min-height:35px!important;
+  padding:6px 10px!important;
+  border:1px solid var(--profile-line)!important;
+  border-radius:6px!important;
+  background:var(--gx-paper,#fff)!important;
+  color:var(--profile-text)!important;
+  box-shadow:none!important;
+  font-size:.8rem!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-general-fields,.professional-address-grid) input:disabled {
+  background:var(--gx-paper-soft,#f6f8fc)!important;
+  color:var(--profile-muted)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-general-fields,.professional-address-grid) .label {
+  margin:0;
+  font-size:.72rem;
+  line-height:1.25;
+  font-weight:700;
+  color:var(--profile-text)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page :is(.professional-subsection,.professional-address-section,.professional-general-save-footer) .small.muted {
+  color:var(--profile-muted)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-save-footer {
+  margin:12px 0 24px;
+  padding:13px 16px;
+  border:1px solid var(--profile-line);
+  border-radius:10px;
+  background:var(--gx-paper,#fff);
+  display:flex;align-items:center;justify-content:flex-end;gap:15px;flex-wrap:wrap;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-save-footer span {
+  color:var(--profile-muted);font-size:.77rem;margin-right:auto;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-save-footer button {
+  min-height:37px;
+  min-width:150px;
+}
+html[data-theme] .tenant-erp .erp-command-trigger {
+  background:var(--gx-paper,#fff);
+  color:var(--gx-ink,#192536);
+  border-color:var(--gx-stroke,#e0e5ee);
+}
+html[data-theme] .tenant-erp .erp-command-dialog {
+  background:var(--gx-paper,#fff);
+  color:var(--gx-ink,#192536);
+  border:1px solid var(--gx-stroke,#e0e5ee);
+  box-shadow:0 24px 70px rgba(20,30,50,.15);
+}
+html[data-theme] .tenant-erp .erp-command-dialog :is(.erp-command-result-icon,.erp-command-input-row) {
+  color:var(--gx-ink,#192536);
+}
+html[data-theme] .tenant-erp .erp-command-dialog .erp-command-result-icon {
+  background:var(--gx-paper-soft,#f6f8fc);
+}
+html[data-theme] .tenant-erp .erp-command-dialog .erp-command-results button:hover {
+  background:var(--gx-paper-soft,#f6f8fc);
+}
+html[data-theme] .tenant-erp .erp-command-input-row input {
+  color:var(--gx-ink,#192536)!important;
+  background:transparent!important;
+}
+html[data-theme] .tenant-erp .erp-professional-delete-form {display:inline-flex;margin:0;}
+html[data-theme] .tenant-erp .erp-directory-actions {align-items:center;gap:6px;}
+html[data-theme] .tenant-erp .erp-professional-delete {
+  border:1px solid var(--gx-stroke,#e0e5ee)!important;
+  background:var(--gx-paper,#fff)!important;
+  color:#9a3e49!important;
+  min-height:32px!important;
+  padding:6px 10px!important;
+  font-size:.72rem!important;
+  box-shadow:none!important;
+}
+html[data-theme] .tenant-erp .erp-professional-delete:hover {
+  border-color:#d59aa2!important;
+  background:#fff4f5!important;
+}
+@media (max-width:1020px){
+ html[data-theme] .tenant-erp .professional-registration-page .professional-identity-grid.professional-general-fields,
+ html[data-theme] .tenant-erp .professional-registration-page .professional-identity-grid.professional-address-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+ html[data-theme] .tenant-erp .professional-registration-page :is(.professional-general-fields,.professional-address-grid) > label {grid-column:span 1!important;}
+ html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields .professional-field-birthdate {max-width:260px;}
+}
+@media (max-width:620px){
+ html[data-theme] .tenant-erp .professional-registration-page .professional-identity-grid.professional-general-fields,
+ html[data-theme] .tenant-erp .professional-registration-page .professional-identity-grid.professional-address-grid {grid-template-columns:minmax(0,1fr)!important;}
+ html[data-theme] .tenant-erp .professional-registration-page :is(.professional-general-fields,.professional-address-grid) > label {grid-column:auto!important;}
+ html[data-theme] .tenant-erp .professional-registration-page .professional-general-save-footer {align-items:stretch;flex-direction:column;}
+ html[data-theme] .tenant-erp .professional-registration-page .professional-general-save-footer button {width:100%;}
+}
