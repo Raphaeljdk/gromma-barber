@@ -201,6 +201,7 @@ export type OperationalSettings = {
 
 export type ErpWorkspace = {
   branding: BrandingSettings;
+  hasBranches: boolean;
   unitPolicies: Record<string,UnitOperationsPolicy>;
   featuredProfessionalIds: string[];
   rolePermissions: StaffPermissions;
@@ -240,6 +241,7 @@ export type ErpWorkspace = {
 };
 
 export const DEFAULT_WORKSPACE: ErpWorkspace = {
+  hasBranches: false,
   branding: { logoUrl: "", accentColor: "#c69a49", clubTitle: "Clube de assinaturas", clubDescription: "",
     heroTitle: "", heroDescription: "", coverImageUrl: "",
     carouselImages: [], secondaryTitle: "", secondaryDescription: "" },
@@ -308,6 +310,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
   const rawPermissions = record(operations.rolePermissions);
   const rolePermissions = Object.fromEntries(STAFF_PERMISSION_ROLES.filter(role => Array.isArray(rawPermissions[role])).map(role => [role, (rawPermissions[role] as unknown[]).filter((permission): permission is StaffPermission => typeof permission === "string" && (STAFF_PERMISSION_KEYS as readonly string[]).includes(permission))])) as Partial<Record<StaffPermissionRole, StaffPermission[]>>;
   return {
+    hasBranches: operations.hasBranches === true,
     rolePermissions,
     unitPolicies: Object.fromEntries(Object.entries(record(operations.unitPolicies))
       .filter(([id])=>id.length <= 100)
