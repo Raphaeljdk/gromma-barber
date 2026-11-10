@@ -36,6 +36,7 @@ import { brl, PLAN_CONFIG, PLAN_FEATURES } from "@/lib/plans";
 import { BackButton } from "@/components/back-button";
 import { DemoCommissionPay } from "@/components/demo-commission-pay";
 import { ErpSidebar } from "@/components/erp-sidebar";
+import { ArchiveProfessionalButton } from "@/components/archive-professional-button";
 import { CustomerPhotos } from "@/components/customer-photos";
 import { CustomerDeactivateButton } from "@/components/customer-deactivate-button";
 import { ErpCommandPalette } from "@/components/erp-command-palette";
@@ -2166,6 +2167,10 @@ export async function TenantERPView({
             </form>
           </details>}
           {actionError==="cadastro"&&<p role="alert" className="notice error-notice">Não foi possível cadastrar o profissional. Confira se o e-mail já está em uso nesta empresa.</p>}
+          {actionOk==="excluido"&&<p role="status" className="notice success">Profissional excluído da equipe ativa, acesso revogado e histórico preservado.</p>}
+          {actionError==="excluir-agenda"&&<p role="alert" className="notice error-notice">Não é possível excluir: existem atendimentos futuros ativos. Reatribua ou cancele os agendamentos antes.</p>}
+          {actionError==="excluir-protegido"&&<p role="alert" className="notice error-notice">A conta do proprietário ou a própria conta não pode ser excluída.</p>}
+          {(actionError==="excluir-falhou"||actionError==="excluir-invalido")&&<p role="alert" className="notice error-notice">Não foi possível excluir o profissional. Atualize a lista e tente novamente.</p>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/equipe`}
             searchParams={qs}
@@ -2187,6 +2192,7 @@ export async function TenantERPView({
                 <td><span className={"badge "+(user.active?"approved":"")}>{user.active?"Ativo":"Inativo"}</span></td>
                 <td><div className="erp-directory-actions">
                   {isOwner&&<Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe/${encodeURIComponent(user.id)}`}>Abrir ficha</Link>}
+                   {isOwner&&user.role!=="OWNER"&&<ArchiveProfessionalButton tenantCode={tenantCode} userId={user.id} name={user.name}/>}
                   {!isOwner&&<span className="small muted">Somente consulta</span>}
                 </div></td>
               </tr>)}
