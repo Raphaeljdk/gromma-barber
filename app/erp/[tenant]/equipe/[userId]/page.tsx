@@ -195,10 +195,9 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         {!profile.contracts?.length&&<p className="small muted">Nenhum contrato vinculado.</p>}
         <div className="professional-subsection"><h4>Enviar contrato PDF privado</h4>
         <form action={uploadProfessionalContract} className="erp-compact-form"
-          style={{marginTop:10,padding:12,border:"1px solid var(--border,#333)",borderRadius:10}}>
+          style={{marginTop:8}}>
           {hidden(code,user.id)}
-          <strong>Enviar contrato PDF privado</strong>
-          <div className="professional-contract-grid">
+          <div className="professional-contract-grid professional-contract-upload-grid">
             <label>Nome do contrato<input className="input" name="label" required minLength={3} maxLength={140}/></label>
             <label>Arquivo PDF (até 3 MB)<input className="input" type="file" name="contractPdf"
               accept="application/pdf,.pdf" required/></label>
@@ -212,7 +211,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <div className="professional-subsection"><h4>Vincular contrato por endereço (link)</h4>
         <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:10}}>
           {hidden(code,user.id,"contract-add")}
-          <div className="professional-contract-grid">
+          <div className="professional-contract-grid professional-contract-link-grid">
             <label>Nome do contrato<input className="input" name="label" required maxLength={140} placeholder="Contrato de prestação de serviços"/></label>
             <label>Endereço do contrato/PDF<input className="input" name="url" type="url" required placeholder="https://..."/></label>
             <label>Início da vigência<input className="input" name="validFrom" type="date"/></label>
@@ -281,8 +280,8 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           </form>
           <div className="professional-saved-items">
             <p className="small muted">Intervalos cadastrados ({profile.breaks?.length??0})</p>
-            {(profile.breaks??[]).slice().sort((a,b)=>a.day-b.day||a.start.localeCompare(b.start)).map(entry=><div className="professional-compact-entry" key={entry.id}>
-              <span><strong>{WEEK_DAYS.find(d=>d.id===entry.day)?.label}</strong> · {entry.start} às {entry.end}</span>
+            {(profile.breaks??[]).slice().sort((a,b)=>a.day-b.day||a.start.localeCompare(b.start)).map(entry=><div className="professional-compact-entry professional-break-entry" key={entry.id}>
+              <span><strong>{WEEK_DAYS.find(d=>d.id===entry.day)?.label}</strong> <b className="professional-break-hours">{entry.start} — {entry.end}</b></span>
               <form action={saveProfessionalSection}>{hidden(code,user.id,"break-remove")}
                 <input name="id" type="hidden" value={entry.id}/><button className="btn secondary" type="submit" aria-label={`Remover intervalo de ${WEEK_DAYS.find(d=>d.id===entry.day)?.label}, ${entry.start} às ${entry.end}`}>Remover</button>
               </form>
@@ -297,14 +296,14 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             <div className="professional-leave-fields">
               <label>De<input className="input" name="from" type="date" required/></label>
               <label>Até<input className="input" name="to" type="date" required/></label>
-              <label className="professional-leave-reason">Motivo<input className="input" name="label" placeholder="Férias, folga, afastamento" required/></label>
+              <label className="professional-leave-reason">Motivo das férias / ausência<input className="input" name="label" placeholder="Ex.: férias, folga, afastamento" required/></label>
               <button className="btn secondary" type="submit">Adicionar ausência</button>
             </div>
           </form>
           <div className="professional-saved-items">
             <p className="small muted">Ausências cadastradas ({profile.leaves?.length??0})</p>
-            {(profile.leaves??[]).map(entry=><div key={entry.id} className="professional-compact-entry">
-              <span><strong>{entry.reason}</strong> · {entry.from.split("-").reverse().join("/")} até {entry.to.split("-").reverse().join("/")}</span>
+            {(profile.leaves??[]).map(entry=><div key={entry.id} className="professional-compact-entry professional-leave-entry">
+              <span><strong className="professional-leave-reason-highlight">{entry.reason}</strong> <span className="professional-leave-date">{entry.from.split("-").reverse().join("/")} até {entry.to.split("-").reverse().join("/")}</span></span>
               <form action={saveProfessionalSection}>{hidden(code,user.id,"leave-remove")}
                 <input name="id" type="hidden" value={entry.id}/><button className="btn secondary" type="submit" aria-label={`Remover ausência ${entry.reason}`}>Remover</button>
               </form>
