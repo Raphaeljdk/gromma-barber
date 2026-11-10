@@ -6,6 +6,7 @@ import { readWorkspace } from "@/lib/erp-workspace";
 import { PROFESSIONAL_PERMISSION_OPTIONS, WEEK_DAYS, profileFor, subscriptionSalesEnabled } from "@/lib/professional-profile";
 import { saveProfessionalIdentity, saveProfessionalSection, uploadProfessionalPhoto, uploadProfessionalContract } from "../../professional-actions";
 import { ProfessionalProductCommissionEditor } from "@/components/professional-product-commission-editor";
+import { ProfessionalSubscriptionCommissionEditor } from "@/components/professional-subscription-commission-editor";
 import { ProfessionalServiceBatchEditor } from "@/components/professional-service-batch-editor";
 import { ProfessionalWorkWeekEditor } from "@/components/professional-work-week-editor";
 
@@ -325,47 +326,13 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
     </section>
     <section id="assinaturas-profissional" className="card">
       <h3 className="professional-section-title"><strong>8. Bonificação pela venda de assinaturas</strong> <span className="muted"> · percentuais e metas comerciais</span></h3>
-      <p className="small muted" style={{marginTop:14}}>O pote de assinaturas é distribuído automaticamente por produtividade. Uma bonificação adicional pela venda de um plano novo é opcional e só aparece na apuração se estiver habilitada abaixo.</p>
-      <form action={saveProfessionalSection} className="erp-compact-form gromma-professional-bonus-form">
-        {hidden(code,user.id,"base-commissions")}
-        <label className="gromma-bonus-toggle">
-          <input type="checkbox" name="salesSubscriptionCommissionEnabled"
-            defaultChecked={subscriptionSalesEnabled(profile,
-              workspace.professionalExtraRates[user.id]?.subscriptionPercent??0,
-              workspace.subscriptionCommissionTiers[user.id]??[])}/>
-          <strong>Habilitar bônus por venda de assinatura para este profissional</strong>
-        </label>
-        <div className="gromma-bonus-percent">
-          <label>Comissão por venda de assinatura (%)<input className="input" type="number" step=".01" min={0} max={100}
-            name="subscriptionPercent" required defaultValue={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}/></label>
-
-        </div>
-        
-        <button className="btn" type="submit">Salvar percentuais de vendas</button>
-      </form>
-      <div className="professional-subsection"><h4>Metas por venda de planos novos (opcional)</h4>
-        <section className="erp-quick-create gromma-commission-tiers" style={{marginTop:10}}>
-        <p className="small muted">Exemplo: vendas confirmadas de R$ 500 até R$ 1.000, comissão de 5%. Quando existirem faixas, elas substituem o percentual fixo de venda de assinatura dentro das condições definidas.</p>
-        <form action={saveProfessionalSection} className="erp-compact-form gromma-tier-form">
-          {hidden(code,user.id,"subscription-tiers")}
-          {[0,1,2,3,4].map(index=>{
-            const tier=(workspace.subscriptionCommissionTiers[user.id]??[])[index];
-            return <div key={index} className="gromma-tier-row">
-              <label>De (R$)<input className="input" type="number" name="tierMin" step=".01" min={0} defaultValue={tier?.min??""}/></label>
-              <label>Até (R$)<input className="input" type="number" name="tierMax" step=".01" min={0} defaultValue={tier?.max??""}/></label>
-              <label>Comissão (%)<input className="input" type="number" name="tierPercent" step=".01" min={0} max={100} defaultValue={tier?.percent??""}/></label>
-            </div>;
-          })}
-          
-          <button className="btn secondary" type="submit">Salvar faixas comerciais</button>
-        </form>
-        </section>
-      </div>
+      <ProfessionalSubscriptionCommissionEditor tenantCode={code} userId={user.id}
+        enabled={subscriptionSalesEnabled(profile,
+          workspace.professionalExtraRates[user.id]?.subscriptionPercent??0,
+          workspace.subscriptionCommissionTiers[user.id]??[])}
+        subscriptionPercent={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}
+        tiers={workspace.subscriptionCommissionTiers[user.id]??[]}/>
     </section>
-    <div className="professional-subsection professional-pot-note"><h4>Como funciona o pote de assinaturas?</h4>
-      <p className="small muted">A participação de cada profissional continua sendo calculada automaticamente pelos atendimentos de assinantes elegíveis. Nenhum percentual fixo de participação é editado neste cadastro.</p>
-      <Link href={"/erp/"+encodeURIComponent(code)+"/comissoes"}>Conferir apuração de comissões</Link>
-    </div>
     <div className="professional-general-save-footer"><span>Dados gerais do profissional</span><button form="professional-general-form" className="btn" type="submit">Salvar dados gerais</button></div>
   </main>;
 }
