@@ -25,7 +25,7 @@ test("cadastro e endereço ficam sempre visíveis sem perder dados ou upload",()
   assert.match(source,/uploadProfessionalPhoto/);
   assert.match(source,/uploadProfessionalContract/);
   assert.match(source,/name="contractPdf"/);
-  assert.match(source,/name="subscriptionPercent"/);
+  assert.match(read("components/professional-subscription-commission-editor.tsx"),/name="subscriptionPercent"/);
   assert.match(source,/ProfessionalServiceBatchEditor/);
 });
 
