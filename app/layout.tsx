@@ -6,6 +6,7 @@ import "./management-audit.css";
 import "./agenda-people-filters.css";
 import "./gromma-reference-theme.css";
 import "./gromma-navigation-polish.css";
+import "./gromma-unified-shell.css";
 
 export const metadata = {
   title: "GROMMA BARBER",
@@ -16,13 +17,12 @@ const themeScript = `
 (() => {
   try {
     const saved = localStorage.getItem("gromma-theme");
-    const isErp = window.location.pathname.startsWith("/erp/");
-    const theme = saved === "light" || saved === "dark"
-      ? saved
-      : (isErp ? "light" : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+    // New interface is light by default across the public site, login and ERP.
+    // Keep the user's explicit theme choice when one exists.
+    const theme = saved === "light" || saved === "dark" ? saved : "light";
     document.documentElement.dataset.theme = theme;
   } catch {
-    document.documentElement.dataset.theme = "dark";
+    document.documentElement.dataset.theme = "light";
   }
 })();
 `;

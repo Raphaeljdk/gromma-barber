@@ -39,6 +39,14 @@ async function run() {
         const home = await page.goto(base + "/", { waitUntil: "domcontentloaded", timeout: 30000 });
         assert.equal(home.status(), 200, "Landing deve responder HTTP 200");
         assert.ok(await page.getByRole("heading", { level: 1 }).count(), "Título principal da home ausente");
+        const homeTheme = await page.evaluate(() => ({
+          theme: document.documentElement.dataset.theme,
+          surface: getComputedStyle(document.querySelector(".home-presentation-card")).backgroundColor,
+          heading: getComputedStyle(document.querySelector(".enterprise-hero h1")).color,
+        }));
+        assert.equal(homeTheme.theme, "light", "Novo visitante deve ver tema claro");
+        assert.equal(homeTheme.surface, "rgb(255, 255, 255)", "Vitrine deve usar painel branco empresarial");
+        assert.equal(homeTheme.heading, "rgb(25, 37, 54)", "Título público deve usar a cor da identidade ERP");
         await ensureNoHorizontalOverflow(page, "Home", device.name);
         await page.screenshot({ path: path.join(snapshots, device.name + "-home.png"),
           fullPage: true });
@@ -56,6 +64,12 @@ async function run() {
           await input.fill("qa@example.invalid");
           assert.equal(await input.inputValue(), "qa@example.invalid");
         }
+        const loginColors = await page.evaluate(() => ({
+          panel: getComputedStyle(document.querySelector(".login-form-card")).backgroundColor,
+          input: getComputedStyle(document.querySelector(".embedded-login-form .input")).backgroundColor,
+        }));
+        assert.equal(loginColors.panel, "rgb(255, 255, 255)", "Login deve usar os mesmos painéis do ERP");
+        assert.equal(loginColors.input, "rgb(255, 255, 255)", "Formulário deve manter campos legíveis");
         await ensureNoHorizontalOverflow(page, "Login", device.name);
         await page.screenshot({ path: path.join(snapshots, device.name + "-login.png"),
           fullPage: true });
