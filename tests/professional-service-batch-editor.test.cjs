@@ -29,7 +29,9 @@ test("ficha profissional utiliza edição em lote e preserva gravação auditáv
 test("busca abre lista e permite adicionar e remover serviços individualmente",()=>{
   assert.match(editor,/onFocus=\{\(\) => setShowSuggestions\(true\)\}/);
   assert.match(editor,/id="professional-service-options"/);
-  assert.match(editor,/available\.map\(service/);
+  assert.match(editor,/matching\.map\(service/);
+  assert.match(editor,/aria-selected=\{!!enabled\[service\.id\]\}/);
+  assert.match(editor,/Adicionado/);
   assert.match(editor,/addService\(service\.id\)/);
   assert.match(editor,/removeService\(service\.id\)/);
   assert.doesNotMatch(editor,/Selecionar \{search/);
