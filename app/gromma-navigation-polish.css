@@ -1,0 +1,274 @@
+/* GROMMA 10/11/2026 — Header / Caixa + sidebar refinados.
+   Escopo estritamente visual. Mantém acessos, permissões e comportamento do caixa. */
+
+/* O caixa é uma ação real do header, nunca um botão flutuante. */
+html .tenant-erp .erp-topbar {
+  padding-right:clamp(16px,2vw,32px);
+  align-items:center;
+  column-gap:12px;
+}
+html .tenant-erp .erp-top-actions {
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:nowrap;
+  gap:7px;
+  min-width:0;
+}
+html .tenant-erp .erp-top-center {
+  min-width:0;
+  flex:0 1 260px;
+}
+html .tenant-erp .erp-header-cash {
+  position:static;
+  inset:auto;
+  z-index:auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  flex:0 0 auto;
+  width:auto;
+  min-height:36px;
+  padding:7px 12px;
+  border:1px solid var(--gx-button,#172733);
+  border-radius:8px;
+  background:var(--gx-button,#172733);
+  color:var(--gx-on-button,#fff);
+  font-size:.76rem;
+  font-weight:750;
+  letter-spacing:0;
+  line-height:1.2;
+  box-shadow:none;
+  transform:none;
+  white-space:nowrap;
+  transition:background-color .15s ease;
+}
+html .tenant-erp .erp-header-cash:hover {
+  background:color-mix(in srgb,var(--gx-button,#172733) 88%,var(--gx-paper,#fff));
+  color:var(--gx-on-button,#fff);
+  transform:none;
+  filter:none;
+}
+html .tenant-erp .erp-header-cash svg {width:16px;height:16px;flex:none;}
+
+/* Navegação mais limpa, sem blocos altos nem quebra excessiva de nomes. */
+html .tenant-erp {grid-template-columns:236px minmax(0,1fr);}
+html .tenant-erp:has(.erp-sidebar.is-collapsed) {grid-template-columns:72px minmax(0,1fr);}
+html .tenant-erp .erp-sidebar {
+  padding:0 10px 14px;
+  gap:3px;
+  overscroll-behavior:contain;
+}
+html .tenant-erp .erp-sidebar-head {
+  margin:0 -10px 7px;
+  padding:9px 11px 9px 14px;
+  min-height:61px;
+}
+html .tenant-erp .gromma-sidebar-business {
+  padding:6px 3px 7px;
+  margin:0 3px 2px;
+  gap:8px;
+}
+html .tenant-erp .gromma-sidebar-business-copy {gap:2px;}
+html .tenant-erp .gromma-sidebar-business-copy strong {font-size:.77rem;}
+html .tenant-erp .gromma-sidebar-business-copy small {font-size:.67rem;}
+html .tenant-erp .gromma-sidebar-quicklinks {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:5px;
+  padding:4px 2px 8px;
+  margin:0 0 5px;
+  border-bottom:1px solid var(--gx-stroke);
+}
+html .tenant-erp .gromma-sidebar-quicklinks :is(a,button) {
+  width:100%;
+  min-width:0;
+  min-height:34px;
+  padding:5px 4px;
+  display:inline-flex;
+  flex:initial;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  border-radius:7px;
+  font-size:.67rem;
+  font-weight:600;
+  white-space:nowrap;
+}
+html .tenant-erp .gromma-sidebar-quicklinks svg {height:14px;width:14px;}
+html .tenant-erp .erp-nav {
+  gap:3px;
+  padding:0 1px 8px;
+}
+html .tenant-erp .erp-nav-sector {
+  padding:0 0 3px;
+  margin:0;
+  border-bottom:1px solid var(--gx-stroke);
+}
+html .tenant-erp .erp-nav-sector-heading {
+  display:grid;
+  grid-template-columns:18px minmax(0,1fr) 15px;
+  gap:8px;
+  min-height:36px;
+  padding:7px 8px;
+  border:1px solid transparent;
+  border-radius:7px;
+}
+html .tenant-erp .erp-nav-sector-heading svg {width:16px;height:16px;}
+html .tenant-erp .erp-nav-sector-copy strong {
+  font-size:.77rem;
+  font-weight:740;
+  line-height:1.25;
+  letter-spacing:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+html .tenant-erp .erp-nav-sector-copy small {display:none;}
+html .tenant-erp .erp-nav-sector.has-active-module > .erp-nav-sector-heading {
+  border-color:transparent;
+  background:var(--gx-selection);
+  color:var(--gx-ink);
+  box-shadow:none;
+}
+html .tenant-erp .erp-nav-sector-items {
+  display:grid;
+  gap:0;
+  margin:2px 0 4px 5px;
+  padding:0 0 0 6px;
+  border-left:1px solid var(--gx-stroke);
+}
+html .tenant-erp .erp-nav-sector-items .erp-nav-tree-row {
+  gap:2px;
+  min-height:31px;
+}
+html .tenant-erp .erp-sidebar .erp-nav-tree-row > .erp-nav-item {
+  min-height:31px;
+  padding:5px 7px;
+  border-radius:6px;
+  column-gap:6px;
+  font-size:.73rem;
+  font-weight:510;
+}
+html .tenant-erp .erp-nav-tree-row .erp-sidebar-label {
+  line-height:1.26;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+html .tenant-erp .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item {
+  grid-template-columns:minmax(0,1fr) auto;
+  column-gap:5px;
+  padding:5px 7px 5px 10px;
+  min-height:29px;
+  font-size:.71rem;
+  font-weight:510;
+}
+html .tenant-erp .erp-nav-tree-item.is-nested .erp-nav-depth-mark {display:none;}
+html .tenant-erp .erp-nav-item.active {
+  color:var(--gx-ink);
+  background:var(--gx-selection);
+  box-shadow:none;
+  border-color:transparent;
+  font-weight:750;
+}
+html .tenant-erp .erp-nav-tree-children {
+  gap:0;
+  margin:1px 0 3px 10px;
+  padding-left:7px;
+  border-left:1px solid var(--gx-stroke);
+}
+html .tenant-erp .erp-nav-tree-children .erp-nav-tree-children {
+  margin:1px 0 2px 5px;
+  padding-left:6px;
+}
+html .tenant-erp .erp-nav-tree-toggle {
+  width:26px;
+  min-width:26px;
+  height:31px;
+  border-radius:6px;
+}
+html .tenant-erp .erp-sidebar-bottom {
+  gap:6px;
+  margin-top:auto;
+  padding-top:7px;
+}
+html .tenant-erp .erp-plan-summary,
+html .tenant-erp .erp-user-card {padding:8px;border-radius:7px;}
+html .tenant-erp .erp-sidebar.is-collapsed .gromma-sidebar-business {
+  justify-content:center;
+  margin-inline:0;
+  padding-inline:0;
+}
+html .tenant-erp .erp-sidebar.is-collapsed .gromma-sidebar-business-copy,
+html .tenant-erp .erp-sidebar.is-collapsed .gromma-sidebar-quicklinks {display:none;}
+@media(min-width:851px) {
+  html .tenant-erp:has(.professional-registration-page) {
+    grid-template-columns:236px minmax(0,1fr);
+  }
+  html .tenant-erp:has(.professional-registration-page):has(.erp-sidebar.is-collapsed) {
+    grid-template-columns:72px minmax(0,1fr);
+  }
+}
+@media(min-width:851px) and (max-width:1150px) {
+  html .tenant-erp {grid-template-columns:224px minmax(0,1fr);}
+  html .tenant-erp:has(.professional-registration-page) {
+    grid-template-columns:224px minmax(0,1fr);
+  }
+  html .tenant-erp .erp-topbar {flex-wrap:wrap;row-gap:8px;}
+  html .tenant-erp .erp-top-center {flex:1 1 175px;}
+  html .tenant-erp .erp-top-actions {flex-wrap:wrap;}
+}
+/* No celular, mantém Menu em uma área reservada, e o Caixa no fluxo do header. */
+@media(max-width:850px) {
+  html .tenant-erp {display:block;grid-template-columns:minmax(0,1fr);}
+  html .tenant-erp .erp-sidebar {width:min(300px,88vw);padding:0 10px 16px;}
+  html .tenant-erp .erp-sidebar-head {margin:0 -10px 7px;}
+  html .tenant-erp .erp-sidebar .erp-collapse {display:none;}
+  html .tenant-erp .erp-sidebar .erp-mobile-close {display:grid;}
+  html .tenant-erp .erp-sidebar .erp-nav-tree-row > .erp-nav-item {min-height:40px;}
+  html .tenant-erp .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item {min-height:39px;}
+  html .tenant-erp .erp-nav-tree-toggle {min-width:40px;height:40px;}
+  html .tenant-erp .gromma-sidebar-quicklinks :is(a,button) {min-height:42px;}
+  html .tenant-erp .erp-main {padding:0 12px 34px;}
+  html .tenant-erp .erp-topbar {
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    width:auto;
+    min-height:0;
+    margin:0 -12px 10px;
+    padding:calc(65px + env(safe-area-inset-top,0px)) 12px 10px;
+    gap:9px;
+    box-sizing:border-box;
+    position:relative;
+  }
+  html .tenant-erp .erp-topbar .erp-top-actions {
+    order:1;
+    display:flex;
+    justify-content:flex-start;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:7px;
+    width:100%;
+  }
+  html .tenant-erp .erp-topbar .erp-top-center {
+    order:2;
+    flex:none;
+    width:100%;
+    min-width:0;
+  }
+  html .tenant-erp .erp-header-cash {min-height:38px;margin-left:auto;padding:8px 11px;}
+  html .tenant-erp .erp-mobile-trigger {
+    position:fixed;
+    top:calc(12px + env(safe-area-inset-top,0px));
+    right:12px;
+    z-index:56;
+    min-height:44px;
+  }
+}
+@media(max-width:390px) {
+  html .tenant-erp .erp-topbar .erp-top-actions {gap:6px;}
+  html .tenant-erp .erp-header-cash {padding:8px 10px;}
+}
