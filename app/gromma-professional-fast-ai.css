@@ -585,3 +585,12 @@ html[data-theme] .tenant-erp .professional-registration-page .professional-servi
     grid-column:1 / -1;
   }
 }
+
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-options button:disabled {
+  cursor:default;opacity:1;
+  background:var(--gx-paper-soft,#f6f8fc);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-options button:disabled small,
+html[data-theme] .tenant-erp .professional-registration-page .professional-service-options button:disabled svg {
+  color:var(--gx-purple,#6254d5);
+}
