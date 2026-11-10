@@ -5,6 +5,7 @@ import "./customer-directory.css";
 import "./management-audit.css";
 import "./agenda-people-filters.css";
 import "./gromma-reference-theme.css";
+import "./gromma-navigation-polish.css";
 
 export const metadata = {
   title: "GROMMA BARBER",

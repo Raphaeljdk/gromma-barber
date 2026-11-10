@@ -1097,6 +1097,10 @@ export async function TenantERPView({
             <a href={supportHref} className="nav-quiet-link">Suporte</a>
             <ThemeToggle />
             {isOwner && <InventoryNotificationBell tenantCode={tenantCode} notices={inventoryNotices} />}
+            <Link className="erp-header-cash" href={`/erp/${encodeURIComponent(tenantCode)}/caixa`} aria-label="Abrir caixa">
+              <WalletCards size={17} aria-hidden="true" />
+              <span>Caixa</span>
+            </Link>
           </div>
         </div>
 
@@ -2723,10 +2727,7 @@ export async function TenantERPView({
           </div>
         </section>
 
-                <Link className="erp-floating-cash" href={`/erp/${encodeURIComponent(tenantCode)}/caixa`} aria-label="Abrir caixa">
-          <WalletCards size={19} />
-          <span>Caixa</span>
-        </Link>
+
       </section>
     </main>
   );

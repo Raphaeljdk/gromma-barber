@@ -169,3 +169,25 @@ export const ERP_NAVIGATION_EXTRA: readonly ErpNavigationNode[] = [
   { id: "extra-treinamentos", label: "Tutoriais / Cursos", route: "treinamentos" },
   { id: "extra-configuracoes", label: "Configurações", route: "configuracoes" },
 ];
+
+/**
+ * Escolhe apenas um item visualmente ativo para uma rota. Algumas entradas
+ * comerciais (ex.: Planos e Novos contratos) apontam para a mesma página.
+ * Isso não muda seus links ou permissões: evita apenas vários destaques.
+ */
+function firstNavigationRouteId(nodes: readonly ErpNavigationNode[], route: string): string | undefined {
+  for (const node of nodes) {
+    if (node.route === route) return node.id;
+    const nested = node.children ? firstNavigationRouteId(node.children, route) : undefined;
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
+export function primaryNavigationItemId(route: string): string | undefined {
+  for (const group of ERP_NAVIGATION) {
+    const result = firstNavigationRouteId(group.items, route);
+    if (result) return result;
+  }
+  return firstNavigationRouteId(ERP_NAVIGATION_EXTRA, route);
+}
