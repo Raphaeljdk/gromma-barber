@@ -5,9 +5,7 @@ import type { BrandingSettings } from "@/lib/erp-workspace";
 import { saveBusinessIdentity,saveBusinessIntroduction,updateBusinessCarousel } from "@/app/erp/[tenant]/business-data-actions";
 
 type Business={
-  tradeName:string;legalName:string|null;ownerName:string;
-  document:string;email:string;phone:string;whatsapp:string|null;
-  address:string|null;city:string;state:string;
+  tradeName:string;legalName:string|null;
 };
 
 export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,error,hasBranches,registeredBranches}:{
