@@ -1,4 +1,5 @@
 import { CommissionSelectionTable } from "@/components/commission-selection-table";
+import {FeaturedProfessionalSwitch} from "@/components/featured-professional-switch";
 import { saveBarbershopUnit } from "./unit-actions";
 import { UnitOperationsForm } from "@/components/unit-operations-form";
 import { BusinessDataSection } from "@/components/business-data-section";
@@ -2144,7 +2145,7 @@ export async function TenantERPView({
         </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
-          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><div className="gromma-directory-heading-actions"><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/unidades`}>Filiais · {shop.units.length}</Link><StatusPill tone="ready">Operacional</StatusPill></div></div>
           {isOwner && <details className="erp-quick-create erp-directory-create">
             <summary><Plus size={15}/> Novo profissional <small>Cadastro e edição na mesma área</small></summary>
             <form action={createProfessional} className="erp-quick-form">
@@ -2217,12 +2218,9 @@ export async function TenantERPView({
                 <td><strong>{user.name}</strong><span className="erp-directory-secondary">{user.email}</span></td>
                 <td>{ROLE_LABELS[user.role]??user.role}</td>
                 <td><span className={"badge "+(featured?"approved":"")}>{featured?"Em destaque":"Padrão"}</span></td>
-                <td>{isOwner&&<form action={toggleFeaturedProfessional}>
-                  <input type="hidden" name="tenantCode" value={tenantCode}/>
-                  <input type="hidden" name="userId" value={user.id}/>
-                  <input type="hidden" name="featured" value={featured?"no":"yes"}/>
-                  <button type="submit" className="btn secondary" disabled={!featured&&workspace.featuredProfessionalIds.length>=12}>{featured?"Remover destaque":"Colocar em destaque"}</button>
-                </form>}</td>
+                <td>{isOwner&&<FeaturedProfessionalSwitch tenantCode={tenantCode}
+                  userId={user.id} name={user.name} featured={featured}
+                  disabled={!featured&&workspace.featuredProfessionalIds.length>=12}/>}</td>
               </tr>;
             })}
             {!shop.users.some(user=>["OWNER","MANAGER","BARBER"].includes(user.role))&&<tr><td colSpan={4}>Nenhum profissional elegível cadastrado.</td></tr>}</tbody>
