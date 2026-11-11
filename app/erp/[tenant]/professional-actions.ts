@@ -22,7 +22,7 @@ const cleanEmail=(raw:string)=>raw.trim().toLowerCase();
 const emailValid=(raw:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw) && raw.length<=180;
 const moneyPercent=(raw:number)=>Number.isFinite(raw)&&raw>=0&&raw<=100;
 
-type Ctx={code:string;shopId:string;actor:string;userId:string;path:string};
+type Ctx={code:string;shopId:string;actor:string;userId:string;path:string;batch:boolean};
 async function context(form:FormData,withUser=true):Promise<Ctx>{
   const code=text(form,"tenantCode",80).toUpperCase();
   if(!code)redirect("/cliente/login");
@@ -39,9 +39,10 @@ async function context(form:FormData,withUser=true):Promise<Ctx>{
     const exists=await prisma.shopUser.findFirst({where:{id:userId,barberShopId:shop.id},select:{id:true}});
     if(!exists)redirect("/erp/"+encodeURIComponent(code)+"/equipe?erro=profissional");
   }
-  return {code,shopId:shop.id,actor:viewer.email,userId,path};
+  return {code,shopId:shop.id,actor:viewer.email,userId,path,batch:form.get("__batchSave")==="1"};
 }
 function fail(ctx:Ctx,msg:string):never{
+  if(ctx.batch)throw new Error("Falha de validação: "+msg);
   redirect(ctx.path+"?erro="+encodeURIComponent(msg));
 }
 /** Manter a pessoa na seção que foi editada depois do redirect do Server Action. */
@@ -60,7 +61,8 @@ function professionalSectionAnchor(section:string):string{
   };
   return anchors[section]??"";
 }
-function success(ctx:Ctx,msg:string):never{
+function success(ctx:Ctx,msg:string):void{
+  if(ctx.batch)return;
   revalidatePath("/erp/"+encodeURIComponent(ctx.code),"layout");
   const anchor=professionalSectionAnchor(msg);
   redirect(ctx.path+"?ok="+encodeURIComponent(msg)+(anchor?"#"+anchor:""));
@@ -487,6 +489,101 @@ export async function saveProfessionalSection(form:FormData){
     });
   }else fail(ctx,"secao");
   success(ctx,section);
+}
+
+
+/**
+ * Salvar geral: compõe os mesmos validadores existentes e os executa
+ * sequencialmente, sem redirecionamentos intermediários.
+ * Não apaga dados por ausência de formulários opcionais.
+ * Cada seção mantém sua transação e sua trilha de auditoria.
+ */
+export async function saveProfessionalAll(payload:FormData):Promise<{ok:boolean;message:string}>{
+  const ctx=await context(payload);
+  const names=["identity","permissions","service-batch","schedule",
+    "product-category-rule","base-commissions","subscription-tiers",
+    "contract-add","photo","contract-pdf"] as const;
+  type Name=(typeof names)[number];
+  type Part={section:Name;entries:[string,string][]};
+  const allowed=new Set<string>(names);
+  const parts=new Map<string,Part[]>();
+  const raws=payload.getAll("part");
+  if(raws.length>names.length+3)return {ok:false,message:"Quantidade inválida de seções."};
+  try{
+    for(const raw of raws){
+      if(typeof raw!=="string"||raw.length>100000)throw Error("part");
+      const parsed:unknown=JSON.parse(raw);
+      if(!parsed||typeof parsed!=="object"||
+        !("section" in parsed)||!("entries" in parsed))throw Error("part");
+      const entry=parsed as Part;
+      if(typeof entry.section!=="string"||!allowed.has(entry.section)||
+        (parts.has(entry.section)&&entry.section!=="product-category-rule")||
+        !Array.isArray(entry.entries)||entry.entries.length>600)
+        throw Error("part");
+      if(entry.entries.some(pair=>!Array.isArray(pair)||pair.length!==2||
+        typeof pair[0]!=="string"||typeof pair[1]!=="string"||
+        pair[0].length>100||pair[1].length>2000))throw Error("fields");
+      const existing=parts.get(entry.section)??[];
+      if(existing.length>=3)throw Error("duplicates");
+      if(entry.section==="product-category-rule"){
+        const cat=entry.entries.find(([key])=>key==="category")?.[1];
+        if(!cat||existing.some(item=>item.entries.some(([key,value])=>key==="category"&&value===cat)))
+          throw Error("duplicate category");
+      }
+      parts.set(entry.section,[...existing,entry]);
+    }
+  }catch{
+    return {ok:false,message:"Os dados enviados não estão no formato esperado."};
+  }
+  for(const required of ["identity","permissions","service-batch","schedule",
+    "base-commissions","subscription-tiers"]){
+    if(!parts.has(required))return {ok:false,message:"A ficha está incompleta; atualize a página antes de salvar."};
+  }
+  if(parts.has("photo")&&!process.env.BLOB_READ_WRITE_TOKEN)
+    return {ok:false,message:"O armazenamento de fotos não está configurado. Nenhuma seção foi salva."};
+  if(parts.has("contract-pdf")&&
+     !(process.env.GROMMA_PRIVATE_BLOB_TOKEN||process.env.GROMMA_PRIVATE_BLOB_READ_WRITE_TOKEN))
+    return {ok:false,message:"O armazenamento privado de PDFs não está configurado. Nenhuma seção foi salva."};
+  let completed=0;
+  // Foto depois da identidade para não sobrescrever uma nova foto com a URL antiga.
+  const order:Name[]=["identity","permissions","service-batch","schedule",
+    "product-category-rule","base-commissions","subscription-tiers",
+    "contract-add","photo","contract-pdf"];
+  try{
+    for(const name of order){
+      for(const part of parts.get(name)??[]){
+      const form=new FormData();
+      for(const [key,value] of part.entries)form.append(key,value);
+      // Contexto, seção e modo de gravação são definidos pelo servidor.
+      form.set("tenantCode",ctx.code);
+      form.set("userId",ctx.userId);
+      form.set("__batchSave","1");
+      if(name==="identity")await saveProfessionalIdentity(form);
+      else if(name==="photo"){
+        const file=payload.get("photo");
+        if(!(file instanceof File)||!file.size)throw Error("Foto ausente");
+        form.set("photo",file);
+        await uploadProfessionalPhoto(form);
+      }else if(name==="contract-pdf"){
+        const file=payload.get("contractPdf");
+        if(!(file instanceof File)||!file.size)throw Error("PDF ausente");
+        form.set("contractPdf",file);
+        await uploadProfessionalContract(form);
+      }else{
+        form.set("section",name);
+        await saveProfessionalSection(form);
+      }
+      completed++;
+      }
+    }
+    revalidatePath("/erp/"+encodeURIComponent(ctx.code),"layout");
+    return {ok:true,message:"Cadastro geral salvo com sucesso."};
+  }catch(error){
+    console.error("Professional save-all failed",error);
+    return {ok:false,message:completed>0?
+      "Não foi possível concluir todas as seções. Algumas foram gravadas; confira os dados antes de tentar novamente.":
+      "Não foi possível salvar os dados. Confira os campos e tente novamente."};
+  }
 }
 
 /**

@@ -9,6 +9,8 @@ import { ProfessionalProductCommissionEditor } from "@/components/professional-p
 import { ProfessionalSubscriptionCommissionEditor } from "@/components/professional-subscription-commission-editor";
 import { ProfessionalServiceBatchEditor } from "@/components/professional-service-batch-editor";
 import { ProfessionalWorkWeekEditor } from "@/components/professional-work-week-editor";
+import { ProfessionalFileUpload } from "@/components/professional-file-upload";
+import { ProfessionalSaveAllButton } from "@/components/professional-save-all-button";
 
 export const dynamic="force-dynamic";
 type Props={params:Promise<{tenant:string;userId:string}>;searchParams:Promise<Record<string,string|undefined>>};
@@ -103,7 +105,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
 
     <section id="dados-profissional" className="card">
       <h3 className="professional-section-title"><strong>1. Dados do profissional e foto</strong> <span className="muted"> · identificação, contato, unidade e endereço</span></h3>
-      <form id="professional-general-form" action={saveProfessionalIdentity} className="erp-compact-form professional-general-form" style={{marginTop:10}}>
+      <form id="professional-general-form" data-professional-save="identity" action={saveProfessionalIdentity} className="erp-compact-form professional-general-form" style={{marginTop:10}}>
         {hidden(code,user.id)}
         <div className="professional-identity-grid professional-general-fields">
           <label className="professional-field-fullname"><span className={labelClass}>Nome completo</span><input className="input" name="name" required minLength={2} maxLength={120} defaultValue={user.name}/></label>
@@ -113,7 +115,6 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           <label className="professional-field-cpf"><span className={labelClass}>CPF</span><input className="input" name="cpf" inputMode="numeric" maxLength={14} defaultValue={profile.cpf??""} placeholder="Somente números"/></label>
           <label className="professional-field-email"><span className={labelClass}>E-mail</span><input className="input" name="email" type="email" required defaultValue={user.email}/></label>
           <label className="professional-field-phone"><span className={labelClass}>Telefone</span><input className="input" name="phone" type="tel" defaultValue={user.phone??""}/></label>
-          <label className="professional-field-whatsapp"><span className={labelClass}>WhatsApp</span><input className="input" name="whatsapp" type="tel" defaultValue={profile.whatsapp??""}/></label>
           <label className="professional-field-role"><span className={labelClass}>Categoria / função</span>
             {user.role==="OWNER"?<>
               <input type="hidden" name="role" value="OWNER"/>
@@ -126,6 +127,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             </select>}
           </label>
           <label className="professional-field-unit"><span className={labelClass}>Unidade principal</span><select name="unitId" className="select" defaultValue={user.unitId??""}><option value="">Sem unidade definida</option>{shop.units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
+          <label className="professional-field-whatsapp"><span className={labelClass}>WhatsApp</span><input className="input" name="whatsapp" type="tel" defaultValue={profile.whatsapp??""}/></label>
           <label className="professional-field-cadence"><span className={labelClass}>Periodicidade (dias)</span><input className="input" type="number" name="cadenceDays" min={0} max={365} defaultValue={profile.cadenceDays??30}/></label>
           <input type="hidden" name="photoUrl" value={profile.photoUrl??""}/>
         </div>
@@ -144,22 +146,21 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="accessToOtherUnits" defaultChecked={profile.accessToOtherUnits??false}/> Indicar acesso a dados de outras unidades (ainda sujeito às permissões gerais do ERP)</label>
         <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" name="active" defaultChecked={user.active}/> Cadastro ativo</label>
         
-        <p className="small muted">Salve estes dados no fim da ficha. Fotos, contratos, permissões e comissões têm ações específicas para preservar suas validações.</p>
+        <p className="small muted">Todas as informações da ficha são enviadas pelo botão Salvar geral ao final da página.</p>
       </form>
       <div className="professional-subsection professional-photo-upload">
         <h4>Atualizar foto do profissional</h4>
         <section className="erp-quick-create" style={{marginTop:10}}>
         <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
-        <form action={uploadProfessionalPhoto} className="erp-compact-form">
+        <form data-professional-save="photo" action={uploadProfessionalPhoto} className="erp-compact-form">
           {hidden(code,user.id)}
-          <label><span className="label">Foto JPEG, PNG ou WebP (máximo 3 MB)</span>
-            <input className="input" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required/></label>
+          <ProfessionalFileUpload name="photo" kind="photo" label="Foto JPEG, PNG ou WebP (máximo 3 MB)"
+            accept="image/jpeg,image/png,image/webp"/>
           <label style={{display:"flex",gap:8,alignItems:"center"}}>
             <input type="checkbox" name="photoConsent" required/>
             Confirmo que tenho autorização para armazenar e exibir a foto do profissional em endereço público de imagem.
           </label>
           <p className="small muted">O envio exige Vercel Blob configurado. Se estiver indisponível, a foto já cadastrada será preservada.</p>
-          <button className="btn secondary" type="submit">Enviar foto autorizada</button>
         </form>
         </section>
       </div>
@@ -195,29 +196,27 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         </div>)}
         {!profile.contracts?.length&&<p className="small muted">Nenhum contrato vinculado.</p>}
         <div className="professional-subsection"><h4>Enviar contrato PDF privado</h4>
-        <form action={uploadProfessionalContract} className="erp-compact-form"
+        <form data-professional-save="contract-pdf" action={uploadProfessionalContract} className="erp-compact-form"
           style={{marginTop:8}}>
           {hidden(code,user.id)}
           <div className="professional-contract-grid professional-contract-upload-grid">
             <label>Nome do contrato<input className="input" name="label" required minLength={3} maxLength={140}/></label>
-            <label>Arquivo PDF (até 3 MB)<input className="input" type="file" name="contractPdf"
-              accept="application/pdf,.pdf" required/></label>
+            <ProfessionalFileUpload name="contractPdf" kind="pdf" label="Arquivo PDF (até 3 MB)"
+              accept="application/pdf,.pdf"/>
             <label>Início da vigência<input className="input" name="validFrom" type="date"/></label>
-            <button className="btn secondary" type="submit">Enviar PDF protegido</button>
           </div>
           <p className="small muted">Armazenado em Blob privado, baixado somente com acesso de proprietário autorizado.
             Requer GROMMA_PRIVATE_BLOB_TOKEN configurado na Vercel.</p>
         </form>
         </div>
         <div className="professional-subsection"><h4>Vincular contrato por endereço (link)</h4>
-        <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:10}}>
+        <form data-professional-save="contract-add" action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:10}}>
           {hidden(code,user.id,"contract-add")}
           <div className="professional-contract-grid professional-contract-link-grid">
             <label>Nome do contrato<input className="input" name="label" required maxLength={140} placeholder="Contrato de prestação de serviços"/></label>
             <label>Endereço do contrato/PDF<input className="input" name="url" type="url" required placeholder="https://..."/></label>
             <label>Início da vigência<input className="input" name="validFrom" type="date"/></label>
             <label>Observações<input className="input" name="notes" maxLength={250}/></label>
-            <button className="btn secondary" type="submit">Vincular contrato</button>
           </div>
         </form>
         <p className="small muted">O arquivo continua no armazenamento de origem. O sistema salva apenas seu endereço.</p>
@@ -227,7 +226,7 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
 
     <section id="permissoes-profissional" className="card">
       <h3 className="professional-section-title"><strong>3. Permissões individuais</strong> <span className="muted"> · controle por profissional</span></h3>
-      <form action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
+      <form data-professional-save="permissions" action={saveProfessionalSection} className="erp-compact-form" style={{marginTop:18}}>
         {hidden(code,user.id,"permissions")}
         <p className="small muted">Sem uma regra individual salva, o profissional herda as permissões do seu papel. Alterações financeiras continuam exclusivas do administrador. As restrições de agendamentos, observações e lançamento de itens já são verificadas no servidor. O acesso do próprio barbeiro para criar bloqueios ou remover folgas pelo aplicativo ainda está em preparação; estas duas opções ficam cadastradas para essa próxima etapa.</p>
         <div className="professional-permissions-grid">
@@ -238,7 +237,6 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
           </label>)}
         </div>
         
-        <button className="btn" type="submit">Salvar permissões</button>
       </form>
     </section>
 
@@ -333,6 +331,6 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
         subscriptionPercent={workspace.professionalExtraRates[user.id]?.subscriptionPercent??0}
         tiers={workspace.subscriptionCommissionTiers[user.id]??[]}/>
     </section>
-    <div className="professional-general-save-footer"><span>Dados gerais do profissional</span><button form="professional-general-form" className="btn" type="submit">Salvar dados gerais</button></div>
+    <ProfessionalSaveAllButton tenantCode={code} userId={user.id}/>
   </main>;
 }

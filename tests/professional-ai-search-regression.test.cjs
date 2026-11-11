@@ -10,12 +10,12 @@ test("professional identity follows the specified compact field rows",()=>{
  const general=file.slice(file.indexOf('className="professional-identity-grid professional-general-fields"'),file.indexOf('className="professional-address-section"'));
  const address=file.slice(file.indexOf('className="professional-identity-grid professional-address-grid"'),file.indexOf('name="accessToOtherUnits"'));
  const order=(text,names)=>names.map(x=>text.indexOf('name="'+x+'"'));
- const a=order(general,["name","nickname","birthDate","cnpj","cpf","email","phone","whatsapp","role","unitId","cadenceDays"]);
+ const a=order(general,["name","nickname","birthDate","cnpj","cpf","email","phone","role","unitId","whatsapp","cadenceDays"]);
  const b=order(address,["zipCode","street","district","city","state","streetNumber","complement"]);
  assert.ok(a.every((v,i)=>v>=0 && (i===0||v>a[i-1])), "fields by row and exact order");
  assert.ok(b.every((v,i)=>v>=0 && (i===0||v>b[i-1])), "address order");
  assert.match(file,/id="professional-general-form"/);
- assert.match(file,/form="professional-general-form"[^>]*type="submit">Salvar dados gerais/);
+ assert.match(file,/<ProfessionalSaveAllButton tenantCode=\{code\} userId=\{user\.id\}\/>/);
  assert.doesNotMatch(file,/Salvar dados do profissional/);
  assert.doesNotMatch(file,/<details/);
  const css=read("app/gromma-professional-fast-ai.css");
@@ -59,9 +59,50 @@ test("navigation prefetches page data only on intent, not a full reload",()=>{
 test("contract link keeps 3 fields plus action on one row, with notes accessible",()=>{
  const css=read("app/gromma-professional-fast-ai.css");
  const page=read("app/erp/[tenant]/equipe/[userId]/page.tsx");
- assert.ok(css.includes("grid-template-columns:minmax(130px,1.05fr) minmax(200px,1.55fr) minmax(135px,.9fr) max-content!important;"));
+ assert.ok(css.includes("grid-template-columns:minmax(140px,1fr) minmax(200px,1.5fr) minmax(120px,.7fr)!important;"));
  assert.ok(css.includes(".professional-contract-link-grid > label:nth-of-type(4)"));
- assert.ok(css.includes(".professional-contract-link-grid > button {"));
+ assert.doesNotMatch(page,/type="submit">Vincular contrato/);
  assert.match(page,/professional-contract-link-grid/);
  assert.match(page,/Observações<input/);
+});
+
+test("save-all collects existing forms, preserves each business validation and hides intermediate save buttons",()=>{
+ const page=read("app/erp/[tenant]/equipe/[userId]/page.tsx");
+ const service=read("components/professional-service-batch-editor.tsx");
+ const week=read("components/professional-work-week-editor.tsx");
+ const product=read("components/professional-product-commission-editor.tsx");
+ const subscription=read("components/professional-subscription-commission-editor.tsx");
+ const button=read("components/professional-save-all-button.tsx");
+ const action=read("app/erp/[tenant]/professional-actions.ts");
+ for(const section of ["identity","photo","contract-pdf","contract-add","permissions"])
+   assert.ok(page.includes('data-professional-save="'+section+'"'),section);
+ assert.ok(service.includes('data-professional-save="service-batch"'));
+ assert.ok(week.includes('data-professional-save="schedule"'));
+ assert.ok(product.includes('data-professional-save="product-category-rule"'));
+ for(const section of ["base-commissions","subscription-tiers"])
+   assert.ok(subscription.includes('data-professional-save="'+section+'"'));
+ assert.match(button,/saveProfessionalAll\(data\)/);
+ assert.match(action,/export async function saveProfessionalAll/);
+ assert.match(action,/await saveProfessionalIdentity\(form\)/);
+ assert.match(action,/await saveProfessionalSection\(form\)/);
+ for(const label of ["Salvar dados gerais","Salvar permissões","Salvar serviços e comissões",
+   "Salvar jornada semanal","Salvar comissão da categoria","Salvar bonificação","Salvar faixas comerciais"]){
+   assert.ok(!page.includes(label)&&!service.includes(label)&&!week.includes(label)&&
+     !product.includes(label)&&!subscription.includes(label),label);
+ }
+});
+test("photo and PDF use one custom file picker, commission entry formats currency",()=>{
+ const page=read("app/erp/[tenant]/equipe/[userId]/page.tsx");
+ const upload=read("components/professional-file-upload.tsx");
+ const money=read("components/professional-currency-input.tsx");
+ const product=read("components/professional-product-commission-editor.tsx");
+ const subscription=read("components/professional-subscription-commission-editor.tsx");
+ assert.match(page,/<ProfessionalFileUpload name="photo"/);
+ assert.match(page,/<ProfessionalFileUpload name="contractPdf"/);
+ assert.match(upload,/professional-file-dropzone/);
+ assert.match(upload,/input\.current\.files=transfer\.files/);
+ assert.match(money,/Intl\.NumberFormat\("pt-BR"/);
+ assert.match(product,/ProfessionalCurrencyInput name="tierMin"/);
+ assert.match(subscription,/ProfessionalCurrencyInput name="tierMin"/);
+ assert.match(subscription,/ProfessionalCurrencyInput name="tierMax"/);
 });

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { saveProfessionalSection } from "@/app/erp/[tenant]/professional-actions";
+import { ProfessionalCurrencyInput } from "@/components/professional-currency-input";
 import {
   PRODUCT_COMMISSION_CATEGORIES,
   resolveProductCommissionRate,
@@ -15,9 +16,16 @@ type Props={
   rules:Partial<Record<ProductCommissionCategory,ProductCommissionRule>>;
 };
 type ProductTier={min:string;percent:string};
+type CategoryDraft={
+  mode:"FIXED"|"SCALED";fixedPercent:string;tiers:ProductTier[];touched:boolean;
+};
 
 export function ProfessionalProductCommissionEditor({tenantCode,userId,rules}:Props){
   const [category,setCategory]=useState<ProductCommissionCategory>("COSMETICS");
+  const [drafts,setDrafts]=useState<Partial<Record<ProductCommissionCategory,CategoryDraft>>>({});
+  function storeDraft(id:ProductCommissionCategory,next:CategoryDraft){
+    setDrafts(current=>({...current,[id]:next}));
+  }
   return <section className="professional-product-editor" aria-label="Configurar comissão de cosméticos e bebidas">
     <div className="professional-product-rules-status">
       {PRODUCT_COMMISSION_CATEGORIES.map(item=><span key={item.id} className="small muted">
@@ -27,7 +35,26 @@ export function ProfessionalProductCommissionEditor({tenantCode,userId,rules}:Pr
       </span>)}
     </div>
     <CategoryRuleForm key={category} tenantCode={tenantCode} userId={userId}
-      category={category} onCategoryChange={setCategory} rule={rules[category]}/>
+      category={category} onCategoryChange={setCategory} rule={rules[category]}
+      draft={drafts[category]} onDraftChange={next=>storeDraft(category,next)}/>
+    {/* Preserve as categorias editadas enquanto o usuário alterna entre cosméticos e bebidas. */}
+    {PRODUCT_COMMISSION_CATEGORIES.filter(item=>item.id!==category&&drafts[item.id]?.touched)
+      .map(item=>{
+        const draft=drafts[item.id]!;
+        return <form key={item.id} data-professional-save="product-category-rule"
+          data-save-dirty="true" className="professional-product-pending-draft" hidden>
+          <input type="hidden" name="tenantCode" value={tenantCode}/>
+          <input type="hidden" name="userId" value={userId}/>
+          <input type="hidden" name="section" value="product-category-rule"/>
+          <input type="hidden" name="category" value={item.id}/>
+          <input type="hidden" name="mode" value={draft.mode}/>
+          <input type="hidden" name="fixedPercent" value={draft.fixedPercent}/>
+          {draft.mode==="SCALED"&&draft.tiers.map((tier,index)=><span key={index}>
+            <input type="hidden" name="tierMin" value={tier.min}/>
+            <input type="hidden" name="tierPercent" value={tier.percent}/>
+          </span>)}
+        </form>;
+      })}
     {rules[category]&&<div className="professional-product-saved-preview">
       <strong className="small">Prévia da regra salva · {PRODUCT_COMMISSION_CATEGORIES.find(c=>c.id===category)?.label}</strong>
       <div className="table-wrap"><table>
@@ -51,26 +78,44 @@ export function ProfessionalProductCommissionEditor({tenantCode,userId,rules}:Pr
   </section>;
 }
 
-function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule}:{
+function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule,draft,onDraftChange}:{
   tenantCode:string;userId:string;category:ProductCommissionCategory;
   onCategoryChange:(category:ProductCommissionCategory)=>void;
-  rule?:ProductCommissionRule;
+  rule?:ProductCommissionRule;draft?:CategoryDraft;
+  onDraftChange:(next:CategoryDraft)=>void;
 }){
-  const [mode,setMode]=useState<"FIXED"|"SCALED">(rule?.mode??"FIXED");
+  const [mode,setMode]=useState<"FIXED"|"SCALED">(draft?.mode??rule?.mode??"FIXED");
+  const [touched,setTouched]=useState(draft?.touched??false);
+  const [fixedPercent,setFixedPercent]=useState(draft?.fixedPercent??
+    String(rule?.mode==="FIXED"?rule.fixedPercent:0));
   const [tiers,setTiers]=useState<ProductTier[]>(()=>{
+    if(draft)return draft.tiers;
     const existing=rule?.mode==="SCALED"?rule.tiers:[];
     return existing.length?existing.map(tier=>({min:String(tier.min),percent:String(tier.percent)})):
       [{min:"0",percent:""}];
   });
-  function addTier(){setTiers(current=>current.length<10?[...current,{min:"",percent:""}]:current);}
+  function record(next:Partial<CategoryDraft>){
+    setTouched(true);
+    onDraftChange({mode,fixedPercent,tiers,touched:true,...next});
+  }
+  function addTier(){
+    if(tiers.length>=10)return;
+    const next=[...tiers,{min:"",percent:""}];
+    setTiers(current=>current.length<10?[...current,{min:"",percent:""}]:current);
+    record({tiers:next});
+  }
   function updateTier(index:number,field:keyof ProductTier,value:string){
-    setTiers(current=>current.map((tier,i)=>i===index?{...tier,[field]:value}:tier));
+    const next=tiers.map((tier,i)=>i===index?{...tier,[field]:value}:tier);
+    setTiers(next);
+    record({tiers:next});
   }
   function removeTier(index:number){
     if(index===0)return;
-    setTiers(current=>current.filter((_,i)=>i!==index));
+    const next=tiers.filter((_,i)=>i!==index);
+    setTiers(next);
+    record({tiers:next});
   }
-  return <form action={saveProfessionalSection} className="erp-compact-form professional-product-form">
+  return <form action={saveProfessionalSection} data-professional-save="product-category-rule" data-save-dirty={touched?"true":"false"} className="erp-compact-form professional-product-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="userId" value={userId}/>
     <input type="hidden" name="section" value="product-category-rule"/>
@@ -82,24 +127,22 @@ function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule}:{
         </select>
       </label>
       <label>Formato da comissão
-        <select className="select" name="mode" value={mode} onChange={e=>setMode(e.target.value as "FIXED"|"SCALED")}>
+        <select className="select" name="mode" value={mode} onChange={e=>{const next=e.target.value as "FIXED"|"SCALED";setMode(next);record({mode:next});}}>
           <option value="FIXED">Fixa</option>
           <option value="SCALED">Escalonada</option>
         </select>
       </label>
       {mode==="FIXED"&&<label>Percentual sobre a venda (%)
         <input className="input" name="fixedPercent" type="number" min={0} max={100} step=".01"
-          defaultValue={rule?.mode==="FIXED"?rule.fixedPercent:0} required/>
+          value={fixedPercent} onChange={event=>{setFixedPercent(event.target.value);record({fixedPercent:event.target.value});}} required/>
       </label>}
     </div>
     {mode==="SCALED"&&<div className="professional-scaled-editor">
       <h4>Comissão escalonada</h4>
       {tiers.map((tier,index)=><div className="professional-scaled-tier-row" key={index}>
         <label>A partir de (R$)
-          <input className="input" name="tierMin" type="number" min={0} step=".01"
-            aria-label={"Valor mínimo da faixa "+(index+1)}
-            value={tier.min} onChange={e=>updateTier(index,"min",e.target.value)}
-            required/>
+          <ProfessionalCurrencyInput name="tierMin" label={"Valor mínimo da faixa "+(index+1)}
+            value={tier.min} onChange={value=>updateTier(index,"min",value)} required/>
         </label>
         <label>Comissão (%)
           <input className="input" name="tierPercent" type="number" min={0} max={100} step=".01"
@@ -120,8 +163,5 @@ function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule}:{
         </span>
       </div>)}
     </div>}
-    <div className="professional-product-save">
-      <button className="btn" type="submit">Salvar comissão da categoria</button>
-    </div>
   </form>;
 }

@@ -787,3 +787,208 @@ html[data-theme] .tenant-erp .professional-registration-page .professional-subsc
     justify-content:flex-end;
   }
 }
+
+
+/* Ficha unificada: telefone, categoria e unidade na mesma linha, com leitura forte. */
+@media (min-width:1021px){
+  html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields
+  :is(.professional-field-phone,.professional-field-role,.professional-field-unit){
+    grid-column:span 4!important;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields
+  :is(.professional-field-whatsapp,.professional-field-cadence){
+    grid-column:span 6!important;
+  }
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields
+:is(.professional-field-phone,.professional-field-role,.professional-field-unit){
+  padding:7px 8px;
+  border:1px solid var(--profile-line);
+  border-radius:9px;
+  background:var(--gx-paper-soft,#f6f8fc);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields
+:is(.professional-field-phone,.professional-field-role,.professional-field-unit) .label{
+  font-size:.86rem!important;
+  font-weight:800!important;
+  color:var(--profile-text)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-general-fields
+:is(.professional-field-phone,.professional-field-role,.professional-field-unit) :is(input,select){
+  height:38px!important;
+  min-height:38px!important;
+  font-size:.86rem!important;
+  font-weight:620!important;
+}
+/* Mesmo componente de arquivo para foto e contrato, sem botão nativo do navegador. */
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-field{
+  display:flex;flex-direction:column;gap:6px;min-width:0;width:100%;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-field > .label{
+  font-size:.79rem;font-weight:750;color:var(--profile-text);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-dropzone{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  position:relative;min-width:0;min-height:65px;padding:11px 13px;
+  border:1.5px dashed var(--gx-purple,var(--profile-highlight,#6254d5));
+  border-radius:10px;
+  background:var(--gx-paper-soft,#f6f8fc);
+  color:var(--profile-text);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-native{
+  position:absolute!important;width:1px!important;height:1px!important;
+  opacity:0!important;overflow:hidden!important;
+  padding:0!important;min-width:0!important;min-height:0!important;
+  clip-path:inset(50%);border:0!important;pointer-events:none;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-symbol{
+  display:inline-grid;place-items:center;width:37px;height:37px;flex:none;
+  border-radius:9px;background:var(--gx-selection,#eae9f7);
+  color:var(--gx-purple,#6254d5);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-description{
+  flex:1 1 150px;min-width:0;display:flex;flex-direction:column;gap:2px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-description strong{
+  font-size:.82rem;font-weight:780;color:var(--profile-text);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-description small{
+  font-size:.74rem;color:var(--profile-muted);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-pick{
+  min-height:36px;padding:7px 11px;
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+  background:var(--gx-selection,#eae9f7)!important;
+  color:var(--gx-purple,#6254d5)!important;
+  border:1px solid var(--gx-purple,#6254d5)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-selected{
+  display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;
+  background:var(--gx-paper,#fff);border:1px solid var(--profile-line);
+  border-radius:7px;padding:5px 8px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-selected strong{
+  font-size:.74rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  max-width:160px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-selected small{
+  font-size:.68rem;color:var(--profile-muted);white-space:nowrap;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-file-selected button{
+  flex:none;display:inline-grid;place-items:center;cursor:pointer;
+  background:transparent;border:0;color:var(--profile-text);padding:4px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-photo-upload{
+  padding:10px 12px!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-photo-upload .erp-quick-create{
+  margin:0!important;padding:5px 0!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-photo-upload .erp-quick-create h3{
+  display:none;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-contract-upload-grid{
+  grid-template-columns:minmax(140px,1.1fr) minmax(300px,1.7fr) minmax(120px,.7fr)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid{
+  grid-template-columns:minmax(140px,1fr) minmax(200px,1.5fr) minmax(120px,.7fr)!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid > label:nth-of-type(4){
+  grid-column:1 / -1!important;grid-row:2!important;
+}
+/* Dias, horários e campos clicáveis maiores, inclusive no tema escuro. */
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-grid-heading{
+  font-size:.94rem!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row{
+  min-height:51px;padding:8px 15px!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row .gromma-week-day{
+  font-size:.96rem!important;gap:11px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-day input[type="checkbox"]{
+  appearance:auto!important;width:21px!important;height:21px!important;
+  min-width:21px;min-height:21px;
+  accent-color:var(--gx-purple,#6254d5);
+  cursor:pointer;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-row input[type="time"]{
+  height:42px!important;min-height:42px!important;
+  font-size:1rem!important;font-weight:760!important;cursor:pointer;
+}
+html[data-theme] .tenant-erp .professional-registration-page .gromma-week-presets button{
+  min-height:39px!important;font-size:.83rem!important;padding:8px 11px!important;
+}
+/* Moldura preservada. Somente a linha interna dos percentuais fica menor. */
+html[data-theme] .tenant-erp .professional-registration-page .professional-scaled-editor{
+  width:100%;box-sizing:border-box;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-scaled-tier-row{
+  grid-template-columns:minmax(150px,300px) minmax(110px,210px) 40px!important;
+  justify-content:start!important;align-items:end!important;gap:10px!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-subscription-tier-list .gromma-tier-row{
+  grid-template-columns:minmax(130px,225px) minmax(130px,225px) minmax(95px,150px) 70px!important;
+  justify-content:start!important;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-currency-input{
+  display:block;width:100%;min-width:0;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-currency-input input[type="text"]{
+  width:100%!important;font-size:.85rem!important;font-weight:700!important;
+  font-variant-numeric:tabular-nums;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-save-all{
+  display:flex;align-items:center;justify-content:flex-end;gap:12px;
+  flex-wrap:wrap;padding:13px 17px;margin:14px 0 0;
+  border:1px solid var(--profile-line);border-radius:11px;
+  background:var(--gx-paper-soft,#f6f8fc);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-save-all-caption{
+  margin-right:auto;font-size:.79rem;color:var(--profile-muted);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-save-all-feedback{
+  font-size:.78rem;font-weight:650;max-width:500px;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-save-all-feedback.is-error{
+  color:#ad4857;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-save-all-feedback.is-success{
+  color:var(--gx-purple,#6254d5);
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-save-all-button{
+  min-width:160px;min-height:43px;padding:10px 18px;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font-size:.9rem;font-weight:800;
+}
+html[data-theme] .tenant-erp input[type="file"]:not(.professional-file-native)::file-selector-button{
+  border:1px solid var(--gx-purple,#6254d5);
+  border-radius:7px;padding:7px 11px;margin-right:10px;
+  color:var(--gx-purple,#6254d5);background:var(--gx-selection,#eae9f7);
+  font-weight:700;cursor:pointer;
+}
+@media(max-width:1150px){
+  html[data-theme] .tenant-erp .professional-registration-page .professional-contract-upload-grid,
+  html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid > label:nth-of-type(4){
+    grid-column:1 / -1!important;grid-row:auto!important;
+  }
+}
+@media(max-width:720px){
+  html[data-theme] .tenant-erp .professional-registration-page .professional-contract-upload-grid,
+  html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid > label:nth-of-type(4){
+    grid-column:auto!important;grid-row:auto!important;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .professional-scaled-tier-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) 38px!important;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .professional-subscription-tier-list .gromma-tier-row{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
