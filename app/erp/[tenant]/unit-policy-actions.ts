@@ -63,6 +63,7 @@ export async function saveUnitOperationsPolicy(form:FormData){
       const ws=readWorkspace(fresh.enabledFeatures);
       const before=ws.unitPolicies[unitId]??DEFAULT_UNIT_POLICY;
       ws.unitPolicies[unitId]={
+        ...before,
         legalDocument,paymentEmail,paymentPhone,pixKey,pixType,
         paymentMethods:methods,
         debitFeePercent,creditFeePercent,settlementDays,potPercent,
