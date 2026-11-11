@@ -1,4 +1,5 @@
 import type { CashSession, CommandPayment, BookedServices } from "./checkout";
+import {isValidBusinessTimeZone} from "./international-time-zones";
 import type { ProfessionalProfile } from "./professional-profile";
 import type { ProductCommissionCategory } from "./product-commission-rules";
 import type { Prisma } from "@prisma/client";
@@ -326,7 +327,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
   return {
     hasBranches: operations.hasBranches === true,
     businessContactEmail: typeof operations.businessContactEmail==="string" ? operations.businessContactEmail.slice(0,180) : "",
-    businessTimeZone: ["America/Sao_Paulo","America/Manaus","America/Rio_Branco","America/Noronha"].includes(String(operations.businessTimeZone)) ? String(operations.businessTimeZone) : "America/Sao_Paulo",
+    businessTimeZone: isValidBusinessTimeZone(String(operations.businessTimeZone??"")) ? String(operations.businessTimeZone) : "America/Sao_Paulo",
     rolePermissions,
     bookingRules: (()=>{
       const policy=record(operations.bookingRules);
