@@ -285,7 +285,7 @@ export function AgendaAppointmentForm({
           <label><span className="label">Selecionar serviço</span>
             <select className="select" defaultValue="" onChange={event => { if (event.target.value) addService(event.target.value); event.target.value = ""; }}>
               <option value="">Selecione para adicionar automaticamente</option>
-              {services.map(service => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} min · {money(service.price)}</option>)}
+              {services.map(service => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes===0?"Encaixe (0 min)":service.durationMinutes+" min"} · {money(service.price)}</option>)}
             </select>
           </label>
         </div>
@@ -308,7 +308,7 @@ export function AgendaAppointmentForm({
             </div>;
           })}
         </div>
-        <p className="agenda-form-hint">Serviços sem limite de quantidade; duração e preço são somados automaticamente.</p>
+        <p className="agenda-form-hint">A duração é somada automaticamente; serviços de encaixe não acrescentam tempo. Um encaixe isolado precisa acompanhar um serviço com duração.</p>
       </section>
       <section className="agenda-booking-section agenda-booking-final">
         <div className="agenda-booking-section-heading"><span className="agenda-booking-number">03</span><div><h4>Conferir e confirmar</h4><p>Revise os detalhes para evitar erros de recepção.</p></div></div>
@@ -325,7 +325,7 @@ export function AgendaAppointmentForm({
         {tooLongForOneDay && <p role="alert" className="agenda-form-hint">A duração ultrapassa 24 horas. Divida esse atendimento em horários diferentes.</p>}
         <div className="agenda-booking-submit">
           <span>A duração e os conflitos são conferidos antes de salvar.</span>
-          <AgendaSubmit disabled={tooLongForOneDay || customerChoiceMissing || !primaryService}>Confirmar agendamento</AgendaSubmit>
+          <AgendaSubmit disabled={tooLongForOneDay || totalMinutes<=0 || customerChoiceMissing || !primaryService}>Confirmar agendamento</AgendaSubmit>
         </div>
       </section>
     </form>
