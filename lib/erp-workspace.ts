@@ -208,6 +208,14 @@ export type OperationalSettings = {
   amenities: string;
 };
 
+export type ServiceCatalogMetadata={
+  ticketValue:number|null;
+  repurchaseDays:number|null;
+  category:string;
+  startingFrom:boolean;
+  hidden:boolean;
+  walkIn:boolean;
+};
 export type ErpWorkspace = {
   branding: BrandingSettings;
   hasBranches: boolean;
@@ -235,6 +243,7 @@ export type ErpWorkspace = {
   training: TrainingConfig[];
   commissionRules: CommissionRuleConfig[];
   serviceCommissionOverrides: Record<string, number>;
+  serviceCatalogSettings: Record<string,ServiceCatalogMetadata>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
   /** Regras de rateio do pote. Nunca armazena nem permite editar o valor arrecadado. */
@@ -262,6 +271,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
     carouselImages: [], carouselCaptions: [], secondaryTitle: "", secondaryDescription: "" },
   unitPolicies: {},
   featuredProfessionalIds: [],
+  serviceCatalogSettings: {},
   rolePermissions: {},
   professionalProfiles: {},
   clubEvents: [],
@@ -363,6 +373,19 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
           welcomeText:typeof p.welcomeText==="string"?p.welcomeText.slice(0,280):"",
         }];
       })) as Record<string,UnitOperationsPolicy>,
+    serviceCatalogSettings:Object.fromEntries(Object.entries(record(operations.serviceCatalogSettings))
+      .filter(([id])=>id.length<=100).slice(0,2000).map(([id,raw])=>{
+        const meta=record(raw);
+        const optionalNumber=(value:unknown,max:number)=>typeof value==="number"&&Number.isFinite(value)&&value>=0&&value<=max?value:null;
+        return [id,{
+          ticketValue:optionalNumber(meta.ticketValue,1000000),
+          repurchaseDays:optionalNumber(meta.repurchaseDays,3650),
+          category:typeof meta.category==="string"?meta.category.slice(0,80):"",
+          startingFrom:meta.startingFrom===true,
+          hidden:meta.hidden===true,
+          walkIn:meta.walkIn===true,
+        }];
+      })) as Record<string,ServiceCatalogMetadata>,
     featuredProfessionalIds: array<unknown>(operations.featuredProfessionalIds).filter(
       (id):id is string => typeof id==="string"&&id.length<=100).slice(0,50),
     professionalProfiles: Object.fromEntries(Object.entries(record(operations.professionalProfiles))
