@@ -74,7 +74,7 @@ export function ProfessionalServiceBatchEditor({ tenantCode, userId, services }:
     setBulkError("");
   }
 
-  return <form action={saveProfessionalSection} className="erp-compact-form professional-service-editor">
+  return <form action={saveProfessionalSection} data-professional-save="service-batch" className="erp-compact-form professional-service-editor">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="userId" value={userId}/>
     <input type="hidden" name="section" value="service-batch"/>
@@ -163,7 +163,6 @@ export function ProfessionalServiceBatchEditor({ tenantCode, userId, services }:
 
     <div className="professional-service-footer">
       <span className="small muted">{selected.length} de {services.length} serviços habilitados</span>
-      <button className="btn" type="submit">Salvar serviços e comissões</button>
     </div>
   </form>;
 }
