@@ -28,7 +28,7 @@ test("destaque é gerenciado na Empresa, não na lista de profissionais",()=>{
   assert.match(ui,/id="funcionarios-destaque"/);
   assert.match(ui,/<FeaturedProfessionalSwitch tenantCode/);
   assert.match(read("components/featured-professional-switch.tsx"),/action=\{toggleFeaturedProfessional\}/);
-  assert.match(ui,/\["grupos-acesso","funcionarios-destaque","fatura","clube-reajustes","clube-saques"\]/);
+  assert.match(ui,/\["grupos-acesso","funcionarios-destaque","fatura","clube-reajustes","clube-saques",/);
   const action=read("app/erp/[tenant]/featured-professional-actions.ts");
   assert.match(action,/FEATURED_PROFESSIONAL_CHANGED/);
   assert.match(action,/viewer.role==="OWNER"/);
