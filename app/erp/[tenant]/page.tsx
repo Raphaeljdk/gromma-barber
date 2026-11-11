@@ -43,6 +43,8 @@ import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {effectiveServiceMinutes,dueServiceRepurchases} from "@/lib/service-scheduling";
+import {ServiceRepurchaseReminders} from "@/components/service-repurchase-reminders";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
@@ -70,8 +72,8 @@ import { assignProductCategory } from "./product-category-actions";
 import { PRODUCT_COMMISSION_CATEGORIES,categoryName } from "@/lib/product-commission-rules";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
-import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionPotRate } from "./module-actions";
+import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, updateService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionPotRate, requestBillingRegularization } from "./module-actions";
 
 function StatusPill({
   children,
@@ -2243,7 +2245,7 @@ export async function TenantERPView({
 
         
         <section id="grupos-acesso" className="demo-section gromma-access-groups" hidden={Boolean(moduleId && moduleId !== "grupos-acesso")}>
-          <div className="section-head"><div><div className="eyebrow">Empresa / Segurança</div><h2>Grupos de acesso</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/equipe`}>Gerenciar profissionais</Link></div>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Segurança</div><h2>Grupos de acesso</h2></div></div>
           <p className="small muted">Defina as permissões de consulta e gestão por função. A função de cada funcionário é atribuída na ficha profissional. O proprietário mantém acesso integral.</p>
           {actionOk==="permissoes"&&<p className="notice success" role="status">Permissões do grupo atualizadas.</p>}
           {actionError==="permissao"&&<p className="notice error-notice" role="alert">Não foi possível atualizar as permissões. Verifique seu acesso.</p>}
@@ -2673,41 +2675,42 @@ export async function TenantERPView({
           <p className="small muted gromma-module-description">Defina horários, critérios de atendimento e preferências gerais. Integrações externas somente operam quando estiverem conectadas.</p>
           {actionOk==="configuracoes"&&<p className="notice success" role="status">Configurações atualizadas.</p>}
           {actionError==="banco"&&<p className="notice error-notice" role="alert">Não foi possível salvar as configurações.</p>}
-          <article className="card gromma-settings-main">
-            <div className="erp-card-title"><div><span>Preferências da barbearia</span><strong>Rotina de atendimento e funcionamento</strong></div></div>
-            {canManage?<form action={saveOperationalSettings} className="gromma-settings-editor">
+          <article className="card gromma-settings-main gromma-settings-expanded">
+            <div className="erp-card-title"><div><span>Preferências da barbearia</span><strong>Horários, agendamentos e comodidades</strong></div></div>
+            {canManage?<form action={saveOperationalSettings} className="gromma-settings-editor gromma-settings-clean-form">
               <input type="hidden" name="tenantCode" value={tenantCode}/>
-              <fieldset><legend>Agenda e atendimento</legend><div className="gromma-settings-fields three">
-                <label><span className="label">Abertura (hora)</span><input className="input" name="openHour" type="number" min="0" max="23" defaultValue={workspace.settings.openHour}/></label>
-                <label><span className="label">Fechamento (hora)</span><input className="input" name="closeHour" type="number" min="1" max="24" defaultValue={workspace.settings.closeHour}/></label>
-                <label><span className="label">Intervalo entre agendamentos</span><select className="select" name="slotMinutes" defaultValue={workspace.settings.slotMinutes}><option value="15">15 minutos</option><option value="20">20 minutos</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">60 minutos</option></select></label>
-              </div></fieldset>
-              <fieldset><legend>Comissões e contato</legend><div className="gromma-settings-fields two">
-                <label><span className="label">Comissão padrão (%)</span><input className="input" name="defaultCommissionPercent" type="number" min="0" max="100" step="0.01" defaultValue={workspace.settings.defaultCommissionPercent}/></label>
-                <label><span className="label">WhatsApp da operação</span><input className="input" name="whatsappNumber" defaultValue={workspace.settings.whatsappNumber} placeholder="5511999999999"/></label>
-              </div></fieldset>
-              <fieldset><legend>Recursos e integrações</legend><div className="gromma-settings-fields two">
-                <label><span className="label">Emissor fiscal / referência</span><input className="input" name="invoiceProvider" defaultValue={workspace.settings.invoiceProvider} placeholder="Nome do emissor ou integração planejada"/></label>
-                <label><span className="label">Comodidades das unidades</span><input className="input" name="amenities" defaultValue={workspace.settings.amenities} placeholder="Wi-Fi, café, estacionamento..."/></label>
-              </div>
-              <div className="gromma-settings-options">
-                <label><input type="checkbox" name="rotationEnabled" defaultChecked={workspace.settings.rotationEnabled}/><span><strong>Rodízio de profissionais</strong><small>Aplicar a preferência operacional de distribuição</small></span></label>
-                <label><input type="checkbox" name="autoConfirm" defaultChecked={workspace.settings.autoConfirm}/><span><strong>Preferência de confirmação automática</strong><small>Exige integração externa para envio efetivo de mensagens</small></span></label>
-              </div></fieldset>
+              <fieldset><legend>Horários e agenda</legend>
+                <div className="gromma-settings-fields gromma-settings-hours">
+                  <label><span className="label">Abertura (hora)</span><input className="input" name="openHour" type="number" min="0" max="23" required defaultValue={workspace.settings.openHour}/></label>
+                  <label><span className="label">Fechamento (hora)</span><input className="input" name="closeHour" type="number" min="1" max="24" required defaultValue={workspace.settings.closeHour}/></label>
+                  <label><span className="label">Intervalo entre agendamentos (minutos)</span>
+                    <input className="input" name="slotMinutes" type="number" min="5" max="120" step="5" required defaultValue={workspace.settings.slotMinutes}/>
+                    <small>Personalize de 5 a 120 minutos, em múltiplos de 5. Controla a grade de horários da agenda.</small>
+                  </label>
+                </div>
+              </fieldset>
+              <fieldset><legend>Comodidades da unidade</legend>
+                <p className="small muted">Ligue ou desligue as comodidades oferecidas. Aplicadas à descrição operacional; configurações de cada filial continuam preservadas.</p>
+                <div className="gromma-amenities-toggles">
+                  {["Wi-Fi","Café","Estacionamento","Acessibilidade PCD"].map(item=>{
+                    const checked=workspace.settings.amenities.split(",").map(v=>v.trim()).includes(item);
+                    return <label className="gromma-amenity-toggle" key={item}>
+                      <input type="checkbox" name="amenity" value={item} defaultChecked={checked}/>
+                      <span className="gromma-toggle-track" aria-hidden="true"><span/></span><strong>{item}</strong>
+                    </label>;
+                  })}
+                </div>
+              </fieldset>
+              <fieldset><legend>Preferências operacionais</legend>
+                <div className="gromma-settings-options">
+                  <label><input type="checkbox" name="rotationEnabled" defaultChecked={workspace.settings.rotationEnabled}/><span><strong>Rodízio de profissionais</strong><small>Aplicar preferência de distribuição</small></span></label>
+                  <label><input type="checkbox" name="autoConfirm" defaultChecked={workspace.settings.autoConfirm}/><span><strong>Confirmação de agendamento</strong><small>Define o estado inicial do agendamento; não envia mensagens por conta própria</small></span></label>
+                </div>
+              </fieldset>
               <div className="gromma-settings-submit"><button className="btn" type="submit">Salvar configurações</button></div>
             </form>:<p className="small muted">Somente proprietário ou gerente pode alterar estas preferências.</p>}
           </article>
-          <details className="gromma-settings-connection-status">
-            <summary><strong>Conferir status das integrações</strong><span className="small muted">WhatsApp, fiscal e preferências operacionais</span></summary>
-            <div className="erp-health-list">
-              <div><span>WhatsApp</span><strong>{workspace.settings.whatsappNumber?"Número cadastrado":"Pendente de configuração"}</strong></div>
-              <div><span>Nota fiscal</span><strong>{workspace.settings.invoiceProvider||"Emissor não conectado"}</strong></div>
-              <div><span>Rodízio</span><strong>{workspace.settings.rotationEnabled?"Preferência habilitada":"Desativado"}</strong></div>
-              <div><span>Confirmações automáticas</span><strong>{workspace.settings.autoConfirm?"Preferência habilitada":"Manual"}</strong></div>
-              <div><span>Comodidades</span><strong>{workspace.settings.amenities||"Não cadastradas"}</strong></div>
-            </div>
-            <p className="small muted">Uma configuração preenchida não garante conexão ativa com WhatsApp, gateway de pagamentos ou emissor fiscal.</p>
-          </details>
+          {["intervalo","comodidades"].includes(actionError)&&<p role="alert" className="notice error-notice">Revise as opções: o intervalo deve ser de 5 a 120 minutos, em múltiplos de 5, e as comodidades precisam ser válidas.</p>}
         </section>
 
         {(["identidade", "clube-config"] as const).map(mode =>
@@ -2738,12 +2741,34 @@ export async function TenantERPView({
 
         <section id="fatura" className="demo-section gromma-company-billing" hidden={Boolean(moduleId && moduleId !== "fatura")}>
           <div className="section-head"><div><div className="eyebrow">Empresa / Financeiro do contrato</div><h2>Fatura</h2></div><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/plano`}>Voltar ao plano</Link></div>
-          <div className="gromma-billing-summary"><div><span>Plano vinculado</span><strong>{plan.name}</strong></div><div><span>Mensalidade contratada</span><strong>{brl(plan.monthlyFee)}</strong></div></div>
-          <div className="card gromma-billing-notice">
-            <h3>Faturas e segunda via</h3>
-            <p>O histórico de cobrança e a emissão de faturas ainda não estão integrados a esta área. Os valores exibidos são condições do contrato, não comprovantes de pagamento.</p>
-            <a className="btn" href={supportHref}>Solicitar fatura ao suporte</a>
-          </div>
+          <div className="gromma-billing-summary"><div><span>Plano vinculado</span><strong>{plan.name}</strong></div><div><span>Mensalidade contratada de referência</span><strong>{brl(plan.monthlyFee)}</strong></div></div>
+          {actionOk==="solicitacao"&&<p role="status" className="notice success">Solicitação registrada. A mensalidade não foi marcada como paga; o suporte precisa conferir a cobrança.</p>}
+          {["solicitacao","competencia","permissao"].includes(actionError)&&<p role="alert" className="notice error-notice">Não foi possível solicitar a regularização desta competência. Confira seu acesso e tente novamente.</p>}
+          <article className="card gromma-billing-monthly">
+            <div className="gromma-billing-monthly-heading">
+              <div><h3>Competências mês a mês</h3><p>Referência contratual — não é uma fatura emitida nem confirma dívida, pagamento ou vencimento.</p></div>
+              <a className="btn secondary" href={supportHref}>Falar com suporte</a>
+            </div>
+            <div className="table-wrap"><table>
+              <thead><tr><th>Competência</th><th>Valor de referência</th><th>Situação no ERP</th><th>Ação</th></tr></thead>
+              <tbody>{Array.from({length:12},(_,index)=>{
+                const monthDate=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()-index,1));
+                const month=monthDate.toISOString().slice(0,7);
+                const requested=workspace.billingRegularizationRequests.find(item=>item.month===month);
+                return <tr key={month}>
+                  <td><strong>{new Intl.DateTimeFormat("pt-BR",{month:"long",year:"numeric",timeZone:"UTC"}).format(monthDate)}</strong></td>
+                  <td>{brl(subscription?Number(subscription.monthlyAmount):plan.monthlyFee)}</td>
+                  <td><span className="gromma-billing-status">{requested?"Revisão solicitada":"A conferir com o financeiro"}</span></td>
+                  <td>{isOwner&&!requested?<form action={requestBillingRegularization}>
+                    <input type="hidden" name="tenantCode" value={tenantCode}/>
+                    <input type="hidden" name="month" value={month}/>
+                    <button className="btn secondary" type="submit">Solicitar regularização</button>
+                  </form>:requested?<span className="small muted">Solicitado em {new Date(requested.requestedAt).toLocaleDateString("pt-BR")}</span>:<span className="small muted">Proprietário</span>}</td>
+                </tr>;
+              })}</tbody>
+            </table></div>
+            <p className="small muted">A regularização financeira exige uma cobrança real e confirmação do provedor ou da administração. Nenhuma mensalidade é baixada automaticamente nesta tela.</p>
+          </article>
         </section>
 
 
