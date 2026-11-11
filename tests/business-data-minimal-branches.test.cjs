@@ -18,7 +18,7 @@ test("Dados exibe apenas os quatro campos institucionais solicitados",()=>{
    assert.doesNotMatch(form,new RegExp('name="'+name+'"'));
  assert.match(read("lib/international-time-zones.ts"),/Intl\.supportedValuesOf/);
  assert.doesNotMatch(view,/<h3>Endereço e presença<\/h3>/);
- assert.match(view,/Filiais · \{registeredBranches\}/);
+ assert.ok(view.includes('>Cadastro de filiais</Link>'));
  assert.match(view,/Personalização e layout/);
  const ast=ts.createSourceFile("business-data-section.tsx",view,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(ast.parseDiagnostics.length,0,ast.parseDiagnostics.map(x=>x.messageText).join("; "));

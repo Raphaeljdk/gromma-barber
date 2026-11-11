@@ -35,7 +35,7 @@ test("featured staff uses a real safe toggle with backend audit, no new tabs",()
  assert.match(toggle,/aria-checked=\{featured\}/);
  assert.match(toggle,/toggleFeaturedProfessional/);
  assert.match(backend,/FEATURED_PROFESSIONAL_CHANGED/);
- assert.match(page,/>Filiais · \{shop\.units\.length\}<\/Link>/);
+ assert.match(page,/>Cadastro de filiais · \{shop\.units\.length\}<\/Link>/);
 });
 test("service creation captures fields and writes tenant-scoped metadata",()=>{
  const page=read("app/erp/[tenant]/page.tsx");

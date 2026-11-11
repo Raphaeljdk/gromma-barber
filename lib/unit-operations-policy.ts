@@ -5,7 +5,9 @@ export const PAYMENT_LABELS:Record<typeof PAYMENT_METHODS[number],string>={
   PIX:"Pix",CASH:"Dinheiro",DEBIT:"Débito",CREDIT:"Crédito",TRANSFER:"Transferência",
 };
 export const DEFAULT_UNIT_POLICY:UnitOperationsPolicy={
-  legalDocument:"",paymentEmail:"",paymentPhone:"",pixKey:"",pixType:"",
+  legalDocument:"",postalCode:"",complement:"",bankCountry:"BR",bankCode:"",bankName:"",
+  bankAgency:"",bankAccount:"",bankSwift:"",paymentConfigurations:{},
+  paymentEmail:"",paymentPhone:"",pixKey:"",pixType:"",
   paymentMethods:["PIX","CASH","DEBIT","CREDIT","TRANSFER"],
   debitFeePercent:0,creditFeePercent:0,settlementDays:0,potPercent:null,
   cancellationMinutes:0,noShowBlockHours:0,coverImageUrl:"",welcomeText:"",

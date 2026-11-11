@@ -2,6 +2,8 @@ import { CommissionSelectionTable } from "@/components/commission-selection-tabl
 import {FeaturedProfessionalSwitch} from "@/components/featured-professional-switch";
 import { saveBarbershopUnit } from "./unit-actions";
 import { UnitOperationsForm } from "@/components/unit-operations-form";
+import { ArchiveUnitButton } from "@/components/archive-unit-button";
+import { getBrazilBankDirectory } from "@/lib/bank-directory";
 import { BusinessDataSection } from "@/components/business-data-section";
 import { BrandingSettingsSection } from "@/components/branding-settings-section";
 import { unitPolicy } from "@/lib/unit-operations-policy";
@@ -818,6 +820,7 @@ export async function TenantERPView({
     : shop.units;
   const unitsTotal = unitPool.length;
   const unitsPageItems = unitPool.slice((unidadesPage - 1) * pageSize, unidadesPage * pageSize);
+  const bankDirectory = moduleId==="unidades" ? await getBrazilBankDirectory() : [];
 
   const planKey = shop.activePlan ?? shop.requestedPlan;
   const plan = PLAN_CONFIG[planKey];
@@ -2247,7 +2250,7 @@ export async function TenantERPView({
         </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
-          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><div className="gromma-directory-heading-actions"><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/unidades`}>Filiais · {shop.units.length}</Link><StatusPill tone="ready">Operacional</StatusPill></div></div>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><div className="gromma-directory-heading-actions"><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/unidades`}>Cadastro de filiais · {shop.units.length}</Link><StatusPill tone="ready">Operacional</StatusPill></div></div>
           {isOwner && <details className="erp-quick-create erp-directory-create">
             <summary><Plus size={15}/> Novo profissional <small>Cadastro e edição na mesma área</small></summary>
             <form action={createProfessional} className="erp-quick-form">
@@ -2364,68 +2367,74 @@ export async function TenantERPView({
         </div>}
 
         <section id="unidades" className="demo-section gromma-company-units" hidden={Boolean(moduleId && moduleId !== "unidades")}>
-          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Filiais</h2></div><StatusPill tone="ready">Por unidade</StatusPill></div>
-          <p className="small muted">Cada filial possui seu próprio endereço, CNPJ, conta de recebimento, pote de assinaturas e regras de atendimento. Os dados gerais da marca ficam em <Link href={`/erp/${encodeURIComponent(tenantCode)}/dados`}>Dados do negócio</Link>.</p>
-          {valueOf("unidadeOk") && <p role="status" className="notice success">Unidade {valueOf("unidadeOk") === "cadastrada" ? "cadastrada" : "atualizada"} com sucesso. A alteração ficou registrada na auditoria.</p>}
-          {valueOf("unidadeErro") && <p role="alert" className="notice error-notice">{valueOf("unidadeErro").slice(0,200)}</p>}
-          {isOwner && <details className="card gromma-unit-create" style={{padding:14,marginBottom:14}}>
-            <summary style={{cursor:"pointer",fontWeight:700}}>Cadastrar nova filial</summary>
-            <p className="small muted" style={{marginTop:10}}>Filiais têm operações e caixas próprios. Respeite o limite do seu plano; nenhuma nova cobrança é feita nesta tela.</p>
-            <form action={saveBarbershopUnit} className="erp-compact-form gromma-unit-create-form" style={{marginTop:12}}>
+          <div className="section-head">
+            <div><div className="eyebrow">Empresa / Cadastro</div><h2>Cadastro de filiais</h2></div>
+            <StatusPill tone="ready">Por unidade</StatusPill>
+          </div>
+          <p className="small muted">Cada filial tem identificação, endereço, conta de recebimento e formas de pagamento próprios.
+            A configuração global de pote e penalidades fica em <Link href={`/erp/${encodeURIComponent(tenantCode)}/dados`}>Dados do negócio</Link>.</p>
+          {valueOf("unidadeOk")&&<p role="status" className="notice success">
+            {valueOf("unidadeOk")==="cadastrada"?"Filial cadastrada.":
+              valueOf("unidadeOk")==="excluida"?"Filial desativada, com histórico preservado.":
+              "Dados da filial salvos com sucesso."}
+          </p>}
+          {valueOf("unidadeErro")&&<p role="alert" className="notice error-notice">
+            {valueOf("unidadeErro").slice(0,220)}
+          </p>}
+          {isOwner&&<details className="gromma-unit-create">
+            <summary><Plus size={17} aria-hidden="true"/> Cadastrar filial</summary>
+            <form action={saveBarbershopUnit} className="gromma-unit-create-form">
               <input type="hidden" name="tenantCode" value={tenantCode}/>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
-                <label>Nome da filial<input className="input" name="name" maxLength={120} required minLength={2}/></label>
-                <label>Código único<input className="input" name="code" maxLength={16} pattern="[A-Za-z0-9_-]{2,16}" required placeholder="MATRIZ"/></label>
-                <label>Cidade<input className="input" name="city" maxLength={100} minLength={2} required/></label>
-                <label>UF<input className="input" name="state" maxLength={2} minLength={2} required placeholder="SP"/></label>
-                <label>Endereço<input className="input" name="address" maxLength={240} placeholder="Rua, número e bairro"/></label>
+              <div className="gromma-unit-details-grid">
+                <label>Nome da filial<input className="input" name="name" maxLength={120}
+                  minLength={2} required placeholder="Ex.: Unidade Centro"/></label>
+                <label>Código único<input className="input" name="code" maxLength={16}
+                  pattern="[A-Za-z0-9_-]{2,16}" required placeholder="CENTRO"/></label>
+                <label>Cidade<input className="input" name="city" maxLength={100}
+                  required minLength={2}/></label>
+                <label>UF<input className="input" name="state" maxLength={2}
+                  required minLength={2} placeholder="SP"/></label>
+                <label className="gromma-unit-span-two">Endereço<input className="input"
+                  name="address" maxLength={240} placeholder="Rua, número e bairro"/></label>
               </div>
-              <label style={{display:"flex",gap:8,alignItems:"center"}}><input type="checkbox" name="active" defaultChecked/>Filial ativa</label>
-              <button className="btn" type="submit">Cadastrar filial</button>
+              <label className="gromma-unit-activation"><input type="checkbox" name="active" defaultChecked/> Filial ativa</label>
+              <p className="small muted">A quantidade de filiais ativas respeita o plano contratado.
+                Cadastre primeiro a filial e depois abra o lápis para adicionar conta de recebimento e Pix.</p>
+              <div className="gromma-unit-final-save">
+                <span>Cadastro inicial da filial.</span>
+                <button className="btn" type="submit">Salvar geral</button>
+              </div>
             </form>
           </details>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`}
-            searchParams={qs}
-            pageParam="unidadesPage"
-            hash="unidades"
-            search={{ param: "unidadesQ", value: unidadesQ, placeholder: "Buscar unidade, código ou cidade" }}
+            searchParams={qs} pageParam="unidadesPage" hash="unidades"
+            search={{param:"unidadesQ",value:unidadesQ,placeholder:"Buscar filial, código ou cidade"}}
           />
-          <div className="gromma-units-list">
-            {unitsPageItems.map((unit) => (
-              <article className="gromma-unit-row gromma-unit-enterprise-row" key={unit.id}>
-                <div className="tenant-name"><strong>{unit.name}</strong><span className="badge approved">{unit.active ? "Ativa" : "Inativa"}</span></div>
-                <div className="demo-financial">
-                  <div><span>Código</span><strong>{unit.code}</strong></div>
-                  <div><span>Cidade</span><strong>{unit.city}/{unit.state}</strong></div>
-                  <div><span>Endereço</span><strong>{unit.address ?? "—"}</strong></div>
+          <div className="gromma-units-list gromma-units-new">
+            {unitsPageItems.map(unit=><article className="gromma-unit-row gromma-unit-enterprise-row" key={unit.id}>
+              <div className="gromma-unit-row-head">
+                <div className="gromma-unit-row-title">
+                  <strong>{unit.name}</strong>
+                  <span className={"badge "+(unit.active?"approved":"")}>{unit.active?"Ativa":"Inativa"}</span>
                 </div>
-                {isOwner && <details style={{marginTop:12}}>
-                  <summary style={{cursor:"pointer",fontWeight:650}}>Editar dados da filial</summary>
-                  <form action={saveBarbershopUnit} className="erp-compact-form" style={{marginTop:10}}>
-                    <input type="hidden" name="tenantCode" value={tenantCode}/>
-                    <input type="hidden" name="unitId" value={unit.id}/>
-                    <input type="hidden" name="code" value={unit.code}/>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>
-                      <label>Nome<input className="input" name="name" defaultValue={unit.name} maxLength={120} required/></label>
-                      <label>Cidade<input className="input" name="city" defaultValue={unit.city} maxLength={100} required/></label>
-                      <label>UF<input className="input" name="state" defaultValue={unit.state} maxLength={2} required/></label>
-                    </div>
-                    <label>Endereço<input className="input" name="address" defaultValue={unit.address??""} maxLength={240}/></label>
-                    <label style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <input type="checkbox" name="active" defaultChecked={unit.active}/>
-                      Manter filial ativa
-                    </label>
-                    <p className="small muted">Para desativar uma filial, feche o caixa e transfira a equipe e os agendamentos futuros. Histórico financeiro e estoque não são apagados.</p>
-                    <button className="btn secondary" type="submit">Salvar alterações</button>
-                  </form>
-                </details>}
-                {isOwner && <UnitOperationsForm tenantCode={tenantCode} unitId={unit.id}
-                  policy={unitPolicy(workspace,unit.id)}/>}
-              </article>
-            ))}
+                {isOwner&&<div className="gromma-unit-top-actions">
+                  <ArchiveUnitButton tenantCode={tenantCode} unitId={unit.id}
+                    unitName={unit.name} active={unit.active}/>
+                </div>}
+              </div>
+              <div className="gromma-unit-summary">
+                <div><span>Código</span><strong>{unit.code}</strong></div>
+                <div><span>Cidade</span><strong>{unit.city}/{unit.state}</strong></div>
+                <div><span>Endereço</span><strong>{unit.address??"—"}</strong></div>
+              </div>
+              {isOwner&&<UnitOperationsForm tenantCode={tenantCode} unit={unit}
+                policy={unitPolicy(workspace,unit.id)} banks={bankDirectory}/>}
+            </article>)}
           </div>
-          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`} searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal} pageSize={pageSize} hash="unidades" label="unidades" />
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`}
+            searchParams={qs} param="unidadesPage" page={unidadesPage} total={unitsTotal}
+            pageSize={pageSize} hash="unidades" label="filiais"/>
         </section>
 
         {activeModule === "dashboard" && <section id="indicadores-consolidados" className="demo-section">

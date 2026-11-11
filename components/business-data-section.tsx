@@ -41,7 +41,7 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
         </label>
         <div className="gromma-settings-actions">
           <Link className="btn secondary gromma-branch-quicklink"
-            href={"/erp/"+encodeURIComponent(tenantCode)+"/unidades"}>Filiais · {registeredBranches} — Gerenciar</Link>
+            href={"/erp/"+encodeURIComponent(tenantCode)+"/unidades"}>Cadastro de filiais</Link>
           <button className="btn" type="submit">Salvar dados gerais</button>
         </div>
       </form>:<div className="gromma-readonly-data gromma-business-readonly">
