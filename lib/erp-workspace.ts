@@ -255,7 +255,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   hasBranches: false,
   businessContactEmail: "",
   businessTimeZone: "America/Sao_Paulo",
-  bookingRules: {cancellationMinutes:60,noShowBlockHours:0,mode:"STANDARD",customExplanation:""},
+  bookingRules: {cancellationMinutes:0,noShowBlockHours:0,mode:"STANDARD",customExplanation:""},
   branding: { logoUrl: "", accentColor: "#c69a49", secondaryColor: "#202124", clubTitle: "Clube de assinaturas", clubDescription: "",
     heroTitle: "", heroDescription: "", coverImageUrl: "",
     carouselImages: [], carouselCaptions: [], secondaryTitle: "", secondaryDescription: "" },
