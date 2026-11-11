@@ -1019,6 +1019,32 @@ export async function TenantERPView({
     (mensagensPage - 1) * pageSize,
     mensagensPage * pageSize,
   );
+  // O último atendimento concluído por cliente e serviço define o próximo retorno.
+  // Esta consulta não envia mensagens: apenas constrói uma fila operacional.
+  const repurchaseAppointments=activeModule==="mensagens"&&canManageCampaigns
+    ? await prisma.appointment.findMany({
+        where:{barberShopId:shop.id,customerId:{not:null},status:"COMPLETED"},
+        select:{id:true,startsAt:true,customerId:true,serviceId:true,
+          service:{select:{id:true,name:true}},
+          customer:{select:{id:true,name:true,phone:true,whatsapp:true}}},
+        orderBy:{startsAt:"desc"},take:4000,
+      }):[];
+  const bookedServicesByAppointment=new Map(workspace.bookedServices.map(entry=>[entry.appointmentId,entry.services]));
+  const repurchaseVisits=repurchaseAppointments.flatMap(item=>{
+    if(!item.customer||!item.customerId)return [];
+    const booked=bookedServicesByAppointment.get(item.id);
+    const serv=booked?.length?booked:(item.service?[{id:item.service.id,name:item.service.name}]:[]);
+    return serv.map(service=>({
+      customerId:item.customer!.id,serviceId:service.id,serviceName:service.name,
+      completedAt:item.startsAt,customerName:item.customer!.name,
+      phone:item.customer!.whatsapp||item.customer!.phone||null,
+    }));
+  });
+  const businessToday=new Intl.DateTimeFormat("en-CA",{
+    timeZone:workspace.businessTimeZone,year:"numeric",month:"2-digit",day:"2-digit",
+  }).format(now);
+  const repurchaseReminders=dueServiceRepurchases(
+    repurchaseVisits,workspace.serviceCatalogSettings,businessToday,workspace.businessTimeZone);
   const promotionCampaigns = workspace.campaigns.filter((item) => item.kind === "PROMOTION");
   const promotionCampaignPageRows = promotionCampaigns.slice(
     (promocoesPage - 1) * pageSize,
@@ -1260,7 +1286,7 @@ export async function TenantERPView({
             selectedClientFilter={agendaClient}
             canOperate={canOperate}
             customers={appointmentCustomers.map((item) => ({ id: item.id, name: item.name, phone: item.phone }))}
-            services={shop.services.map((item) => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes }))}
+            services={shop.services.map((item) => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: effectiveServiceMinutes(item.durationMinutes,workspace.serviceCatalogSettings[item.id]) }))}
             initialAppointmentId={valueOf("appointmentId") || undefined}
             initialDraft={agendaQuickOpen ? { startsAt: agendaDraftStart || `${agendaDate}T08:00`, barberId: agendaDraftBarberId || agendaProfessional, unitId: agendaUnit } : undefined}
             professionals={shop.users
@@ -1727,6 +1753,8 @@ export async function TenantERPView({
             <div><div className="eyebrow">Relacionamento</div><h2>Mensagens, follow-up e aniversariantes</h2></div>
             <StatusPill tone="ready">Segmentação ativa</StatusPill>
           </div>
+
+          {canManageCampaigns&&<ServiceRepurchaseReminders reminders={repurchaseReminders}/>}
 
           <div className="erp-kpi-row">
             <article><span>Inativos 30+ dias</span><strong>{inactive30.length}</strong><small>oportunidades de retorno</small></article>
