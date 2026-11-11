@@ -356,11 +356,14 @@ export async function updateAppointmentNotes(formData: FormData) {
 
 export async function markFinancialPaid(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}/financeiro`;
-  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao#financeiro`);
+  const requested=text(formData,"returnModule",50);
+  const safe=["financeiro","financeiro-contas-pagar","financeiro-contas-receber","financeiro-despesas"];
+  const path=`/erp/${encodeURIComponent(tenantCode)}/${safe.includes(requested)?requested:"financeiro"}`;
+  const fragment=path.endsWith("/financeiro")?"#financeiro":"#financeiro-subpage";
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao${fragment}`);
   const entryId = text(formData, "entryId", 80);
   const reason = text(formData, "reason", 600);
-  if (reason.length < 5) redirect(`${path}?erro=financeiro-status#financeiro`);
+  if (reason.length < 5) redirect(`${path}?erro=financeiro-status${fragment}`);
   try {
     await prisma.$transaction(async tx => {
       const entry = await tx.financialEntry.findFirst({ where: { id: entryId, barberShopId: shop.id, status: "PENDING" },
@@ -376,10 +379,10 @@ export async function markFinancialPaid(formData: FormData) {
     }, { isolationLevel: "Serializable" });
   } catch (error) {
     console.error("Failed to mark financial entry as paid", error);
-    redirect(`${path}?erro=financeiro-status#financeiro`);
+    redirect(`${path}?erro=financeiro-status${fragment}`);
   }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
-  redirect(`${path}?ok=financeiro-pago#financeiro`);
+  redirect(`${path}?ok=financeiro-pago${fragment}`);
 }
 
 export async function createAppointment(formData: FormData) {
@@ -903,46 +906,60 @@ export async function archiveService(formData:FormData){
 
 export async function createFinancialEntry(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}/financeiro`;
+  const returnModule=text(formData,"returnModule",45);
+  const permittedModules=["financeiro","financeiro-criar-receita","financeiro-criar-despesa"];
+  const target=permittedModules.includes(returnModule)?returnModule:"financeiro";
+  const path=`/erp/${encodeURIComponent(tenantCode)}/${target}`;
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
 
-  if (!allowed(viewer, ["OWNER"])) {
-    redirect(`${path}?erro=permissao#financeiro`);
+  const description=text(formData,"description",180);
+  const category=text(formData,"category",80)||"Geral";
+  const type=text(formData,"type",20)==="PAYABLE"?"PAYABLE":"RECEIVABLE";
+  const amount=decimal(formData,"amount");
+  const dueDate=dateAtNoon(text(formData,"dueDate",10));
+  const unitId=text(formData,"unitId",80);
+  const unit=await unitForShop(shop.id,unitId);
+  const paymentMethod=text(formData,"paymentMethod",20);
+  const bankAccountId=text(formData,"bankAccountId",100);
+  if(description.length<2||!Number.isFinite(amount)||amount<=0||amount>99999999||
+     (target==="financeiro-criar-receita"&&type!=="RECEIVABLE")||
+     (target==="financeiro-criar-despesa"&&type!=="PAYABLE"))
+    redirect(`${path}?erro=financeiro`);
+  try{
+    await prisma.$transaction(async tx=>{
+      const fresh=await tx.barberShop.findUniqueOrThrow({
+        where:{id:shop.id},select:{enabledFeatures:true},
+      });
+      const ws=readWorkspace(fresh.enabledFeatures);
+      if(paymentMethod){
+        if(type!=="PAYABLE"||!ws.financialExpenseMethods.includes(paymentMethod as typeof ws.financialExpenseMethods[number]))
+          throw Error("Forma de pagamento indisponível");
+      }
+      if(bankAccountId&&!ws.financialBankAccounts.some(item=>item.id===bankAccountId&&item.active))
+        throw Error("Conta bancária indisponível");
+      const entry=await tx.financialEntry.create({data:{
+        barberShopId:shop.id,unitId:unit?.id??null,
+        type,status:"PENDING",category,description,amount,dueDate,
+      },select:{id:true}});
+      ws.financialEntryMetadata[entry.id]={
+        bankAccountId,
+        paymentMethod:paymentMethod as ""|"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER",
+      };
+      await tx.barberShop.update({where:{id:shop.id},data:{
+        enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
+      }});
+      await tx.adminAuditLog.create({data:{
+        barberShopId:shop.id,action:"FINANCIAL_ENTRY_CREATED",adminEmail:viewer.email,
+        details:{entryId:entry.id,amount:String(amount),category,type,description,
+          unitId:unit?.id??null,bankAccountId,paymentMethod} as Prisma.InputJsonValue,
+      }});
+    },{isolationLevel:"Serializable"});
+  }catch(error){
+    console.error("Failed to create financial entry",error);
+    redirect(`${path}?erro=financeiro`);
   }
-
-  const description = text(formData, "description", 180);
-  const category = text(formData, "category", 80) || "Geral";
-  const type = text(formData, "type", 20) === "PAYABLE" ? "PAYABLE" : "RECEIVABLE";
-  const amount = decimal(formData, "amount");
-  const dueDate = dateAtNoon(text(formData, "dueDate", 10));
-  const unitId = text(formData, "unitId", 80);
-  const unit = await unitForShop(shop.id, unitId);
-
-  if (description.length < 2 || !Number.isFinite(amount) || amount <= 0) {
-    redirect(`${path}?erro=financeiro#financeiro`);
-  }
-
-  try {
-    const entry = await prisma.financialEntry.create({
-      data: {
-        barberShopId: shop.id,
-        unitId: unit?.id ?? null,
-        type,
-        status: "PENDING",
-        category,
-        description,
-        amount,
-        dueDate,
-      },
-    });
-    await prisma.adminAuditLog.create({ data: { barberShopId: shop.id, action: "FINANCIAL_ENTRY_CREATED", adminEmail: viewer.email,
-      details: { entryId: entry.id, amount: String(amount), category, type, description, unitId: unit?.id ?? null } } });
-  } catch (error) {
-    console.error("Failed to create financial entry", error);
-    redirect(`${path}?erro=financeiro#financeiro`);
-  }
-
-  revalidatePath(path);
-  redirect(`${path}?ok=financeiro#financeiro`);
+  revalidatePath("/erp/"+encodeURIComponent(tenantCode),"layout");
+  redirect(`${path}?ok=financeiro`);
 }
 
 export async function createStockMovement(formData: FormData) {

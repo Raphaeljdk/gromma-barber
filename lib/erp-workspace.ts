@@ -233,6 +233,15 @@ function isValidBusinessTimeZone(value:string):boolean{
   catch {return false;}
 }
 
+export type FinancialCategoryConfig={
+  id:string;name:string;type:"RECEIVABLE"|"PAYABLE"|"BOTH";
+};
+export type FinancialBankAccountConfig={
+  id:string;name:string;bankCode:string;bankName:string;agency:string;account:string;active:boolean;
+};
+export type FinancialEntryMetadata={
+  bankAccountId:string;paymentMethod:"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER"|"";
+};
 export type BillingRegularizationRequest={
   month:string;requestedAt:string;requesterEmail:string;
 };
@@ -265,6 +274,10 @@ export type ErpWorkspace = {
   serviceCommissionOverrides: Record<string, number>;
   serviceCatalogSettings: Record<string,ServiceCatalogMetadata>;
   billingRegularizationRequests: BillingRegularizationRequest[];
+  financialCategories: FinancialCategoryConfig[];
+  financialBankAccounts: FinancialBankAccountConfig[];
+  financialExpenseMethods: FinancialEntryMetadata["paymentMethod"][];
+  financialEntryMetadata: Record<string,FinancialEntryMetadata>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
   /** Regras de rateio do pote. Nunca armazena nem permite editar o valor arrecadado. */
@@ -294,6 +307,10 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   featuredProfessionalIds: [],
   serviceCatalogSettings: {},
   billingRegularizationRequests: [],
+  financialCategories: [],
+  financialBankAccounts: [],
+  financialExpenseMethods: ["PIX","CASH","DEBIT","CREDIT","TRANSFER"],
+  financialEntryMetadata: {},
   rolePermissions: {},
   professionalProfiles: {},
   clubEvents: [],
@@ -410,6 +427,36 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
           welcomeText:typeof p.welcomeText==="string"?p.welcomeText.slice(0,280):"",
         }];
       })) as Record<string,UnitOperationsPolicy>,
+    financialCategories:array<unknown>(operations.financialCategories).flatMap(item=>{
+      const entry=record(item);
+      if(typeof entry.id!=="string"||typeof entry.name!=="string"||
+        !["RECEIVABLE","PAYABLE","BOTH"].includes(String(entry.type)))return [];
+      return [{id:entry.id.slice(0,100),name:entry.name.slice(0,80),
+        type:entry.type as FinancialCategoryConfig["type"]}];
+    }).slice(0,250),
+    financialBankAccounts:array<unknown>(operations.financialBankAccounts).flatMap(item=>{
+      const entry=record(item);
+      if(typeof entry.id!=="string"||typeof entry.name!=="string")return [];
+      return [{id:entry.id.slice(0,100),name:entry.name.slice(0,90),
+        bankCode:typeof entry.bankCode==="string"?entry.bankCode.slice(0,12):"",
+        bankName:typeof entry.bankName==="string"?entry.bankName.slice(0,100):"",
+        agency:typeof entry.agency==="string"?entry.agency.slice(0,25):"",
+        account:typeof entry.account==="string"?entry.account.slice(0,35):"",
+        active:entry.active!==false}];
+    }).slice(0,100),
+    financialExpenseMethods:(()=>{
+      const methods=["PIX","CASH","DEBIT","CREDIT","TRANSFER"] as const;
+      const raw=operations.financialExpenseMethods;
+      return Array.isArray(raw)?raw.filter((method):method is typeof methods[number]=>
+        typeof method==="string"&&(methods as readonly string[]).includes(method)): [...methods];
+    })(),
+    financialEntryMetadata:Object.fromEntries(Object.entries(record(operations.financialEntryMetadata))
+      .filter(([id])=>id.length<=100).slice(-5000).map(([id,raw])=>{
+        const entry=record(raw);const method=String(entry.paymentMethod??"");
+        return [id,{bankAccountId:typeof entry.bankAccountId==="string"?entry.bankAccountId.slice(0,100):"",
+          paymentMethod:["PIX","CASH","DEBIT","CREDIT","TRANSFER"].includes(method)?
+          method as FinancialEntryMetadata["paymentMethod"]:""}];
+      })) as Record<string,FinancialEntryMetadata>,
     billingRegularizationRequests:array<unknown>(operations.billingRegularizationRequests)
       .filter((item):item is BillingRegularizationRequest=>{
         if(!item||typeof item!=="object"||Array.isArray(item))return false;
