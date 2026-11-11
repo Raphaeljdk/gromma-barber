@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {Languages} from "lucide-react";
 
 type Locale="pt-BR"|"en"|"es"|"fr"|"de"|"it";
@@ -88,13 +88,14 @@ function normalizeLanguage(value:string|null):Locale{
 
 export function ErpLanguagePicker(){
   const [locale,setLocale]=useState<Locale>("pt-BR");
+  const originals=useRef(new WeakMap<Text,{source:string;last:string}>());
   useEffect(()=>{
     const saved=normalizeLanguage(localStorage.getItem("gromma-locale"));
     setLocale(saved);
   },[]);
   useEffect(()=>{
     document.documentElement.lang=locale;
-    const original=new WeakMap<Text,{source:string;last:string}>();
+    const original=originals.current;
     let frame=0;
     let disposed=false;
     function apply(){
