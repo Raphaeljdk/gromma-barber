@@ -52,7 +52,7 @@ export async function saveCompleteUnit(form:FormData){
     const postalCode=digits(val(form,"postalCode",10));
     const complement=val(form,"complement",120);
     const legalDocument=digits(val(form,"legalDocument",18));
-    const bankCountry=val(form,"bankCountry",3)==="INT"?"INT":"BR";
+    const bankCountry: "BR"|"INT"=val(form,"bankCountry",3)==="INT"?"INT":"BR";
     const bankChoice=val(form,"bankCode",180);
     const bankMatch=bankChoice.match(/^(\\d{3}|\\d{8})(?:\\s*[—-]\\s*(.*))?$/);
     if(bankCountry==="BR"&&bankChoice&&!bankMatch)
