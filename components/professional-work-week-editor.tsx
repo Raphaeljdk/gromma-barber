@@ -22,7 +22,7 @@ export function ProfessionalWorkWeekEditor({tenantCode,userId,weekDays,shifts}:P
   const setAll=(ids:number[])=>{
     setSelected(Object.fromEntries(weekDays.map(day=>[day.id,ids.includes(day.id)])));
   };
-  return <form action={saveProfessionalSection} className="erp-compact-form gromma-week-editor">
+  return <form action={saveProfessionalSection} data-professional-save="schedule" className="erp-compact-form gromma-week-editor">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="userId" value={userId}/>
     <input type="hidden" name="section" value="schedule"/>
@@ -55,9 +55,6 @@ export function ProfessionalWorkWeekEditor({tenantCode,userId,weekDays,shifts}:P
             [day.id]:{...current[day.id],end:e.target.value}}))}/>
         </label>
       </div>)}
-    </div>
-    <div className="gromma-week-actions">
-      <button className="btn" type="submit">Salvar jornada semanal</button>
     </div>
   </form>;
 }
