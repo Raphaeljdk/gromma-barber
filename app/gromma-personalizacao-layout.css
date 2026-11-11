@@ -1,0 +1,218 @@
+/* GROMMA | Dados / Personalização: hierarquia do modelo de referência.
+   Campos compactos; alterações exclusivamente na apresentação. */
+html[data-theme] .tenant-erp .gromma-business-data .gromma-settings-panel {
+  min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-settings-form.gromma-business-identity-form {
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  align-items:end;
+  column-gap:12px!important;
+  row-gap:9px!important;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-business-identity-form > .gromma-field-row {
+  grid-column:auto!important;
+  min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-business-identity-form .gromma-field-row :is(input,select) {
+  width:100%;min-width:0;
+  height:37px;min-height:37px;
+  padding:7px 10px;
+  color:var(--gx-ink);
+  background:var(--gx-paper);
+  border:1px solid var(--gx-stroke);
+  border-radius:7px;
+  font-size:.79rem;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-business-identity-form .gromma-settings-actions {
+  grid-column:1 / -1;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin:0;
+  padding-top:7px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-business-readonly {
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-layout {
+  margin-top:11px;
+  padding:14px 16px;
+  border:1px solid var(--gx-stroke);
+  border-radius:11px;
+  background:var(--gx-paper);
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-layout > .gromma-settings-heading {
+  margin-bottom:9px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-subpanel {
+  padding:12px 0 14px;
+  border-bottom:1px solid var(--gx-stroke);
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-subpanel h4 {
+  color:var(--gx-ink);
+  font-size:.88rem;
+  font-weight:770;
+  margin:0 0 11px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form {
+  display:grid;
+  grid-template-columns:150px 150px minmax(210px,1fr) max-content;
+  align-items:end;
+  gap:11px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form > label {
+  min-width:0;
+  display:flex;flex-direction:column;
+  gap:5px;
+  color:var(--gx-ink);
+  font-size:.74rem;
+  font-weight:730;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form input[type="color"] {
+  width:100%;min-height:37px;height:37px;
+  padding:4px 7px;
+  border:1px solid var(--gx-stroke);
+  border-radius:7px;
+  background:var(--gx-paper);
+  cursor:pointer;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form .gromma-slug-input {
+  display:flex;align-items:center;
+  width:100%;min-width:0;
+  overflow:hidden;
+  min-height:37px;
+  border:1px solid var(--gx-stroke);
+  border-radius:7px;
+  background:var(--gx-paper);
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-slug-input > span {
+  padding:9px;
+  flex:none;
+  max-width:65%;
+  font-size:.7rem;
+  color:var(--gx-secondary);
+  white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+  background:var(--gx-paper-soft);
+  border-right:1px solid var(--gx-stroke);
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-slug-input input {
+  min-width:0;flex:1;
+  min-height:35px;height:35px;
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  color:var(--gx-ink);
+  padding:6px 9px!important;
+  font-size:.77rem;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form > button {
+  min-height:37px;height:37px;
+  margin:0;padding:7px 12px;
+  border-radius:7px;
+  white-space:nowrap;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-subpanel > p.small {
+  margin:8px 0 3px;
+  color:var(--gx-secondary);
+  line-height:1.5;
+  font-size:.7rem;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-preview-link {
+  font-size:.75rem;
+  color:var(--gx-purple);
+  font-weight:680;
+  text-decoration:none;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner {
+  margin:9px 0 0;
+  padding:10px 11px;
+  border:1px solid var(--gx-stroke);
+  border-radius:8px;
+  background:var(--gx-paper);
+  box-shadow:none;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner > summary {
+  margin:0 0 10px;padding:0 0 8px;
+  border-bottom:1px solid var(--gx-stroke);
+  color:var(--gx-ink);
+  cursor:pointer;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-business-carousel {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:start;
+  gap:10px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-carousel-slot {
+  border:1px solid var(--gx-stroke);
+  border-radius:8px;
+  padding:10px;
+  background:var(--gx-paper-soft);
+  min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-carousel-preview {
+  aspect-ratio:16/8;
+  min-height:90px;max-height:130px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner :is(.gromma-carousel-controls input[type="file"],.gromma-settings-form input,.gromma-settings-form textarea) {
+  background:var(--gx-paper);
+  color:var(--gx-ink);
+  border-color:var(--gx-stroke);
+  border-radius:7px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-settings-form {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px 12px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-settings-form > label {
+  grid-column:auto;
+  min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-settings-form textarea {
+  min-height:65px;
+  resize:vertical;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-settings-actions {
+  grid-column:1/-1;
+  display:flex;flex-wrap:wrap;
+  align-items:center;justify-content:flex-end;
+  gap:10px;
+}
+@media(max-width:1300px){
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form .gromma-slug-field {
+    grid-column:1/-1;
+  }
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form > button {
+    grid-column:1/-1;justify-self:end;
+  }
+}
+@media(max-width:1000px){
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-settings-form.gromma-business-identity-form,
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-business-readonly {
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:620px){
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-settings-form.gromma-business-identity-form,
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-business-readonly,
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form,
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-settings-form,
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-business-carousel {
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-appearance-form > button {
+    grid-column:auto;justify-self:stretch;
+  }
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-layout {padding:11px;}
+  html[data-theme] .tenant-erp .gromma-business-data .gromma-personalization-inner .gromma-settings-actions {
+    justify-content:stretch;
+  }
+}
