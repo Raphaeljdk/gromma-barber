@@ -860,30 +860,33 @@ export async function saveOperationalSettings(formData: FormData) {
 
   const openHour = Math.max(0, Math.min(23, Math.round(numberValue(formData, "openHour", 8))));
   const closeHour = Math.max(openHour + 1, Math.min(24, Math.round(numberValue(formData, "closeHour", 20))));
-  const slotMinutesRaw = Math.round(numberValue(formData, "slotMinutes", 30));
-  const slotMinutes = [15, 20, 30, 45, 60].includes(slotMinutesRaw) ? slotMinutesRaw : 30;
-  const defaultCommissionPercent = Math.max(
-    0,
-    Math.min(100, numberValue(formData, "defaultCommissionPercent", 40)),
-  );
-  const whatsappNumber = value(formData, "whatsappNumber", 40).replace(/\D/g, "");
-  const invoiceProvider = value(formData, "invoiceProvider", 120);
-  const amenities = value(formData, "amenities", 600);
+  const slotMinutesRaw = numberValue(formData, "slotMinutes", 30);
+  if (!Number.isSafeInteger(slotMinutesRaw) || slotMinutesRaw < 5 ||
+      slotMinutesRaw > 120 || slotMinutesRaw % 5 !== 0) {
+    redirect(`${path}?erro=intervalo`);
+  }
+  const amenitiesSelected = formData.getAll("amenity").map(String);
+  const allowedAmenities = ["Wi-Fi","Café","Estacionamento","Acessibilidade PCD"];
+  if(amenitiesSelected.some(item=>!allowedAmenities.includes(item)))
+    redirect(`${path}?erro=comodidades`);
 
   try {
     await persistWorkspace(shop, (workspace) => {
+      // Campos retirados da interface permanecem intactos, sem zerar comissão,
+      // WhatsApp ou referência fiscal de outras operações existentes.
+      const extras=workspace.settings.amenities.split(",").map(value=>value.trim())
+        .filter(value=>value&&!allowedAmenities.includes(value));
       workspace.settings = {
+        ...workspace.settings,
         openHour,
         closeHour,
-        slotMinutes,
+        slotMinutes:slotMinutesRaw,
         rotationEnabled: boolValue(formData, "rotationEnabled"),
         autoConfirm: boolValue(formData, "autoConfirm"),
-        defaultCommissionPercent,
-        whatsappNumber,
-        invoiceProvider,
-        amenities,
+        amenities:[...new Set([...amenitiesSelected,...extras])].join(", "),
       };
-    });
+    },{action:"OPERATIONAL_SETTINGS_UPDATED",actor:viewer.email,
+      details:{openHour,closeHour,slotMinutes:slotMinutesRaw,amenities:amenitiesSelected}});
   } catch (error) {
     console.error("Failed to save operational settings", error);
     redirect(`${path}?erro=banco`);
@@ -892,6 +895,37 @@ export async function saveOperationalSettings(formData: FormData) {
   revalidatePath(path);
   revalidatePath(modulePath(tenantCode, "agenda"));
   redirect(`${path}?ok=configuracoes`);
+}
+
+/** Pedido autenticado de regularização: não equivale a pagamento nem gera fatura fictícia. */
+export async function requestBillingRegularization(formData:FormData){
+  const {tenantCode,viewer,shop}=await moduleContext(formData);
+  const path=modulePath(tenantCode,"fatura");
+  if(!allowed(viewer,["OWNER"]))redirect(`${path}?erro=permissao`);
+  const month=value(formData,"month",7);
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))
+    redirect(`${path}?erro=competencia`);
+  const first=new Date(month+"-01T12:00:00Z");
+  const now=new Date();
+  const monthsBehind=(now.getUTCFullYear()-first.getUTCFullYear())*12+
+    (now.getUTCMonth()-first.getUTCMonth());
+  if(Number.isNaN(first.getTime())||monthsBehind<0||monthsBehind>24)
+    redirect(`${path}?erro=competencia`);
+  try{
+    await persistWorkspace(shop,workspace=>{
+      if(workspace.billingRegularizationRequests.some(item=>item.month===month))
+        throw new Error("Já solicitado");
+      workspace.billingRegularizationRequests.push({
+        month,requestedAt:now.toISOString(),requesterEmail:viewer.email,
+      });
+    },{action:"BILLING_REGULARIZATION_REQUESTED",actor:viewer.email,
+      details:{month,requestType:"SUPPORT_REVIEW_NOT_PAYMENT"}});
+  }catch(error){
+    console.error("Billing regularization request failed",error);
+    redirect(`${path}?erro=solicitacao`);
+  }
+  revalidatePath(path);
+  redirect(`${path}?ok=solicitacao`);
 }
 
 export async function updateClubMemberStatus(formData: FormData) {
