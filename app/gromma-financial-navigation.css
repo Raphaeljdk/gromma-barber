@@ -18,8 +18,12 @@ html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-tree-item.i
 html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-sector-copy strong{
   font-size:.9rem!important;font-weight:790!important;
 }
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-sector-items .erp-nav-tree-row > .erp-nav-item{
+  font-size:.86rem!important;font-weight:650!important;
+  min-height:38px!important;line-height:1.35!important;
+}
 html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item{
-  min-height:31px;font-size:.76rem!important;
+  min-height:36px;font-size:.82rem!important;font-weight:580!important;
 }
 html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-tree-children,
 html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-tree-children{
