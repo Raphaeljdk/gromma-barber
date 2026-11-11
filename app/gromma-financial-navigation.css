@@ -1,0 +1,34 @@
+/* Barra lateral: Operacional e Gestão abertos, mais legíveis. */
+html .tenant-erp .erp-nav-sector[data-sector="operacional"] > .erp-nav-sector-heading,
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] > .erp-nav-sector-heading{
+  cursor:default;grid-template-columns:18px minmax(0,1fr);
+}
+html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-sector-copy strong{
+  font-size:.99rem!important;font-weight:800!important;
+  letter-spacing:.005em;
+}
+html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-sector-items .erp-nav-tree-row > .erp-nav-item{
+  font-size:.86rem!important;font-weight:650!important;
+  line-height:1.37!important;min-height:38px!important;
+}
+html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item{
+  font-size:.8rem!important;font-weight:580!important;
+  line-height:1.4!important;min-height:36px!important;
+}
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-sector-copy strong{
+  font-size:.9rem!important;font-weight:790!important;
+}
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item{
+  min-height:31px;font-size:.76rem!important;
+}
+html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-tree-children,
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-tree-children{
+  display:grid;gap:1px;
+}
+/* Financeiro preserva toda a hierarquia de três níveis de forma compacta. */
+html .tenant-erp .erp-nav-sector[data-sector="financeiro"] .erp-nav-tree-children .erp-nav-tree-children{
+  margin-left:9px;padding-left:8px;
+}
+html .tenant-erp .erp-nav-sector[data-sector="financeiro"] .erp-nav-item{
+  font-size:.78rem!important;
+}
