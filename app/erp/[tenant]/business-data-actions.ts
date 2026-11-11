@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
-import { readWorkspace,writeWorkspace } from "@/lib/erp-workspace";
+import { readWorkspace,writeWorkspace,workspaceId } from "@/lib/erp-workspace";
 
 const field=(form:FormData,name:string,max=250)=>String(form.get(name)??"").trim().slice(0,max);
 type Ctx={code:string;id:string;actor:string;slug:string|null};
@@ -141,6 +141,172 @@ export async function saveBusinessIntroduction(form:FormData){
   next(code,"apresentacao",error);
 }
 
+/** Salva textos de uma imagem independentemente do upload — não sobrescreve a foto. */
+export async function saveBusinessCarouselCaption(form:FormData){
+  const code=field(form,"tenantCode",80).toUpperCase();
+  let error="";let ctx:Ctx|undefined;
+  try{
+    ctx=await authorize(form);
+    const slot=Number(field(form,"slot",2));
+    if(!Number.isInteger(slot)||slot<0||slot>=3)throw Error("Posição inválida.");
+    const title=field(form,"title",110);
+    const subtitle=field(form,"subtitle",240);
+    await prisma.$transaction(async tx=>{
+      const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},select:{enabledFeatures:true}});
+      const ws=readWorkspace(shop.enabledFeatures);
+      const captions=Array.from({length:3},(_,i)=>ws.branding.carouselCaptions[i]??{title:"",subtitle:""});
+      captions[slot]={title,subtitle};
+      ws.branding={...ws.branding,carouselCaptions:captions};
+      await tx.barberShop.update({where:{id:ctx!.id},data:{enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
+      await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
+        action:"BUSINESS_CAROUSEL_CAPTION_UPDATED",details:{slot:slot+1} as Prisma.InputJsonValue}});
+    },{isolationLevel:"Serializable"});
+    refresh(ctx);
+  }catch(err){error=message(err);}
+  next(code,"carrossel",error);
+}
+
+/** Tolerância e penalidade padrão, sem sobrescrever regras particulares de filiais. */
+export async function saveBusinessBookingRules(form:FormData){
+  const code=field(form,"tenantCode",80).toUpperCase();
+  let error="";let ctx:Ctx|undefined;
+  try{
+    ctx=await authorize(form);
+    const cancellationMinutes=Number(field(form,"cancellationMinutes",7));
+    const noShowBlockHours=Number(field(form,"noShowBlockHours",5));
+    const mode=field(form,"mode",15);
+    const customExplanation=field(form,"customExplanation",500);
+    if(!Number.isSafeInteger(cancellationMinutes)||cancellationMinutes<0||cancellationMinutes>10080||
+      !Number.isSafeInteger(noShowBlockHours)||noShowBlockHours<0||noShowBlockHours>720||
+      !["STANDARD","CUSTOM"].includes(mode))
+      throw Error("Informe tolerância e penalidade em valores válidos.");
+    if(mode==="CUSTOM"&&customExplanation.length<8)
+      throw Error("Descreva a penalidade personalizada.");
+    await prisma.$transaction(async tx=>{
+      const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},select:{enabledFeatures:true}});
+      const ws=readWorkspace(shop.enabledFeatures);
+      ws.bookingRules={cancellationMinutes,noShowBlockHours,
+        mode:mode==="CUSTOM"?"CUSTOM":"STANDARD",
+        customExplanation:mode==="CUSTOM"?customExplanation:""};
+      await tx.barberShop.update({where:{id:ctx!.id},data:{enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
+      await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
+        action:"BUSINESS_BOOKING_RULES_UPDATED",
+        details:{cancellationMinutes,noShowBlockHours,mode} as Prisma.InputJsonValue}});
+    },{isolationLevel:"Serializable"});
+    refresh(ctx);
+  }catch(err){error=message(err);}
+  next(code,"regras",error);
+}
+
+/** Clubes são os planos de assinatura existentes: mantém vínculos e cobranças. */
+export async function saveBusinessClub(form:FormData){
+  const code=field(form,"tenantCode",80).toUpperCase();
+  let error="";let ctx:Ctx|undefined;
+  try{
+    ctx=await authorize(form);
+    const planId=field(form,"planId",100);
+    const name=field(form,"name",100);
+    const benefits=field(form,"benefits",600);
+    const monthlyAmount=Number(field(form,"monthlyAmount",18).replace(",","."));
+    const visits=Number(field(form,"visitsPerMonth",8));
+    const subscriberDiscountPercent=Number(field(form,"subscriberDiscountPercent",7).replace(",","."));
+    const subscriberDiscountAppliesTo=field(form,"subscriberDiscountAppliesTo",10);
+    const active=form.get("active")==="on";
+    const isPercent=(n:number)=>Number.isFinite(n)&&n>=0&&n<=100;
+    if(name.length<2||!Number.isFinite(monthlyAmount)||monthlyAmount<0||monthlyAmount>1e6||
+      Math.round(monthlyAmount*100)!==monthlyAmount*100||
+      !Number.isSafeInteger(visits)||visits<0||visits>1000||
+      !isPercent(subscriberDiscountPercent)||
+      !["SERVICES","PRODUCTS","BOTH"].includes(subscriberDiscountAppliesTo))
+      throw Error("Revise mensalidade, limites e descontos do clube.");
+    await prisma.$transaction(async tx=>{
+      const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},select:{enabledFeatures:true}});
+      const ws=readWorkspace(shop.enabledFeatures);
+      const duplicate=ws.clubPlans.some(p=>p.id!==planId&&p.name.toLocaleLowerCase("pt-BR")===name.toLocaleLowerCase("pt-BR"));
+      if(duplicate)throw Error("Já existe um clube com esse nome.");
+      const selected=planId?ws.clubPlans.find(p=>p.id===planId):undefined;
+      if(planId&&!selected)throw Error("Clube não encontrado.");
+      if(!planId&&ws.clubPlans.length>=40)throw Error("Limite de 40 clubes atingido.");
+      const fields={name,monthlyAmount,visitsPerMonth:visits>0?visits:null,benefits,
+        subscriberDiscountPercent,
+        subscriberDiscountAppliesTo:subscriberDiscountAppliesTo as "SERVICES"|"PRODUCTS"|"BOTH",
+        active};
+      if(selected)Object.assign(selected,fields);
+      else ws.clubPlans.unshift({...fields,id:workspaceId("club"),createdAt:new Date().toISOString()});
+      await tx.barberShop.update({where:{id:ctx!.id},data:{enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
+      await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
+        action:selected?"BUSINESS_CLUB_UPDATED":"BUSINESS_CLUB_CREATED",
+        details:({clubId:selected?.id??"created",name,active,subscriberDiscountPercent} as Prisma.InputJsonValue)}});
+    },{isolationLevel:"Serializable"});
+    refresh(ctx);
+  }catch(err){error=message(err);}
+  next(code,"clubes",error);
+}
+
+/** Parceiros são ofertas vinculadas a um clube, sem modificar transações passadas. */
+export async function saveBusinessClubPartner(form:FormData){
+  const code=field(form,"tenantCode",80).toUpperCase();
+  let error="";let ctx:Ctx|undefined;
+  try{
+    ctx=await authorize(form);
+    const planId=field(form,"planId",100);
+    const partnerId=field(form,"partnerId",100);
+    const remove=form.get("remove")==="yes";
+    const name=field(form,"name",100);
+    const percent=Number(field(form,"discountPercent",7).replace(",","."));
+    if(!remove&&(name.length<2||!Number.isFinite(percent)||percent<=0||percent>100))
+      throw Error("Informe nome do parceiro e desconto de 0,01% a 100%.");
+    await prisma.$transaction(async tx=>{
+      const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},select:{enabledFeatures:true}});
+      const ws=readWorkspace(shop.enabledFeatures);
+      const plan=ws.clubPlans.find(p=>p.id===planId);
+      if(!plan)throw Error("Clube não encontrado.");
+      const partners=[...(plan.partners??[])];
+      if(remove){
+        if(!partners.some(p=>p.id===partnerId))throw Error("Parceiro não encontrado.");
+        plan.partners=partners.filter(p=>p.id!==partnerId);
+      }else{
+        if(partners.length>=20)throw Error("Limite de 20 parceiros por clube.");
+        if(partners.some(p=>p.name.toLocaleLowerCase("pt-BR")===name.toLocaleLowerCase("pt-BR")))
+          throw Error("Parceiro já cadastrado.");
+        partners.push({id:workspaceId("partner"),name,discountPercent:percent});
+        plan.partners=partners;
+      }
+      await tx.barberShop.update({where:{id:ctx!.id},data:{enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
+      await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
+        action:remove?"BUSINESS_CLUB_PARTNER_REMOVED":"BUSINESS_CLUB_PARTNER_CREATED",
+        details:{planId,partnerId:remove?partnerId:"created"} as Prisma.InputJsonValue}});
+    },{isolationLevel:"Serializable"});
+    refresh(ctx);
+  }catch(err){error=message(err);}
+  next(code,"parceiros",error);
+}
+
+/** Pote global existente: a mesma regra usada nos relatórios e no rateio real. */
+export async function saveBusinessPotRule(form:FormData){
+  const code=field(form,"tenantCode",80).toUpperCase();
+  let error="";let ctx:Ctx|undefined;
+  try{
+    ctx=await authorize(form);
+    const percent=Number(field(form,"potPercent",7).replace(",","."));
+    const reason=field(form,"reason",400);
+    if(!Number.isFinite(percent)||percent<0||percent>100||reason.length<5)
+      throw Error("Informe o percentual de 0 a 100 e o motivo da alteração.");
+    await prisma.$transaction(async tx=>{
+      const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},select:{enabledFeatures:true}});
+      const ws=readWorkspace(shop.enabledFeatures);
+      const previousPercent=ws.subscriptionPot.percent;
+      ws.subscriptionPot.percent=percent;
+      await tx.barberShop.update({where:{id:ctx!.id},data:{enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
+      await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
+        action:"SUBSCRIPTION_POT_RATE_UPDATED",
+        details:{previousPercent,newPercent:percent,reason} as Prisma.InputJsonValue}});
+    },{isolationLevel:"Serializable"});
+    refresh(ctx);
+  }catch(err){error=message(err);}
+  next(code,"pote",error);
+}
+
 export async function updateBusinessCarousel(form:FormData){
   const code=field(form,"tenantCode",80).toUpperCase();
   let error="";let ctx:Ctx|undefined;
@@ -178,12 +344,14 @@ export async function updateBusinessCarousel(form:FormData){
       const ws=readWorkspace(shop.enabledFeatures);
       const images=[...ws.branding.carouselImages];
       if(slot>images.length)throw Error("Preencha as fotos anteriores primeiro.");
+      const captions=[...ws.branding.carouselCaptions];
       if(remove){
         if(slot>=images.length)throw Error("Foto não encontrada.");
         images.splice(slot,1);
+        captions.splice(slot,1);
       }else if(slot===images.length)images.push(imageUrl);
       else images[slot]=imageUrl;
-      ws.branding={...ws.branding,carouselImages:images};
+      ws.branding={...ws.branding,carouselImages:images,carouselCaptions:captions};
       await tx.barberShop.update({where:{id:ctx!.id},data:{
         enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
       await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,

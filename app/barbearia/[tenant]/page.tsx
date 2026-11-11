@@ -50,10 +50,38 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
             {brand.heroDescription||"Conheça nossos profissionais e unidades. Entre em contato para agendar seu atendimento."}</p>
         </div>
       </section>
-      <PublicBusinessCarousel images={brand.carouselImages} tradeName={shop.tradeName} />
+      <PublicBusinessCarousel images={brand.carouselImages} captions={brand.carouselCaptions} tradeName={shop.tradeName} />
       {(brand.secondaryTitle || brand.secondaryDescription) && <section style={{marginTop:28,padding:"20px 4px"}}>
         {brand.secondaryTitle && <h2 style={{fontSize:"clamp(22px,3vw,30px)"}}>{brand.secondaryTitle}</h2>}
         {brand.secondaryDescription && <p style={{maxWidth:760,opacity:.8}}>{brand.secondaryDescription}</p>}
+      </section>}
+      {ws.clubPlans.some(plan=>plan.active)&&<section style={{marginTop:36}} aria-labelledby="public-club-plans">
+        <h2 id="public-club-plans" style={{fontSize:25,marginBottom:6}}>Clubes de assinatura</h2>
+        <p style={{opacity:.76,margin:"0 0 14px"}}>Conheça os benefícios disponíveis para assinantes.</p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,260px),1fr))",gap:12}}>
+          {ws.clubPlans.filter(plan=>plan.active).map(plan=><article key={plan.id}
+            style={{padding:19,background:cardTone,borderRadius:12,border:"1px solid #414c59"}}>
+            <h3 style={{fontSize:19,margin:"0 0 7px"}}>{plan.name}</h3>
+            <strong style={{color:brand.accentColor,fontSize:17}}>
+              {new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(plan.monthlyAmount)}/mês
+            </strong>
+            {plan.benefits&&<p style={{opacity:.82,fontSize:14,margin:"12px 0"}}>{plan.benefits}</p>}
+            {(plan.subscriberDiscountPercent??0)>0&&<p style={{fontSize:14}}>
+              <b>{plan.subscriberDiscountPercent}% de desconto</b> para assinantes em
+              {plan.subscriberDiscountAppliesTo==="SERVICES"?" serviços":
+                plan.subscriberDiscountAppliesTo==="PRODUCTS"?" produtos":" serviços e produtos"}.
+            </p>}
+            {!!plan.partners?.length&&<div style={{borderTop:"1px solid #414c59",paddingTop:11}}>
+              <strong style={{fontSize:13}}>Parceiros do clube</strong>
+              {plan.partners.map(partner=><p key={partner.id} style={{fontSize:13,opacity:.84,margin:"7px 0"}}>
+                {partner.name} — {partner.discountPercent}% de desconto
+              </p>)}
+            </div>}
+          </article>)}
+        </div>
+        <p style={{opacity:.67,fontSize:12,marginTop:10}}>
+          Consulte a equipe para confirmar as condições de uso e os benefícios dos parceiros.
+        </p>
       </section>}
       <section style={{marginTop:42}}>
         <h2 style={{fontSize:25}}>Nossos profissionais</h2>

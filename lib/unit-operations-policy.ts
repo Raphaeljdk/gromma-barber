@@ -11,7 +11,14 @@ export const DEFAULT_UNIT_POLICY:UnitOperationsPolicy={
   cancellationMinutes:0,noShowBlockHours:0,coverImageUrl:"",welcomeText:"",
 };
 export function unitPolicy(workspace:ErpWorkspace,unitId:string):UnitOperationsPolicy{
-  return {...DEFAULT_UNIT_POLICY,...workspace.unitPolicies[unitId]};
+  // Padrões do negócio aplicados quando a filial ainda não possui política própria.
+  // Uma filial configurada mantém sua regra, inclusive o valor zero.
+  return {...DEFAULT_UNIT_POLICY,
+    ...(!workspace.unitPolicies[unitId] ? {
+      cancellationMinutes:workspace.bookingRules?.cancellationMinutes??0,
+      noShowBlockHours:workspace.bookingRules?.noShowBlockHours??0,
+    } : {}),
+    ...workspace.unitPolicies[unitId]};
 }
 export function isValidCnpj(value:string):boolean{
   const digits=value.replace(/\D/g,"");

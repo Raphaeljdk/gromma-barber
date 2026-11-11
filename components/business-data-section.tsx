@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { Images, Palette, Store, Type } from "lucide-react";
-import type { BrandingSettings } from "@/lib/erp-workspace";
-import { saveBusinessIdentity,saveBusinessAppearance,saveBusinessIntroduction,updateBusinessCarousel } from "@/app/erp/[tenant]/business-data-actions";
+import type { BrandingSettings, ErpWorkspace } from "@/lib/erp-workspace";
+import { BusinessExperienceSettings } from "@/components/business-experience-settings";
+import { saveBusinessIdentity,saveBusinessAppearance,saveBusinessIntroduction,updateBusinessCarousel,saveBusinessCarouselCaption } from "@/app/erp/[tenant]/business-data-actions";
 
 type Business={
   tradeName:string;legalName:string|null;email:string;slug:string|null;
 };
 
-export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,error,hasBranches,registeredBranches,contactEmail,timeZone}:{
+export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,error,hasBranches,registeredBranches,contactEmail,timeZone,workspace}:{
   tenantCode:string;business:Business;branding:BrandingSettings;
-  isOwner:boolean;ok:string;error:string;hasBranches:boolean;registeredBranches:number;contactEmail:string;timeZone:string;
+  isOwner:boolean;ok:string;error:string;hasBranches:boolean;registeredBranches:number;contactEmail:string;timeZone:string;workspace:ErpWorkspace;
 }){
   const images=branding.carouselImages??[];
   const publicSlug=business.slug??tenantCode.toLowerCase().replace(/[^a-z0-9-]/g,"-");
@@ -96,6 +97,9 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
                 <span>JPEG, PNG ou WebP</span>
               </div>}
           </div>
+          {!isOwner&&(branding.carouselCaptions[index]?.title||branding.carouselCaptions[index]?.subtitle)&&<div className="gromma-carousel-caption-view">
+            <strong>{branding.carouselCaptions[index]?.title}</strong><p>{branding.carouselCaptions[index]?.subtitle}</p>
+          </div>}
           {isOwner&&<div className="gromma-carousel-controls">
             <form action={updateBusinessCarousel}>
               <input type="hidden" name="tenantCode" value={tenantCode}/>
@@ -112,6 +116,17 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
                 disabled={!images[index]&&index>images.length}>
                 Salvar foto {index+1}
               </button>
+            </form>
+            <form action={saveBusinessCarouselCaption} className="gromma-carousel-caption-form">
+              <input type="hidden" name="tenantCode" value={tenantCode}/>
+              <input type="hidden" name="slot" value={index}/>
+              <label>Título da imagem {index+1}<input className="input" name="title"
+                defaultValue={branding.carouselCaptions[index]?.title??""} maxLength={110}
+                placeholder="Ex.: Bem-vindo ao nosso clube"/></label>
+              <label>Subtítulo<input className="input" name="subtitle"
+                defaultValue={branding.carouselCaptions[index]?.subtitle??""} maxLength={240}
+                placeholder="Apresente este benefício"/></label>
+              <button className="btn secondary" type="submit">Salvar textos</button>
             </form>
             {images[index]&&<form action={updateBusinessCarousel}>
               <input type="hidden" name="tenantCode" value={tenantCode}/>
@@ -154,6 +169,7 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
         <div><span>2º subtítulo</span><strong>{branding.secondaryDescription||"Não definido"}</strong></div>
       </div>}
     </details>
+    <BusinessExperienceSettings tenantCode={tenantCode} workspace={workspace} isOwner={isOwner}/>
     </section>
   </section>;
 }

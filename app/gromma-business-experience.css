@@ -1,0 +1,211 @@
+/* GROMMA — Dados: carrossel com legendas e clubes configuráveis.
+   Visual claro, compacto, lista vertical; sem novos módulos na sidebar. */
+html[data-theme] .tenant-erp .gromma-business-data .gromma-carousel-slot {
+  display:flex;flex-direction:column;
+  min-width:0;gap:7px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-carousel-caption-form {
+  display:grid;grid-template-columns:minmax(0,1fr);gap:7px;
+  padding:10px 0 3px;
+  border-top:1px solid var(--gx-stroke);
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-carousel-caption-form label {
+  display:flex;flex-direction:column;gap:4px;
+  color:var(--gx-ink);
+  font-weight:690;font-size:.75rem;min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-carousel-caption-form .input {
+  width:100%;box-sizing:border-box;
+  height:35px;min-height:35px;
+  padding:7px 9px;
+  background:var(--gx-paper)!important;color:var(--gx-ink)!important;
+  border:1px solid var(--gx-stroke)!important;
+  border-radius:6px!important;font-size:.76rem;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-carousel-caption-form button {
+  justify-self:stretch;
+  min-height:34px;padding:7px 10px;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-carousel-caption-view {
+  padding:9px;border-radius:6px;
+  background:var(--gx-paper-soft);color:var(--gx-ink);
+  display:grid;gap:3px;font-size:.77rem;
+}
+html[data-theme] .tenant-erp .gromma-business-data .gromma-carousel-caption-view p {margin:0;color:var(--gx-secondary);}
+html[data-theme] .tenant-erp .gromma-business-experience {
+  display:grid;gap:10px;margin-top:12px;min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel {
+  background:var(--gx-paper);
+  border:1px solid var(--gx-stroke);
+  border-radius:10px;
+  padding:14px 16px;
+  color:var(--gx-ink);
+  min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel > .gromma-settings-heading {margin-bottom:12px;}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-experience-grid,
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-form {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:end;gap:10px 12px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel label {
+  display:flex;flex-direction:column;gap:5px;
+  color:var(--gx-ink);
+  min-width:0;font-size:.75rem;font-weight:700;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel :is(.input,.select) {
+  box-sizing:border-box;
+  width:100%;min-width:0;
+  min-height:36px;height:36px;
+  background:var(--gx-paper)!important;
+  border:1px solid var(--gx-stroke)!important;
+  border-radius:6px!important;
+  color:var(--gx-ink)!important;
+  padding:6px 9px!important;
+  font-size:.79rem!important;
+  box-shadow:none!important;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel textarea.input {
+  min-height:68px;height:auto;
+  resize:vertical;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-experience-wide {
+  grid-column:1/-1;min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel p.small {
+  font-size:.74rem;
+  color:var(--gx-secondary);
+  line-height:1.5;margin:8px 0 0;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-experience-actions {
+  display:flex;justify-content:flex-end;
+  align-items:end;grid-column:1/-1;gap:9px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-experience-actions .btn {
+  min-height:36px;padding:8px 13px;
+  border-radius:7px;font-size:.76rem;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-add {
+  border:1px solid var(--gx-stroke);
+  background:var(--gx-paper-soft);
+  border-radius:9px;
+  padding:9px 11px;
+  margin:0 0 10px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-add > summary,
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-edit > summary {
+  font-size:.78rem;font-weight:760;
+  cursor:pointer;
+  color:var(--gx-ink);
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-add[open] > summary,
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-edit[open] > summary {margin-bottom:10px;}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-clubs-list {
+  display:grid;gap:9px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-item {
+  border:1px solid var(--gx-stroke);
+  border-radius:8px;
+  background:var(--gx-paper);
+  min-width:0;
+  padding:12px 13px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-heading {
+  display:flex;flex-wrap:wrap;
+  align-items:center;justify-content:space-between;
+  gap:8px;margin-bottom:8px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-heading > div {
+  display:flex;flex-direction:column;gap:2px;min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-heading strong {
+  font-size:.88rem;color:var(--gx-ink);
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-discount {
+  padding:5px 9px;border-radius:6px;
+  background:var(--gx-selection);
+  color:var(--gx-ink);
+  font-size:.73rem;font-weight:740;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-edit {
+  border-bottom:1px solid var(--gx-stroke);
+  padding:5px 0 10px;
+  margin-bottom:10px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-area h4 {
+  display:flex;align-items:center;gap:7px;
+  font-size:.8rem;font-weight:760;color:var(--gx-ink);
+  margin:0 0 9px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-row {
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;
+  padding:6px 0;
+  border-bottom:1px solid var(--gx-stroke);
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-row span {
+  display:flex;gap:6px;flex-wrap:wrap;
+  min-width:0;font-size:.76rem;color:var(--gx-ink);
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-row small {color:var(--gx-secondary);}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-row button {
+  min-height:29px;padding:5px 9px;font-size:.7rem;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-form {
+  display:grid;grid-template-columns:minmax(0,1fr) 175px max-content;
+  gap:10px;align-items:end;
+  margin-top:10px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-form button {
+  min-height:36px;padding:7px 12px;
+  white-space:nowrap;font-size:.73rem;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-pot-form {
+  display:grid;
+  grid-template-columns:180px minmax(200px,1fr) max-content;
+  align-items:end;gap:11px;
+}
+html[data-theme] .tenant-erp .gromma-experience-panel .gromma-pot-form button {
+  min-height:36px;padding:7px 12px;
+  font-size:.75rem;white-space:nowrap;
+}
+html[data-theme] .tenant-erp .gromma-public-gallery-caption {
+  padding:14px 20px;
+  background:var(--gx-paper-soft);
+}
+html[data-theme] .tenant-erp .gromma-public-gallery-caption h3 {margin:0 0 5px;}
+html[data-theme] .tenant-erp .gromma-public-gallery-caption p {margin:0;}
+/* Gallery lives outside the tenant ERP page. */
+.gromma-public-gallery-caption {
+  padding:14px 18px;
+  background:rgba(23,38,53,.94);
+  color:#fff;
+  line-height:1.45;
+}
+.gromma-public-gallery-caption h3 {margin:0 0 4px;font-size:1.05rem;}
+.gromma-public-gallery-caption p {margin:0;font-size:.83rem;opacity:.88;}
+@media(max-width:920px){
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-pot-form,
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-form {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-pot-form button,
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-form button {
+    grid-column:1/-1;justify-self:end;
+  }
+}
+@media(max-width:650px){
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-experience-grid,
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-club-form,
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-pot-form,
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-form {
+    grid-template-columns:minmax(0,1fr);
+  }
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-pot-form button,
+  html[data-theme] .tenant-erp .gromma-experience-panel .gromma-partner-form button {
+    grid-column:auto;justify-self:stretch;
+  }
+  html[data-theme] .tenant-erp .gromma-experience-panel {padding:11px;}
+}
