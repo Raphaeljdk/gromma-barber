@@ -1,5 +1,7 @@
 "use server";
 
+import type {Prisma} from "@prisma/client";
+import { effectiveServiceMinutes } from "@/lib/service-scheduling";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -462,7 +464,10 @@ export async function createAppointment(formData: FormData) {
   if (extraServicesFound.length !== uniqueExtraIds.length) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   const serviceById = new Map([service, ...extraServicesFound].map(item => [item.id, item]));
   const selectedServices = [service, ...extraIds.map(id => serviceById.get(id)!)];
-  const totalMinutes = selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0);
+  const reservedServices = selectedServices.map(item=>({
+    ...item,durationMinutes:effectiveServiceMinutes(item.durationMinutes,workspace.serviceCatalogSettings[item.id]),
+  }));
+  const totalMinutes = reservedServices.reduce((sum,item)=>sum+item.durationMinutes,0);
   if (!Number.isSafeInteger(totalMinutes) || totalMinutes <= 0 || totalMinutes > 24 * 60)
     redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   const endsAt = new Date(startsAt.getTime() + totalMinutes * 60_000);
@@ -604,7 +609,7 @@ export async function createAppointment(formData: FormData) {
           },
         },
       });
-      if (extraIds.length) latest.bookedServices.push({ appointmentId: createdAppointment.id, services: selectedServices.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })) });
+      if (extraIds.length) latest.bookedServices.push({ appointmentId: createdAppointment.id, services: reservedServices.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })) });
       if (waiting) latest.waitlist = latest.waitlist.filter(item => item.id !== waiting.id);
       if (waiting || extraIds.length) {
         await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, latest) } });
