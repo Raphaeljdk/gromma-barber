@@ -45,6 +45,7 @@ import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {effectiveServiceMinutes,dueServiceRepurchases} from "@/lib/service-scheduling";
 import {ServiceRepurchaseReminders} from "@/components/service-repurchase-reminders";
+import {ServiceEditDialog} from "@/components/service-edit-dialog";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
@@ -1506,29 +1507,9 @@ export async function TenantERPView({
                 <td>{effectiveServiceMinutes(service.durationMinutes,meta)} min{meta?.walkIn?" · Encaixe":""}</td>
                 <td>{brl(Number(service.price))}</td>
                 <td><span className={"badge "+(meta?.hidden?"pending":"approved")}>{meta?.hidden?"Oculto / exclusivo":"Ativo"}</span></td>
-                <td>{isOwner?<details className="gromma-service-inline-edit">
-                  <summary className="btn secondary">Editar</summary>
-                  <form action={updateService} className="gromma-service-inline-form">
-                    <input type="hidden" name="tenantCode" value={tenantCode}/>
-                    <input type="hidden" name="serviceId" value={service.id}/>
-                    <div className="gromma-service-primary-row">
-                      <label>Serviço<input className="input" name="name" defaultValue={service.name} maxLength={120} required/></label>
-                      <label>Duração (min)<input className="input" name="durationMinutes" type="number" min="5" max="600" step="5" defaultValue={service.durationMinutes} required/></label>
-                      <label>Valor (R$)<input className="input" name="price" type="number" min="0" step=".01" defaultValue={Number(service.price)} required/></label>
-                    </div>
-                    <div className="gromma-service-extra-row">
-                      <label>Tempo em fichas (min)<input className="input" name="ticketValue" type="number" min="1" max="600" step="1" defaultValue={meta?.ticketValue??""} placeholder="Usar duração padrão"/></label>
-                      <label>Recompra (dias)<input className="input" name="repurchaseDays" type="number" min="0" max="3650" defaultValue={meta?.repurchaseDays??""}/></label>
-                      <label>Categoria<input className="input" name="category" maxLength={80} defaultValue={meta?.category??""}/></label>
-                    </div>
-                    <div className="gromma-service-options">
-                      <label><input name="startingFrom" type="checkbox" defaultChecked={meta?.startingFrom??false}/> A partir de</label>
-                      <label><input name="hidden" type="checkbox" defaultChecked={meta?.hidden??false}/> Oculto (exclusivo)</label>
-                      <label><input name="walkIn" type="checkbox" defaultChecked={meta?.walkIn??false}/> Serviço de encaixe</label>
-                    </div>
-                    <div className="gromma-service-create-footer"><button type="submit" className="btn">Salvar alterações</button></div>
-                  </form>
-                </details>:<span className="small muted">Somente proprietário</span>}</td>
+                <td>{isOwner?<ServiceEditDialog tenantCode={tenantCode} service={{
+                  id:service.id,name:service.name,durationMinutes:service.durationMinutes,price:Number(service.price),
+                }} meta={meta}/>:<span className="small muted">Somente proprietário</span>}</td>
               </tr>;
             }) : <tr><td colSpan={5} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
