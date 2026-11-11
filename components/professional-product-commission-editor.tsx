@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { saveProfessionalSection } from "@/app/erp/[tenant]/professional-actions";
+import { ProfessionalCurrencyInput } from "@/components/professional-currency-input";
 import {
   PRODUCT_COMMISSION_CATEGORIES,
   resolveProductCommissionRate,
@@ -57,20 +58,23 @@ function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule}:{
   rule?:ProductCommissionRule;
 }){
   const [mode,setMode]=useState<"FIXED"|"SCALED">(rule?.mode??"FIXED");
+  const [touched,setTouched]=useState(false);
   const [tiers,setTiers]=useState<ProductTier[]>(()=>{
     const existing=rule?.mode==="SCALED"?rule.tiers:[];
     return existing.length?existing.map(tier=>({min:String(tier.min),percent:String(tier.percent)})):
       [{min:"0",percent:""}];
   });
-  function addTier(){setTiers(current=>current.length<10?[...current,{min:"",percent:""}]:current);}
+  function addTier(){setTouched(true);setTiers(current=>current.length<10?[...current,{min:"",percent:""}]:current);}
   function updateTier(index:number,field:keyof ProductTier,value:string){
+    setTouched(true);
     setTiers(current=>current.map((tier,i)=>i===index?{...tier,[field]:value}:tier));
   }
   function removeTier(index:number){
     if(index===0)return;
+    setTouched(true);
     setTiers(current=>current.filter((_,i)=>i!==index));
   }
-  return <form action={saveProfessionalSection} className="erp-compact-form professional-product-form">
+  return <form action={saveProfessionalSection} data-professional-save="product-category-rule" data-save-dirty={touched?"true":"false"} className="erp-compact-form professional-product-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="userId" value={userId}/>
     <input type="hidden" name="section" value="product-category-rule"/>
@@ -82,24 +86,22 @@ function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule}:{
         </select>
       </label>
       <label>Formato da comissão
-        <select className="select" name="mode" value={mode} onChange={e=>setMode(e.target.value as "FIXED"|"SCALED")}>
+        <select className="select" name="mode" value={mode} onChange={e=>{setTouched(true);setMode(e.target.value as "FIXED"|"SCALED");}}>
           <option value="FIXED">Fixa</option>
           <option value="SCALED">Escalonada</option>
         </select>
       </label>
       {mode==="FIXED"&&<label>Percentual sobre a venda (%)
         <input className="input" name="fixedPercent" type="number" min={0} max={100} step=".01"
-          defaultValue={rule?.mode==="FIXED"?rule.fixedPercent:0} required/>
+          defaultValue={rule?.mode==="FIXED"?rule.fixedPercent:0} onChange={()=>setTouched(true)} required/>
       </label>}
     </div>
     {mode==="SCALED"&&<div className="professional-scaled-editor">
       <h4>Comissão escalonada</h4>
       {tiers.map((tier,index)=><div className="professional-scaled-tier-row" key={index}>
         <label>A partir de (R$)
-          <input className="input" name="tierMin" type="number" min={0} step=".01"
-            aria-label={"Valor mínimo da faixa "+(index+1)}
-            value={tier.min} onChange={e=>updateTier(index,"min",e.target.value)}
-            required/>
+          <ProfessionalCurrencyInput name="tierMin" label={"Valor mínimo da faixa "+(index+1)}
+            value={tier.min} onChange={value=>updateTier(index,"min",value)} required/>
         </label>
         <label>Comissão (%)
           <input className="input" name="tierPercent" type="number" min={0} max={100} step=".01"
@@ -120,8 +122,5 @@ function CategoryRuleForm({tenantCode,userId,category,onCategoryChange,rule}:{
         </span>
       </div>)}
     </div>}
-    <div className="professional-product-save">
-      <button className="btn" type="submit">Salvar comissão da categoria</button>
-    </div>
   </form>;
 }
