@@ -211,18 +211,14 @@ export async function saveBusinessClub(form:FormData){
     const visits=Number(field(form,"visitsPerMonth",8));
     const subscriberDiscountPercent=Number(field(form,"subscriberDiscountPercent",7).replace(",","."));
     const subscriberDiscountAppliesTo=field(form,"subscriberDiscountAppliesTo",10);
-    const partnerName=field(form,"partnerName",100);
-    const partnerDiscountPercent=Number(field(form,"partnerDiscountPercent",7).replace(",","."));
     const active=form.get("active")==="on";
     const isPercent=(n:number)=>Number.isFinite(n)&&n>=0&&n<=100;
     if(name.length<2||!Number.isFinite(monthlyAmount)||monthlyAmount<0||monthlyAmount>1e6||
       Math.round(monthlyAmount*100)!==monthlyAmount*100||
       !Number.isSafeInteger(visits)||visits<0||visits>1000||
-      !isPercent(subscriberDiscountPercent)||!isPercent(partnerDiscountPercent)||
+      !isPercent(subscriberDiscountPercent)||
       !["SERVICES","PRODUCTS","BOTH"].includes(subscriberDiscountAppliesTo))
       throw Error("Revise mensalidade, limites e descontos do clube.");
-    if(partnerDiscountPercent>0&&partnerName.length<2)
-      throw Error("Informe o nome do parceiro que oferece o desconto.");
     await prisma.$transaction(async tx=>{
       const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},select:{enabledFeatures:true}});
       const ws=readWorkspace(shop.enabledFeatures);
@@ -234,18 +230,57 @@ export async function saveBusinessClub(form:FormData){
       const fields={name,monthlyAmount,visitsPerMonth:visits>0?visits:null,benefits,
         subscriberDiscountPercent,
         subscriberDiscountAppliesTo:subscriberDiscountAppliesTo as "SERVICES"|"PRODUCTS"|"BOTH",
-        partnerName,partnerDiscountPercent,active};
+        active};
       if(selected)Object.assign(selected,fields);
       else ws.clubPlans.unshift({...fields,id:workspaceId("club"),createdAt:new Date().toISOString()});
       await tx.barberShop.update({where:{id:ctx!.id},data:{enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
       await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
         action:selected?"BUSINESS_CLUB_UPDATED":"BUSINESS_CLUB_CREATED",
-        details:{clubId:selected?.id??"created",name,active,subscriberDiscountPercent,partnerDiscountPercent}
+        details:{clubId:selected?.id??"created",name,active,subscriberDiscountPercent}
           as Prisma.InputJsonValue}});
     },{isolationLevel:"Serializable"});
     refresh(ctx);
   }catch(err){error=message(err);}
   next(code,"clubes",error);
+}
+
+/** Parceiros são ofertas vinculadas a um clube, sem modificar transações passadas. */
+export async function saveBusinessClubPartner(form:FormData){
+  const code=field(form,"tenantCode",80).toUpperCase();
+  let error="";let ctx:Ctx|undefined;
+  try{
+    ctx=await authorize(form);
+    const planId=field(form,"planId",100);
+    const partnerId=field(form,"partnerId",100);
+    const remove=form.get("remove")==="yes";
+    const name=field(form,"name",100);
+    const percent=Number(field(form,"discountPercent",7).replace(",","."));
+    if(!remove&&(name.length<2||!Number.isFinite(percent)||percent<=0||percent>100))
+      throw Error("Informe nome do parceiro e desconto de 0,01% a 100%.");
+    await prisma.$transaction(async tx=>{
+      const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},select:{enabledFeatures:true}});
+      const ws=readWorkspace(shop.enabledFeatures);
+      const plan=ws.clubPlans.find(p=>p.id===planId);
+      if(!plan)throw Error("Clube não encontrado.");
+      const partners=[...(plan.partners??[])];
+      if(remove){
+        if(!partners.some(p=>p.id===partnerId))throw Error("Parceiro não encontrado.");
+        plan.partners=partners.filter(p=>p.id!==partnerId);
+      }else{
+        if(partners.length>=20)throw Error("Limite de 20 parceiros por clube.");
+        if(partners.some(p=>p.name.toLocaleLowerCase("pt-BR")===name.toLocaleLowerCase("pt-BR")))
+          throw Error("Parceiro já cadastrado.");
+        partners.push({id:workspaceId("partner"),name,discountPercent:percent});
+        plan.partners=partners;
+      }
+      await tx.barberShop.update({where:{id:ctx!.id},data:{enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
+      await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
+        action:remove?"BUSINESS_CLUB_PARTNER_REMOVED":"BUSINESS_CLUB_PARTNER_CREATED",
+        details:{planId,partnerId:remove?partnerId:"created"} as Prisma.InputJsonValue}});
+    },{isolationLevel:"Serializable"});
+    refresh(ctx);
+  }catch(err){error=message(err);}
+  next(code,"parceiros",error);
 }
 
 /** Pote global existente: a mesma regra usada nos relatórios e no rateio real. */
