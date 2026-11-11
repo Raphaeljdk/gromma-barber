@@ -59,9 +59,9 @@ test("navigation prefetches page data only on intent, not a full reload",()=>{
 test("contract link keeps 3 fields plus action on one row, with notes accessible",()=>{
  const css=read("app/gromma-professional-fast-ai.css");
  const page=read("app/erp/[tenant]/equipe/[userId]/page.tsx");
- assert.match(css,/professional-contract-link-grid[^{}]*\\{[^{}]*grid-template-columns:minmax\\(130px,1\\.05fr\\) minmax\\(200px,1\\.55fr\\) minmax\\(135px,\\.9fr\\) max-content/);
- assert.match(css,/professional-contract-link-grid > label:nth-of-type\\(4\\)/);
- assert.match(css,/professional-contract-link-grid > button/);
+ assert.ok(css.includes("grid-template-columns:minmax(130px,1.05fr) minmax(200px,1.55fr) minmax(135px,.9fr) max-content!important;"));
+ assert.ok(css.includes(".professional-contract-link-grid > label:nth-of-type(4)"));
+ assert.ok(css.includes(".professional-contract-link-grid > button {"));
  assert.match(page,/professional-contract-link-grid/);
  assert.match(page,/Observações<input/);
 });
