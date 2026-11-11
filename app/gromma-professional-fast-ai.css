@@ -229,8 +229,15 @@ html[data-theme] .tenant-erp .professional-registration-page .professional-contr
 }
 html[data-theme] .tenant-erp .professional-registration-page .professional-contract-grid.professional-contract-link-grid {
   display:grid!important;
-  grid-template-columns:minmax(130px,1.05fr) minmax(200px,1.55fr) minmax(135px,.9fr) minmax(120px,1fr) max-content!important;
+  grid-template-columns:minmax(130px,1.05fr) minmax(200px,1.55fr) minmax(135px,.9fr) max-content!important;
   gap:8px!important;align-items:end;
+}
+/* Nome, link e vigência + botão na primeira linha; observações permanecem visíveis abaixo. */
+html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid > label:nth-of-type(4) {
+  grid-column:1 / -1;grid-row:2;
+}
+html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid > button {
+  grid-column:4;grid-row:1;
 }
 html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) > label {
   min-width:0;
@@ -423,6 +430,10 @@ html[data-theme] .tenant-erp .professional-registration-page .professional-leave
   }
   html[data-theme] .tenant-erp .professional-registration-page :is(.professional-contract-upload-grid,.professional-contract-link-grid) > button {
     justify-self:end;
+  }
+  html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid > label:nth-of-type(4),
+  html[data-theme] .tenant-erp .professional-registration-page .professional-contract-link-grid > button {
+    grid-column:auto;grid-row:auto;
   }
 }
 @media(max-width:720px) {

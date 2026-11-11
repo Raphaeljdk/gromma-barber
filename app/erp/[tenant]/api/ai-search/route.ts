@@ -44,7 +44,10 @@ export async function POST(request:Request,{params}:{params:Promise<{tenant:stri
     if(query.length<3)return NextResponse.json({ids:[],source:"local"});
     const candidates=accessibleNodes(viewer.type==="ADMIN"?"OWNER":viewer.role,viewer.type==="ADMIN");
     const allowed=new Set(candidates.map(c=>c.id));
-    const token=process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
+    // Runtime Vercel Functions receive the rotating OIDC token in the request header.
+    // Environment variables remain available for local/CI and explicitly configured keys.
+    const token=process.env.AI_GATEWAY_API_KEY ||
+      request.headers.get("x-vercel-oidc-token") || process.env.VERCEL_OIDC_TOKEN;
     if(!token)return NextResponse.json({ids:[],source:"local"});
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),3200);
