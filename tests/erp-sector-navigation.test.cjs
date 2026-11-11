@@ -35,7 +35,7 @@ test("new sector hierarchy preserves access to existing ERP modules", () => {
     [...new Set(searchModules.filter(id => !directOnly.has(id)))].sort(),
     "navigation and search must agree on menu modules, including restricted pages"
   );
-  assert.match(sidebar, /renderNavItem\(child, depth \+ 1\)/, "must render grandchildren");
+  assert.match(sidebar, /renderNavItem\(child, depth \+ 1, alwaysVisible\)/, "must render grandchildren");
 });
 
 test("Totem is the final sector: Relatórios belongs inside Gestão", () => {
@@ -43,6 +43,6 @@ test("Totem is the final sector: Relatórios belongs inside Gestão", () => {
     "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro", "totem",
   ]);
   assert.match(sidebar, /aria-expanded=\{expanded\}/);
-  assert.match(sidebar, /ERP_NAVIGATION\.map\(/);
+  assert.match(sidebar, /\.map\(\(sector\) =>/);
   assert.match(sidebar, /item\.adminOnly && !canManage/);
 });
