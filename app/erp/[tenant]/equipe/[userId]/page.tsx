@@ -150,11 +150,11 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <div className="professional-subsection professional-photo-upload">
         <h4>Atualizar foto do profissional</h4>
         <section className="erp-quick-create" style={{marginTop:10}}>
-        <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
+        <p className="small muted professional-image-upload-hint">Foto do perfil · carregamento e visualização em um único campo</p>
         <form data-professional-save="photo" action={uploadProfessionalPhoto} className="erp-compact-form">
           {hidden(code,user.id)}
-          <ProfessionalFileUpload name="photo" kind="photo" label="Foto JPEG, PNG ou WebP (máximo 3 MB)"
-            accept="image/jpeg,image/png,image/webp"/>
+          <ProfessionalFileUpload name="photo" kind="photo" label="Foto de perfil (formatos de imagem)"
+            accept="image/*,.heic,.heif,.tif,.tiff" existingPhotoUrl={profile.photoUrl??""}/>
           <label style={{display:"flex",gap:8,alignItems:"center"}}>
             <input type="checkbox" name="photoConsent" required/>
             Confirmo que tenho autorização para armazenar e exibir a foto do profissional em endereço público de imagem.
