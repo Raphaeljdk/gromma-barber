@@ -506,9 +506,9 @@ export async function saveProfessionalAll(payload:FormData):Promise<{ok:boolean;
   type Name=(typeof names)[number];
   type Part={section:Name;entries:[string,string][]};
   const allowed=new Set<string>(names);
-  const parts=new Map<string,Part>();
+  const parts=new Map<string,Part[]>();
   const raws=payload.getAll("part");
-  if(raws.length>names.length)return {ok:false,message:"Quantidade inválida de seções."};
+  if(raws.length>names.length+3)return {ok:false,message:"Quantidade inválida de seções."};
   try{
     for(const raw of raws){
       if(typeof raw!=="string"||raw.length>100000)throw Error("part");
@@ -517,12 +517,20 @@ export async function saveProfessionalAll(payload:FormData):Promise<{ok:boolean;
         !("section" in parsed)||!("entries" in parsed))throw Error("part");
       const entry=parsed as Part;
       if(typeof entry.section!=="string"||!allowed.has(entry.section)||
-        parts.has(entry.section)||!Array.isArray(entry.entries)||entry.entries.length>600)
+        (parts.has(entry.section)&&entry.section!=="product-category-rule")||
+        !Array.isArray(entry.entries)||entry.entries.length>600)
         throw Error("part");
       if(entry.entries.some(pair=>!Array.isArray(pair)||pair.length!==2||
         typeof pair[0]!=="string"||typeof pair[1]!=="string"||
         pair[0].length>100||pair[1].length>2000))throw Error("fields");
-      parts.set(entry.section,entry);
+      const existing=parts.get(entry.section)??[];
+      if(existing.length>=3)throw Error("duplicates");
+      if(entry.section==="product-category-rule"){
+        const cat=entry.entries.find(([key])=>key==="category")?.[1];
+        if(!cat||existing.some(item=>item.entries.some(([key,value])=>key==="category"&&value===cat)))
+          throw Error("duplicate category");
+      }
+      parts.set(entry.section,[...existing,entry]);
     }
   }catch{
     return {ok:false,message:"Os dados enviados não estão no formato esperado."};
@@ -543,8 +551,7 @@ export async function saveProfessionalAll(payload:FormData):Promise<{ok:boolean;
     "contract-add","photo","contract-pdf"];
   try{
     for(const name of order){
-      const part=parts.get(name);
-      if(!part)continue;
+      for(const part of parts.get(name)??[]){
       const form=new FormData();
       for(const [key,value] of part.entries)form.append(key,value);
       // Contexto, seção e modo de gravação são definidos pelo servidor.
@@ -567,6 +574,7 @@ export async function saveProfessionalAll(payload:FormData):Promise<{ok:boolean;
         await saveProfessionalSection(form);
       }
       completed++;
+      }
     }
     revalidatePath("/erp/"+encodeURIComponent(ctx.code),"layout");
     return {ok:true,message:"Cadastro geral salvo com sucesso."};
