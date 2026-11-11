@@ -2259,6 +2259,7 @@ export async function TenantERPView({
             registeredBranches={Math.max(0,shop.units.length-1)}
             contactEmail={workspace.businessContactEmail}
             timeZone={workspace.businessTimeZone}
+            workspace={workspace}
             ok={valueOf("dadosOk")} error={valueOf("dadosErro")}/>
         </div>}
 
