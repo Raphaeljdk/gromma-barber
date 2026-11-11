@@ -10,6 +10,11 @@ export type ClubPlanConfig = {
   monthlyAmount: number;
   visitsPerMonth: number | null;
   benefits: string;
+  /** Descontos do plano; definidos pelo proprietário. Não alteram cobranças já emitidas. */
+  subscriberDiscountPercent?: number;
+  subscriberDiscountAppliesTo?: "SERVICES"|"PRODUCTS"|"BOTH";
+  partnerName?: string;
+  partnerDiscountPercent?: number;
   active: boolean;
   createdAt: string;
 };
@@ -176,6 +181,7 @@ export type UnitOperationsPolicy = {
 
 export type BrandingSettings = {
   carouselImages: string[];
+  carouselCaptions: {title:string;subtitle:string}[];
   secondaryTitle: string;
   secondaryDescription: string;
   heroTitle: string;
@@ -205,6 +211,7 @@ export type ErpWorkspace = {
   hasBranches: boolean;
   businessContactEmail: string;
   businessTimeZone: string;
+  bookingRules: {cancellationMinutes:number;noShowBlockHours:number;mode:"STANDARD"|"CUSTOM";customExplanation:string};
   unitPolicies: Record<string,UnitOperationsPolicy>;
   featuredProfessionalIds: string[];
   rolePermissions: StaffPermissions;
@@ -247,9 +254,10 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   hasBranches: false,
   businessContactEmail: "",
   businessTimeZone: "America/Sao_Paulo",
+  bookingRules: {cancellationMinutes:60,noShowBlockHours:0,mode:"STANDARD",customExplanation:""},
   branding: { logoUrl: "", accentColor: "#c69a49", secondaryColor: "#202124", clubTitle: "Clube de assinaturas", clubDescription: "",
     heroTitle: "", heroDescription: "", coverImageUrl: "",
-    carouselImages: [], secondaryTitle: "", secondaryDescription: "" },
+    carouselImages: [], carouselCaptions: [], secondaryTitle: "", secondaryDescription: "" },
   unitPolicies: {},
   featuredProfessionalIds: [],
   rolePermissions: {},
@@ -319,6 +327,14 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     businessContactEmail: typeof operations.businessContactEmail==="string" ? operations.businessContactEmail.slice(0,180) : "",
     businessTimeZone: ["America/Sao_Paulo","America/Manaus","America/Rio_Branco","America/Noronha"].includes(String(operations.businessTimeZone)) ? String(operations.businessTimeZone) : "America/Sao_Paulo",
     rolePermissions,
+    bookingRules: (()=>{
+      const policy=record(operations.bookingRules);
+      const validInt=(value:unknown,max:number,defaultValue:number)=>typeof value==="number"&&Number.isSafeInteger(value)&&value>=0&&value<=max?value:defaultValue;
+      return {cancellationMinutes:validInt(policy.cancellationMinutes,10080,60),
+        noShowBlockHours:validInt(policy.noShowBlockHours,720,0),
+        mode:policy.mode==="CUSTOM"?"CUSTOM" as const:"STANDARD" as const,
+        customExplanation:typeof policy.customExplanation==="string"?policy.customExplanation.slice(0,500):""};
+    })(),
     unitPolicies: Object.fromEntries(Object.entries(record(operations.unitPolicies))
       .filter(([id])=>id.length <= 100)
       .map(([id,raw])=>{
@@ -403,6 +419,11 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         logoUrl: logo, accentColor: accent, secondaryColor,
         heroTitle: typeof source.heroTitle==="string"?source.heroTitle.slice(0,110):"",
         heroDescription: typeof source.heroDescription==="string"?source.heroDescription.slice(0,600):"",
+        carouselCaptions: (Array.isArray(source.carouselCaptions)?source.carouselCaptions:[])
+          .slice(0,3).map(item=>{const entry=record(item);return {
+            title:typeof entry.title==="string"?entry.title.slice(0,110):"",
+            subtitle:typeof entry.subtitle==="string"?entry.subtitle.slice(0,240):"",
+          };}),
         carouselImages: (Array.isArray(source.carouselImages)?source.carouselImages:[])
           .filter((url): url is string=>typeof url==="string" && /^https:\/\//i.test(url))
           .slice(0,3).map(url=>url.slice(0,700)),
