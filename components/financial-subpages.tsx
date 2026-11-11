@@ -19,7 +19,7 @@ export type FinancialSubmodule=typeof FINANCIAL_SUBMODULES[number];
 
 export type FinanceEntryRow={
  id:string;description:string;type:"RECEIVABLE"|"PAYABLE";
- status:"PENDING"|"PAID"|"CANCELLED";category:string;amount:number;
+ status:"PENDING"|"PAID"|"CANCELED";category:string;amount:number;
  dueDate:string|null;unitName:string|null;paymentMethod:string;bankAccountId:string;
 };
 type Totals={receivablePending:number;payablePending:number;receivablePaid:number;payablePaid:number};
@@ -102,7 +102,7 @@ function FinanceList({tenantCode,view,rows,total,page,pageSize,query,filterQuery
      pageParam="financeiroPage" hash="financeiro-subpage"
      search={{param:"financeiroQ",value:filterQuery,placeholder:"Buscar descrição ou categoria"}}
      selects={[{param:"financeiroStatus",value:filterStatus,label:"Status",options:[
-       {value:"",label:"Todos"},{value:"PENDING",label:"Pendente"},{value:"PAID",label:"Pago"}
+       {value:"PENDING",label:"Pendente"},{value:"PAID",label:"Pago"},{value:"CANCELED",label:"Cancelado"}
      ]}]}/>
    <div className="table-wrap gromma-finance-subpage-table"><table>
      <thead><tr><th>Descrição</th><th>Categoria</th><th>Vencimento</th><th>Unidade</th>
