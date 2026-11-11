@@ -50,7 +50,9 @@ test("Fatura não simula cobranças e oferece atendimento",()=>{
   const ui=read("app/erp/[tenant]/page.tsx");
   const bills=ui.slice(ui.indexOf('<section id="fatura"'),ui.indexOf('<Link className="erp-floating-cash"'));
   assert.match(bills,/id="fatura"/);
-  assert.match(bills,/ainda não estão integrados/);
+  assert.match(bills,/não é uma fatura emitida/);
+  assert.match(bills,/Solicitar regularização/);
+  assert.match(bills,/nenhuma mensalidade/i);
   assert.match(bills,/href=\{supportHref\}/);
   assert.match(bills,/brl\(plan.monthlyFee\)/);
 });
