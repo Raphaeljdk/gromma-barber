@@ -46,6 +46,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import {effectiveServiceMinutes,dueServiceRepurchases} from "@/lib/service-scheduling";
 import {ServiceRepurchaseReminders} from "@/components/service-repurchase-reminders";
 import {ServiceEditDialog} from "@/components/service-edit-dialog";
+import {ArchiveServiceButton} from "@/components/archive-service-button";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
@@ -1461,6 +1462,8 @@ export async function TenantERPView({
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
           {actionOk === "servico-editado" && <div className="notice erp-inline-notice success">Serviço atualizado. Agendamentos já registrados foram preservados.</div>}
+          {actionOk === "servico-excluido" && <div className="notice erp-inline-notice success">Serviço excluído do catálogo. Dados históricos preservados.</div>}
+          {actionError === "servico-agendado" && <div className="notice erp-inline-notice error-notice">Não foi possível excluir. Confira se há agendamentos futuros vinculados ao serviço.</div>}
           {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {isOwner && (
@@ -1490,6 +1493,16 @@ export async function TenantERPView({
             </form>
           </details>
           )}
+          {canManage && <details className="erp-quick-create gromma-service-commission">
+            <summary><span className="gromma-service-commission-trigger">Configurar comissão específica por serviço <ChevronDown size={16}/></span></summary>
+            <form action={saveServiceCommissionOverride} className="erp-quick-form gromma-service-commission-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <label><span className="label">Serviço</span><select name="serviceId" className="select" required defaultValue=""><option value="" disabled>Selecione um serviço</option>{shop.services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}</select></label>
+              <label><span className="label">Comissão específica (%) — vazio para usar a regra do profissional</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" placeholder="Ex.: 40" /></label>
+              <button className="btn" type="submit">Salvar comissão</button>
+            </form>
+            <p className="small muted">Altera apenas as regras futuras; pagamentos históricos não são recalculados.</p>
+          </details>}
           <ErpListToolbar
             basePath={`/erp/${encodeURIComponent(tenantCode)}/servicos`}
             searchParams={qs}
@@ -1507,22 +1520,15 @@ export async function TenantERPView({
                 <td>{effectiveServiceMinutes(service.durationMinutes,meta)} min{meta?.walkIn?" · Encaixe":""}</td>
                 <td>{brl(Number(service.price))}</td>
                 <td><span className={"badge "+(meta?.hidden?"pending":"approved")}>{meta?.hidden?"Oculto / exclusivo":"Ativo"}</span></td>
-                <td>{isOwner?<ServiceEditDialog tenantCode={tenantCode} service={{
-                  id:service.id,name:service.name,durationMinutes:service.durationMinutes,price:Number(service.price),
-                }} meta={meta}/>:<span className="small muted">Somente proprietário</span>}</td>
+                <td>{isOwner?<div className="gromma-service-row-actions">
+                  <ServiceEditDialog tenantCode={tenantCode} service={{
+                    id:service.id,name:service.name,durationMinutes:service.durationMinutes,price:Number(service.price),
+                  }} meta={meta}/>
+                  <ArchiveServiceButton tenantCode={tenantCode} serviceId={service.id} name={service.name}/>
+                </div>:<span className="small muted">Somente proprietário</span>}</td>
               </tr>;
             }) : <tr><td colSpan={5} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
-          {canManage && <details className="erp-quick-create gromma-service-commission">
-            <summary><span className="gromma-service-commission-trigger">Configurar comissão específica por serviço <ChevronDown size={16}/></span></summary>
-            <form action={saveServiceCommissionOverride} className="erp-quick-form gromma-service-commission-form">
-              <input type="hidden" name="tenantCode" value={tenantCode} />
-              <label><span className="label">Serviço</span><select name="serviceId" className="select" required defaultValue=""><option value="" disabled>Selecione um serviço</option>{shop.services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}</select></label>
-              <label><span className="label">Comissão específica (%) — vazio para usar a regra do profissional</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" placeholder="Ex.: 40" /></label>
-              <button className="btn" type="submit">Salvar comissão</button>
-            </form>
-            <p className="small muted">Altera apenas as regras futuras; pagamentos históricos não são recalculados.</p>
-          </details>}
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/servicos`} searchParams={qs} param="servicosPage" page={servicosPage} total={servicesTotal} pageSize={pageSize} hash="servicos" label="serviços" />
         </section>
 
