@@ -290,9 +290,9 @@ export async function saveBusinessPotRule(form:FormData){
   try{
     ctx=await authorize(form);
     const percent=Number(field(form,"potPercent",7).replace(",","."));
-    const reason=field(form,"reason",400);
-    if(!Number.isFinite(percent)||percent<0||percent>100||reason.length<5)
-      throw Error("Informe o percentual de 0 a 100 e o motivo da alteração.");
+    const reason="Percentual atualizado na configuração do pote de assinaturas";
+    if(!Number.isFinite(percent)||percent<0||percent>100)
+      throw Error("Informe o percentual de 0 a 100.");
     await prisma.$transaction(async tx=>{
       const shop=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},select:{enabledFeatures:true}});
       const ws=readWorkspace(shop.enabledFeatures);
