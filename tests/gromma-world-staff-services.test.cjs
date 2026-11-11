@@ -50,8 +50,8 @@ test("service creation captures fields and writes tenant-scoped metadata",()=>{
  assert.ok(indexes.every((at,i)=>at>=0&&(!i||at>indexes[i-1])),"Requested field order");
  assert.match(service,/gromma-service-commission-trigger/);
  assert.match(service,/gromma-service-commission-form/);
- assert.ok(service.indexOf('gromma-services-list')<service.indexOf('gromma-service-commission-trigger'),
-  "Commission action stays below the service list");
+ assert.ok(service.indexOf('gromma-service-commission-trigger')<service.indexOf('gromma-services-list'),
+  "Commission action must be above the service list and search");
  assert.match(action,/ws\.serviceCatalogSettings\[created\.id\]/);
  assert.match(action,/isolationLevel:"Serializable"/);
  assert.match(ws,/serviceCatalogSettings: Record<string,ServiceCatalogMetadata>/);
