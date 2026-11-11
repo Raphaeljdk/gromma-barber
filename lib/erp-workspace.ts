@@ -331,7 +331,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     bookingRules: (()=>{
       const policy=record(operations.bookingRules);
       const validInt=(value:unknown,max:number,defaultValue:number)=>typeof value==="number"&&Number.isSafeInteger(value)&&value>=0&&value<=max?value:defaultValue;
-      return {cancellationMinutes:validInt(policy.cancellationMinutes,10080,60),
+      return {cancellationMinutes:validInt(policy.cancellationMinutes,10080,0),
         noShowBlockHours:validInt(policy.noShowBlockHours,720,0),
         mode:policy.mode==="CUSTOM"?"CUSTOM" as const:"STANDARD" as const,
         customExplanation:typeof policy.customExplanation==="string"?policy.customExplanation.slice(0,500):""};
