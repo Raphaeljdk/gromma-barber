@@ -166,6 +166,16 @@ export type AgendaBlock = {
 
 export type UnitOperationsPolicy = {
   legalDocument: string;
+  /** Dados administrativos da filial. */
+  postalCode: string;
+  complement: string;
+  bankCountry: "BR"|"INT";
+  bankCode: string;
+  bankName: string;
+  bankAgency: string;
+  bankAccount: string;
+  bankSwift: string;
+  paymentConfigurations: Record<string,{feePercent:number;settlementDays:number;autoMarkPaid:boolean}>;
   paymentEmail: string;
   paymentPhone: string;
   pixKey: string;
@@ -370,6 +380,21 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         const pot=p.potPercent;
         return [id,{
           legalDocument:typeof p.legalDocument==="string"?p.legalDocument.slice(0,14):"",
+          postalCode:typeof p.postalCode==="string"?p.postalCode.slice(0,9):"",
+          complement:typeof p.complement==="string"?p.complement.slice(0,120):"",
+          bankCountry:p.bankCountry==="INT"?"INT":"BR",
+          bankCode:typeof p.bankCode==="string"?p.bankCode.slice(0,8):"",
+          bankName:typeof p.bankName==="string"?p.bankName.slice(0,150):"",
+          bankAgency:typeof p.bankAgency==="string"?p.bankAgency.slice(0,30):"",
+          bankAccount:typeof p.bankAccount==="string"?p.bankAccount.slice(0,35):"",
+          bankSwift:typeof p.bankSwift==="string"?p.bankSwift.slice(0,11):"",
+          paymentConfigurations:Object.fromEntries(Object.entries(record(p.paymentConfigurations))
+            .filter(([key])=>methods.includes(key as typeof methods[number]))
+            .map(([key,value])=>{const cfg=record(value);return [key,{
+              feePercent:percent(cfg.feePercent,100,0),
+              settlementDays:percent(cfg.settlementDays,90,0),
+              autoMarkPaid:cfg.autoMarkPaid===true,
+            }]})),
           paymentEmail:typeof p.paymentEmail==="string"?p.paymentEmail.slice(0,180):"",
           paymentPhone:typeof p.paymentPhone==="string"?p.paymentPhone.slice(0,24):"",
           pixKey:typeof p.pixKey==="string"?p.pixKey.slice(0,150):"",
