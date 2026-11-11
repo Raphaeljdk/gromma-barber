@@ -53,8 +53,12 @@ export async function saveCompleteUnit(form:FormData){
     const complement=val(form,"complement",120);
     const legalDocument=digits(val(form,"legalDocument",18));
     const bankCountry=val(form,"bankCountry",3)==="INT"?"INT":"BR";
-    const bankCode=digits(val(form,"bankCode",8));
-    const bankName=val(form,"bankName",150);
+    const bankChoice=val(form,"bankCode",180);
+    const bankMatch=bankChoice.match(/^(\\d{3}|\\d{8})(?:\\s*[—-]\\s*(.*))?$/);
+    if(bankCountry==="BR"&&bankChoice&&!bankMatch)
+      throw Error("Selecione um banco brasileiro da lista por código.");
+    const bankCode=bankCountry==="BR"?(bankMatch?.[1]??""):"";
+    const bankName=bankCountry==="BR"?(bankMatch?.[2]??"").slice(0,150):val(form,"bankName",150);
     const bankAgency=val(form,"bankAgency",30);
     const bankAccount=val(form,"bankAccount",35);
     const bankSwift=val(form,"bankSwift",11).toUpperCase();
