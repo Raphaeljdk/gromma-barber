@@ -180,7 +180,7 @@ export async function saveProfessionalIdentity(form:FormData){
     const previousFields=Object.fromEntries(fields.map(key=>[key,Boolean(profile[key])]));
     Object.assign(profile,{
       nickname:text(form,"nickname",100),cpf,cnpj,birthDate,
-      whatsapp:text(form,"whatsapp",28),cadenceDays,
+      whatsapp:form.has("whatsapp")?text(form,"whatsapp",28):(profile.whatsapp??""),cadenceDays,
       accessToOtherUnits:checked(form,"accessToOtherUnits"),
       zipCode,street:text(form,"street",150),district:text(form,"district",100),
       city:text(form,"city",100),state,streetNumber:text(form,"streetNumber",20),
