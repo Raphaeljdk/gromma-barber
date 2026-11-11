@@ -5,7 +5,6 @@ import { UnitOperationsForm } from "@/components/unit-operations-form";
 import { BusinessDataSection } from "@/components/business-data-section";
 import { BrandingSettingsSection } from "@/components/branding-settings-section";
 import { unitPolicy } from "@/lib/unit-operations-policy";
-import { toggleFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { ClubManagementPanels, CLUB_MANAGEMENT_MODULES, type ClubManagementModule } from "@/components/erp-club-management";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
@@ -44,6 +43,7 @@ import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ErpLanguagePicker } from "@/components/erp-language-picker";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
 import { CashHistory } from "@/components/cash-history";
@@ -1097,6 +1097,7 @@ export async function TenantERPView({
           </div>
           <div className="erp-top-actions">
             <BackButton fallback="/login" label="Voltar" />
+            <ErpLanguagePicker/>
             <a href={supportHref} className="nav-quiet-link">Suporte</a>
             <ThemeToggle />
             {isOwner && <InventoryNotificationBell tenantCode={tenantCode} notices={inventoryNotices} />}
