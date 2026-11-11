@@ -356,7 +356,10 @@ export async function updateAppointmentNotes(formData: FormData) {
 
 export async function markFinancialPaid(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
-  const path = `/erp/${encodeURIComponent(tenantCode)}/financeiro`;
+  const requested=text(formData,"returnModule",50);
+  const safe=["financeiro","financeiro-contas-pagar","financeiro-contas-receber","financeiro-despesas"];
+  const path=`/erp/${encodeURIComponent(tenantCode)}/${safe.includes(requested)?requested:"financeiro"}`;
+  const fragment=path.endsWith("/financeiro")?"#financeiro":"#financeiro-subpage";
   if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao#financeiro`);
   const entryId = text(formData, "entryId", 80);
   const reason = text(formData, "reason", 600);
