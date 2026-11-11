@@ -146,9 +146,23 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     ],
   },
   {
-    id: "financeiro", label: "Financeiro", description: "Faremos por último",
+    id: "financeiro", label: "Financeiro", description: "Contas, lançamentos e cadastros",
     items: [
       { id: "financeiro-atual", label: "Financeiro atual", route: "financeiro" },
+      { id: "financeiro-contas-pagar", label: "Contas a pagar", route: "financeiro-contas-pagar" },
+      { id: "financeiro-contas-receber", label: "Contas a receber", route: "financeiro-contas-receber" },
+      { id: "financeiro-criar-receita", label: "Criar receita", route: "financeiro-criar-receita", ownerOnly: true },
+      { id: "financeiro-criar-despesa", label: "Criar despesas", route: "financeiro-criar-despesa", ownerOnly: true },
+      { id: "financeiro-despesas", label: "Despesas", route: "financeiro-despesas" },
+      { id: "financeiro-cadastros", label: "Cadastros", ownerOnly: true, children: [
+        { id: "financeiro-categorias", label: "Categorias financeiras", route: "financeiro-categorias" },
+        { id: "financeiro-contas-bancarias", label: "Contas bancárias", route: "financeiro-contas-bancarias" },
+        { id: "financeiro-formas-pagamento", label: "Formas de pagamento", children: [
+          { id: "financeiro-formas-comanda", label: "Comanda", route: "financeiro-formas-comanda" },
+          { id: "financeiro-formas-despesas", label: "Despesas", route: "financeiro-formas-despesas" },
+        ] },
+      ] },
+      { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade" },
     ],
   },
   {

@@ -47,6 +47,7 @@ import {effectiveServiceMinutes,dueServiceRepurchases} from "@/lib/service-sched
 import {ServiceRepurchaseReminders} from "@/components/service-repurchase-reminders";
 import {ServiceEditDialog} from "@/components/service-edit-dialog";
 import {ArchiveServiceButton} from "@/components/archive-service-button";
+import {FinancialSubpage,FINANCIAL_SUBMODULES,type FinancialSubmodule} from "@/components/financial-subpages";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
@@ -193,6 +194,16 @@ const MODULE_TITLES: Record<string, string> = {
   mensagens: "Mensagens",
   promocoes: "Promoções / Cupons",
   financeiro: "Financeiro",
+  "financeiro-contas-pagar": "Contas a pagar",
+  "financeiro-contas-receber": "Contas a receber",
+  "financeiro-criar-receita": "Criar receita",
+  "financeiro-criar-despesa": "Criar despesas",
+  "financeiro-despesas": "Despesas",
+  "financeiro-categorias": "Categorias financeiras",
+  "financeiro-contas-bancarias": "Contas bancárias",
+  "financeiro-formas-comanda": "Formas de pagamento · Comanda",
+  "financeiro-formas-despesas": "Formas de pagamento · Despesas",
+  "financeiro-contabilidade": "Contabilidade",
   caixa: "Caixa",
   "caixa-historico": "Histórico de caixas",
   estoque: "Estoque",
@@ -318,9 +329,10 @@ export async function TenantERPView({
   const needsProductList = activeModule === "estoque";
   const needsProductCount = ["dashboard", "estoque", "alertas"].includes(activeModule);
   const needsStockHealth = ["estoque", "alertas"].includes(activeModule);
-  const needsFinanceList = activeModule === "financeiro";
-  const needsFinanceCount = ["dashboard", "financeiro"].includes(activeModule);
-  const needsFinancialHealth = ["dashboard", "financeiro", "gerencial", "alertas"].includes(activeModule);
+  const financeSubmodule = FINANCIAL_SUBMODULES.includes(activeModule as FinancialSubmodule);
+  const needsFinanceList = ["financeiro","financeiro-contas-pagar","financeiro-contas-receber","financeiro-despesas","financeiro-contabilidade"].includes(activeModule);
+  const needsFinanceCount = ["dashboard", "financeiro"].includes(activeModule) || financeSubmodule;
+  const needsFinancialHealth = ["dashboard", "financeiro", "gerencial", "alertas"].includes(activeModule) || financeSubmodule;
   const needsCashAggregates = ["dashboard", "caixa", "relatorios", "gerencial"].includes(activeModule);
   const needsAgendaBoard = activeModule === "agenda";
   const needsRelationship = ["mensagens", "promocoes"].includes(activeModule);
@@ -361,7 +373,7 @@ export async function TenantERPView({
   const workspace = readWorkspace(shop.enabledFeatures);
   const controlledModulePermission = ["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(activeModule) ? "VIEW_FINANCE"
     : ["clube-cancelados","clube-inadimplentes"].includes(activeModule) ? "VIEW_REPORTS"
-    : activeModule === "financeiro" ? "VIEW_FINANCE"
+    : (activeModule==="financeiro" || financeSubmodule) ? "VIEW_FINANCE"
     : activeModule === "comissoes" ? "VIEW_COMMISSIONS"
     : activeModule === "relatorios" || Boolean(SUBSCRIPTION_REPORTS[activeModule]) ? "VIEW_REPORTS"
     : activeModule.startsWith("auditoria") ? "VIEW_AUDIT" : null;
@@ -458,7 +470,10 @@ export async function TenantERPView({
   };
   const financialWhere: Prisma.FinancialEntryWhereInput = {
     barberShopId: shop.id,
-    ...(financeiroTipo ? { type: financeiroTipo } : {}),
+    ...(["financeiro-contas-pagar","financeiro-despesas"].includes(activeModule)
+       ? {type:"PAYABLE" as const}
+       : activeModule==="financeiro-contas-receber" ? {type:"RECEIVABLE" as const}
+       : financeiroTipo ? { type: financeiroTipo } : {}),
     ...(financeiroStatus ? { status: financeiroStatus } : {}),
     ...(financeiroQ
       ? {
@@ -815,7 +830,9 @@ export async function TenantERPView({
   const canManage = viewer.type === "ADMIN" || ["OWNER", "MANAGER"].includes(viewerRole);
   const canFinance = viewer.type === "ADMIN" || ["OWNER", "MANAGER", "ACCOUNTANT"].includes(viewerRole);
   const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
-  if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura","clube-reajustes","clube-saques"].includes(activeModule)) notFound();
+  if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura","clube-reajustes","clube-saques",
+    "financeiro-criar-receita","financeiro-criar-despesa","financeiro-categorias",
+    "financeiro-contas-bancarias","financeiro-formas-comanda","financeiro-formas-despesas"].includes(activeModule)) notFound();
   const canManageCampaigns = hasStaffPermission(viewerRole, workspace.rolePermissions, "MANAGE_CAMPAIGNS");
   const inventoryNotices = isOwner
     ? await loadInventoryNotifications(shop.id, tenantCode, shop.units.map(unit => ({
@@ -829,7 +846,7 @@ export async function TenantERPView({
   const receivables = Number(receivableAggregate._sum.amount ?? 0);
   const payables = Number(payableAggregate._sum.amount ?? 0);
   const cashBalance = receivables - payables;
-  const financeTotals = activeModule === "financeiro"
+  const financeTotals = activeModule === "financeiro" || financeSubmodule
     ? await prisma.financialEntry.groupBy({by:["type","status"],where:{barberShopId:shop.id},_sum:{amount:true}})
     : [];
   const financeValue = (type:"RECEIVABLE"|"PAYABLE",status:"PENDING"|"PAID") =>
@@ -1954,6 +1971,29 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/financeiro`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
         </section>
 
+        {financeSubmodule && <FinancialSubpage tenantCode={tenantCode}
+          view={activeModule as FinancialSubmodule}
+          rows={financialEntries.map(entry=>({
+            id:entry.id,description:entry.description,type:entry.type,status:entry.status,
+            category:entry.category,amount:Number(entry.amount),
+            dueDate:entry.dueDate?.toISOString()??null,unitName:entry.unit?.name??null,
+            bankAccountId:workspace.financialEntryMetadata[entry.id]?.bankAccountId??"",
+            paymentMethod:workspace.financialEntryMetadata[entry.id]?.paymentMethod??"",
+          }))}
+          total={financialTotal} page={financeiroPage} pageSize={pageSize}
+          query={qs} filterQuery={financeiroQ} filterStatus={financeiroStatus??""}
+          isOwner={isOwner} workspace={workspace}
+          units={shop.units.filter(unit=>unit.active).map(unit=>({
+            id:unit.id,name:unit.name,
+            paymentMethods:unitPolicy(workspace,unit.id).paymentMethods,
+          }))}
+          totals={{
+            receivablePending:financeValue("RECEIVABLE","PENDING"),
+            payablePending:financeValue("PAYABLE","PENDING"),
+            receivablePaid:financeValue("RECEIVABLE","PAID"),
+            payablePaid:financeValue("PAYABLE","PAID"),
+          }}
+          ok={actionOk} error={actionError}/>}
         <section id="caixa" className="demo-section" hidden={Boolean(moduleId && moduleId !== "caixa")}>
           {valueOf("checkoutError") && <div role="alert" className="notice error-notice">{valueOf("checkoutError")}</div>}
           {valueOf("checkoutOk") && <div role="status" className="notice success">Operação salva com sucesso.</div>}
