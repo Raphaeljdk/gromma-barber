@@ -18,7 +18,7 @@ test("ficha remove WhatsApp visível mas não apaga dado anterior; upload aceita
  assert.match(file,/professional-photo-preview/);
  assert.match(file,/professional-upload-error/);
  assert.match(file,/new File\(\[blob\]/);
- assert.match(read("components/professional-save-all-button.tsx"),/data-upload-pending/);
+ assert.match(read("components/professional-save-all-button.tsx"),/dataset\.uploadPending/);
 });
 test("países e fusos IANA suportam busca, preservando o nome original do identificador",()=>{
  const names=read("lib/timezone-countries.ts");
