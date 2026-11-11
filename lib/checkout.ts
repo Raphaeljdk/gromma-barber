@@ -191,7 +191,7 @@ export function servicesFromCommandLines(
     const service = (ref ? catalog.find(service => service.id === ref.serviceId) : null)
       ?? catalog.find(service => service.name === line.description && Math.round(service.price * 100) === Math.round(line.unitPrice * 100))
       ?? booked.find(service => service.name === line.description && Math.round(service.price * 100) === Math.round(line.unitPrice * 100));
-    if (!service || !Number.isSafeInteger(service.durationMinutes) || service.durationMinutes <= 0)
+    if (!service || !Number.isSafeInteger(service.durationMinutes) || service.durationMinutes < 0)
       throw new Error("Não foi possível identificar a duração deste serviço. Atualize o cadastro do serviço antes de alterar a comanda.");
     for (let n = 0; n < line.quantity; n++) result.push({
       id: service.id, name: line.description, price: line.unitPrice, durationMinutes: service.durationMinutes,
