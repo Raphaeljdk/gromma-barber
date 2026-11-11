@@ -40,33 +40,74 @@ export async function saveBusinessIdentity(form:FormData){
     ctx=await authorize(form);
     const tradeName=field(form,"tradeName",120);
     const legalName=field(form,"legalName",180);
-    const hasBranches=field(form,"hasBranches",3)==="yes";
-    if(tradeName.length<2)throw Error("Informe o nome fantasia do negócio.");
+    const contactEmail=field(form,"businessContactEmail",180).toLowerCase();
+    const timeZone=field(form,"businessTimeZone",60);
+    const allowedTimeZones=["America/Sao_Paulo","America/Manaus","America/Rio_Branco","America/Noronha"];
+    if(tradeName.length<2)throw Error("Informe o nome fantasia.");
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail))
+      throw Error("Informe um e-mail da empresa válido.");
+    if(!allowedTimeZones.includes(timeZone))throw Error("Selecione um fuso horário válido.");
     await prisma.$transaction(async tx=>{
       const old=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},
         select:{tradeName:true,legalName:true,enabledFeatures:true}});
-      const branchCount=await tx.barberShopUnit.count({where:{barberShopId:ctx!.id}});
-      if(branchCount>1&&!hasBranches)
-        throw Error("Há filiais cadastradas. Para manter a operação, a opção Possui filial deve permanecer em Sim.");
       const ws=readWorkspace(old.enabledFeatures);
-      const previousFlag=ws.hasBranches;
-      ws.hasBranches=hasBranches;
+      const beforeEmail=ws.businessContactEmail;
+      const beforeZone=ws.businessTimeZone;
+      ws.businessContactEmail=contactEmail;
+      ws.businessTimeZone=timeZone;
       await tx.barberShop.update({where:{id:ctx!.id},data:{
         tradeName,legalName:legalName||null,
         enabledFeatures:writeWorkspace(old.enabledFeatures,ws),
       }});
       await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,
         adminEmail:ctx!.actor,action:"BUSINESS_IDENTITY_UPDATED",
-        details:{changedFields:Object.entries({
-          tradeName,legalName,hasBranches,
-        }).filter(([key,value])=>key==="hasBranches"?
-          previousFlag!==value:
-          String(old[key as "tradeName"|"legalName"]??"")!==value
-        ).map(([key])=>key)} as Prisma.InputJsonValue}});
+        details:{changedFields:[
+          ...(tradeName!==old.tradeName?["tradeName"]:[]),
+          ...(legalName!==(old.legalName??"")?["legalName"]:[]),
+          ...(beforeEmail!==contactEmail?["businessContactEmail"]:[]),
+          ...(beforeZone!==timeZone?["businessTimeZone"]:[]),
+        ]} as Prisma.InputJsonValue}});
     },{isolationLevel:"Serializable"});
     refresh(ctx);
   }catch(err){error=message(err);}
   next(code,"identificacao",error);
+}
+
+/** Atualiza identidade pública, sem alterar domínio DNS, login ou dados fiscais. */
+export async function saveBusinessAppearance(form:FormData){
+  const code=field(form,"tenantCode",80).toUpperCase();
+  let error="";let ctx:Ctx|undefined;
+  try{
+    ctx=await authorize(form);
+    const accentColor=field(form,"accentColor",7);
+    const secondaryColor=field(form,"secondaryColor",7);
+    const slug=field(form,"slug",60).toLowerCase();
+    if(!/^#[a-f0-9]{6}$/i.test(accentColor)||!/^#[a-f0-9]{6}$/i.test(secondaryColor))
+      throw Error("Informe cores em formato hexadecimal.");
+    if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)||slug.length<3)
+      throw Error("Use um endereço de 3 a 60 caracteres: letras, números e hífen, sem espaços.");
+    await prisma.$transaction(async tx=>{
+      const current=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},
+        select:{id:true,slug:true,enabledFeatures:true}});
+      const collision=await tx.barberShop.findFirst({where:{id:{not:ctx!.id},
+        OR:[{slug},{tenantCode:slug.toUpperCase()}]},select:{id:true}});
+      if(collision)throw Error("Esse endereço já está sendo utilizado por outra barbearia.");
+      const ws=readWorkspace(current.enabledFeatures);
+      const before=ws.branding;
+      ws.branding={...before,accentColor,secondaryColor};
+      await tx.barberShop.update({where:{id:ctx!.id},data:{
+        slug,enabledFeatures:writeWorkspace(current.enabledFeatures,ws),
+      }});
+      await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
+        action:"BUSINESS_APPEARANCE_UPDATED",
+        details:{slugChanged:current.slug!==slug,
+          primaryChanged:before.accentColor!==accentColor,
+          secondaryChanged:before.secondaryColor!==secondaryColor} as Prisma.InputJsonValue}});
+    },{isolationLevel:"Serializable"});
+    refresh(ctx);
+    revalidatePath("/barbearia/"+encodeURIComponent(slug));
+  }catch(err){error=message(err);}
+  next(code,"personalizacao",error);
 }
 
 export async function saveBusinessIntroduction(form:FormData){
