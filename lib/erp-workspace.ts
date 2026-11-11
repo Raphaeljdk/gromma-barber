@@ -183,6 +183,7 @@ export type BrandingSettings = {
   coverImageUrl: string;
   logoUrl: string;
   accentColor: string;
+  secondaryColor: string;
   clubTitle: string;
   clubDescription: string;
 };
@@ -202,6 +203,8 @@ export type OperationalSettings = {
 export type ErpWorkspace = {
   branding: BrandingSettings;
   hasBranches: boolean;
+  businessContactEmail: string;
+  businessTimeZone: string;
   unitPolicies: Record<string,UnitOperationsPolicy>;
   featuredProfessionalIds: string[];
   rolePermissions: StaffPermissions;
@@ -242,7 +245,9 @@ export type ErpWorkspace = {
 
 export const DEFAULT_WORKSPACE: ErpWorkspace = {
   hasBranches: false,
-  branding: { logoUrl: "", accentColor: "#c69a49", clubTitle: "Clube de assinaturas", clubDescription: "",
+  businessContactEmail: "",
+  businessTimeZone: "America/Sao_Paulo",
+  branding: { logoUrl: "", accentColor: "#c69a49", secondaryColor: "#202124", clubTitle: "Clube de assinaturas", clubDescription: "",
     heroTitle: "", heroDescription: "", coverImageUrl: "",
     carouselImages: [], secondaryTitle: "", secondaryDescription: "" },
   unitPolicies: {},
@@ -311,6 +316,8 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
   const rolePermissions = Object.fromEntries(STAFF_PERMISSION_ROLES.filter(role => Array.isArray(rawPermissions[role])).map(role => [role, (rawPermissions[role] as unknown[]).filter((permission): permission is StaffPermission => typeof permission === "string" && (STAFF_PERMISSION_KEYS as readonly string[]).includes(permission))])) as Partial<Record<StaffPermissionRole, StaffPermission[]>>;
   return {
     hasBranches: operations.hasBranches === true,
+    businessContactEmail: typeof operations.businessContactEmail==="string" ? operations.businessContactEmail.slice(0,180) : "",
+    businessTimeZone: ["America/Sao_Paulo","America/Manaus","America/Rio_Branco","America/Noronha"].includes(String(operations.businessTimeZone)) ? String(operations.businessTimeZone) : "America/Sao_Paulo",
     rolePermissions,
     unitPolicies: Object.fromEntries(Object.entries(record(operations.unitPolicies))
       .filter(([id])=>id.length <= 100)
@@ -390,8 +397,10 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
       const logo = typeof source.logoUrl === "string" && /^https:\/\//i.test(source.logoUrl) ? source.logoUrl.slice(0,700) : "";
       const accent = typeof source.accentColor === "string" && /^#[0-9A-Fa-f]{6}$/.test(source.accentColor)
         ? source.accentColor : DEFAULT_WORKSPACE.branding.accentColor;
+      const secondaryColor = typeof source.secondaryColor === "string" && /^#[0-9A-Fa-f]{6}$/.test(source.secondaryColor)
+        ? source.secondaryColor : DEFAULT_WORKSPACE.branding.secondaryColor;
       return {
-        logoUrl: logo, accentColor: accent,
+        logoUrl: logo, accentColor: accent, secondaryColor,
         heroTitle: typeof source.heroTitle==="string"?source.heroTitle.slice(0,110):"",
         heroDescription: typeof source.heroDescription==="string"?source.heroDescription.slice(0,600):"",
         carouselImages: (Array.isArray(source.carouselImages)?source.carouselImages:[])
