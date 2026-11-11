@@ -862,6 +862,45 @@ function numberValueSafe(raw:string){
   return raw.trim()!==""&&Number.isFinite(value)?value:NaN;
 }
 
+/**
+ * Exclusão lógica: tira do cadastro/novos agendamentos e mantém vínculos
+ * históricos de comandas, atendimentos e comissões intactos.
+ */
+export async function archiveService(formData:FormData){
+  const {tenantCode,viewer,shop}=await context(formData);
+  const path=`/erp/${encodeURIComponent(tenantCode)}/servicos`;
+  if(!allowed(viewer,["OWNER"]))redirect(`${path}?erro=permissao#servicos`);
+  const serviceId=text(formData,"serviceId",100);
+  if(!serviceId)redirect(`${path}?erro=servico#servicos`);
+  try{
+    await prisma.$transaction(async tx=>{
+      const service=await tx.service.findFirst({
+        where:{id:serviceId,barberShopId:shop.id,active:true},
+        select:{id:true,name:true},
+      });
+      if(!service)throw Error("Serviço não encontrado ou já excluído");
+      const future=await tx.appointment.findFirst({
+        where:{barberShopId:shop.id,serviceId,startsAt:{gte:new Date()},
+          status:{in:["SCHEDULED","CONFIRMED","CHECKED_IN","IN_SERVICE"]}},
+        select:{id:true},
+      });
+      if(future)throw Error("Há agendamentos futuros para este serviço");
+      await tx.service.update({where:{id:serviceId},data:{active:false}});
+      await tx.adminAuditLog.create({data:{
+        barberShopId:shop.id,adminEmail:viewer.email,
+        action:"SERVICE_ARCHIVED",
+        details:{serviceId,serviceName:service.name,mode:"SOFT_DELETE"} as Prisma.InputJsonValue,
+      }});
+    },{isolationLevel:"Serializable"});
+  }catch(error){
+    console.error("Service archive failed",error);
+    redirect(`${path}?erro=servico-agendado#servicos`);
+  }
+  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
+  redirect(`${path}?ok=servico-excluido#servicos`);
+}
+
 export async function createFinancialEntry(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}/financeiro`;
