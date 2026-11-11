@@ -1058,6 +1058,7 @@ export async function TenantERPView({
     weekday: "short",
     day: "2-digit",
     month: "short",
+    timeZone: workspace.businessTimeZone,
   }).format(new Date());
 
   return (
@@ -2256,6 +2257,8 @@ export async function TenantERPView({
             branding={workspace.branding} isOwner={isOwner}
             hasBranches={workspace.hasBranches || shop.units.length>1}
             registeredBranches={Math.max(0,shop.units.length-1)}
+            contactEmail={workspace.businessContactEmail}
+            timeZone={workspace.businessTimeZone}
             ok={valueOf("dadosOk")} error={valueOf("dadosErro")}/>
         </div>}
 
