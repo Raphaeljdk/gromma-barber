@@ -2210,7 +2210,7 @@ export async function TenantERPView({
         </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
-          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><div className="gromma-directory-heading-actions"><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/unidades`}>Filiais · {shop.units.length}</Link><StatusPill tone="ready">Operacional</StatusPill></div></div>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><div className="gromma-directory-heading-actions"><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/unidades`}>Cadastro de filiais · {shop.units.length}</Link><StatusPill tone="ready">Operacional</StatusPill></div></div>
           {isOwner && <details className="erp-quick-create erp-directory-create">
             <summary><Plus size={15}/> Novo profissional <small>Cadastro e edição na mesma área</small></summary>
             <form action={createProfessional} className="erp-quick-form">
