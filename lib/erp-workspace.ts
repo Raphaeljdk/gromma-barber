@@ -15,6 +15,7 @@ export type ClubPlanConfig = {
   subscriberDiscountAppliesTo?: "SERVICES"|"PRODUCTS"|"BOTH";
   partnerName?: string;
   partnerDiscountPercent?: number;
+  partners?: {id:string;name:string;discountPercent:number}[];
   active: boolean;
   createdAt: string;
 };
