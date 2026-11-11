@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { saveProfessionalSection } from "@/app/erp/[tenant]/professional-actions";
+import { ProfessionalCurrencyInput } from "@/components/professional-currency-input";
 
 type SubscriptionTier={min:number;max:number|null;percent:number};
 type TierRow={id:number;min:string;max:string;percent:string};
@@ -33,7 +34,7 @@ export function ProfessionalSubscriptionCommissionEditor({
     setRows(current=>current.length===1?[{id:0,min:"",max:"",percent:""}]:current.filter(row=>row.id!==id));
   }
   return <div className="professional-subscription-editor">
-    <form action={saveProfessionalSection} className="erp-compact-form gromma-professional-bonus-form">
+    <form action={saveProfessionalSection} data-professional-save="base-commissions" className="erp-compact-form gromma-professional-bonus-form">
       <input type="hidden" name="tenantCode" value={tenantCode}/>
       <input type="hidden" name="userId" value={userId}/>
       <input type="hidden" name="section" value="base-commissions"/>
@@ -53,23 +54,20 @@ export function ProfessionalSubscriptionCommissionEditor({
           <input className="input" type="number" step=".01" min={0} max={100}
             name="subscriptionPercent" required defaultValue={subscriptionPercent}/>
         </label>:<input type="hidden" name="subscriptionPercent" value={subscriptionPercent}/>}
-        <button className="btn professional-bonus-save" type="submit">Salvar bonificação</button>
       </div>
     </form>
     <div className="professional-subsection professional-subscription-tier-panel">
       <h4>Metas por venda de planos novos (opcional)</h4>
-      <form action={saveProfessionalSection} className="erp-compact-form gromma-tier-form">
+      <form action={saveProfessionalSection} data-professional-save="subscription-tiers" className="erp-compact-form gromma-tier-form">
         <input type="hidden" name="tenantCode" value={tenantCode}/>
         <input type="hidden" name="userId" value={userId}/>
         <input type="hidden" name="section" value="subscription-tiers"/>
         <div className="professional-subscription-tier-list">
           {rows.map((row,index)=><div className="gromma-tier-row" key={row.id}>
-            <label>De (R$)<input className="input" type="number" name="tierMin"
-              min={0} step=".01" value={row.min} aria-label={"Início da faixa "+(index+1)}
-              onChange={event=>changeRow(row.id,"min",event.target.value)}/></label>
-            <label>Até (R$)<input className="input" type="number" name="tierMax"
-              min={0} step=".01" value={row.max} aria-label={"Fim da faixa "+(index+1)}
-              onChange={event=>changeRow(row.id,"max",event.target.value)}/></label>
+            <label>De (R$)<ProfessionalCurrencyInput name="tierMin" label={"Início da faixa "+(index+1)}
+              value={row.min} onChange={value=>changeRow(row.id,"min",value)}/></label>
+            <label>Até (R$)<ProfessionalCurrencyInput name="tierMax" label={"Fim da faixa "+(index+1)}
+              value={row.max} onChange={value=>changeRow(row.id,"max",value)}/></label>
             <label>Comissão (%)<input className="input" type="number" name="tierPercent"
               min={0} max={100} step=".01" value={row.percent}
               aria-label={"Percentual da faixa "+(index+1)}
@@ -86,9 +84,6 @@ export function ProfessionalSubscriptionCommissionEditor({
               </button>}
             </span>
           </div>)}
-        </div>
-        <div className="professional-tier-save">
-          <button className="btn secondary" type="submit">Salvar faixas comerciais</button>
         </div>
       </form>
     </div>
