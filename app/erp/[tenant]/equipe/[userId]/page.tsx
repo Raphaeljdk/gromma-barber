@@ -127,7 +127,6 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             </select>}
           </label>
           <label className="professional-field-unit"><span className={labelClass}>Unidade principal</span><select name="unitId" className="select" defaultValue={user.unitId??""}><option value="">Sem unidade definida</option>{shop.units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
-          <label className="professional-field-whatsapp"><span className={labelClass}>WhatsApp</span><input className="input" name="whatsapp" type="tel" defaultValue={profile.whatsapp??""}/></label>
           <label className="professional-field-cadence"><span className={labelClass}>Periodicidade (dias)</span><input className="input" type="number" name="cadenceDays" min={0} max={365} defaultValue={profile.cadenceDays??30}/></label>
           <input type="hidden" name="photoUrl" value={profile.photoUrl??""}/>
         </div>
