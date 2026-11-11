@@ -236,8 +236,7 @@ export async function saveBusinessClub(form:FormData){
       await tx.barberShop.update({where:{id:ctx!.id},data:{enabledFeatures:writeWorkspace(shop.enabledFeatures,ws)}});
       await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,adminEmail:ctx!.actor,
         action:selected?"BUSINESS_CLUB_UPDATED":"BUSINESS_CLUB_CREATED",
-        details:{clubId:selected?.id??"created",name,active,subscriberDiscountPercent}
-          as Prisma.InputJsonValue}});
+        details:({clubId:selected?.id??"created",name,active,subscriberDiscountPercent} as Prisma.InputJsonValue)}});
     },{isolationLevel:"Serializable"});
     refresh(ctx);
   }catch(err){error=message(err);}
