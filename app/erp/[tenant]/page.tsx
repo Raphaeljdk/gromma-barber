@@ -1433,6 +1433,7 @@ export async function TenantERPView({
         <section id="servicos" className="demo-section gromma-services-registration" hidden={Boolean(moduleId && moduleId !== "servicos")}>
           <div className="section-head"><div><div className="eyebrow">Cadastros</div><h2>Serviços</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
           {actionOk === "servico" && <div className="notice erp-inline-notice success">Serviço cadastrado com sucesso.</div>}
+          {actionOk === "servico-editado" && <div className="notice erp-inline-notice success">Serviço atualizado. Agendamentos já registrados foram preservados.</div>}
           {actionError === "servico" && <div className="notice erp-inline-notice error-notice">Não foi possível cadastrar o serviço. Revise nome, duração e valor.</div>}
           {actionError === "permissao" && <div className="notice erp-inline-notice">Seu perfil não possui permissão para concluir esta ação.</div>}
           {isOwner && (
@@ -1446,7 +1447,7 @@ export async function TenantERPView({
                 <label><span className="label">Valor</span><input className="input" name="price" type="number" min="0" step="0.01" required /></label>
               </div>
               <div className="gromma-service-extra-row">
-                <label><span className="label">Valor em fichas</span><input className="input" name="ticketValue" type="number" min="0" max="1000000" step="0.01" placeholder="Opcional" /></label>
+                <label><span className="label">Tempo em fichas (min)</span><input className="input" name="ticketValue" type="number" min="1" max="600" step="1" placeholder="Usar duração padrão"/></label>
                 <label><span className="label">Período para recompra (dias)</span><input className="input" name="repurchaseDays" type="number" min="0" max="3650" step="1" placeholder="Opcional" /></label>
                 <label><span className="label">Categoria</span><input className="input" name="category" list="gromma-service-categories"
                   maxLength={80} placeholder="Selecione ou digite uma categoria"/></label>
@@ -1454,9 +1455,10 @@ export async function TenantERPView({
               </div>
               <div className="gromma-service-options">
                 <label><input type="checkbox" name="startingFrom"/> A partir de</label>
-                <label><input type="checkbox" name="hidden"/> Oculto</label>
+                <label><input type="checkbox" name="hidden"/> Oculto (exclusivo)</label>
                 <label><input type="checkbox" name="walkIn"/> Serviço de encaixe</label>
               </div>
+              <p className="small muted">Tempo em fichas substitui a duração na soma da agenda. Um serviço de encaixe soma R$ ao atendimento, mas não acrescenta minutos; deve acompanhar outro serviço.</p>
               <div className="gromma-service-create-footer"><button className="btn" type="submit">Salvar serviço</button></div>
             </form>
           </details>
@@ -1470,10 +1472,39 @@ export async function TenantERPView({
           />
 
           <div className="table-wrap gromma-services-list"><table>
-            <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
-            <tbody>{servicesTotal ? services.map((service) => (
-              <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
-            )) : <tr><td colSpan={4} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
+            <thead><tr><th>Serviço</th><th>Tempo de agenda</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody>{servicesTotal ? services.map(service=>{
+              const meta=workspace.serviceCatalogSettings[service.id];
+              return <tr key={service.id}>
+                <td><strong>{service.name}</strong></td>
+                <td>{effectiveServiceMinutes(service.durationMinutes,meta)} min{meta?.walkIn?" · Encaixe":""}</td>
+                <td>{brl(Number(service.price))}</td>
+                <td><span className={"badge "+(meta?.hidden?"pending":"approved")}>{meta?.hidden?"Oculto / exclusivo":"Ativo"}</span></td>
+                <td>{isOwner?<details className="gromma-service-inline-edit">
+                  <summary className="btn secondary">Editar</summary>
+                  <form action={updateService} className="gromma-service-inline-form">
+                    <input type="hidden" name="tenantCode" value={tenantCode}/>
+                    <input type="hidden" name="serviceId" value={service.id}/>
+                    <div className="gromma-service-primary-row">
+                      <label>Serviço<input className="input" name="name" defaultValue={service.name} maxLength={120} required/></label>
+                      <label>Duração (min)<input className="input" name="durationMinutes" type="number" min="5" max="600" step="5" defaultValue={service.durationMinutes} required/></label>
+                      <label>Valor (R$)<input className="input" name="price" type="number" min="0" step=".01" defaultValue={Number(service.price)} required/></label>
+                    </div>
+                    <div className="gromma-service-extra-row">
+                      <label>Tempo em fichas (min)<input className="input" name="ticketValue" type="number" min="1" max="600" step="1" defaultValue={meta?.ticketValue??""} placeholder="Usar duração padrão"/></label>
+                      <label>Recompra (dias)<input className="input" name="repurchaseDays" type="number" min="0" max="3650" defaultValue={meta?.repurchaseDays??""}/></label>
+                      <label>Categoria<input className="input" name="category" maxLength={80} defaultValue={meta?.category??""}/></label>
+                    </div>
+                    <div className="gromma-service-options">
+                      <label><input name="startingFrom" type="checkbox" defaultChecked={meta?.startingFrom??false}/> A partir de</label>
+                      <label><input name="hidden" type="checkbox" defaultChecked={meta?.hidden??false}/> Oculto (exclusivo)</label>
+                      <label><input name="walkIn" type="checkbox" defaultChecked={meta?.walkIn??false}/> Serviço de encaixe</label>
+                    </div>
+                    <div className="gromma-service-create-footer"><button type="submit" className="btn">Salvar alterações</button></div>
+                  </form>
+                </details>:<span className="small muted">Somente proprietário</span>}</td>
+              </tr>;
+            }) : <tr><td colSpan={5} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
           {canManage && <details className="erp-quick-create gromma-service-commission">
             <summary><span className="gromma-service-commission-trigger">Configurar comissão específica por serviço <ChevronDown size={16}/></span></summary>
