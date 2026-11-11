@@ -27,9 +27,9 @@ test("new sector hierarchy preserves access to existing ERP modules", () => {
   ].flatMap(node => node.route ? [node.route] : []));
   const searchModules = [...palette.matchAll(/\{ id: "([^"]+)", label: "[^"]+", group: "[^"]+", icon:/g)].map(match => match[1]);
   assert.equal(new Set(searchModules).size, searchModules.length, "duplicates in module search");
-  // Telas internas de marca e cadastro continuam alcançáveis pela busca,
+  // Telas de marca, cadastro e filiais acessíveis por busca ou Dados gerais,
   // sem duplicar o menu Empresa que agora prioriza as rotas operacionais.
-  const directOnly = new Set(["identidade", "clube-config", "equipe/novo"]);
+  const directOnly = new Set(["identidade", "clube-config", "equipe/novo", "unidades"]);
   assert.deepEqual(
     [...links].sort(),
     [...new Set(searchModules.filter(id => !directOnly.has(id)))].sort(),
