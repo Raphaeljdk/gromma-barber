@@ -218,7 +218,7 @@ export type ServiceCatalogMetadata={
 };
 /** Keep tenant timezone validation safe in isolated workspace replays as well as runtime. */
 function isValidBusinessTimeZone(value:string):boolean{
-  if(!value||value.length>80||!/^[A-Za-z0-9_+\\/-]+$/.test(value))return false;
+  if(!value||value.length>80||!/^[A-Za-z0-9_+-]+$/.test(value.replaceAll("/","_")))return false;
   try {new Intl.DateTimeFormat("en",{timeZone:value}).format(new Date());return true;}
   catch {return false;}
 }
