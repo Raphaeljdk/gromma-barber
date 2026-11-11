@@ -110,6 +110,10 @@ export async function saveCompleteUnit(form:FormData){
         bankAgency,bankAccount,bankSwift,pixType,pixKey,paymentEmail,paymentMethods,
         paymentConfigurations:configurations,
         legalDocument:old.legalDocument||legalDocument,
+        // Regras corporativas passam a prevalecer; não duplicar campos por filial.
+        potPercent:null,
+        cancellationMinutes:ws.bookingRules.cancellationMinutes,
+        noShowBlockHours:ws.bookingRules.noShowBlockHours,
         debitFeePercent:configurations.DEBIT.feePercent,
         creditFeePercent:configurations.CREDIT.feePercent,
         settlementDays:configurations.CREDIT.settlementDays,
