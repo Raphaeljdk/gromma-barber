@@ -53,10 +53,12 @@ test("multiple existing subscription plans and partner discounts keep tenant aud
  const actions=read("app/erp/[tenant]/business-data-actions.ts");
  const publicPage=read("app/barbearia/[tenant]/page.tsx");
  const workspace=read("lib/erp-workspace.ts");
- assert.match(form,/\+ Adicionar clube/);
- assert.match(form,/plans.map\(plan/);
- assert.match(form,/name="subscriberDiscountPercent"/);
- assert.match(form,/name="discountPercent"/);
+ // A personalização pública agora mostra somente o nome; planos continuam preservados no domínio do clube.
+ assert.match(form,/name="clubTitle"/);
+ assert.match(form,/name="clubDescription"/);
+ assert.doesNotMatch(form,/name="monthlyAmount"/);
+ assert.doesNotMatch(form,/name="subscriberDiscountPercent"/);
+ assert.doesNotMatch(form,/name="discountPercent"/);
  assert.match(form,/name="potPercent"/);
  assert.match(actions,/export async function saveBusinessClub/);
  assert.match(actions,/export async function saveBusinessClubPartner/);

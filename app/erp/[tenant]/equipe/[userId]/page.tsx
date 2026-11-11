@@ -127,7 +127,6 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
             </select>}
           </label>
           <label className="professional-field-unit"><span className={labelClass}>Unidade principal</span><select name="unitId" className="select" defaultValue={user.unitId??""}><option value="">Sem unidade definida</option>{shop.units.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
-          <label className="professional-field-whatsapp"><span className={labelClass}>WhatsApp</span><input className="input" name="whatsapp" type="tel" defaultValue={profile.whatsapp??""}/></label>
           <label className="professional-field-cadence"><span className={labelClass}>Periodicidade (dias)</span><input className="input" type="number" name="cadenceDays" min={0} max={365} defaultValue={profile.cadenceDays??30}/></label>
           <input type="hidden" name="photoUrl" value={profile.photoUrl??""}/>
         </div>
@@ -151,11 +150,11 @@ export default async function ProfessionalRegistration({params,searchParams}:Pro
       <div className="professional-subsection professional-photo-upload">
         <h4>Atualizar foto do profissional</h4>
         <section className="erp-quick-create" style={{marginTop:10}}>
-        <h3 className="professional-section-title">Enviar foto de perfil (arquivo)</h3>
+        <p className="small muted professional-image-upload-hint">Foto do perfil · carregamento e visualização em um único campo</p>
         <form data-professional-save="photo" action={uploadProfessionalPhoto} className="erp-compact-form">
           {hidden(code,user.id)}
-          <ProfessionalFileUpload name="photo" kind="photo" label="Foto JPEG, PNG ou WebP (máximo 3 MB)"
-            accept="image/jpeg,image/png,image/webp"/>
+          <ProfessionalFileUpload name="photo" kind="photo" label="Foto de perfil (formatos de imagem)"
+            accept="image/*,.heic,.heif,.tif,.tiff" existingPhotoUrl={profile.photoUrl??""}/>
           <label style={{display:"flex",gap:8,alignItems:"center"}}>
             <input type="checkbox" name="photoConsent" required/>
             Confirmo que tenho autorização para armazenar e exibir a foto do profissional em endereço público de imagem.

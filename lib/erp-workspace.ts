@@ -223,6 +223,9 @@ function isValidBusinessTimeZone(value:string):boolean{
   catch {return false;}
 }
 
+export type BillingRegularizationRequest={
+  month:string;requestedAt:string;requesterEmail:string;
+};
 export type ErpWorkspace = {
   branding: BrandingSettings;
   hasBranches: boolean;
@@ -251,6 +254,7 @@ export type ErpWorkspace = {
   commissionRules: CommissionRuleConfig[];
   serviceCommissionOverrides: Record<string, number>;
   serviceCatalogSettings: Record<string,ServiceCatalogMetadata>;
+  billingRegularizationRequests: BillingRegularizationRequest[];
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
   /** Regras de rateio do pote. Nunca armazena nem permite editar o valor arrecadado. */
@@ -279,6 +283,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   unitPolicies: {},
   featuredProfessionalIds: [],
   serviceCatalogSettings: {},
+  billingRegularizationRequests: [],
   rolePermissions: {},
   professionalProfiles: {},
   clubEvents: [],
@@ -380,6 +385,14 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
           welcomeText:typeof p.welcomeText==="string"?p.welcomeText.slice(0,280):"",
         }];
       })) as Record<string,UnitOperationsPolicy>,
+    billingRegularizationRequests:array<unknown>(operations.billingRegularizationRequests)
+      .filter((item):item is BillingRegularizationRequest=>{
+        if(!item||typeof item!=="object"||Array.isArray(item))return false;
+        const recordItem=item as Record<string,unknown>;
+        return typeof recordItem.month==="string"&&/^\d{4}-(0[1-9]|1[0-2])$/.test(recordItem.month)&&
+          typeof recordItem.requestedAt==="string"&&
+          typeof recordItem.requesterEmail==="string";
+      }).slice(-100),
     serviceCatalogSettings:Object.fromEntries(Object.entries(record(operations.serviceCatalogSettings))
       .filter(([id])=>id.length<=100).slice(0,2000).map(([id,raw])=>{
         const meta=record(raw);

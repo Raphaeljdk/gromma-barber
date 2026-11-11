@@ -1,5 +1,7 @@
 "use server";
 
+import type {Prisma} from "@prisma/client";
+import { effectiveServiceMinutes } from "@/lib/service-scheduling";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -462,7 +464,10 @@ export async function createAppointment(formData: FormData) {
   if (extraServicesFound.length !== uniqueExtraIds.length) redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   const serviceById = new Map([service, ...extraServicesFound].map(item => [item.id, item]));
   const selectedServices = [service, ...extraIds.map(id => serviceById.get(id)!)];
-  const totalMinutes = selectedServices.reduce((sum, item) => sum + item.durationMinutes, 0);
+  const reservedServices = selectedServices.map(item=>({
+    ...item,durationMinutes:effectiveServiceMinutes(item.durationMinutes,workspace.serviceCatalogSettings[item.id]),
+  }));
+  const totalMinutes = reservedServices.reduce((sum,item)=>sum+item.durationMinutes,0);
   if (!Number.isSafeInteger(totalMinutes) || totalMinutes <= 0 || totalMinutes > 24 * 60)
     redirect(agendaReturnHref(tenantCode, formData, { erro: "agenda" }));
   const endsAt = new Date(startsAt.getTime() + totalMinutes * 60_000);
@@ -604,7 +609,7 @@ export async function createAppointment(formData: FormData) {
           },
         },
       });
-      if (extraIds.length) latest.bookedServices.push({ appointmentId: createdAppointment.id, services: selectedServices.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })) });
+      if (extraIds.length) latest.bookedServices.push({ appointmentId: createdAppointment.id, services: reservedServices.map(item => ({ id: item.id, name: item.name, price: Number(item.price), durationMinutes: item.durationMinutes })) });
       if (waiting) latest.waitlist = latest.waitlist.filter(item => item.id !== waiting.id);
       if (waiting || extraIds.length) {
         await tx.barberShop.update({ where: { id: shop.id }, data: { enabledFeatures: writeWorkspace(fresh.enabledFeatures, latest) } });
@@ -755,7 +760,7 @@ export async function createService(formData: FormData) {
     !Number.isFinite(price) ||
     price < 0 ||
     price > 99999999 ||
-    (ticketValue!==null && (!Number.isFinite(ticketValue)||ticketValue<0||ticketValue>1000000)) ||
+    (ticketValue!==null && (!Number.isSafeInteger(ticketValue)||ticketValue<1||ticketValue>600)) ||
     (repurchaseDays!==null && (!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650))
   ) {
     redirect(`${path}?erro=servico#servicos`);
@@ -789,6 +794,111 @@ export async function createService(formData: FormData) {
 
   revalidatePath(path);
   redirect(`${path}?ok=servico#servicos`);
+}
+
+/**
+ * Edita o catálogo prospectivamente, mantendo snapshots dos agendamentos e
+ * comandos já registrados; não reabre pagamentos nem altera agenda antiga.
+ */
+export async function updateService(formData:FormData){
+  const {tenantCode,viewer,shop}=await context(formData);
+  const path=`/erp/${encodeURIComponent(tenantCode)}/servicos`;
+  if(!allowed(viewer,["OWNER"]))redirect(`${path}?erro=permissao#servicos`);
+  const serviceId=text(formData,"serviceId",100);
+  const name=text(formData,"name",120);
+  const durationMinutes=numberValueSafe(text(formData,"durationMinutes",16));
+  const price=decimal(formData,"price");
+  const timeText=text(formData,"ticketValue",20);
+  const ticketValue=timeText?numberValueSafe(timeText):null;
+  const periodText=text(formData,"repurchaseDays",20);
+  const repurchaseDays=periodText?numberValueSafe(periodText):null;
+  const category=text(formData,"category",80);
+  const startingFrom=formData.get("startingFrom")==="on";
+  const hidden=formData.get("hidden")==="on";
+  const walkIn=formData.get("walkIn")==="on";
+  if(!serviceId||name.length<2||!Number.isSafeInteger(durationMinutes)||
+     durationMinutes<5||durationMinutes>600||
+     !Number.isFinite(price)||price<0||price>99999999||
+     (ticketValue!==null&&(!Number.isSafeInteger(ticketValue)||ticketValue<1||ticketValue>600))||
+     (repurchaseDays!==null&&(!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650)))
+    redirect(`${path}?erro=servico#servicos`);
+  try{
+    await prisma.$transaction(async tx=>{
+      const old=await tx.service.findFirst({where:{
+        id:serviceId,barberShopId:shop.id,active:true,
+      },select:{id:true,name:true,price:true,durationMinutes:true}});
+      if(!old)throw Error("Serviço não encontrado");
+      await tx.service.update({where:{id:serviceId},data:{name,price,durationMinutes}});
+      const fresh=await tx.barberShop.findUniqueOrThrow({
+        where:{id:shop.id},select:{enabledFeatures:true},
+      });
+      const ws=readWorkspace(fresh.enabledFeatures);
+      const oldMeta=ws.serviceCatalogSettings[serviceId]??null;
+      ws.serviceCatalogSettings[serviceId]={
+        ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn,
+      };
+      await tx.barberShop.update({where:{id:shop.id},data:{
+        enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
+      }});
+      await tx.adminAuditLog.create({data:{
+        barberShopId:shop.id,adminEmail:viewer.email,action:"SERVICE_UPDATED",
+        details:{
+          serviceId,previous:{name:old.name,price:String(old.price),durationMinutes:old.durationMinutes,metadata:oldMeta},
+          updated:{name,price,durationMinutes,ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn},
+        } as Prisma.InputJsonValue,
+      }});
+    },{isolationLevel:"Serializable"});
+  }catch(error){
+    console.error("Failed to update service",error);
+    redirect(`${path}?erro=servico#servicos`);
+  }
+  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/mensagens`);
+  redirect(`${path}?ok=servico-editado#servicos`);
+}
+function numberValueSafe(raw:string){
+  const value=Number(raw);
+  return raw.trim()!==""&&Number.isFinite(value)?value:NaN;
+}
+
+/**
+ * Exclusão lógica: tira do cadastro/novos agendamentos e mantém vínculos
+ * históricos de comandas, atendimentos e comissões intactos.
+ */
+export async function archiveService(formData:FormData){
+  const {tenantCode,viewer,shop}=await context(formData);
+  const path=`/erp/${encodeURIComponent(tenantCode)}/servicos`;
+  if(!allowed(viewer,["OWNER"]))redirect(`${path}?erro=permissao#servicos`);
+  const serviceId=text(formData,"serviceId",100);
+  if(!serviceId)redirect(`${path}?erro=servico#servicos`);
+  try{
+    await prisma.$transaction(async tx=>{
+      const service=await tx.service.findFirst({
+        where:{id:serviceId,barberShopId:shop.id,active:true},
+        select:{id:true,name:true},
+      });
+      if(!service)throw Error("Serviço não encontrado ou já excluído");
+      const future=await tx.appointment.findFirst({
+        where:{barberShopId:shop.id,serviceId,startsAt:{gte:new Date()},
+          status:{in:["SCHEDULED","CONFIRMED","CHECKED_IN","IN_SERVICE"]}},
+        select:{id:true},
+      });
+      if(future)throw Error("Há agendamentos futuros para este serviço");
+      await tx.service.update({where:{id:serviceId},data:{active:false}});
+      await tx.adminAuditLog.create({data:{
+        barberShopId:shop.id,adminEmail:viewer.email,
+        action:"SERVICE_ARCHIVED",
+        details:{serviceId,serviceName:service.name,mode:"SOFT_DELETE"} as Prisma.InputJsonValue,
+      }});
+    },{isolationLevel:"Serializable"});
+  }catch(error){
+    console.error("Service archive failed",error);
+    redirect(`${path}?erro=servico-agendado#servicos`);
+  }
+  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
+  redirect(`${path}?ok=servico-excluido#servicos`);
 }
 
 export async function createFinancialEntry(formData: FormData) {

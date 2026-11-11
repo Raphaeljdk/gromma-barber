@@ -1,0 +1,267 @@
+/* GROMMA · Serviços, Configurações e Fatura — espaçamento amplo sem criar abas. */
+html[data-theme] .tenant-erp .gromma-settings-enterprise{
+  width:100%!important;max-width:100%!important;min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-settings-enterprise .gromma-settings-expanded{
+  width:100%!important;max-width:none!important;min-width:0;
+  box-sizing:border-box;padding:clamp(14px,2vw,24px)!important;
+  margin:0!important;
+}
+html[data-theme] .tenant-erp .gromma-settings-enterprise .section-head h2{
+  font-size:clamp(1.45rem,2vw,1.85rem)!important;
+}
+html[data-theme] .tenant-erp .gromma-settings-expanded .erp-card-title{
+  margin-bottom:18px;padding-bottom:12px;
+  border-bottom:1px solid var(--gromma-stroke,#3b4b60);
+}
+html[data-theme] .tenant-erp .gromma-settings-expanded .erp-card-title strong{
+  font-size:1.08rem!important;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form{
+  display:grid!important;grid-template-columns:1fr!important;
+  gap:18px!important;align-items:stretch;
+  width:100%;max-width:none!important;min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form fieldset{
+  margin:0!important;padding:16px!important;min-width:0;
+  width:100%;box-sizing:border-box;
+  border:1px solid var(--gromma-stroke,#3b4b60)!important;
+  border-radius:10px;background:var(--gromma-soft,#2a394b);
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form legend{
+  padding:0 9px;font-size:1rem!important;font-weight:810!important;
+  color:var(--gromma-ink,#f3f6fb);
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-hours{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:15px!important;width:100%;align-items:start;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-hours label{
+  display:flex;flex-direction:column;gap:8px;min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .label{
+  font-size:.95rem!important;font-weight:760!important;
+  color:var(--gromma-ink,#f3f6fb)!important;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .input{
+  height:46px!important;min-height:46px!important;
+  font-size:1rem!important;padding:10px 12px!important;
+  border-radius:8px!important;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-hours small{
+  font-size:.81rem!important;line-height:1.45;
+  color:var(--gromma-muted,#b3c1d1)!important;
+}
+html[data-theme] .tenant-erp .gromma-amenities-toggles{
+  display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));
+  gap:12px;margin:15px 0 2px;
+}
+html[data-theme] .tenant-erp .gromma-amenity-toggle{
+  position:relative;display:flex!important;align-items:center;justify-content:flex-start;
+  flex-direction:row!important;gap:12px!important;min-height:63px;
+  box-sizing:border-box;padding:12px!important;border-radius:9px;
+  border:1px solid var(--gromma-stroke,#3b4b60);
+  background:var(--gromma-paper,#222f3e);
+  color:var(--gromma-ink,#f3f6fb);cursor:pointer;
+}
+html[data-theme] .tenant-erp .gromma-amenity-toggle strong{
+  font-size:.91rem!important;line-height:1.3;
+}
+html[data-theme] .tenant-erp .gromma-amenity-toggle input{
+  position:absolute;width:1px!important;height:1px!important;opacity:0;
+}
+html[data-theme] .tenant-erp .gromma-toggle-track{
+  display:inline-flex;align-items:center;flex:none;width:43px;height:25px;
+  padding:3px;box-sizing:border-box;border-radius:20px;
+  background:var(--gromma-stroke,#3b4b60);transition:background .15s ease;
+}
+html[data-theme] .tenant-erp .gromma-toggle-track span{
+  display:block;width:19px;height:19px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.17);
+  transition:transform .15s ease;
+}
+html[data-theme] .tenant-erp .gromma-amenity-toggle input:checked + .gromma-toggle-track{
+  background:var(--gromma-accent,#6254d5);
+}
+html[data-theme] .tenant-erp .gromma-amenity-toggle input:checked + .gromma-toggle-track span{
+  transform:translateX(18px);
+}
+html[data-theme] .tenant-erp .gromma-amenity-toggle input:focus-visible + .gromma-toggle-track{
+  outline:3px solid var(--gromma-accent,#6254d5);outline-offset:3px;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-options{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px!important;margin:10px 0 0!important;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-options label{
+  min-height:66px;font-size:.89rem!important;
+  background:var(--gromma-paper,#222f3e);
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-options strong{
+  font-size:.92rem!important;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-submit{
+  display:flex;justify-content:flex-end;margin:0!important;padding:0!important;
+}
+html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-submit .btn{
+  min-height:45px;padding:10px 20px;font-size:.93rem;font-weight:800;
+}
+/* Mensalidades: estimativas e pedidos de regularização, sem simular quitação. */
+html[data-theme] .tenant-erp .gromma-company-billing{
+  width:100%!important;max-width:none!important;
+}
+html[data-theme] .tenant-erp .gromma-billing-monthly{
+  margin-top:16px;max-width:none!important;width:100%!important;
+  box-sizing:border-box;padding:clamp(14px,1.6vw,22px)!important;
+}
+html[data-theme] .tenant-erp .gromma-billing-monthly-heading{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:16px;flex-wrap:wrap;padding-bottom:15px;
+}
+html[data-theme] .tenant-erp .gromma-billing-monthly-heading h3{
+  margin:0 0 6px;font-size:1.15rem;font-weight:810;
+}
+html[data-theme] .tenant-erp .gromma-billing-monthly-heading p{
+  margin:0;font-size:.85rem;color:var(--gromma-muted,#b3c1d1);line-height:1.5;
+}
+html[data-theme] .tenant-erp .gromma-billing-monthly table{
+  width:100%!important;border-collapse:collapse;
+}
+html[data-theme] .tenant-erp .gromma-billing-monthly th,
+html[data-theme] .tenant-erp .gromma-billing-monthly td{
+  font-size:.9rem!important;padding:13px!important;
+  border-bottom:1px solid var(--gromma-stroke,#3b4b60);
+}
+html[data-theme] .tenant-erp .gromma-billing-monthly th{font-weight:800!important;}
+html[data-theme] .tenant-erp .gromma-billing-monthly form{margin:0;}
+html[data-theme] .tenant-erp .gromma-billing-monthly form .btn{
+  min-height:35px;white-space:nowrap;font-size:.82rem;
+}
+html[data-theme] .tenant-erp .gromma-billing-monthly .gromma-billing-status{
+  font-size:.85rem;font-weight:680;
+}
+/* Edição sem afetar a compactação da tabela de serviços. */
+html[data-theme] .tenant-erp .gromma-service-edit-trigger{
+  display:inline-flex;align-items:center;gap:7px;
+  min-height:34px;font-size:.85rem!important;
+}
+html[data-theme] .gromma-service-edit-dialog{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(1000px,calc(100vw - 36px));max-width:1000px;
+  max-height:min(800px,calc(100dvh - 34px));overflow:auto;
+  box-sizing:border-box;padding:22px;
+  color:var(--gromma-ink,#f3f6fb);
+  background:var(--gromma-paper,#222f3e);
+  border:1px solid var(--gromma-stroke,#3b4b60);
+  border-radius:13px;box-shadow:0 20px 80px rgba(0,0,0,.38);
+}
+html[data-theme] .gromma-service-edit-dialog::backdrop{background:rgba(5,12,23,.7);}
+html[data-theme] .gromma-service-edit-top{
+  display:flex;justify-content:space-between;align-items:start;
+  gap:14px;margin-bottom:20px;padding-bottom:12px;
+  border-bottom:1px solid var(--gromma-stroke,#3b4b60);
+}
+html[data-theme] .gromma-service-edit-top strong{
+  display:block;font-size:1.25rem;font-weight:800;
+}
+html[data-theme] .gromma-service-edit-top small{
+  display:block;margin-top:4px;font-size:.86rem;color:var(--gromma-muted,#b3c1d1);
+}
+html[data-theme] .gromma-service-edit-top button{
+  border:0;background:transparent;cursor:pointer;padding:7px;
+  color:var(--gromma-ink,#f3f6fb);
+}
+html[data-theme] .gromma-service-inline-form{
+  display:grid;gap:16px;max-width:none!important;
+}
+html[data-theme] .gromma-service-inline-form :is(.gromma-service-primary-row,.gromma-service-extra-row){
+  display:grid;gap:13px;
+}
+html[data-theme] .gromma-service-inline-form .gromma-service-primary-row{
+  grid-template-columns:minmax(150px,1.8fr) minmax(110px,.7fr) minmax(130px,.9fr);
+}
+html[data-theme] .gromma-service-inline-form .gromma-service-extra-row{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+html[data-theme] .gromma-service-inline-form label{
+  display:flex;flex-direction:column;gap:7px;min-width:0;
+  font-size:.89rem;font-weight:750;
+}
+html[data-theme] .gromma-service-inline-form :is(.input,.select){
+  width:100%;box-sizing:border-box;min-height:42px;
+  font-size:.9rem;padding:8px 11px;
+}
+html[data-theme] .gromma-service-inline-form .gromma-service-options{
+  display:flex!important;gap:20px;flex-wrap:wrap;align-items:center;
+}
+html[data-theme] .gromma-service-inline-form .gromma-service-options label{
+  display:inline-flex;flex-direction:row;align-items:center;gap:8px;
+}
+html[data-theme] .gromma-service-inline-form .gromma-service-create-footer{
+  display:flex;justify-content:flex-end;gap:10px;
+}
+/* Retornos por serviço, consulta em Mensagens sem abas novas. */
+html[data-theme] .tenant-erp .gromma-repurchase-reminders{
+  margin:16px 0;padding:18px;border:1px solid var(--gromma-stroke,#3b4b60);
+  border-radius:11px;background:var(--gromma-paper,#222f3e);
+  width:100%;box-sizing:border-box;
+}
+html[data-theme] .tenant-erp .gromma-repurchase-heading{
+  display:flex;align-items:center;gap:14px;margin-bottom:10px;
+}
+html[data-theme] .tenant-erp .gromma-repurchase-heading svg{
+  flex:none;color:var(--gromma-accent,#6254d5);
+}
+html[data-theme] .tenant-erp .gromma-repurchase-heading>div{flex:1;min-width:0;}
+html[data-theme] .tenant-erp .gromma-repurchase-heading h3{
+  font-size:1.04rem;font-weight:800;margin:0 0 3px;
+}
+html[data-theme] .tenant-erp .gromma-repurchase-heading p{
+  margin:0;font-size:.83rem;color:var(--gromma-muted,#b3c1d1);
+}
+html[data-theme] .tenant-erp .gromma-repurchase-heading>strong{
+  font-size:.89rem;white-space:nowrap;
+}
+html[data-theme] .tenant-erp .gromma-repurchase-row{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:11px 0;border-top:1px solid var(--gromma-stroke,#3b4b60);
+}
+html[data-theme] .tenant-erp .gromma-repurchase-row>div{
+  display:grid;gap:4px;min-width:0;
+}
+html[data-theme] .tenant-erp .gromma-repurchase-row strong{
+  font-size:.91rem;font-weight:740;
+}
+html[data-theme] .tenant-erp .gromma-repurchase-row span{
+  font-size:.83rem;color:var(--gromma-muted,#b3c1d1);
+}
+html[data-theme] .tenant-erp .gromma-repurchase-row .btn{
+  flex:none;min-height:34px;font-size:.82rem;
+}
+@media(max-width:900px){
+ html[data-theme] .tenant-erp .gromma-amenities-toggles{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+ }
+}
+@media(max-width:740px){
+ html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-hours{
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ html[data-theme] .tenant-erp .gromma-settings-clean-form .gromma-settings-options{
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ html[data-theme] .gromma-service-edit-dialog{
+  padding:15px;width:calc(100vw - 16px);max-height:calc(100dvh - 16px);
+ }
+ html[data-theme] .gromma-service-inline-form .gromma-service-primary-row,
+ html[data-theme] .gromma-service-inline-form .gromma-service-extra-row{
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ html[data-theme] .tenant-erp .gromma-repurchase-row{align-items:stretch;flex-direction:column;}
+}
+@media(max-width:450px){
+ html[data-theme] .tenant-erp .gromma-amenities-toggles{
+  grid-template-columns:minmax(0,1fr);
+ }
+ html[data-theme] .tenant-erp .gromma-repurchase-heading{flex-wrap:wrap;}
+}

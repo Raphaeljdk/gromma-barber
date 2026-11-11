@@ -57,14 +57,14 @@ export function ProfessionalSubscriptionCommissionEditor({
       </div>
     </form>
     <div className="professional-subsection professional-subscription-tier-panel">
-      <h4>Metas por venda de planos novos (opcional)</h4>
+      <h4>Bonificação escalonada por vendas · faixas em reais (R$)</h4>
       <form action={saveProfessionalSection} data-professional-save="subscription-tiers" className="erp-compact-form gromma-tier-form">
         <input type="hidden" name="tenantCode" value={tenantCode}/>
         <input type="hidden" name="userId" value={userId}/>
         <input type="hidden" name="section" value="subscription-tiers"/>
         <div className="professional-subscription-tier-list">
           {rows.map((row,index)=><div className="gromma-tier-row" key={row.id}>
-            <label>De (R$)<ProfessionalCurrencyInput name="tierMin" label={"Início da faixa "+(index+1)}
+            <label>A partir de (R$)<ProfessionalCurrencyInput name="tierMin" label={"Início da faixa "+(index+1)}
               value={row.min} onChange={value=>changeRow(row.id,"min",value)}/></label>
             <label>Até (R$)<ProfessionalCurrencyInput name="tierMax" label={"Fim da faixa "+(index+1)}
               value={row.max} onChange={value=>changeRow(row.id,"max",value)}/></label>

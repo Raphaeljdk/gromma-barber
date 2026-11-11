@@ -10,7 +10,7 @@ test("professional identity follows the specified compact field rows",()=>{
  const general=file.slice(file.indexOf('className="professional-identity-grid professional-general-fields"'),file.indexOf('className="professional-address-section"'));
  const address=file.slice(file.indexOf('className="professional-identity-grid professional-address-grid"'),file.indexOf('name="accessToOtherUnits"'));
  const order=(text,names)=>names.map(x=>text.indexOf('name="'+x+'"'));
- const a=order(general,["name","nickname","birthDate","cnpj","cpf","email","phone","role","unitId","whatsapp","cadenceDays"]);
+ const a=order(general,["name","nickname","birthDate","cnpj","cpf","email","phone","role","unitId","cadenceDays"]);
  const b=order(address,["zipCode","street","district","city","state","streetNumber","complement"]);
  assert.ok(a.every((v,i)=>v>=0 && (i===0||v>a[i-1])), "fields by row and exact order");
  assert.ok(b.every((v,i)=>v>=0 && (i===0||v>b[i-1])), "address order");
