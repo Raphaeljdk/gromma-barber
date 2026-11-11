@@ -31,7 +31,7 @@ export function BrandingSettingsSection({
         <Link href={root + "/dados"}>Dados</Link>
         <Link href={root + "/identidade"} aria-current={isIdentity ? "page" : undefined}>Identidade</Link>
         <Link href={root + "/clube-config"} aria-current={!isIdentity ? "page" : undefined}>Clube</Link>
-        <Link href={root + "/unidades"}>Filiais</Link>
+        <Link href={root + "/unidades"}>Cadastro de filiais</Link>
       </nav>
       {ok === "1" && <p className="notice success" role="status">Alterações salvas.</p>}
       {error && <p className="notice error-notice" role="alert">{error.slice(0, 160)}</p>}
