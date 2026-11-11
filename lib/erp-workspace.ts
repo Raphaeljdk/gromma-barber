@@ -389,7 +389,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
       .filter((item):item is BillingRegularizationRequest=>{
         if(!item||typeof item!=="object"||Array.isArray(item))return false;
         const recordItem=item as Record<string,unknown>;
-        return typeof recordItem.month==="string"&&/^\\d{4}-(0[1-9]|1[0-2])$/.test(recordItem.month)&&
+        return typeof recordItem.month==="string"&&/^\d{4}-(0[1-9]|1[0-2])$/.test(recordItem.month)&&
           typeof recordItem.requestedAt==="string"&&
           typeof recordItem.requesterEmail==="string";
       }).slice(-100),
