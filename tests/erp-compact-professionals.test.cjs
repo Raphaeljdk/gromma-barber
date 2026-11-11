@@ -15,16 +15,17 @@ test("intervalos e ausências cadastrados ficam abaixo de seus formulários",()=
   assert.match(section,/leave-remove/);
 });
 
-test("cadastro opcional fica recolhido sem perder dados ou upload",()=>{
+test("cadastro e endereço ficam sempre visíveis sem perder dados ou upload",()=>{
   const source=read("app/erp/[tenant]/equipe/[userId]/page.tsx");
-  assert.match(source,/professional-optional-address/);
-  assert.match(source,/<summary>Endereço e dados complementares<\/summary>/);
+  assert.match(source,/professional-address-section/);
+  assert.match(source,/<h4>Endereço e dados complementares<\/h4>/);
+  assert.doesNotMatch(source,/<details/);
   assert.match(source,/name="zipCode"/);
   assert.match(source,/name="streetNumber"/);
   assert.match(source,/uploadProfessionalPhoto/);
   assert.match(source,/uploadProfessionalContract/);
   assert.match(source,/name="contractPdf"/);
-  assert.match(source,/name="subscriptionPercent"/);
+  assert.match(read("components/professional-subscription-commission-editor.tsx"),/name="subscriptionPercent"/);
   assert.match(source,/ProfessionalServiceBatchEditor/);
 });
 

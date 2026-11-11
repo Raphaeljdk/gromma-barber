@@ -40,30 +40,29 @@ export async function saveBusinessIdentity(form:FormData){
     ctx=await authorize(form);
     const tradeName=field(form,"tradeName",120);
     const legalName=field(form,"legalName",180);
-    const ownerName=field(form,"ownerName",120);
-    const phone=field(form,"phone",30);
-    const whatsapp=field(form,"whatsapp",30);
-    const address=field(form,"address",240);
-    const city=field(form,"city",100);
-    const state=field(form,"state",2).toUpperCase();
-    if(tradeName.length<2||ownerName.length<2||city.length<2||
-      !/^[A-Z]{2}$/.test(state)||!/^[-+\d()\s]{8,30}$/.test(phone)||
-      (whatsapp&&!/^[-+\d()\s]{8,30}$/.test(whatsapp)))
-      throw Error("Confira nome, responsável, telefone, cidade e UF.");
+    const hasBranches=field(form,"hasBranches",3)==="yes";
+    if(tradeName.length<2)throw Error("Informe o nome fantasia do negócio.");
     await prisma.$transaction(async tx=>{
       const old=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},
-        select:{tradeName:true,legalName:true,ownerName:true,phone:true,whatsapp:true,
-          address:true,city:true,state:true}});
+        select:{tradeName:true,legalName:true,enabledFeatures:true}});
+      const branchCount=await tx.barberShopUnit.count({where:{barberShopId:ctx!.id}});
+      if(branchCount>1&&!hasBranches)
+        throw Error("Há filiais cadastradas. Para manter a operação, a opção Possui filial deve permanecer em Sim.");
+      const ws=readWorkspace(old.enabledFeatures);
+      const previousFlag=ws.hasBranches;
+      ws.hasBranches=hasBranches;
       await tx.barberShop.update({where:{id:ctx!.id},data:{
-        tradeName,legalName:legalName||null,ownerName,phone,whatsapp:whatsapp||null,
-        address:address||null,city,state,
+        tradeName,legalName:legalName||null,
+        enabledFeatures:writeWorkspace(old.enabledFeatures,ws),
       }});
       await tx.adminAuditLog.create({data:{barberShopId:ctx!.id,
         adminEmail:ctx!.actor,action:"BUSINESS_IDENTITY_UPDATED",
         details:{changedFields:Object.entries({
-          tradeName,legalName,ownerName,phone,whatsapp,address,city,state,
-        }).filter(([key,value])=>String(old[key as keyof typeof old]??"")!==value)
-          .map(([key])=>key)} as Prisma.InputJsonValue}});
+          tradeName,legalName,hasBranches,
+        }).filter(([key,value])=>key==="hasBranches"?
+          previousFlag!==value:
+          String(old[key as "tradeName"|"legalName"]??"")!==value
+        ).map(([key])=>key)} as Prisma.InputJsonValue}});
     },{isolationLevel:"Serializable"});
     refresh(ctx);
   }catch(err){error=message(err);}

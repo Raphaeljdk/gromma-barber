@@ -133,6 +133,8 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref, isOwner, c
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [aiIds, setAiIds] = useState<string[]>([]);
+  const [aiStatus, setAiStatus] = useState<"idle"|"loading"|"ai"|"local">("idle");
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -160,6 +162,34 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref, isOwner, c
     };
   }, [open]);
 
+  // Consulta por intenção sem enviar clientes/valores do negócio ao modelo.
+  // Mantém filtros locais quando o gateway não está configurado ou não responde.
+  useEffect(() => {
+    const phrase=query.trim();
+    if(!open||phrase.length<3){
+      setAiIds([]);
+      setAiStatus("idle");
+      return;
+    }
+    const controller=new AbortController();
+    setAiStatus("loading");
+    const timer=window.setTimeout(async()=>{
+      try{
+        const resp=await fetch(`/erp/${encodeURIComponent(tenantCode)}/api/ai-search`,{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({query:phrase}),signal:controller.signal,
+        });
+        if(!resp.ok)throw Error("AI unavailable");
+        const data=await resp.json() as {ids?:string[];source?:"ai"|"local"};
+        setAiIds(Array.isArray(data.ids)?data.ids.slice(0,3):[]);
+        setAiStatus(data.source==="ai"?"ai":"local");
+      }catch{
+        if(!controller.signal.aborted){setAiIds([]);setAiStatus("local");}
+      }
+    },420);
+    return()=>{window.clearTimeout(timer);controller.abort();};
+  },[query,open,tenantCode]);
+
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const accessible = SEARCH_MODULES.filter((item) =>
@@ -167,10 +197,28 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref, isOwner, c
       (!("adminOnly" in item) || !item.adminOnly || canManage)
     );
     if (!normalized) return accessible.filter(item => MODULES.some(module => module.id === item.id));
-    return accessible.filter((item) =>
-      `${item.label} ${item.group}`.toLowerCase().includes(normalized),
-    );
-  }, [query, isOwner, canManage]);
+    const quickTerms:Record<string,string[]> = {
+      "equipe":["profission","funcionari","barbeir","colaborador","equipe","staff"],
+      "comissoes":["comiss","pote","repasse","pagamento do barbeiro"],
+      "agenda":["agenda","marcar horario","agendar","compromisso"],
+      "financeiro":["receita","despesa","lucro","fluxo de caixa","saldo"],
+      "caixa":["abrir caixa","fechar caixa","sangria"],
+      "clientes":["cliente","consumidor","cadastro cliente"],
+      "servicos":["serviço","servico","corte","barba","preço do corte"],
+      "assinaturas":["clube","assinante","assinatura","mensalidade"],
+      "relatorios":["relatório","relatorio","indicador","resultado"],
+      "estoque":["estoque","produto","mercadoria","inventário"],
+    };
+    const ranked=accessible.map((item)=>{
+      const normalizedText=`${item.label} ${item.group}`.toLowerCase();
+      const direct=normalizedText.includes(normalized)?10:0;
+      const synonyms=quickTerms[item.id]?.some(word=>normalized.includes(word))?5:0;
+      const ai=aiIds.includes(item.id)?20-aiIds.indexOf(item.id):0;
+      return {item,rank:direct+synonyms+ai};
+    }).filter(x=>x.rank>0);
+    ranked.sort((a,b)=>b.rank-a.rank);
+    return ranked.map(x=>x.item);
+  }, [query, isOwner, canManage, aiIds]);
 
   function openModule(id: string, proOnly?: boolean) {
     setOpen(false);
@@ -185,7 +233,7 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref, isOwner, c
     <>
       <button className="erp-command-trigger" type="button" onClick={() => setOpen(true)}>
         <Search size={16} />
-        <span>Buscar módulo</span>
+        <span>Busca com IA</span>
         <kbd>⌘K</kbd>
       </button>
 
@@ -195,7 +243,7 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref, isOwner, c
             className="erp-command-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Buscar módulo do ERP"
+            aria-label="Busca inteligente do ERP"
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="erp-command-input-row">
@@ -204,13 +252,21 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref, isOwner, c
                 ref={inputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar agenda, caixa, clientes, relatórios..."
+                onKeyDown={(event) => {
+                  if(event.key==="Enter"&&filtered.length>0){
+                    event.preventDefault();
+                    const first=filtered[0];
+                    openModule(first.id,"proOnly" in first ? first.proOnly : false);
+                  }
+                }}
+                placeholder="Ex.: quero conferir minhas comissões"
               />
               <button type="button" onClick={() => setOpen(false)} aria-label="Fechar busca">
                 <X size={18} />
               </button>
             </div>
 
+            <div className="erp-ai-search-feedback" role="status">{aiStatus==="loading"?"Interpretando sua busca…":aiStatus==="ai"?"Sugestões por IA · nenhuma ação será executada automaticamente":query.trim()?"Sugestões locais · busca inteligente disponível quando o serviço de IA responder":"Digite o que deseja fazer no ERP"}</div>
             <div className="erp-command-results">
               {filtered.map((item) => {
                 const Icon = item.icon;
@@ -240,7 +296,7 @@ export function ErpCommandPalette({ tenantCode, planKey, supportHref, isOwner, c
                 <span><strong>Suporte GROMMA</strong><small>Contato com a equipe</small></span>
               </a>
 
-              {!filtered.length && <div className="erp-command-empty">Nenhum módulo encontrado.</div>}
+              {!filtered.length && <div className="erp-command-empty">{aiStatus==="loading"?"Buscando sugestões…":"Nenhuma tela encontrada. Experimente explicar o que deseja fazer."}</div>}
             </div>
 
             <footer className="erp-command-footer">

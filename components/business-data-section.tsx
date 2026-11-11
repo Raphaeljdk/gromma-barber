@@ -1,24 +1,22 @@
 import Link from "next/link";
-import { Images, MapPin, Store, Type } from "lucide-react";
+import { Images, Store, Type } from "lucide-react";
+import { BusinessBranchesField } from "@/components/business-branches-field";
 import type { BrandingSettings } from "@/lib/erp-workspace";
 import { saveBusinessIdentity,saveBusinessIntroduction,updateBusinessCarousel } from "@/app/erp/[tenant]/business-data-actions";
 
 type Business={
-  tradeName:string;legalName:string|null;ownerName:string;
-  document:string;email:string;phone:string;whatsapp:string|null;
-  address:string|null;city:string;state:string;
+  tradeName:string;legalName:string|null;
 };
 
-export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,error}:{
+export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,error,hasBranches,registeredBranches}:{
   tenantCode:string;business:Business;branding:BrandingSettings;
-  isOwner:boolean;ok:string;error:string;
+  isOwner:boolean;ok:string;error:string;hasBranches:boolean;registeredBranches:number;
 }){
   const images=branding.carouselImages??[];
   return <section id="dados" className="demo-section gromma-business-data">
     <div className="section-head">
       <div><div className="eyebrow">Minha Empresa / Dados</div><h2>Dados gerais do negócio</h2></div>
     </div>
-    <p className="small muted">Dados institucionais e de contato da marca. As informações operacionais de cada filial são editadas exclusivamente na área Filiais.</p>
     {ok&&<p className="notice success" role="status">Informações {ok==="carrossel"?"do carrossel":ok==="apresentacao"?"da apresentação":"da empresa"} atualizadas.</p>}
     {error&&<p className="notice error-notice" role="alert">{error.slice(0,150)}</p>}
 
@@ -27,39 +25,21 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
         <span className="gromma-heading-icon"><Store size={19} aria-hidden="true"/></span>
         <span className="gromma-heading-copy"><h3>Cadastro geral</h3><span className="small muted">Informações principais da sua barbearia.</span></span>
       </div>
-      {isOwner?<form action={saveBusinessIdentity} className="gromma-settings-form">
+      {isOwner?<form action={saveBusinessIdentity} className="gromma-settings-form gromma-business-identity-form">
         <input type="hidden" name="tenantCode" value={tenantCode}/>
-        <label className="gromma-field-row"><span>Nome fantasia</span>
-          <input className="input" name="tradeName" minLength={2} maxLength={120} required defaultValue={business.tradeName}/></label>
         <label className="gromma-field-row"><span>Razão social</span>
           <input className="input" name="legalName" maxLength={180} defaultValue={business.legalName??""}/></label>
-        <label className="gromma-field-row"><span>Responsável pelo negócio</span>
-          <input className="input" name="ownerName" minLength={2} maxLength={120} required defaultValue={business.ownerName}/></label>
-        <label className="gromma-field-row"><span>Documento cadastral (somente leitura)</span>
-          <input className="input" value={business.document} readOnly aria-label="Documento cadastral não editável"/></label>
-        <label className="gromma-field-row"><span>E-mail de cadastro (somente leitura)</span>
-          <input className="input" type="email" value={business.email} readOnly aria-label="E-mail administrativo não editável"/></label>
-        <label className="gromma-field-row"><span>Telefone da empresa</span>
-          <input className="input" name="phone" maxLength={30} minLength={8} required defaultValue={business.phone}/></label>
-        <label className="gromma-field-row"><span>WhatsApp institucional</span>
-          <input className="input" name="whatsapp" maxLength={30} defaultValue={business.whatsapp??""}/></label>
-        <div className="gromma-data-divider"><span className="gromma-heading-icon"><MapPin size={18} aria-hidden="true"/></span><span className="gromma-heading-copy"><strong>Endereço e presença</strong><small>Localização e endereço de referência da barbearia.</small></span></div>
-        <label className="gromma-field-row"><span>Endereço de referência</span>
-          <input className="input" name="address" maxLength={240} defaultValue={business.address??""}/></label>
-        <label className="gromma-field-row"><span>Cidade</span>
-          <input className="input" name="city" maxLength={100} minLength={2} required defaultValue={business.city}/></label>
-        <label className="gromma-field-row"><span>UF</span>
-          <input className="input" name="state" maxLength={2} minLength={2} required defaultValue={business.state}/></label>
+        <label className="gromma-field-row"><span>Nome fantasia</span>
+          <input className="input" name="tradeName" minLength={2} maxLength={120} required defaultValue={business.tradeName}/></label>
+        <BusinessBranchesField tenantCode={tenantCode} initialValue={hasBranches}
+          registeredBranches={registeredBranches}/>
         <div className="gromma-settings-actions">
-          <span className="small muted">Alterações documentais e de acesso exigem validação específica.</span>
           <button className="btn" type="submit">Salvar dados gerais</button>
         </div>
-      </form>:<div className="gromma-readonly-data">
-        {[["Nome fantasia",business.tradeName],["Razão social",business.legalName],
-          ["Responsável",business.ownerName],["Telefone",business.phone],
-          ["WhatsApp",business.whatsapp],["Localização",business.city+"/"+business.state]]
+      </form>:<div className="gromma-readonly-data gromma-business-readonly">
+        {[["Razão social",business.legalName],["Nome fantasia",business.tradeName],
+          ["Possui filial?",hasBranches?"Sim":"Não"]]
           .map(([label,value])=><div key={label}><span>{label}</span><strong>{value||"Não informado"}</strong></div>)}
-        <p className="small muted">A edição dos dados gerais é exclusiva do proprietário.</p>
       </div>}
     </div>
 

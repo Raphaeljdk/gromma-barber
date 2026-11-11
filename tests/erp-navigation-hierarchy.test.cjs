@@ -77,7 +77,7 @@ test("every referenced subitem remains in its exact hierarchy", () => {
   ]);
   const company = flattened.find(item => item.id === "empresa-cadastro");
   assert.deepEqual(company.children.map(x => x.label), [
-    "Dados", "Filiais", "Profissionais", "Funcionários em destaque",
+    "Dados", "Profissionais", "Funcionários em destaque",
     "Serviços", "Grupos de acesso", "Meu plano", "Fatura",
   ]);
 });

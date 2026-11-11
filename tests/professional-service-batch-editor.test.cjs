@@ -26,18 +26,32 @@ test("ficha profissional utiliza edição em lote e preserva gravação auditáv
   assert.match(action,/profile\.services=\{\.\.\.previousRates,\.\.\.rates\}/);
 });
 
-test("seleção total, busca e alteração de porcentagem não excluem itens ocultos",()=>{
-  assert.match(editor,/Selecionar \{search\?"resultados":"todos"\}/);
-  assert.match(editor,/Desmarcar \{search\?"resultados":"todos"\}/);
-  assert.match(editor,/Aplicar aos \{count\} selecionados/);
+test("busca abre lista e permite adicionar e remover serviços individualmente",()=>{
+  assert.match(editor,/onFocus=\{\(\) => setShowSuggestions\(true\)\}/);
+  assert.match(editor,/id="professional-service-options"/);
+  assert.match(editor,/matching\.map\(service/);
+  assert.match(editor,/aria-selected=\{!!enabled\[service\.id\]\}/);
+  assert.match(editor,/Adicionado/);
+  assert.match(editor,/addService\(service\.id\)/);
+  assert.match(editor,/removeService\(service\.id\)/);
+  assert.doesNotMatch(editor,/Selecionar \{search/);
+  assert.doesNotMatch(editor,/Desmarcar \{search/);
+  assert.match(editor,/selected\.length>0 && <div className="table-wrap professional-service-table"/);
+  assert.match(editor,/selected\.map\(service=><input type="hidden"/);
+  assert.match(editor,/services\.map\(service=><input type="hidden"/);
   assert.match(editor,/name="enabledServiceIds"/);
-  assert.match(editor,/name=\{"rate_"\+s\.id\}/);
-  assert.match(editor,/services\.filter\(s=>!shown\.some/);
+  assert.match(editor,/name=\{"rate_"\+service\.id\}/);
+  const css=fs.readFileSync(path.join(root,"app/gromma-professional-fast-ai.css"),"utf8");
+  assert.match(css,/\.professional-service-editor \.professional-service-toolbar/);
+  assert.match(css,/\.professional-service-options/);
+  assert.match(css,/\.professional-service-editor \.professional-service-apply/);
+  assert.match(editor,/Comissão em lote \(%\)/);
+  assert.match(editor,/> Aplicar/);
 });
 
 test("validação financeira do formulário permanece no servidor",()=>{
   assert.match(action,/if\(raw===null\|\|String\(raw\)\.trim\(\)===\x22\x22\|\|!moneyPercent\(parsed\)\)/);
-  assert.match(editor,/percent<0\|\|percent>100/);
+  assert.match(editor,/percent<0\s*\|\|\s*percent>100/);
   assert.match(editor,/Math\.round\(percent\*100\)\/100/);
 });
 

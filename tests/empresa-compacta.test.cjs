@@ -63,7 +63,8 @@ test("jornada compacta mantém dias e campos usados pelo backend",()=>{
   assert.match(editor,/action=\{saveProfessionalSection\}/);
   const record=read("app/erp/[tenant]/equipe/[userId]/page.tsx");
   assert.match(record,/professional-breaks-columns/);
-  assert.match(record,/name="tierMin"/);
-  assert.match(record,/name="tierMax"/);
-  assert.match(record,/name="tierPercent"/);
+  const tiers=read("components/professional-subscription-commission-editor.tsx");
+  assert.match(tiers,/name="tierMin"/);
+  assert.match(tiers,/name="tierMax"/);
+  assert.match(tiers,/name="tierPercent"/);
 });
