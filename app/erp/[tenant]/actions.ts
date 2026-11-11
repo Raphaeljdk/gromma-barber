@@ -755,7 +755,7 @@ export async function createService(formData: FormData) {
     !Number.isFinite(price) ||
     price < 0 ||
     price > 99999999 ||
-    (ticketValue!==null && (!Number.isFinite(ticketValue)||ticketValue<0||ticketValue>1000000)) ||
+    (ticketValue!==null && (!Number.isSafeInteger(ticketValue)||ticketValue<1||ticketValue>600)) ||
     (repurchaseDays!==null && (!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650))
   ) {
     redirect(`${path}?erro=servico#servicos`);
@@ -789,6 +789,72 @@ export async function createService(formData: FormData) {
 
   revalidatePath(path);
   redirect(`${path}?ok=servico#servicos`);
+}
+
+/**
+ * Edita o catálogo prospectivamente, mantendo snapshots dos agendamentos e
+ * comandos já registrados; não reabre pagamentos nem altera agenda antiga.
+ */
+export async function updateService(formData:FormData){
+  const {tenantCode,viewer,shop}=await context(formData);
+  const path=`/erp/${encodeURIComponent(tenantCode)}/servicos`;
+  if(!allowed(viewer,["OWNER"]))redirect(`${path}?erro=permissao#servicos`);
+  const serviceId=text(formData,"serviceId",100);
+  const name=text(formData,"name",120);
+  const durationMinutes=numberValueSafe(text(formData,"durationMinutes",16));
+  const price=decimal(formData,"price");
+  const timeText=text(formData,"ticketValue",20);
+  const ticketValue=timeText?numberValueSafe(timeText):null;
+  const periodText=text(formData,"repurchaseDays",20);
+  const repurchaseDays=periodText?numberValueSafe(periodText):null;
+  const category=text(formData,"category",80);
+  const startingFrom=formData.get("startingFrom")==="on";
+  const hidden=formData.get("hidden")==="on";
+  const walkIn=formData.get("walkIn")==="on";
+  if(!serviceId||name.length<2||!Number.isSafeInteger(durationMinutes)||
+     durationMinutes<5||durationMinutes>600||
+     !Number.isFinite(price)||price<0||price>99999999||
+     (ticketValue!==null&&(!Number.isSafeInteger(ticketValue)||ticketValue<1||ticketValue>600))||
+     (repurchaseDays!==null&&(!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650)))
+    redirect(`${path}?erro=servico#servicos`);
+  try{
+    await prisma.$transaction(async tx=>{
+      const old=await tx.service.findFirst({where:{
+        id:serviceId,barberShopId:shop.id,active:true,
+      },select:{id:true,name:true,price:true,durationMinutes:true}});
+      if(!old)throw Error("Serviço não encontrado");
+      await tx.service.update({where:{id:serviceId},data:{name,price,durationMinutes}});
+      const fresh=await tx.barberShop.findUniqueOrThrow({
+        where:{id:shop.id},select:{enabledFeatures:true},
+      });
+      const ws=readWorkspace(fresh.enabledFeatures);
+      const oldMeta=ws.serviceCatalogSettings[serviceId]??null;
+      ws.serviceCatalogSettings[serviceId]={
+        ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn,
+      };
+      await tx.barberShop.update({where:{id:shop.id},data:{
+        enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
+      }});
+      await tx.adminAuditLog.create({data:{
+        barberShopId:shop.id,adminEmail:viewer.email,action:"SERVICE_UPDATED",
+        details:{
+          serviceId,previous:{name:old.name,price:String(old.price),durationMinutes:old.durationMinutes,metadata:oldMeta},
+          updated:{name,price,durationMinutes,ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn},
+        } as Prisma.InputJsonValue,
+      }});
+    },{isolationLevel:"Serializable"});
+  }catch(error){
+    console.error("Failed to update service",error);
+    redirect(`${path}?erro=servico#servicos`);
+  }
+  revalidatePath(path);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/agenda`);
+  revalidatePath(`/erp/${encodeURIComponent(tenantCode)}/mensagens`);
+  redirect(`${path}?ok=servico-editado#servicos`);
+}
+function numberValueSafe(raw:string){
+  const value=Number(raw);
+  return raw.trim()!==""&&Number.isFinite(value)?value:NaN;
 }
 
 export async function createFinancialEntry(formData: FormData) {
