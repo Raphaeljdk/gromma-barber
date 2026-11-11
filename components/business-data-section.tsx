@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {BusinessTimeZoneSelect} from "@/components/business-timezone-select";
 import { Images, Palette, Store, Type } from "lucide-react";
 import type { BrandingSettings, ErpWorkspace } from "@/lib/erp-workspace";
 import { BusinessExperienceSettings } from "@/components/business-experience-settings";
@@ -36,16 +37,11 @@ export function BusinessDataSection({tenantCode,business,branding,isOwner,ok,err
           <input className="input" type="email" name="businessContactEmail" required maxLength={180}
             defaultValue={contactEmail||business.email}/></label>
         <label className="gromma-field-row"><span>Fuso horário</span>
-          <select className="select" name="businessTimeZone" defaultValue={timeZone||"America/Sao_Paulo"} required>
-            <option value="America/Sao_Paulo">(GMT-3) Brasília / São Paulo</option>
-            <option value="America/Manaus">(GMT-4) Manaus</option>
-            <option value="America/Rio_Branco">(GMT-5) Rio Branco</option>
-            <option value="America/Noronha">(GMT-2) Fernando de Noronha</option>
-          </select>
+          <BusinessTimeZoneSelect defaultValue={timeZone||"America/Sao_Paulo"}/>
         </label>
         <div className="gromma-settings-actions">
-          {(hasBranches||registeredBranches>0)&&<Link className="btn secondary"
-            href={"/erp/"+encodeURIComponent(tenantCode)+"/unidades"}>Gerenciar filiais</Link>}
+          <Link className="btn secondary gromma-branch-quicklink"
+            href={"/erp/"+encodeURIComponent(tenantCode)+"/unidades"}>Filiais · {registeredBranches} — Gerenciar</Link>
           <button className="btn" type="submit">Salvar dados gerais</button>
         </div>
       </form>:<div className="gromma-readonly-data gromma-business-readonly">
