@@ -408,7 +408,7 @@ export function ErpAgendaBoard({
     }
     window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
   };
-  const slotMinutes = [15, 20, 30, 45, 60].includes(settings.slotMinutes)
+  const slotMinutes = Number.isSafeInteger(settings.slotMinutes) && settings.slotMinutes >= 5 && settings.slotMinutes <= 120 && settings.slotMinutes % 5 === 0
     ? settings.slotMinutes
     : 30;
   const openHour = Number.isFinite(settings.openHour)
