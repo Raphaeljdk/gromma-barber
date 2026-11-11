@@ -14,8 +14,8 @@ export function unitPolicy(workspace:ErpWorkspace,unitId:string):UnitOperationsP
   // Padrões do negócio aplicados quando a filial ainda não possui política própria.
   // Uma filial configurada mantém sua regra, inclusive o valor zero.
   return {...DEFAULT_UNIT_POLICY,
-    cancellationMinutes:workspace.bookingRules.cancellationMinutes,
-    noShowBlockHours:workspace.bookingRules.noShowBlockHours,
+    cancellationMinutes:workspace.bookingRules?.cancellationMinutes??0,
+    noShowBlockHours:workspace.bookingRules?.noShowBlockHours??0,
     ...workspace.unitPolicies[unitId]};
 }
 export function isValidCnpj(value:string):boolean{
