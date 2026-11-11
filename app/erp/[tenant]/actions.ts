@@ -738,6 +738,14 @@ export async function createService(formData: FormData) {
   const name = text(formData, "name", 120);
   const durationMinutes = Math.round(decimal(formData, "durationMinutes"));
   const price = decimal(formData, "price");
+  const ticketText = text(formData, "ticketValue", 28);
+  const repurchaseText = text(formData, "repurchaseDays", 14);
+  const category = text(formData, "category", 80);
+  const ticketValue = ticketText ? decimal(formData, "ticketValue") : null;
+  const repurchaseDays = repurchaseText ? Number(repurchaseText) : null;
+  const startingFrom = formData.get("startingFrom")==="on";
+  const hidden = formData.get("hidden")==="on";
+  const walkIn = formData.get("walkIn")==="on";
 
   if (
     name.length < 2 ||
@@ -745,21 +753,35 @@ export async function createService(formData: FormData) {
     durationMinutes < 5 ||
     durationMinutes > 600 ||
     !Number.isFinite(price) ||
-    price < 0
+    price < 0 ||
+    price > 99999999 ||
+    (ticketValue!==null && (!Number.isFinite(ticketValue)||ticketValue<0||ticketValue>1000000)) ||
+    (repurchaseDays!==null && (!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650))
   ) {
     redirect(`${path}?erro=servico#servicos`);
   }
 
   try {
-    await prisma.service.create({
-      data: {
-        barberShopId: shop.id,
-        name,
-        durationMinutes,
-        price,
-        active: true,
-      },
-    });
+    await prisma.$transaction(async tx=>{
+      const created=await tx.service.create({
+        data:{barberShopId:shop.id,name,durationMinutes,price,active:true},
+        select:{id:true},
+      });
+      const fresh=await tx.barberShop.findUniqueOrThrow({
+        where:{id:shop.id},select:{enabledFeatures:true},
+      });
+      const ws=readWorkspace(fresh.enabledFeatures);
+      ws.serviceCatalogSettings[created.id]={
+        ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn,
+      };
+      await tx.barberShop.update({where:{id:shop.id},data:{
+        enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
+      }});
+      await tx.adminAuditLog.create({data:{
+        barberShopId:shop.id,adminEmail:viewer.email,action:"SERVICE_CREATED",
+        details:{serviceId:created.id,category,startingFrom,hidden,walkIn}
+      }});
+    },{isolationLevel:"Serializable"});
   } catch (error) {
     console.error("Failed to create service", error);
     redirect(`${path}?erro=servico#servicos`);
