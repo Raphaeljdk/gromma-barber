@@ -360,10 +360,10 @@ export async function markFinancialPaid(formData: FormData) {
   const safe=["financeiro","financeiro-contas-pagar","financeiro-contas-receber","financeiro-despesas"];
   const path=`/erp/${encodeURIComponent(tenantCode)}/${safe.includes(requested)?requested:"financeiro"}`;
   const fragment=path.endsWith("/financeiro")?"#financeiro":"#financeiro-subpage";
-  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao#financeiro`);
+  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao${fragment}`);
   const entryId = text(formData, "entryId", 80);
   const reason = text(formData, "reason", 600);
-  if (reason.length < 5) redirect(`${path}?erro=financeiro-status#financeiro`);
+  if (reason.length < 5) redirect(`${path}?erro=financeiro-status${fragment}`);
   try {
     await prisma.$transaction(async tx => {
       const entry = await tx.financialEntry.findFirst({ where: { id: entryId, barberShopId: shop.id, status: "PENDING" },
@@ -379,10 +379,10 @@ export async function markFinancialPaid(formData: FormData) {
     }, { isolationLevel: "Serializable" });
   } catch (error) {
     console.error("Failed to mark financial entry as paid", error);
-    redirect(`${path}?erro=financeiro-status#financeiro`);
+    redirect(`${path}?erro=financeiro-status${fragment}`);
   }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
-  redirect(`${path}?ok=financeiro-pago#financeiro`);
+  redirect(`${path}?ok=financeiro-pago${fragment}`);
 }
 
 export async function createAppointment(formData: FormData) {
