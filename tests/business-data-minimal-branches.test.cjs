@@ -10,13 +10,15 @@ test("Dados exibe apenas os quatro campos institucionais solicitados",()=>{
  const view=read("components/business-data-section.tsx");
  const form=view.slice(view.indexOf('className="gromma-settings-form gromma-business-identity-form"'),
    view.indexOf('</form>:<div className="gromma-readonly-data'));
- for(const name of ["tradeName","legalName","businessContactEmail","businessTimeZone"])
+ for(const name of ["tradeName","legalName","businessContactEmail"])
    assert.match(form,new RegExp('name="'+name+'"'));
+ assert.match(form,/<BusinessTimeZoneSelect defaultValue/);
+ assert.match(read("components/business-timezone-select.tsx"),/name="businessTimeZone"/);
  for(const name of ["ownerName","document","phone","whatsapp","address","city","state","hasBranches"])
    assert.doesNotMatch(form,new RegExp('name="'+name+'"'));
- assert.match(form,/GMT-3/);
+ assert.match(read("lib/international-time-zones.ts"),/Intl\.supportedValuesOf/);
  assert.doesNotMatch(view,/<h3>Endereço e presença<\/h3>/);
- assert.match(view,/Gerenciar filiais/);
+ assert.match(view,/Filiais · \{registeredBranches\}/);
  assert.match(view,/Personalização e layout/);
  const ast=ts.createSourceFile("business-data-section.tsx",view,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(ast.parseDiagnostics.length,0,ast.parseDiagnostics.map(x=>x.messageText).join("; "));

@@ -1,6 +1,7 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import {isValidBusinessTimeZone} from "@/lib/international-time-zones";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -42,11 +43,11 @@ export async function saveBusinessIdentity(form:FormData){
     const legalName=field(form,"legalName",180);
     const contactEmail=field(form,"businessContactEmail",180).toLowerCase();
     const timeZone=field(form,"businessTimeZone",60);
-    const allowedTimeZones=["America/Sao_Paulo","America/Manaus","America/Rio_Branco","America/Noronha"];
+
     if(tradeName.length<2)throw Error("Informe o nome fantasia.");
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail))
       throw Error("Informe um e-mail da empresa válido.");
-    if(!allowedTimeZones.includes(timeZone))throw Error("Selecione um fuso horário válido.");
+    if(!isValidBusinessTimeZone(timeZone))throw Error("Selecione um fuso horário IANA válido.");
     await prisma.$transaction(async tx=>{
       const old=await tx.barberShop.findUniqueOrThrow({where:{id:ctx!.id},
         select:{tradeName:true,legalName:true,enabledFeatures:true}});

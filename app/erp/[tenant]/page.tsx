@@ -1,10 +1,10 @@
 import { CommissionSelectionTable } from "@/components/commission-selection-table";
+import {FeaturedProfessionalSwitch} from "@/components/featured-professional-switch";
 import { saveBarbershopUnit } from "./unit-actions";
 import { UnitOperationsForm } from "@/components/unit-operations-form";
 import { BusinessDataSection } from "@/components/business-data-section";
 import { BrandingSettingsSection } from "@/components/branding-settings-section";
 import { unitPolicy } from "@/lib/unit-operations-policy";
-import { toggleFeaturedProfessional } from "./featured-professional-actions";
 import { SubscriptionReports } from "@/components/subscription-reports";
 import { ClubManagementPanels, CLUB_MANAGEMENT_MODULES, type ClubManagementModule } from "@/components/erp-club-management";
 import { SUBSCRIPTION_REPORTS } from "@/lib/subscription-reports";
@@ -43,6 +43,7 @@ import { ErpCommandPalette } from "@/components/erp-command-palette";
 import { SectionPagination } from "@/components/section-pagination";
 import { ErpListToolbar } from "@/components/erp-list-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ErpLanguagePicker } from "@/components/erp-language-picker";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
 import { CashHistory } from "@/components/cash-history";
@@ -1096,6 +1097,7 @@ export async function TenantERPView({
           </div>
           <div className="erp-top-actions">
             <BackButton fallback="/login" label="Voltar" />
+            <ErpLanguagePicker/>
             <a href={supportHref} className="nav-quiet-link">Suporte</a>
             <ThemeToggle />
             {isOwner && <InventoryNotificationBell tenantCode={tenantCode} notices={inventoryNotices} />}
@@ -1434,14 +1436,26 @@ export async function TenantERPView({
           {isOwner && (
           <details className="erp-quick-create">
             <summary><Plus size={15} /> Novo serviço <small>Cadastro operacional</small></summary>
-            <form action={createService} className="erp-quick-form">
+            <form action={createService} className="erp-quick-form gromma-service-create-form">
               <input type="hidden" name="tenantCode" value={tenantCode} />
-              <label><span className="label">Serviço</span><input className="input" name="name" required maxLength={120} placeholder="Ex.: Corte masculino" /></label>
-              <div className="grid grid-2">
+              <div className="gromma-service-primary-row">
+                <label><span className="label">Serviço</span><input className="input" name="name" required maxLength={120} placeholder="Ex.: Corte masculino" /></label>
                 <label><span className="label">Duração (min)</span><input className="input" name="durationMinutes" type="number" min="5" max="600" step="5" required /></label>
                 <label><span className="label">Valor</span><input className="input" name="price" type="number" min="0" step="0.01" required /></label>
               </div>
-              <button className="btn" type="submit">Salvar serviço</button>
+              <div className="gromma-service-extra-row">
+                <label><span className="label">Valor em fichas</span><input className="input" name="ticketValue" type="number" min="0" max="1000000" step="0.01" placeholder="Opcional" /></label>
+                <label><span className="label">Período para recompra (dias)</span><input className="input" name="repurchaseDays" type="number" min="0" max="3650" step="1" placeholder="Opcional" /></label>
+                <label><span className="label">Categoria</span><input className="input" name="category" list="gromma-service-categories"
+                  maxLength={80} placeholder="Selecione ou digite uma categoria"/></label>
+                <datalist id="gromma-service-categories">{[...new Set(Object.values(workspace.serviceCatalogSettings).map(config=>config.category).filter(Boolean))].map(category=><option key={category} value={category}/>)}</datalist>
+              </div>
+              <div className="gromma-service-options">
+                <label><input type="checkbox" name="startingFrom"/> A partir de</label>
+                <label><input type="checkbox" name="hidden"/> Oculto</label>
+                <label><input type="checkbox" name="walkIn"/> Serviço de encaixe</label>
+              </div>
+              <div className="gromma-service-create-footer"><button className="btn" type="submit">Salvar serviço</button></div>
             </form>
           </details>
           )}
@@ -1452,22 +1466,23 @@ export async function TenantERPView({
             hash="servicos"
             search={{ param: "servicosQ", value: servicosQ, placeholder: "Buscar serviço" }}
           />
-          {canManage && <details className="erp-quick-create">
-            <summary>Configurar comissão específica por serviço</summary>
-            <form action={saveServiceCommissionOverride} className="erp-quick-form">
-              <input type="hidden" name="tenantCode" value={tenantCode} />
-              <label><span className="label">Serviço</span><select name="serviceId" className="select" required defaultValue=""><option value="" disabled>Selecione um serviço</option>{shop.services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}</select></label>
-              <label><span className="label">Comissão específica (%) — vazio para usar a regra do profissional</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" placeholder="Ex.: 40" /></label>
-              <button className="btn" type="submit">Salvar comissão do serviço</button>
-            </form>
-            <p className="small muted">Alterações nas regras afetam apenas prévias ainda não quitadas. Não utilize esta tela para recalcular pagamentos históricos.</p>
-          </details>}
+
           <div className="table-wrap gromma-services-list"><table>
             <thead><tr><th>Serviço</th><th>Duração</th><th>Valor</th><th>Status</th></tr></thead>
             <tbody>{servicesTotal ? services.map((service) => (
               <tr key={service.id}><td><strong>{service.name}</strong></td><td>{service.durationMinutes} min</td><td>{brl(Number(service.price))}</td><td><span className="badge approved">Ativo</span></td></tr>
             )) : <tr><td colSpan={4} className="muted">Nenhum serviço cadastrado.</td></tr>}</tbody>
           </table></div>
+          {canManage && <details className="erp-quick-create gromma-service-commission">
+            <summary><span className="gromma-service-commission-trigger">Configurar comissão específica por serviço <ChevronDown size={16}/></span></summary>
+            <form action={saveServiceCommissionOverride} className="erp-quick-form gromma-service-commission-form">
+              <input type="hidden" name="tenantCode" value={tenantCode} />
+              <label><span className="label">Serviço</span><select name="serviceId" className="select" required defaultValue=""><option value="" disabled>Selecione um serviço</option>{shop.services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}</select></label>
+              <label><span className="label">Comissão específica (%) — vazio para usar a regra do profissional</span><input className="input" name="percent" type="number" min="0" max="100" step="0.01" placeholder="Ex.: 40" /></label>
+              <button className="btn" type="submit">Salvar comissão</button>
+            </form>
+            <p className="small muted">Altera apenas as regras futuras; pagamentos históricos não são recalculados.</p>
+          </details>}
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/servicos`} searchParams={qs} param="servicosPage" page={servicosPage} total={servicesTotal} pageSize={pageSize} hash="servicos" label="serviços" />
         </section>
 
@@ -2144,7 +2159,7 @@ export async function TenantERPView({
         </section>}
 
         <section id="equipe" className="demo-section" hidden={Boolean(moduleId && moduleId !== "equipe")}>
-          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
+          <div className="section-head"><div><div className="eyebrow">Empresa / Cadastro</div><h2>Profissionais</h2></div><div className="gromma-directory-heading-actions"><Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/unidades`}>Filiais · {shop.units.length}</Link><StatusPill tone="ready">Operacional</StatusPill></div></div>
           {isOwner && <details className="erp-quick-create erp-directory-create">
             <summary><Plus size={15}/> Novo profissional <small>Cadastro e edição na mesma área</small></summary>
             <form action={createProfessional} className="erp-quick-form">
@@ -2217,12 +2232,9 @@ export async function TenantERPView({
                 <td><strong>{user.name}</strong><span className="erp-directory-secondary">{user.email}</span></td>
                 <td>{ROLE_LABELS[user.role]??user.role}</td>
                 <td><span className={"badge "+(featured?"approved":"")}>{featured?"Em destaque":"Padrão"}</span></td>
-                <td>{isOwner&&<form action={toggleFeaturedProfessional}>
-                  <input type="hidden" name="tenantCode" value={tenantCode}/>
-                  <input type="hidden" name="userId" value={user.id}/>
-                  <input type="hidden" name="featured" value={featured?"no":"yes"}/>
-                  <button type="submit" className="btn secondary" disabled={!featured&&workspace.featuredProfessionalIds.length>=12}>{featured?"Remover destaque":"Colocar em destaque"}</button>
-                </form>}</td>
+                <td>{isOwner&&<FeaturedProfessionalSwitch tenantCode={tenantCode}
+                  userId={user.id} name={user.name} featured={featured}
+                  disabled={!featured&&workspace.featuredProfessionalIds.length>=12}/>}</td>
               </tr>;
             })}
             {!shop.users.some(user=>["OWNER","MANAGER","BARBER"].includes(user.role))&&<tr><td colSpan={4}>Nenhum profissional elegível cadastrado.</td></tr>}</tbody>

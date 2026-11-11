@@ -38,7 +38,8 @@ test("cadastros de equipe e serviços compartilham menu sem submenus repetidos",
   assert.match(modulePage,/erp-compact-directory/);
   assert.match(modulePage,/createService/);
   assert.match(read("app/erp/[tenant]/equipe/novo/page.tsx"),/createProfessional/);
-  assert.match(modulePage,/toggleFeaturedProfessional/);
+  assert.match(modulePage,/FeaturedProfessionalSwitch/);
+  assert.match(read("components/featured-professional-switch.tsx"),/toggleFeaturedProfessional/);
 });
 
 test("ação de intervalos rejeita sobreposições e preserva remoção existente",()=>{
