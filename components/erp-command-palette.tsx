@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
+  CreditCard,
   FileText,
   LayoutDashboard,
   type LucideIcon,
@@ -95,6 +96,16 @@ const MODULES = [
   { id: "plano", label: "Meu plano", group: "Empresa", icon: BadgeDollarSign },
   { id: "fatura", label: "Fatura", group: "Empresa", icon: FileText, ownerOnly: true },
   { id: "financeiro", label: "Financeiro", group: "Financeiro", icon: WalletCards },
+  { id: "financeiro-contas-pagar", label: "Contas a pagar", group: "Financeiro", icon: WalletCards },
+  { id: "financeiro-contas-receber", label: "Contas a receber", group: "Financeiro", icon: WalletCards },
+  { id: "financeiro-criar-receita", label: "Criar receita", group: "Financeiro", icon: BadgeDollarSign, ownerOnly: true },
+  { id: "financeiro-criar-despesa", label: "Criar despesas", group: "Financeiro", icon: ReceiptText, ownerOnly: true },
+  { id: "financeiro-despesas", label: "Despesas", group: "Financeiro", icon: ReceiptText },
+  { id: "financeiro-categorias", label: "Categorias financeiras", group: "Financeiro", icon: Tags, ownerOnly: true },
+  { id: "financeiro-contas-bancarias", label: "Contas bancárias", group: "Financeiro", icon: Building2, ownerOnly: true },
+  { id: "financeiro-formas-comanda", label: "Formas de pagamento · Comanda", group: "Financeiro", icon: CreditCard, ownerOnly: true },
+  { id: "financeiro-formas-despesas", label: "Formas de pagamento · Despesas", group: "Financeiro", icon: CreditCard, ownerOnly: true },
+  { id: "financeiro-contabilidade", label: "Contabilidade", group: "Financeiro", icon: ScrollText },
 ] as const;
 
 type SearchModule = {
