@@ -127,12 +127,11 @@ export async function saveCompleteUnit(form:FormData){
       }});
       await tx.adminAuditLog.create({data:{barberShopId:shopId,adminEmail:actor,
         action:"UNIT_COMPLETE_SETTINGS_UPDATED",
-        details:({unitId,bankCountry,bankCode,bankChanged:old.bankCode!==bankCode,
+        details:{unitId,bankCountry,bankCode,bankChanged:old.bankCode!==bankCode,
           methods:paymentMethods,addressChanged:unit.address!==address,
           statusChanged:unit.active!==active,pixKeyChanged:old.pixKey!==pixKey,
           accountChanged:old.bankAccount!==bankAccount,
-          registrationLocked:Boolean(old.legalDocument),bankOwnershipVerified:false}
-          as Prisma.InputJsonValue)}});
+          registrationLocked:Boolean(old.legalDocument),bankOwnershipVerified:false}}});
     },{isolationLevel:"Serializable"});
   }catch(e){error=e instanceof Error?e.message.slice(0,180):"Não foi possível salvar a filial.";}
   revalidatePath("/erp/"+encodeURIComponent(code),"layout");
@@ -158,7 +157,7 @@ export async function archiveBusinessUnit(form:FormData){
       await tx.barberShopUnit.update({where:{id:unitId},data:{active:false}});
       await tx.adminAuditLog.create({data:{barberShopId:shopId,adminEmail:actor,
         action:"BARBERSHOP_UNIT_ARCHIVED",
-        details:({unitId,recordsPreserved:true} as Prisma.InputJsonValue)}});
+        details:{unitId,recordsPreserved:true}}});
     },{isolationLevel:"Serializable"});
   }catch(e){error=e instanceof Error?e.message.slice(0,180):"Não foi possível excluir a filial.";}
   revalidatePath("/erp/"+encodeURIComponent(code),"layout");
