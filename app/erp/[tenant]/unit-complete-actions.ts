@@ -64,6 +64,7 @@ export async function saveCompleteUnit(form:FormData){
     const bankSwift=val(form,"bankSwift",11).toUpperCase();
     const pixType=val(form,"pixType",8) as "CNPJ"|"EMAIL"|"PHONE"|"EVP"|"";
     const pixKey=val(form,"pixKey",150);
+    const paymentEmail=val(form,"paymentEmail",180).toLowerCase();
     const paymentMethods=[...new Set(form.getAll("paymentMethods").map(String))].filter(
       (method):method is typeof PAYMENT_METHODS[number]=>(PAYMENT_METHODS as readonly string[]).includes(method));
     const configurations:Record<string,{feePercent:number;settlementDays:number;autoMarkPaid:boolean}>={};
@@ -84,6 +85,10 @@ export async function saveCompleteUnit(form:FormData){
       throw Error("Informe o número-código bancário de 3 dígitos ou o ISPB de 8 dígitos.");
     if(bankCountry==="INT"&&bankSwift&&!/^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(bankSwift))
       throw Error("O código SWIFT/BIC deve ter 8 ou 11 caracteres.");
+    if(paymentEmail&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(paymentEmail))
+      throw Error("Informe um e-mail válido.");
+    if((bankAgency||bankAccount)&&!(bankCountry==="BR"?bankCode:bankName&&bankSwift))
+      throw Error("Selecione o banco e seus identificadores antes de informar agência/conta.");
     if(!["","CNPJ","EMAIL","PHONE","EVP"].includes(pixType)||
       !isValidPixKey(pixKey,pixType,legalDocument))
       throw Error("Chave Pix inválida. Se for CNPJ, ela deve corresponder ao CNPJ desta filial.");
@@ -102,7 +107,7 @@ export async function saveCompleteUnit(form:FormData){
         await tx.barberShopUnit.count({where:{barberShopId:shopId,active:true}}));
       const policy={
         ...old,postalCode,complement,bankCountry,bankCode,bankName,
-        bankAgency,bankAccount,bankSwift,pixType,pixKey,paymentMethods,
+        bankAgency,bankAccount,bankSwift,pixType,pixKey,paymentEmail,paymentMethods,
         paymentConfigurations:configurations,
         legalDocument:old.legalDocument||legalDocument,
         debitFeePercent:configurations.DEBIT.feePercent,
