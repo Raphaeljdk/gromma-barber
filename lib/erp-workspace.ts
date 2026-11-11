@@ -1,5 +1,5 @@
 import type { CashSession, CommandPayment, BookedServices } from "./checkout";
-import {isValidBusinessTimeZone} from "./international-time-zones";
+
 import type { ProfessionalProfile } from "./professional-profile";
 import type { ProductCommissionCategory } from "./product-commission-rules";
 import type { Prisma } from "@prisma/client";
@@ -216,6 +216,13 @@ export type ServiceCatalogMetadata={
   hidden:boolean;
   walkIn:boolean;
 };
+/** Keep tenant timezone validation safe in isolated workspace replays as well as runtime. */
+function isValidBusinessTimeZone(value:string):boolean{
+  if(!value||value.length>80||!/^[A-Za-z0-9_+\\/-]+$/.test(value))return false;
+  try {new Intl.DateTimeFormat("en",{timeZone:value}).format(new Date());return true;}
+  catch {return false;}
+}
+
 export type ErpWorkspace = {
   branding: BrandingSettings;
   hasBranches: boolean;
