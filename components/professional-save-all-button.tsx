@@ -22,6 +22,16 @@ export function ProfessionalSaveAllButton({tenantCode,userId}:Props){
     data.set("tenantCode",tenantCode);
     data.set("userId",userId);
     for(const form of forms){
+      if(form.dataset.uploadPending==="true"){
+        setResult({ok:false,message:"A foto ainda está sendo processada. Conclua a seleção antes de salvar."});
+        form.scrollIntoView({behavior:"smooth",block:"center"});
+        return;
+      }
+      if(form.querySelector(".professional-upload-error")){
+        setResult({ok:false,message:"Revise o arquivo de foto antes de salvar."});
+        form.scrollIntoView({behavior:"smooth",block:"center"});
+        return;
+      }
       const section=form.dataset.professionalSave??"";
       if(!section)continue;
       const fields=new FormData(form);
