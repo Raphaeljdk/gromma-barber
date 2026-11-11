@@ -40,7 +40,7 @@ test("shared routes have one canonical active navigation item",()=>{
 });
 
 test("sidebar keeps navigation, permissions and mobile menu",()=>{
-  assert.match(sidebar,/visibleChildren\.map\(\(child\) => renderNavItem\(child, depth \+ 1\)\)/);
+  assert.match(sidebar,/visibleChildren\.map\(\(child\) => renderNavItem\(child, depth \+ 1, alwaysVisible\)\)/);
   assert.match(sidebar,/item\.adminOnly && !canManage/);
   assert.match(sidebar,/item\.ownerOnly && !isOwner/);
   assert.match(sidebar,/item\.proOnly && planKey !== "PRO"/);
