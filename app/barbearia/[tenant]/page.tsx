@@ -13,7 +13,7 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
     OR:[{tenantCode:tenant.toUpperCase()},{slug:tenant.toLowerCase()}],
     status:"APPROVED",accessReleased:true,
   },select:{
-    tradeName:true,city:true,state:true,enabledFeatures:true,
+    tradeName:true,city:true,state:true,email:true,enabledFeatures:true,
     units:{where:{active:true},orderBy:{name:"asc"},select:{
       id:true,name:true,address:true,city:true,state:true}},
     users:{where:{active:true,role:{in:["BARBER","OWNER","MANAGER"]}},
@@ -25,7 +25,8 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
   const featured=new Set(ws.featuredProfessionalIds);
   const ordered=[...shop.users].sort((a,b)=>Number(featured.has(b.id))-Number(featured.has(a.id))||
     a.name.localeCompare(b.name,"pt-BR"));
-  return <main style={{minHeight:"100vh",background:"#0f1012",color:"#f5f3ed",fontFamily:"system-ui,sans-serif"}}>
+  const cardTone=`color-mix(in srgb, ${brand.secondaryColor} 48%, #202124)`;
+  return <main style={{minHeight:"100vh",background:`color-mix(in srgb, ${brand.secondaryColor} 14%, #0f1012)`,color:"#f5f3ed",fontFamily:"system-ui,sans-serif"}}>
     <div style={{height:6,background:brand.accentColor}}/>
     <div style={{maxWidth:1060,margin:"0 auto",padding:"24px clamp(16px,4vw,48px) 80px"}}>
       <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
@@ -38,7 +39,7 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
         </div>
         <Link href="/cliente/login" style={{color:"#f5f3ed",fontSize:13}}>Acesso da equipe</Link>
       </header>
-      <section style={{marginTop:28,background:"#202124",borderRadius:20,overflow:"hidden"}}>
+      <section style={{marginTop:28,background:cardTone,borderRadius:20,overflow:"hidden"}}>
         {brand.coverImageUrl&&<img src={brand.coverImageUrl} alt={"Apresentação de "+shop.tradeName}
           style={{width:"100%",maxHeight:340,objectFit:"cover"}}/>}
         <div style={{padding:"clamp(20px,4vw,42px)"}}>
@@ -61,7 +62,7 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
           {ordered.map(user=>{
             const p=ws.professionalProfiles[user.id];
             const home=shop.units.find(unit=>unit.id===user.unitId);
-            return <article key={user.id} style={{background:"#202124",borderRadius:16,
+            return <article key={user.id} style={{background:cardTone,borderRadius:16,
               padding:20,border:featured.has(user.id)?"1px solid "+brand.accentColor:"1px solid #393b3d"}}>
               {p?.photoUrl?<img src={p.photoUrl} alt={"Foto de "+user.name}
                 style={{height:82,width:82,objectFit:"cover",borderRadius:"50%"}}/>:
@@ -81,7 +82,7 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,250px),1fr))",gap:14}}>
           {shop.units.map(unit=>{
             const policy=unitPolicy(ws,unit.id);
-            return <article key={unit.id} style={{background:"#202124",borderRadius:16,overflow:"hidden"}}>
+            return <article key={unit.id} style={{background:cardTone,borderRadius:16,overflow:"hidden"}}>
               {policy.coverImageUrl&&<img src={policy.coverImageUrl} alt={"Unidade "+unit.name}
                 style={{width:"100%",height:140,objectFit:"cover"}}/>}
               <div style={{padding:20}}>
@@ -97,6 +98,9 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
       </section>
       <footer style={{marginTop:48,borderTop:"1px solid #393b3d",paddingTop:20,opacity:.6}}>
         {shop.tradeName} · Atendimento e agendamento diretamente com a unidade
+        <span style={{display:"block",marginTop:8}}>
+          Contato: <a style={{color:brand.accentColor}} href={"mailto:"+(ws.businessContactEmail||shop.email)}>{ws.businessContactEmail||shop.email}</a>
+        </span>
       </footer>
     </div>
   </main>;
