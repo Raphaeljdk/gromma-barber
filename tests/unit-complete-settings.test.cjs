@@ -12,8 +12,9 @@ test("Cadastro de filiais keeps one save action for all editable unit data",()=>
  assert.match(view,/>Salvar geral<\/button>/);
  assert.equal((view.match(/type="submit"/g)||[]).length,1);
  for(const field of ["name","city","state","address","postalCode","complement","legalDocument",
-   "bankAgency","bankAccount","pixType","pixKey","paymentEmail","welcomeText"])
+   "pixType","pixKey","paymentEmail","welcomeText"])
    assert.match(view,new RegExp('name="'+field+'"'));
+ for(const field of ["bankAgency","bankAccount","bankCode"]) assert.match(src("components/unit-bank-fields.tsx"),new RegExp('name="'+field+'"'));
  assert.doesNotMatch(view,/Percentual do pote desta unidade/);
  assert.doesNotMatch(view,/Antecedência para cancelamento online/);
  assert.doesNotMatch(view,/Imagem de capa \(URL HTTPS\)/);
