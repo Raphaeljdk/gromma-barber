@@ -12,6 +12,7 @@ import "./gromma-business-compact.css";
 import "./gromma-personalizacao-layout.css";
 import "./gromma-business-experience.css";
 import "./gromma-world-staff-services.css";
+import "./gromma-services-billing-settings.css";
 
 export const metadata = {
   title: "GROMMA BARBER",
