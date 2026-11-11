@@ -32,3 +32,149 @@ html .tenant-erp .erp-nav-sector[data-sector="financeiro"] .erp-nav-tree-childre
 html .tenant-erp .erp-nav-sector[data-sector="financeiro"] .erp-nav-item{
   font-size:.78rem!important;
 }
+
+
+/* Financeiro: layouts de largura plena e formulários com tipografia legível. */
+html .tenant-erp .gromma-financial-subpage{
+  min-width:0;width:100%;max-width:none!important;
+}
+html .tenant-erp .gromma-financial-subpage .section-head h2{
+  font-size:clamp(1.4rem,2vw,1.8rem);font-weight:800;
+}
+html .tenant-erp .gromma-finance-page-actions{
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+}
+html .tenant-erp .gromma-finance-page-actions a{
+  display:inline-flex;align-items:center;gap:7px;min-height:38px;
+}
+html .tenant-erp .gromma-finance-subpage-kpis{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:11px;margin:15px 0;
+}
+html .tenant-erp .gromma-finance-subpage-kpis>div{
+  display:flex;flex-direction:column;gap:8px;min-width:0;
+  border:1px solid var(--gx-stroke);background:var(--gx-paper);
+  border-radius:10px;padding:13px 15px;
+}
+html .tenant-erp .gromma-finance-subpage-kpis span{
+  font-size:.82rem;font-weight:660;color:var(--gx-muted);
+}
+html .tenant-erp .gromma-finance-subpage-kpis strong{
+  font-size:1.35rem;font-weight:810;font-variant-numeric:tabular-nums;
+}
+html .tenant-erp .gromma-finance-accounting-note{
+  display:flex;gap:12px;padding:14px;margin:10px 0;
+  align-items:flex-start;border:1px solid var(--gx-stroke);
+  border-radius:9px;background:var(--gx-paper-soft);
+}
+html .tenant-erp .gromma-finance-accounting-note p{
+  font-size:.87rem;margin:5px 0 0;line-height:1.55;
+}
+html .tenant-erp .gromma-finance-subpage-table{
+  width:100%;margin:8px 0;overflow-x:auto;
+}
+html .tenant-erp .gromma-finance-subpage-table table{width:100%;border-collapse:collapse;}
+html .tenant-erp .gromma-finance-subpage-table th,
+html .tenant-erp .gromma-finance-subpage-table td{
+  font-size:.87rem!important;padding:11px 12px!important;
+  vertical-align:middle;border-bottom:1px solid var(--gx-stroke);
+}
+html .tenant-erp .gromma-finance-entry-meta{display:block;color:var(--gx-muted);font-size:.76rem;margin-top:4px;}
+html .tenant-erp .gromma-finance-pill{
+  display:inline-flex;padding:5px 9px;border-radius:50px;
+  font-size:.76rem;font-weight:740;border:1px solid var(--gx-stroke);
+  background:var(--gx-paper-soft);
+}
+html .tenant-erp .gromma-finance-pill.done{color:var(--gx-accent,#6254d5);}
+html .tenant-erp .gromma-finance-form-card{
+  max-width:none;width:100%;padding:clamp(14px,2vw,24px)!important;
+}
+html .tenant-erp .gromma-finance-form-card h3,
+html .tenant-erp .gromma-finance-payment-section h3{
+  font-size:1.08rem;font-weight:800;margin:0 0 9px;
+}
+html .tenant-erp .gromma-finance-entry-form{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;align-items:end;padding-top:12px;
+}
+html .tenant-erp .gromma-finance-entry-form label,
+html .tenant-erp .gromma-finance-registry-form label{
+  display:flex;flex-direction:column;gap:8px;min-width:0;
+  font-size:.89rem!important;font-weight:730!important;
+}
+html .tenant-erp .gromma-finance-entry-form .input,
+html .tenant-erp .gromma-finance-entry-form .select,
+html .tenant-erp .gromma-finance-registry-form .input,
+html .tenant-erp .gromma-finance-registry-form .select{
+  width:100%;min-height:41px;box-sizing:border-box;
+  font-size:.9rem!important;
+}
+html .tenant-erp .gromma-finance-form-wide{grid-column:span 2;}
+html .tenant-erp .gromma-finance-form-footer{
+  grid-column:1 / -1;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;border-top:1px solid var(--gx-stroke);padding-top:14px;
+}
+html .tenant-erp .gromma-finance-form-footer .btn,
+html .tenant-erp .gromma-finance-registry-form .btn{
+  min-height:41px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+}
+html .tenant-erp .gromma-finance-registry-form{
+  display:grid;grid-template-columns:minmax(200px,2fr) minmax(150px,1fr) max-content;
+  align-items:end;gap:12px;margin-top:15px;
+}
+html .tenant-erp .gromma-finance-bank-form{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+}
+html .tenant-erp .gromma-finance-bank-form>label:first-of-type{grid-column:span 2;}
+html .tenant-erp .gromma-finance-bank-form>button{grid-column:-2 / -1;}
+html .tenant-erp .gromma-finance-registry-list{
+  margin-top:12px;display:grid;gap:6px;
+}
+html .tenant-erp .gromma-finance-registry-list>div{
+  display:flex;gap:10px;align-items:center;justify-content:space-between;
+  border:1px solid var(--gx-stroke);border-radius:8px;
+  padding:10px 13px;background:var(--gx-paper);
+}
+html .tenant-erp .gromma-finance-registry-list strong{font-size:.9rem;}
+html .tenant-erp .gromma-finance-registry-list span{color:var(--gx-muted);font-size:.82rem;}
+html .tenant-erp .gromma-finance-payment-section{
+  display:grid;gap:12px;
+}
+html .tenant-erp .gromma-finance-payment-section>article{
+  width:100%;max-width:none!important;padding:16px!important;
+}
+html .tenant-erp .gromma-finance-method-form{
+  display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+}
+html .tenant-erp .gromma-finance-payment-options{
+  display:flex;gap:9px;flex-wrap:wrap;flex:1;
+}
+html .tenant-erp .gromma-finance-payment-options label{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--gx-stroke);border-radius:7px;
+  background:var(--gx-paper-soft);padding:9px 12px;
+  font-size:.86rem;font-weight:680;cursor:pointer;
+}
+html .tenant-erp .gromma-finance-payment-options input{
+  width:18px;height:18px;accent-color:var(--gx-accent,#6254d5);cursor:pointer;
+}
+html .tenant-erp .gromma-finance-disclaimer{
+  font-size:.82rem;margin:13px 0;line-height:1.6;
+}
+@media(max-width:1000px){
+  html .tenant-erp .gromma-finance-subpage-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+  html .tenant-erp .gromma-finance-bank-form{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media(max-width:720px){
+  html .tenant-erp .gromma-finance-entry-form{grid-template-columns:repeat(2,minmax(0,1fr));}
+  html .tenant-erp .gromma-finance-form-wide{grid-column:1 / -1;}
+  html .tenant-erp .gromma-finance-registry-form,
+  html .tenant-erp .gromma-finance-bank-form{grid-template-columns:minmax(0,1fr);}
+  html .tenant-erp .gromma-finance-bank-form>label:first-of-type,
+  html .tenant-erp .gromma-finance-bank-form>button{grid-column:auto;}
+}
+@media(max-width:480px){
+  html .tenant-erp .gromma-finance-entry-form,
+  html .tenant-erp .gromma-finance-subpage-kpis{grid-template-columns:minmax(0,1fr);}
+  html .tenant-erp .gromma-finance-entry-form .gromma-finance-form-wide{grid-column:auto;}
+}
