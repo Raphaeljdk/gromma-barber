@@ -42,6 +42,7 @@ test("AI search is tenant authenticated, uses allowlisted IDs and local fallback
  assert.match(api,/requireTenantAccess\(code\)/);
  assert.match(api,/allowed\.has\(id\)/);
  assert.match(api,/VERCEL_OIDC_TOKEN/);
+ assert.match(api,/request\.headers\.get\("x-vercel-oidc-token"\)/,"uses injected runtime OIDC credential");
  assert.match(api,/source:"local"/);
  assert.match(client,/Busca com IA/);
  assert.match(client,/erp\/\$\{encodeURIComponent\(tenantCode\)\}\/api\/ai-search/);
@@ -53,4 +54,14 @@ test("navigation prefetches page data only on intent, not a full reload",()=>{
  assert.match(side,/onMouseEnter=\{\(\) => router\.prefetch\(/);
  assert.match(side,/onFocus=\{\(\) => router\.prefetch\(/);
  assert.doesNotMatch(side,/window\.location\.href/);
+});
+
+test("contract link keeps 3 fields plus action on one row, with notes accessible",()=>{
+ const css=read("app/gromma-professional-fast-ai.css");
+ const page=read("app/erp/[tenant]/equipe/[userId]/page.tsx");
+ assert.match(css,/professional-contract-link-grid[^{}]*\\{[^{}]*grid-template-columns:minmax\\(130px,1\\.05fr\\) minmax\\(200px,1\\.55fr\\) minmax\\(135px,\\.9fr\\) max-content/);
+ assert.match(css,/professional-contract-link-grid > label:nth-of-type\\(4\\)/);
+ assert.match(css,/professional-contract-link-grid > button/);
+ assert.match(page,/professional-contract-link-grid/);
+ assert.match(page,/Observações<input/);
 });
