@@ -9,9 +9,9 @@ test("Financeiro tem a estrutura exata solicitada com Cadastros e Contabilidade 
  const navigation=read("lib/erp-navigation.ts");
  const a=navigation.slice(navigation.indexOf('id: "financeiro", label: "Financeiro"'));
  const expected=[
-  'Contas a pagar','Contas a receber','Criar receita','Criar despesas','Despesas',
+  'Contas a pagar','Contas a receber','Criar receita','Despesas','Criar despesas',
   'Cadastros','Categorias financeiras','Contas bancárias','Formas de pagamento',
-  'Comanda','Despesas','Contabilidade',
+  'Comanda','Despesas','Contabilidade','Gromma NF',
  ];
  let offset=0;
  for(const text of expected){
@@ -27,7 +27,7 @@ test("Financeiro tem a estrutura exata solicitada com Cadastros e Contabilidade 
 test("Gestão acima de Clube / Assinaturas e setores visíveis, subabas recolhíveis",()=>{
  const sidebar=read("components/erp-sidebar.tsx");
  assert.match(sidebar,/left\.id==="gestao"&&right\.id==="assinaturas"/);
- assert.match(sidebar,/const alwaysVisible = group\.id === "operacional" \|\| group\.id === "gestao"/);
+ assert.match(sidebar,/const alwaysVisible = group\.id === "operacional" \|\| group\.id === "gestao" \|\| group\.id === "financeiro"/);
  assert.match(sidebar,/alwaysVisible \|\| \(expandedGroups/);
  assert.match(sidebar,/expandedNodes\[item\.id\]/);
  assert.match(sidebar,/renderNavItem\(item, 0\)/);
@@ -35,6 +35,7 @@ test("Gestão acima de Clube / Assinaturas e setores visíveis, subabas recolhí
  const css=read("app/gromma-financial-navigation.css");
  assert.match(css,/data-sector="operacional"/);
  assert.match(css,/erp-nav-sector-watermark/);
+ assert.match(css,/data-sector="financeiro"/);
 });
 
 test("Novas rotas não levam a 404 e usam permissão de financeiro",()=>{
