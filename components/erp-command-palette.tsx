@@ -10,6 +10,10 @@ import {
   CreditCard,
   FileText,
   LayoutDashboard,
+  Sparkles,
+  ChartNoAxesCombined,
+  Calculator,
+  FileCheck2,
   type LucideIcon,
   MessageCircle,
   PackageSearch,
@@ -106,6 +110,10 @@ const MODULES = [
   { id: "financeiro-formas-comanda", label: "Formas de pagamento · Comanda", group: "Financeiro", icon: CreditCard, ownerOnly: true },
   { id: "financeiro-formas-despesas", label: "Formas de pagamento · Despesas", group: "Financeiro", icon: CreditCard, ownerOnly: true },
   { id: "financeiro-contabilidade", label: "Contabilidade", group: "Financeiro", icon: ScrollText },
+  { id: "financeiro-gromma-nf", label: "Gromma NF", group: "Financeiro", icon: FileCheck2 },
+  { id: "gromma-ia", label: "Gromma I.A.", group: "Gromma I.A.", icon: Sparkles },
+  { id: "performance", label: "Performance", group: "Performance", icon: ChartNoAxesCombined },
+  { id: "precificacao", label: "Precificação", group: "Precificação", icon: Calculator },
 ] as const;
 
 type SearchModule = {
