@@ -41,7 +41,7 @@ test("new sector hierarchy preserves access to existing ERP modules", () => {
 
 test("Totem is the final sector: Relatórios belongs inside Gestão", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "marketing", "empresa", "totem",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa", "gromma-ia", "performance", "precificacao", "totem",
   ]);
   assert.match(sidebar, /aria-expanded=\{expanded\}/);
   assert.match(sidebar, /\.map\(\(sector\) =>/);
