@@ -44,7 +44,8 @@ test("Menu Operacional termina em Estoque, sem Outras ferramentas", () => {
 
 test("Totem/Check-in permanece único no final da navegação, respeitando o plano", () => {
   assert.deepEqual(ERP_NAVIGATION.slice(-2).map(group => group.id), ["precificacao","totem"]);
-  assert.ok(ERP_NAVIGATION.find(group=>group.id==="gestao").items.some(item=>item.id==="financeiro"));
+  assert.ok(ERP_NAVIGATION.some(group=>group.id==="financeiro"));
+  assert.ok(!ERP_NAVIGATION.find(group=>group.id==="gestao").items.some(item=>item.id==="financeiro"));
   const group = ERP_NAVIGATION.at(-1);
   assert.equal(group.items.length,1);
   assert.equal(group.items[0].id,"extra-totem");
