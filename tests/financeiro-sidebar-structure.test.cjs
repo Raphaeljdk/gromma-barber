@@ -11,7 +11,7 @@ test("Financeiro tem a estrutura exata solicitada com Cadastros e Contabilidade 
  const expected=[
   'Contas a pagar','Contas a receber','Criar receita','Criar despesas','Despesas',
   'Cadastros','Categorias financeiras','Contas bancárias','Formas de pagamento',
-  'Comanda','Despesas','Contabilidade',
+  'Comanda','Despesas','Contabilidade','Gromma NF',
  ];
  let offset=0;
  for(const text of expected){
