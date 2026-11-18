@@ -53,7 +53,8 @@ function flatten(nodes) {
 
 test("sectors match the reference image in order", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro", "totem",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro",
+    "gromma-ia", "performance", "precificacao", "totem",
   ]);
 });
 
@@ -92,7 +93,8 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
     "financeiro-contas-pagar", "financeiro-contas-receber", "financeiro-criar-receita",
     "financeiro-criar-despesa", "financeiro-despesas", "financeiro-categorias",
     "financeiro-contas-bancarias", "financeiro-formas-comanda", "financeiro-formas-despesas",
-    "financeiro-contabilidade",
+    "financeiro-contabilidade", "financeiro-gromma-nf",
+    "gromma-ia", "performance", "precificacao",
     "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "auditoria-agendamentos", "auditoria-fechamento-caixa", "auditoria-produtividade", "notificacoes",
   ]);
   const all = [...ERP_NAVIGATION.flatMap(group => flatten(group.items)), ...flatten(ERP_NAVIGATION_EXTRA)];
@@ -101,7 +103,7 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
   for (const item of all) if (item.route) assert.ok(existing.has(item.route), item.id + " has invalid route");
   assert.ok(all.find(item => item.id === "auditoria").adminOnly, "auditoria must remain management-only");
   assert.ok(all.find(item => item.id === "extra-totem").proOnly, "totem must respect plan");
-  assert.equal(ERP_NAVIGATION.at(-2).id, "financeiro", "Financeiro must be before Totem");
+  assert.ok(ERP_NAVIGATION.findIndex(group => group.id === "financeiro") < ERP_NAVIGATION.findIndex(group => group.id === "gromma-ia"), "Financeiro must precede the new standalone modules");
   assert.equal(ERP_NAVIGATION.at(-1).id, "totem", "Totem / Check-in is the final standalone item");
 });
 
@@ -112,4 +114,24 @@ test("sidebar renders every hierarchy level without pretending unimplemented pag
   assert.match(sidebar, /item\.route \?/);
   assert.match(sidebar, /erp-nav-planned/);
   assert.match(sidebar, /item\.adminOnly && !canManage/);
+});
+
+test("Gromma I.A., Performance e Precificação são independentes, NF pertence ao Financeiro", () => {
+  const finance = ERP_NAVIGATION.find(group => group.id === "financeiro");
+  assert.ok(finance.items.some(item => item.id === "financeiro-gromma-nf" && item.route === "financeiro-gromma-nf"));
+  for (const id of ["gromma-ia", "performance", "precificacao"]) {
+    const group = ERP_NAVIGATION.find(item => item.id === id);
+    assert.equal(group.items.length, 1);
+    assert.equal(group.items[0].route, id);
+  }
+  const modulePage = fs.readFileSync(path.join(root, "app/erp/[tenant]/[module]/page.tsx"), "utf8");
+  const page = fs.readFileSync(path.join(root, "app/erp/[tenant]/page.tsx"), "utf8");
+  for (const id of ["gromma-ia", "performance", "financeiro-gromma-nf", "precificacao"]) {
+    assert.ok(modulePage.includes('"' + id + '"'), id + " must not return 404");
+    assert.ok(page.includes('"' + id + '"'), id + " must have a named pending page");
+  }
+  assert.match(page, /activeModule==="financeiro-gromma-nf"\) \? "VIEW_FINANCE"/);
+  assert.match(page, /PENDING_MODULE_DESCRIPTIONS\[activeModule\]/);
+  const sidebar = fs.readFileSync(path.join(root, "components/erp-sidebar.tsx"), "utf8");
+  assert.match(sidebar, /\["gromma-ia", "performance", "precificacao", "totem"\]\.includes\(group\.id\)/);
 });
