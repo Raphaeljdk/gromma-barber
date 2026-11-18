@@ -53,7 +53,7 @@ function flatten(nodes) {
 
 test("sectors match the reference image in order", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro", "totem",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa", "totem",
   ]);
 });
 
@@ -101,7 +101,15 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
   for (const item of all) if (item.route) assert.ok(existing.has(item.route), item.id + " has invalid route");
   assert.ok(all.find(item => item.id === "auditoria").adminOnly, "auditoria must remain management-only");
   assert.ok(all.find(item => item.id === "extra-totem").proOnly, "totem must respect plan");
-  assert.equal(ERP_NAVIGATION.at(-2).id, "financeiro", "Financeiro must be before Totem");
+  const gestao = ERP_NAVIGATION.find(group => group.id === "gestao");
+  const finance = gestao.items.find(item => item.id === "financeiro");
+  assert.ok(finance, "Financeiro deve estar dentro de Gestão");
+  assert.equal(finance.route, "financeiro");
+  assert.ok(finance.children.some(item => item.id === "financeiro-contas-pagar"));
+  assert.equal(ERP_NAVIGATION.at(-2).id, "empresa", "Empresa precede Totem");
+  assert.ok(!gestao.items.some(item => item.id === "notificacoes"), "Sem Notificações duplicadas na barra lateral");
+  assert.ok(gestao.items.some(item => item.id === "extra-alertas"), "Alertas fica na Gestão");
+  assert.ok(gestao.items.some(item => item.id === "extra-gerencial"), "Gerencial fica na Gestão");
   assert.equal(ERP_NAVIGATION.at(-1).id, "totem", "Totem / Check-in is the final standalone item");
 });
 
@@ -111,5 +119,7 @@ test("sidebar renders every hierarchy level without pretending unimplemented pag
   assert.match(sidebar, /visibleChildren\.map\(\(child\) => renderNavItem/);
   assert.match(sidebar, /item\.route \?/);
   assert.match(sidebar, /erp-nav-planned/);
+  assert.match(sidebar, /erp-nav-sector-watermark/);
+  assert.match(sidebar, /expandedNodes\[item\.id\]/);
   assert.match(sidebar, /item\.adminOnly && !canManage/);
 });
