@@ -50,6 +50,8 @@ import {ServiceRepurchaseReminders} from "@/components/service-repurchase-remind
 import {ServiceEditDialog} from "@/components/service-edit-dialog";
 import {ArchiveServiceButton} from "@/components/archive-service-button";
 import {FinancialSubpage,FINANCIAL_SUBMODULES,type FinancialSubmodule} from "@/components/financial-subpages";
+import {FinanceCurrentDashboard} from "@/components/finance-current-dashboard";
+import {classifyFinanceExpense,classifyFinanceOrigin,type FinanceOverviewRow,type FinanceRefundRow} from "@/lib/finance-overview";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
 import { CommandCheckout } from "@/components/command-checkout";
 import { CashRegister } from "@/components/cash-register";
@@ -329,6 +331,12 @@ export async function TenantERPView({
     day: "2-digit",
   }).format(new Date());
   const agendaDate = isAgendaDate(agendaDateRaw) ? agendaDateRaw : todayDate;
+  // Período de caixa: pagos por paidAt, pendentes por dueDate.
+  const finInicio = isAgendaDate(valueOf("finInicio")) ? valueOf("finInicio") : todayDate.slice(0,8) + "01";
+  const finFim = isAgendaDate(valueOf("finFim")) ? valueOf("finFim") : todayDate;
+  const invalidFinancePeriod = finInicio > finFim;
+  const financePeriodStart = new Date(finInicio + "T00:00:00.000-03:00");
+  const financePeriodEnd = new Date(finFim + "T23:59:59.999-03:00");
   const actionOk = valueOf("ok");
   const actionError = valueOf("erro");
   const activeModule = moduleId ?? "dashboard";
@@ -384,6 +392,7 @@ export async function TenantERPView({
   if (!shop || shop.status !== "APPROVED" || !shop.accessReleased) notFound();
 
   const workspace = readWorkspace(shop.enabledFeatures);
+  const financeSelectedUnit = shop.units.some(unit=>unit.id===valueOf("finFilial")&&unit.active) ? valueOf("finFilial") : "";
   const controlledModulePermission = ["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(activeModule) ? "VIEW_FINANCE"
     : ["clube-cancelados","clube-inadimplentes"].includes(activeModule) ? "VIEW_REPORTS"
     : (activeModule==="financeiro" || financeSubmodule || activeModule==="financeiro-gromma-nf") ? "VIEW_FINANCE"
@@ -860,6 +869,58 @@ export async function TenantERPView({
   const receivables = Number(receivableAggregate._sum.amount ?? 0);
   const payables = Number(payableAggregate._sum.amount ?? 0);
   const cashBalance = receivables - payables;
+  const overviewRaw = activeModule === "financeiro" && !invalidFinancePeriod
+    ? await prisma.financialEntry.findMany({
+      where:{
+        barberShopId:shop.id,
+        ...(financeSelectedUnit ? {unitId:financeSelectedUnit} : {}),
+        OR:[
+          {status:"PAID",paidAt:{gte:financePeriodStart,lte:financePeriodEnd}},
+          {type:"RECEIVABLE",status:"PENDING",dueDate:{gte:financePeriodStart,lte:financePeriodEnd}},
+        ],
+      },
+      select:{id:true,unitId:true,unit:{select:{name:true}},description:true,category:true,type:true,
+        status:true,amount:true,paidAt:true,dueDate:true,createdAt:true},
+      orderBy:{createdAt:"desc"},
+    }) : [];
+  const subscriptionChargeIds = new Set(workspace.clubCharges.map(charge=>charge.entryId));
+  const overviewEntries: FinanceOverviewRow[] = overviewRaw.map(entry=>({
+    id:entry.id,
+    description:entry.description,
+    category:entry.category,
+    type:entry.type,
+    status:entry.status as "PAID"|"PENDING",
+    amount:Number(entry.amount),
+    date:(entry.status==="PAID"?entry.paidAt:entry.dueDate??entry.createdAt)?.toISOString()??entry.createdAt.toISOString(),
+    unitName:entry.unit?.name??"Geral",
+    origin:classifyFinanceOrigin(entry.category,subscriptionChargeIds.has(entry.id)),
+    expenseGroup:classifyFinanceExpense(entry.category),
+  }));
+  const relevantRefunds = activeModule === "financeiro" && !invalidFinancePeriod
+    ? workspace.clubRefunds.filter(refund=>{
+        const timestamp=refund.status==="COMPLETED"?refund.completedAt:refund.requestedAt;
+        if(!timestamp)return false;
+        const date=new Date(timestamp);
+        return date>=financePeriodStart && date<=financePeriodEnd;
+      }) : [];
+  // Estornos solicitados têm a venda original como referência; os concluídos
+  // já geram uma despesa real no financeiro e não são deduzidos novamente.
+  const refundOrigins = relevantRefunds.length
+    ? await prisma.financialEntry.findMany({
+      where:{barberShopId:shop.id,id:{in:relevantRefunds.map(refund=>refund.entryId)}},
+      select:{id:true,unitId:true,unit:{select:{name:true}},amount:true,description:true},
+    }) : [];
+  const refundOriginById = new Map(refundOrigins.map(entry=>[entry.id,entry]));
+  const overviewRefunds: FinanceRefundRow[] = relevantRefunds.flatMap(refund=>{
+    const origin=refundOriginById.get(refund.entryId);
+    if(!origin || (financeSelectedUnit && origin.unitId!==financeSelectedUnit))return [];
+    return [{
+      id:refund.id,entryId:refund.entryId,description:origin.description,reason:refund.reason,
+      amount:Number(origin.amount),date:(refund.status==="COMPLETED" ? refund.completedAt : refund.requestedAt)??refund.requestedAt,
+      unitName:origin.unit?.name??"Geral",status:refund.status,
+    }];
+  });
+
   const financeTotals = activeModule === "financeiro" || financeSubmodule
     ? await prisma.financialEntry.groupBy({by:["type","status"],where:{barberShopId:shop.id},_sum:{amount:true}})
     : [];
@@ -1926,14 +1987,15 @@ export async function TenantERPView({
         </section>
 
         <section id="financeiro" className="demo-section gromma-financial-workspace" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
-          <div className="section-head"><div><div className="eyebrow">Financeiro</div><h2>Contas a receber e pagar</h2></div><StatusPill tone="ready">Operacional</StatusPill></div>
-          <p className="small muted gromma-module-description">Acompanhe os lançamentos por situação. Os valores abaixo refletem os registros internos, sem conciliação bancária automática.</p>
-          <div className="gromma-finance-kpis">
-            <div><span>A receber · pendente</span><strong>{brl(financeValue("RECEIVABLE","PENDING"))}</strong></div>
-            <div><span>A pagar · pendente</span><strong>{brl(financeValue("PAYABLE","PENDING"))}</strong></div>
-            <div><span>Recebimentos confirmados</span><strong>{brl(financeValue("RECEIVABLE","PAID"))}</strong></div>
-            <div><span>Pagamentos confirmados</span><strong>{brl(financeValue("PAYABLE","PAID"))}</strong></div>
-          </div>
+          <FinanceCurrentDashboard
+            tenantCode={tenantCode} units={shop.units.filter(unit=>unit.active).map(unit=>({id:unit.id,name:unit.name}))}
+            selectedUnit={financeSelectedUnit} startDate={finInicio} endDate={finFim}
+            invalidPeriod={invalidFinancePeriod} entries={overviewEntries} refunds={overviewRefunds}
+          />
+          <details className="gromma-financial-ledger" style={{marginTop:18}}>
+            <summary style={{cursor:"pointer",padding:"13px 16px",fontWeight:750,border:"1px solid var(--gx-stroke)",borderRadius:9}}>Lançamentos financeiros e baixas manuais</summary>
+            <div style={{paddingTop:15}}>
+              <p className="small muted">Consulta operacional dos lançamentos. Os filtros deste histórico são independentes dos indicadores acima.</p>
           {actionOk === "financeiro" && <div className="notice erp-inline-notice success">Lançamento financeiro criado com sucesso.</div>}
           {actionError === "financeiro" && <div className="notice erp-inline-notice error-notice">Não foi possível criar o lançamento. Revise descrição e valor.</div>}
           {actionOk === "financeiro-pago" && <div className="notice erp-inline-notice success">Lançamento marcado como pago.</div>}
@@ -1991,6 +2053,8 @@ export async function TenantERPView({
             )) : <tr><td colSpan={8} className="muted">Nenhum lançamento encontrado.</td></tr>}</tbody>
           </table></div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/financeiro`} searchParams={qs} param="financeiroPage" page={financeiroPage} total={financialTotal} pageSize={pageSize} hash="financeiro" label="lançamentos" />
+            </div>
+          </details>
         </section>
 
         {financeSubmodule && <FinancialSubpage tenantCode={tenantCode}
