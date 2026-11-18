@@ -182,3 +182,45 @@ html .tenant-erp .gromma-finance-disclaimer{
   html .tenant-erp .gromma-finance-subpage-kpis{grid-template-columns:minmax(0,1fr);}
   html .tenant-erp .gromma-finance-entry-form .gromma-finance-form-wide{grid-column:auto;}
 }
+
+
+/* 18/11/2026: títulos de setor como marca-d'água, sem aparência de botão. */
+html .tenant-erp .erp-nav-sector[data-sector="operacional"] > .erp-nav-sector-watermark,
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] > .erp-nav-sector-watermark {
+  display:flex;align-items:center;gap:9px;
+  min-height:28px;padding:9px 8px 3px;
+  border:0!important;border-radius:0;
+  background:transparent!important;color:var(--gx-muted,#77818d)!important;
+  box-shadow:none!important;opacity:.7;cursor:default;
+}
+html .tenant-erp .erp-nav-sector-watermark .erp-nav-sector-copy{flex:0 0 auto;}
+html .tenant-erp .erp-nav-sector-watermark .erp-nav-sector-copy strong {
+  font-size:.68rem!important;font-weight:800!important;
+  letter-spacing:.13em!important;text-transform:uppercase;line-height:1.2;
+}
+html .tenant-erp .erp-nav-sector-watermark::after{
+  content:"";flex:1;border-top:1px solid var(--gx-stroke);opacity:.7;
+}
+/* Links com altura menor e subníveis em lista, sem árvore toda expandida. */
+html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-sector-items .erp-nav-tree-row > .erp-nav-item,
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-sector-items .erp-nav-tree-row > .erp-nav-item {
+  font-size:.79rem!important;font-weight:640!important;
+  min-height:34px!important;line-height:1.35!important;
+}
+html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item,
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item {
+  font-size:.74rem!important;font-weight:570!important;
+  min-height:30px!important;line-height:1.35!important;
+}
+html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-tree-item[data-nav-id^="relatorios-"] > .erp-nav-tree-row > .erp-nav-parent-button {
+  font-weight:700!important;color:var(--gx-ink);
+}
+html .tenant-erp .erp-nav-tree-item[data-nav-id="financeiro"] .erp-nav-tree-children .erp-nav-tree-children{
+  margin-left:8px;padding-left:7px;
+}
+@media(max-width:850px){
+  html .tenant-erp .erp-nav-sector[data-sector="operacional"] .erp-nav-sector-items .erp-nav-tree-row > .erp-nav-item,
+  html .tenant-erp .erp-nav-sector[data-sector="gestao"] .erp-nav-sector-items .erp-nav-tree-row > .erp-nav-item{
+    min-height:40px!important;
+  }
+}

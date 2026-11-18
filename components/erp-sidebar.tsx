@@ -58,7 +58,6 @@ const NAV_GROUPS: readonly ErpNavigationSector[] = [...ERP_NAVIGATION]
     left.id==="assinaturas"&&right.id==="gestao"?1:0)
   .map((sector) => {
   const extraRoutes: Record<string, readonly string[]> = {
-    gestao: ["gerencial", "alertas"],
     marketing: ["mensagens"],
     empresa: ["documentos", "treinamentos", "configuracoes"],
   };
@@ -115,7 +114,6 @@ export function ErpSidebar({
   viewerType,
   canManage,
   isOwner,
-  notificationCount,
   supportHref,
   logoutAction,
 }: Props) {
@@ -151,7 +149,7 @@ export function ErpSidebar({
     else router.push("/login");
   }
 
-  function renderNavItem(item: ErpNavigationNode, depth = 0, alwaysVisible = false): React.ReactNode {
+  function renderNavItem(item: ErpNavigationNode, depth = 0): React.ReactNode {
     if ((item.adminOnly && !canManage) || (item.ownerOnly && !isOwner)) return null;
 
     // Profissionais e Serviços têm uma única entrada no menu. Cadastro,
@@ -162,7 +160,7 @@ export function ErpSidebar({
     const hasChildren = visibleChildren.length > 0;
     const activeItem = item.id === activeNavItemId;
     const activeInside = hasChildren && visibleChildren.some((child) => itemIncludesNavId(child, activeNavItemId));
-    const expanded = alwaysVisible || (expandedNodes[item.id] ?? (activeInside || activeItem && hasChildren));
+    const expanded = expandedNodes[item.id] ?? (activeInside || (activeItem && hasChildren));
     const isLocked = Boolean(item.proOnly && planKey !== "PRO");
     const Icon = MODULE_ICONS[item.route ?? ""] ?? (hasChildren ? FolderOpen : FileText);
     const labelContent = <>
@@ -170,8 +168,8 @@ export function ErpSidebar({
       <span className="erp-sidebar-label">{item.label}</span>
     </>;
 
-    const toggleChildren = () => {if(!alwaysVisible)setExpandedNodes((current) => ({ ...current, [item.id]: !expanded }));};
-    return <div className={["erp-nav-tree-item", depth ? "is-nested" : "", hasChildren ? "has-children" : "", expanded ? "is-expanded" : ""].join(" ")} key={item.id}>
+    const toggleChildren = () => setExpandedNodes((current) => ({ ...current, [item.id]: !expanded }));
+    return <div className={["erp-nav-tree-item", depth ? "is-nested" : "", hasChildren ? "has-children" : "", expanded ? "is-expanded" : ""].join(" ")} key={item.id} data-nav-id={item.id}>
       <div className="erp-nav-tree-row" style={{ ["--erp-depth" as string]: depth }}>
         {item.route ? (
           <Link
@@ -199,20 +197,20 @@ export function ErpSidebar({
             <span className="erp-nav-planned-tag">Previsto</span>
           </span>
         )}
-        {hasChildren && item.route && !alwaysVisible && (
+        {hasChildren && item.route && (
           <button type="button" className="erp-nav-tree-toggle"
             aria-label={expanded ? `Recolher ${item.label}` : `Expandir ${item.label}`}
             aria-controls={`erp-nav-children-${item.id}`}
             aria-expanded={expanded}
             onClick={toggleChildren}><ChevronDown size={16} aria-hidden="true" /></button>
         )}
-        {hasChildren && !item.route && !alwaysVisible && (
+        {hasChildren && !item.route && (
           <ChevronDown className="erp-nav-tree-inline-chevron" size={15} aria-hidden="true" />
         )}
       </div>
       {hasChildren && expanded && (
         <div className="erp-nav-tree-children" id={`erp-nav-children-${item.id}`}>
-          {visibleChildren.map((child) => renderNavItem(child, depth + 1, alwaysVisible))}
+          {visibleChildren.map((child) => renderNavItem(child, depth + 1))}
         </div>
       )}
     </div>;
@@ -285,7 +283,6 @@ export function ErpSidebar({
           </span>
         </div>
         <div className="gromma-sidebar-quicklinks">
-          {isOwner && <Link href={routeFor(tenantCode,"notificacoes")} onClick={()=>setMobileOpen(false)} title="Notificações da empresa"><BellRing size={16}/><span className="erp-sidebar-label">Avisos {notificationCount>0?`(${notificationCount})`:""}</span></Link>}
           <a href={supportHref} title="Suporte"><MessageCircle size={16}/><span className="erp-sidebar-label">Suporte</span></a>
           <button type="button" onClick={goBack} title="Voltar"><ChevronLeft size={16}/><span className="erp-sidebar-label">Voltar</span></button>
         </div>
@@ -301,26 +298,32 @@ export function ErpSidebar({
             const expanded = !collapsed && (alwaysVisible || (expandedGroups[group.id] ?? group.id === activeGroup));
             const SectorIcon = SECTOR_ICONS[group.id] ?? LayoutDashboard;
             return <div className={["erp-nav-group", "erp-nav-sector", expanded ? "is-expanded" : "", activeGroup === group.id ? "has-active-module" : ""].join(" ")} key={group.id} data-sector={group.id}>
-              <button
-                type="button"
-                className="erp-nav-sector-heading"
-                aria-controls={`erp-sector-${group.id}`}
-                aria-expanded={expanded}
-                onClick={() => {
-                  if (collapsed) setCollapsed(false);
-                  if (!alwaysVisible)setExpandedGroups((previous) => ({ ...previous, [group.id]: !expanded }));
-                }}
-                title={group.label}
-              >
-                <SectorIcon size={17} strokeWidth={1.8} aria-hidden="true" />
-                <span className="erp-nav-sector-copy">
-                  <strong>{group.label}</strong>
-                  <small>{group.description}</small>
-                </span>
-                {!alwaysVisible && <ChevronDown className="erp-nav-sector-chevron" size={16} aria-hidden="true" />}
-              </button>
+              {alwaysVisible ? (
+                <div className="erp-nav-sector-heading erp-nav-sector-watermark" aria-label={`Seção ${group.label}`}>
+                  <span className="erp-nav-sector-copy"><strong>{group.label}</strong></span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="erp-nav-sector-heading"
+                  aria-controls={`erp-sector-${group.id}`}
+                  aria-expanded={expanded}
+                  onClick={() => {
+                    if (collapsed) setCollapsed(false);
+                    setExpandedGroups((previous) => ({ ...previous, [group.id]: !expanded }));
+                  }}
+                  title={group.label}
+                >
+                  <SectorIcon size={17} strokeWidth={1.8} aria-hidden="true" />
+                  <span className="erp-nav-sector-copy">
+                    <strong>{group.label}</strong>
+                    <small>{group.description}</small>
+                  </span>
+                  <ChevronDown className="erp-nav-sector-chevron" size={16} aria-hidden="true" />
+                </button>
+              )}
               {expanded && <div className="erp-nav-sector-items" id={`erp-sector-${group.id}`}>
-                {group.items.map((item) => renderNavItem(item, 0, alwaysVisible))}
+                {group.items.map((item) => renderNavItem(item, 0))}
               </div>}
             </div>;
           })}

@@ -73,7 +73,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "auditoria-fechamento-caixa", label: "Fechamento de caixa", route: "auditoria-fechamento-caixa", adminOnly: true },
         { id: "auditoria-produtividade", label: "Produtividade", route: "auditoria-produtividade", adminOnly: true },
       ] },
-      { id: "notificacoes", label: "Notificações", route: "notificacoes", ownerOnly: true },
       { id: "gerar-comissao", label: "Gerar comissão", route: "comissoes" },
       { id: "relatorios", label: "Relatórios", route: "relatorios", children: [
         { id: "relatorios-assinaturas", label: "Assinaturas", children: [
@@ -105,6 +104,24 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "rel-pro-ticket-atendimento", label: "Ticket médio por atendimento" },
         ] },
       ] },
+      { id: "extra-gerencial", label: "Gerencial", route: "gerencial" },
+      { id: "financeiro", label: "Financeiro", route: "financeiro", children: [
+        { id: "financeiro-contas-pagar", label: "Contas a pagar", route: "financeiro-contas-pagar" },
+        { id: "financeiro-contas-receber", label: "Contas a receber", route: "financeiro-contas-receber" },
+        { id: "financeiro-criar-receita", label: "Criar receita", route: "financeiro-criar-receita", ownerOnly: true },
+        { id: "financeiro-criar-despesa", label: "Criar despesas", route: "financeiro-criar-despesa", ownerOnly: true },
+        { id: "financeiro-despesas", label: "Despesas", route: "financeiro-despesas" },
+        { id: "financeiro-cadastros", label: "Cadastros", ownerOnly: true, children: [
+          { id: "financeiro-categorias", label: "Categorias financeiras", route: "financeiro-categorias" },
+          { id: "financeiro-contas-bancarias", label: "Contas bancárias", route: "financeiro-contas-bancarias" },
+          { id: "financeiro-formas-pagamento", label: "Formas de pagamento", children: [
+            { id: "financeiro-formas-comanda", label: "Comanda", route: "financeiro-formas-comanda" },
+            { id: "financeiro-formas-despesas", label: "Despesas", route: "financeiro-formas-despesas" },
+          ] },
+        ] },
+        { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade" },
+      ] },
+      { id: "extra-alertas", label: "Alertas", route: "alertas" },
     ],
   },
   {
@@ -146,26 +163,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     ],
   },
   {
-    id: "financeiro", label: "Financeiro", description: "Contas, lançamentos e cadastros",
-    items: [
-      { id: "financeiro-atual", label: "Financeiro atual", route: "financeiro" },
-      { id: "financeiro-contas-pagar", label: "Contas a pagar", route: "financeiro-contas-pagar" },
-      { id: "financeiro-contas-receber", label: "Contas a receber", route: "financeiro-contas-receber" },
-      { id: "financeiro-criar-receita", label: "Criar receita", route: "financeiro-criar-receita", ownerOnly: true },
-      { id: "financeiro-criar-despesa", label: "Criar despesas", route: "financeiro-criar-despesa", ownerOnly: true },
-      { id: "financeiro-despesas", label: "Despesas", route: "financeiro-despesas" },
-      { id: "financeiro-cadastros", label: "Cadastros", ownerOnly: true, children: [
-        { id: "financeiro-categorias", label: "Categorias financeiras", route: "financeiro-categorias" },
-        { id: "financeiro-contas-bancarias", label: "Contas bancárias", route: "financeiro-contas-bancarias" },
-        { id: "financeiro-formas-pagamento", label: "Formas de pagamento", children: [
-          { id: "financeiro-formas-comanda", label: "Comanda", route: "financeiro-formas-comanda" },
-          { id: "financeiro-formas-despesas", label: "Despesas", route: "financeiro-formas-despesas" },
-        ] },
-      ] },
-      { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade" },
-    ],
-  },
-  {
     id: "totem", label: "Totem / Check-in", description: "Etapa futura",
     items: [
       { id: "extra-totem", label: "Totem / Check-in", route: "totem", proOnly: true },
@@ -175,8 +172,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
 
 /* Preserva acesso aos módulos atuais que não são itens explícitos da imagem. */
 export const ERP_NAVIGATION_EXTRA: readonly ErpNavigationNode[] = [
-  { id: "extra-gerencial", label: "Gerencial", route: "gerencial" },
-  { id: "extra-alertas", label: "Alertas", route: "alertas" },
   { id: "extra-mensagens", label: "Mensagens", route: "mensagens" },
   { id: "extra-documentos", label: "Documentos", route: "documentos" },
   { id: "extra-treinamentos", label: "Tutoriais / Cursos", route: "treinamentos" },
