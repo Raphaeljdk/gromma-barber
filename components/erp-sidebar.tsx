@@ -114,7 +114,6 @@ export function ErpSidebar({
   viewerType,
   canManage,
   isOwner,
-  notificationCount,
   supportHref,
   logoutAction,
 }: Props) {
@@ -284,7 +283,6 @@ export function ErpSidebar({
           </span>
         </div>
         <div className="gromma-sidebar-quicklinks">
-          {isOwner && <Link href={routeFor(tenantCode,"notificacoes")} onClick={()=>setMobileOpen(false)} title="Notificações da empresa"><BellRing size={16}/><span className="erp-sidebar-label">Avisos {notificationCount>0?`(${notificationCount})`:""}</span></Link>}
           <a href={supportHref} title="Suporte"><MessageCircle size={16}/><span className="erp-sidebar-label">Suporte</span></a>
           <button type="button" onClick={goBack} title="Voltar"><ChevronLeft size={16}/><span className="erp-sidebar-label">Voltar</span></button>
         </div>
