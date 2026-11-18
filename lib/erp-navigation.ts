@@ -120,6 +120,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           ] },
         ] },
         { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade" },
+        { id: "financeiro-gromma-nf", label: "Gromma NF", route: "financeiro-gromma-nf" },
       ] },
       { id: "extra-alertas", label: "Alertas", route: "alertas" },
     ],
@@ -161,6 +162,18 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "empresa-fatura", label: "Fatura", route: "fatura", ownerOnly: true },
       ] },
     ],
+  },
+  {
+    id: "gromma-ia", label: "Gromma I.A.", description: "Recursos inteligentes",
+    items: [{id:"gromma-ia-modulo",label:"Gromma I.A.",route:"gromma-ia"}],
+  },
+  {
+    id: "performance", label: "Performance", description: "Indicadores de desempenho",
+    items: [{id:"performance-modulo",label:"Performance",route:"performance"}],
+  },
+  {
+    id: "precificacao", label: "Precificação", description: "Preços e margens",
+    items: [{id:"precificacao-modulo",label:"Precificação",route:"precificacao"}],
   },
   {
     id: "totem", label: "Totem / Check-in", description: "Etapa futura",

@@ -11,7 +11,7 @@ test("Financeiro tem a estrutura exata solicitada com Cadastros e Contabilidade 
  const expected=[
   'Contas a pagar','Contas a receber','Criar receita','Criar despesas','Despesas',
   'Cadastros','Categorias financeiras','Contas bancárias','Formas de pagamento',
-  'Comanda','Despesas','Contabilidade',
+  'Comanda','Despesas','Contabilidade','Gromma NF',
  ];
  let offset=0;
  for(const text of expected){
@@ -51,7 +51,7 @@ test("Novas rotas não levam a 404 e usam permissão de financeiro",()=>{
   assert.ok(module.includes('"'+route+'"'),"Rota "+route);
   assert.ok(components.includes('"'+route+'"'),"Tela "+route);
  }
- assert.match(page,/financeSubmodule\) \? "VIEW_FINANCE"/);
+ assert.match(page,/financeSubmodule \|\| activeModule==="financeiro-gromma-nf"\) \? "VIEW_FINANCE"/);
  assert.match(page,/<FinancialSubpage tenantCode=\{tenantCode\}/);
  assert.match(page,/financialEntryMetadata\[entry\.id\]/);
 });

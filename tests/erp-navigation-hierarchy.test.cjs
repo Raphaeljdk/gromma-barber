@@ -53,7 +53,7 @@ function flatten(nodes) {
 
 test("sectors match the reference image in order", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "marketing", "empresa", "totem",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa", "gromma-ia", "performance", "precificacao", "totem",
   ]);
 });
 
@@ -92,7 +92,8 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
     "financeiro-contas-pagar", "financeiro-contas-receber", "financeiro-criar-receita",
     "financeiro-criar-despesa", "financeiro-despesas", "financeiro-categorias",
     "financeiro-contas-bancarias", "financeiro-formas-comanda", "financeiro-formas-despesas",
-    "financeiro-contabilidade",
+    "financeiro-contabilidade", "financeiro-gromma-nf",
+    "gromma-ia", "performance", "precificacao",
     "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "auditoria-agendamentos", "auditoria-fechamento-caixa", "auditoria-produtividade", "notificacoes",
   ]);
   const all = [...ERP_NAVIGATION.flatMap(group => flatten(group.items)), ...flatten(ERP_NAVIGATION_EXTRA)];
@@ -106,7 +107,7 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
   assert.ok(finance, "Financeiro deve estar dentro de Gestão");
   assert.equal(finance.route, "financeiro");
   assert.ok(finance.children.some(item => item.id === "financeiro-contas-pagar"));
-  assert.equal(ERP_NAVIGATION.at(-2).id, "empresa", "Empresa precede Totem");
+  assert.equal(ERP_NAVIGATION.at(-2).id, "precificacao", "Precificação precede Totem");
   assert.ok(!gestao.items.some(item => item.id === "notificacoes"), "Sem Notificações duplicadas na barra lateral");
   assert.ok(gestao.items.some(item => item.id === "extra-alertas"), "Alertas fica na Gestão");
   assert.ok(gestao.items.some(item => item.id === "extra-gerencial"), "Gerencial fica na Gestão");
@@ -122,4 +123,18 @@ test("sidebar renders every hierarchy level without pretending unimplemented pag
   assert.match(sidebar, /erp-nav-sector-watermark/);
   assert.match(sidebar, /expandedNodes\[item\.id\]/);
   assert.match(sidebar, /item\.adminOnly && !canManage/);
+});
+
+test("Gromma NF fica sob Financeiro dentro de Gestão, ferramentas independentes fora", () => {
+  const gestao = ERP_NAVIGATION.find(group => group.id === "gestao");
+  const finance = gestao.items.find(node => node.id === "financeiro");
+  assert.ok(finance.children.some(node => node.id === "financeiro-gromma-nf" && node.route === "financeiro-gromma-nf"));
+  for (const name of ["gromma-ia", "performance", "precificacao"]) {
+    const sector = ERP_NAVIGATION.find(group => group.id === name);
+    assert.equal(sector.items.length, 1);
+    assert.equal(sector.items[0].route, name);
+  }
+  const routes = fs.readFileSync(path.join(root, "app/erp/[tenant]/[module]/page.tsx"), "utf8");
+  for (const route of ["financeiro-gromma-nf","gromma-ia","performance","precificacao"])
+    assert.ok(routes.includes('"'+route+'"'));
 });
