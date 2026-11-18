@@ -29,18 +29,19 @@ test("new sector hierarchy preserves access to existing ERP modules", () => {
   assert.equal(new Set(searchModules).size, searchModules.length, "duplicates in module search");
   // Telas de marca, cadastro e filiais acessíveis por busca ou Dados gerais,
   // sem duplicar o menu Empresa que agora prioriza as rotas operacionais.
-  const directOnly = new Set(["identidade", "clube-config", "equipe/novo", "unidades"]);
+  // Notificações permanece no topo do ERP e na busca, fora da lista lateral.
+  const directOnly = new Set(["identidade", "clube-config", "equipe/novo", "unidades", "notificacoes"]);
   assert.deepEqual(
     [...links].sort(),
     [...new Set(searchModules.filter(id => !directOnly.has(id)))].sort(),
     "navigation and search must agree on menu modules, including restricted pages"
   );
-  assert.match(sidebar, /renderNavItem\(child, depth \+ 1, alwaysVisible\)/, "must render grandchildren");
+  assert.match(sidebar, /renderNavItem\(child, depth \+ 1\)/, "must render grandchildren");
 });
 
 test("Totem is the final sector: Relatórios belongs inside Gestão", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "marketing", "empresa", "financeiro", "totem",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa", "totem",
   ]);
   assert.match(sidebar, /aria-expanded=\{expanded\}/);
   assert.match(sidebar, /\.map\(\(sector\) =>/);
