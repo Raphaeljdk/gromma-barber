@@ -105,22 +105,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         ] },
       ] },
       { id: "extra-gerencial", label: "Gerencial", route: "gerencial" },
-      { id: "financeiro", label: "Financeiro", route: "financeiro", children: [
-        { id: "financeiro-contas-pagar", label: "Contas a pagar", route: "financeiro-contas-pagar" },
-        { id: "financeiro-contas-receber", label: "Contas a receber", route: "financeiro-contas-receber" },
-        { id: "financeiro-criar-receita", label: "Criar receita", route: "financeiro-criar-receita", ownerOnly: true },
-        { id: "financeiro-criar-despesa", label: "Criar despesas", route: "financeiro-criar-despesa", ownerOnly: true },
-        { id: "financeiro-despesas", label: "Despesas", route: "financeiro-despesas" },
-        { id: "financeiro-cadastros", label: "Cadastros", ownerOnly: true, children: [
-          { id: "financeiro-categorias", label: "Categorias financeiras", route: "financeiro-categorias" },
-          { id: "financeiro-contas-bancarias", label: "Contas bancárias", route: "financeiro-contas-bancarias" },
-          { id: "financeiro-formas-pagamento", label: "Formas de pagamento", children: [
-            { id: "financeiro-formas-comanda", label: "Comanda", route: "financeiro-formas-comanda" },
-            { id: "financeiro-formas-despesas", label: "Despesas", route: "financeiro-formas-despesas" },
-          ] },
-        ] },
-        { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade" },
-      ] },
       { id: "extra-alertas", label: "Alertas", route: "alertas" },
     ],
   },
@@ -161,6 +145,40 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "empresa-fatura", label: "Fatura", route: "fatura", ownerOnly: true },
       ] },
     ],
+  },
+  {
+    id: "financeiro", label: "Financeiro", description: "Contas, despesas e cadastros",
+    items: [
+      { id: "financeiro-contas-pagar", label: "Contas a pagar", route: "financeiro-contas-pagar" },
+      { id: "financeiro-contas-receber", label: "Contas a receber", route: "financeiro-contas-receber", children: [
+        { id: "financeiro-criar-receita", label: "Criar receita", route: "financeiro-criar-receita", ownerOnly: true },
+      ] },
+      { id: "financeiro-despesas", label: "Despesas", route: "financeiro-despesas", children: [
+        { id: "financeiro-criar-despesa", label: "Criar despesas", route: "financeiro-criar-despesa", ownerOnly: true },
+      ] },
+        { id: "financeiro-cadastros", label: "Cadastros", ownerOnly: true, children: [
+          { id: "financeiro-categorias", label: "Categorias financeiras", route: "financeiro-categorias" },
+          { id: "financeiro-contas-bancarias", label: "Contas bancárias", route: "financeiro-contas-bancarias" },
+          { id: "financeiro-formas-pagamento", label: "Formas de pagamento", children: [
+            { id: "financeiro-formas-comanda", label: "Comanda", route: "financeiro-formas-comanda" },
+            { id: "financeiro-formas-despesas", label: "Despesas", route: "financeiro-formas-despesas" },
+          ] },
+        ] },
+        { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade" },
+      { id: "gromma-nf", label: "Gromma NF" },
+    ],
+  },
+  {
+    id: "gromma-ia", label: "Gromma I.A.", description: "Módulo futuro",
+    items: [{ id: "standalone-gromma-ia", label: "Gromma I.A." }],
+  },
+  {
+    id: "performance", label: "Performance", description: "Módulo futuro",
+    items: [{ id: "standalone-performance", label: "Performance" }],
+  },
+  {
+    id: "precificacao", label: "Precificação", description: "Módulo futuro",
+    items: [{ id: "standalone-precificacao", label: "Precificação" }],
   },
   {
     id: "totem", label: "Totem / Check-in", description: "Etapa futura",

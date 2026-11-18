@@ -15,15 +15,18 @@ import {
   type LucideIcon,
   FileText,
   LayoutDashboard,
+  LineChart,
   LogOut,
   Menu,
   MessageCircle,
   PackageSearch,
   ReceiptText,
   ScrollText,
+  Calculator,
   Settings2,
   Star,
   Store,
+  Sparkles,
   Tags,
   Users,
   UserRoundCog,
@@ -87,6 +90,8 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   avaliacoes: Star, unidades: Building2, equipe: UserRoundCog, servicos: Store,
   documentos: FileText, treinamentos: BookOpenCheck, configuracoes: Settings2,
   plano: BadgeDollarSign, financeiro: WalletCards, alertas: BellRing, totem: Store,
+  "gromma-nf": ReceiptText, "standalone-gromma-ia": Sparkles,
+  "standalone-performance": LineChart, "standalone-precificacao": Calculator,
 };
 
 function itemIncludesNavId(node: ErpNavigationNode, id: string | undefined): boolean {
@@ -162,7 +167,7 @@ export function ErpSidebar({
     const activeInside = hasChildren && visibleChildren.some((child) => itemIncludesNavId(child, activeNavItemId));
     const expanded = expandedNodes[item.id] ?? (activeInside || (activeItem && hasChildren));
     const isLocked = Boolean(item.proOnly && planKey !== "PRO");
-    const Icon = MODULE_ICONS[item.route ?? ""] ?? (hasChildren ? FolderOpen : FileText);
+    const Icon = MODULE_ICONS[item.route ?? item.id] ?? (hasChildren ? FolderOpen : FileText);
     const labelContent = <>
       {depth === 0 ? <span className="erp-nav-icon"><Icon size={18} strokeWidth={1.9} /></span> : <span className="erp-nav-depth-mark" aria-hidden="true" />}
       <span className="erp-sidebar-label">{item.label}</span>
@@ -289,12 +294,12 @@ export function ErpSidebar({
 
         <nav className="erp-nav" aria-label="Módulos do ERP">
           {NAV_GROUPS.map((group) => {
-            // A single permanent link below Financeiro, not a new expandable
-            // menu section. Respect the existing PRO permission in renderNavItem.
-            if (group.id === "totem") return <div className="erp-nav-standalone" key={group.id}>
+            // Independentes: não criar seção-pai para IA, Performance, Precificação ou Totem.
+            // Respeitar as permissões e planos existentes dos itens reais.
+            if (["gromma-ia", "performance", "precificacao", "totem"].includes(group.id)) return <div className="erp-nav-standalone" key={group.id}>
               {group.items.map(item => renderNavItem(item))}
             </div>;
-            const alwaysVisible = group.id === "operacional" || group.id === "gestao";
+            const alwaysVisible = group.id === "operacional" || group.id === "gestao" || group.id === "financeiro";
             const expanded = !collapsed && (alwaysVisible || (expandedGroups[group.id] ?? group.id === activeGroup));
             const SectorIcon = SECTOR_ICONS[group.id] ?? LayoutDashboard;
             return <div className={["erp-nav-group", "erp-nav-sector", expanded ? "is-expanded" : "", activeGroup === group.id ? "has-active-module" : ""].join(" ")} key={group.id} data-sector={group.id}>
