@@ -53,7 +53,8 @@ function flatten(nodes) {
 
 test("sectors match the reference image in order", () => {
   assert.deepEqual(ERP_NAVIGATION.map(group => group.id), [
-    "operacional", "assinaturas", "gestao", "marketing", "empresa", "totem",
+    "operacional", "assinaturas", "gestao", "marketing", "empresa",
+    "financeiro", "gromma-ia", "performance", "precificacao", "totem",
   ]);
 });
 
@@ -102,15 +103,23 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
   assert.ok(all.find(item => item.id === "auditoria").adminOnly, "auditoria must remain management-only");
   assert.ok(all.find(item => item.id === "extra-totem").proOnly, "totem must respect plan");
   const gestao = ERP_NAVIGATION.find(group => group.id === "gestao");
-  const finance = gestao.items.find(item => item.id === "financeiro");
-  assert.ok(finance, "Financeiro deve estar dentro de Gestão");
-  assert.equal(finance.route, "financeiro");
-  assert.ok(finance.children.some(item => item.id === "financeiro-contas-pagar"));
-  assert.equal(ERP_NAVIGATION.at(-2).id, "empresa", "Empresa precede Totem");
+  const finance = ERP_NAVIGATION.find(group => group.id === "financeiro");
+  assert.ok(finance, "Financeiro deve ser um setor independente");
+  assert.ok(!gestao.items.some(item => item.id === "financeiro"), "Financeiro não fica dentro de Gestão");
+  assert.deepEqual(finance.items.map(item => item.label), [
+    "Contas a pagar", "Contas a receber", "Despesas", "Cadastros", "Contabilidade", "Gromma NF",
+  ]);
+  assert.equal(finance.items.at(-1).route, undefined, "NF sem página fictícia");
+  assert.equal(ERP_NAVIGATION.at(-2).id, "precificacao", "Precificação avulsa antes de Totem");
   assert.ok(!gestao.items.some(item => item.id === "notificacoes"), "Sem Notificações duplicadas na barra lateral");
   assert.ok(gestao.items.some(item => item.id === "extra-alertas"), "Alertas fica na Gestão");
   assert.ok(gestao.items.some(item => item.id === "extra-gerencial"), "Gerencial fica na Gestão");
   assert.equal(ERP_NAVIGATION.at(-1).id, "totem", "Totem / Check-in is the final standalone item");
+  for(const id of ["gromma-ia","performance","precificacao"]){
+    const group=ERP_NAVIGATION.find(item=>item.id===id);
+    assert.equal(group.items.length,1);
+    assert.equal(group.items[0].route,undefined,"Módulo futuro não pode abrir 404");
+  }
 });
 
 test("sidebar renders every hierarchy level without pretending unimplemented pages exist", () => {
