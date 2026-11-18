@@ -171,6 +171,13 @@ const AUDIENCE_LABELS: Record<string, string> = {
   CLUB: "Assinantes do clube",
 };
 
+const PENDING_MODULE_DESCRIPTIONS: Record<string, string> = {
+  "gromma-ia": "Área reservada aos recursos de inteligência artificial do GROMMA. Nenhuma automação de IA está ativa nesta tela.",
+  performance: "Área reservada à análise de desempenho. Nenhum novo indicador foi ativado nesta tela.",
+  "financeiro-gromma-nf": "Área reservada à emissão e consulta de notas fiscais. Ainda não é possível emitir, transmitir ou consultar notas por esta tela.",
+  precificacao: "Área reservada à precificação de produtos e serviços. Esta tela não altera preços cadastrados.",
+};
+
 const MODULE_TITLES: Record<string, string> = {
   ...SUBSCRIPTION_REPORTS,
   assinantes: "Quantidade de assinantes",
@@ -206,6 +213,10 @@ const MODULE_TITLES: Record<string, string> = {
   "financeiro-formas-comanda": "Formas de pagamento · Comanda",
   "financeiro-formas-despesas": "Formas de pagamento · Despesas",
   "financeiro-contabilidade": "Contabilidade",
+  "financeiro-gromma-nf": "Gromma NF",
+  "gromma-ia": "Gromma I.A.",
+  performance: "Performance",
+  precificacao: "Precificação",
   caixa: "Caixa",
   "caixa-historico": "Histórico de caixas",
   estoque: "Estoque",
@@ -375,7 +386,7 @@ export async function TenantERPView({
   const workspace = readWorkspace(shop.enabledFeatures);
   const controlledModulePermission = ["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(activeModule) ? "VIEW_FINANCE"
     : ["clube-cancelados","clube-inadimplentes"].includes(activeModule) ? "VIEW_REPORTS"
-    : (activeModule==="financeiro" || financeSubmodule) ? "VIEW_FINANCE"
+    : (activeModule==="financeiro" || financeSubmodule || activeModule==="financeiro-gromma-nf") ? "VIEW_FINANCE"
     : activeModule === "comissoes" ? "VIEW_COMMISSIONS"
     : activeModule === "relatorios" || Boolean(SUBSCRIPTION_REPORTS[activeModule]) ? "VIEW_REPORTS"
     : activeModule.startsWith("auditoria") ? "VIEW_AUDIT" : null;
@@ -1178,6 +1189,14 @@ export async function TenantERPView({
             <span className="badge">Plano {plan.name}</span>
           </div>}
         </header>
+
+        {PENDING_MODULE_DESCRIPTIONS[activeModule] && (
+          <section className="card" aria-label={activeModuleTitle} style={{ maxWidth: 860, padding: "20px 22px" }}>
+            <span className="badge">Em desenvolvimento</span>
+            <h2 style={{ fontSize: "1.15rem", margin: "12px 0 6px" }}>{activeModuleTitle}</h2>
+            <p style={{ margin: 0 }}>{PENDING_MODULE_DESCRIPTIONS[activeModule]}</p>
+          </section>
+        )}
 
         {(["agenda-feriados", "clientes-bloqueados", "clientes-ranking"] as const).includes(activeModule as "agenda-feriados" | "clientes-bloqueados" | "clientes-ranking") && (
           <ErpOperationalSubpage
