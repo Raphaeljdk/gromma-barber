@@ -24,16 +24,17 @@ test("Financeiro tem a estrutura exata solicitada com Cadastros e Contabilidade 
  assert.match(a,/id: "financeiro-formas-despesas"/);
 });
 
-test("Gestão acima de Clube / Assinaturas e Operacional + Gestão sempre expandidos",()=>{
+test("Gestão acima de Clube / Assinaturas e setores visíveis, subabas recolhíveis",()=>{
  const sidebar=read("components/erp-sidebar.tsx");
  assert.match(sidebar,/left\.id==="gestao"&&right\.id==="assinaturas"/);
  assert.match(sidebar,/const alwaysVisible = group\.id === "operacional" \|\| group\.id === "gestao"/);
  assert.match(sidebar,/alwaysVisible \|\| \(expandedGroups/);
- assert.match(sidebar,/renderNavItem\(item, 0, alwaysVisible\)/);
- assert.match(sidebar,/renderNavItem\(child, depth \+ 1, alwaysVisible\)/);
+ assert.match(sidebar,/expandedNodes\[item\.id\]/);
+ assert.match(sidebar,/renderNavItem\(item, 0\)/);
+ assert.match(sidebar,/renderNavItem\(child, depth \+ 1\)/);
  const css=read("app/gromma-financial-navigation.css");
  assert.match(css,/data-sector="operacional"/);
- assert.match(css,/font-size:\.86rem!important/);
+ assert.match(css,/erp-nav-sector-watermark/);
 });
 
 test("Novas rotas não levam a 404 e usam permissão de financeiro",()=>{
