@@ -52,7 +52,7 @@ test("Totem/Check-in permanece único no final da navegação, respeitando o pla
   assert.equal(group.items[0].route,"totem");
   assert.equal(group.items[0].proOnly,true);
   const sidebar=read("components/erp-sidebar.tsx");
-  assert.match(sidebar, /group\.id === "totem"/);
+  assert.match(sidebar, /\["gromma-ia", "performance", "precificacao", "totem"\]\.includes\(group\.id\)/);
   assert.match(sidebar, /erp-nav-standalone/);
   assert.match(sidebar, /isLocked \? "plano" : item\.route/);
   const all = [
