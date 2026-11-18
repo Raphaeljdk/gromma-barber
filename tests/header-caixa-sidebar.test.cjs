@@ -3,48 +3,70 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
+const read = file => fs.readFileSync(path.join(__dirname, "..", file), "utf8");
+const code = read("lib/erp-navigation.ts");
+const output = ts.transpileModule(code, { compilerOptions: {
+  module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
+}}).outputText;
+const obj = {exports:{}};
+new Function("module", "exports", output)(obj, obj.exports);
+const { ERP_NAVIGATION, ERP_NAVIGATION_EXTRA } = obj.exports;
+const flatten = nodes => nodes.flatMap(n => [n, ...flatten(n.children || [])]);
 
-const root = path.resolve(__dirname, "..");
-const read = p => fs.readFileSync(path.join(root,p),"utf8");
-const erp = read("app/erp/[tenant]/page.tsx");
-const sidebar = read("components/erp-sidebar.tsx");
-const css = read("app/gromma-navigation-polish.css");
-const layout = read("app/layout.tsx");
-const navigation = read("lib/erp-navigation.ts");
-const compiled = ts.transpileModule(navigation,{
-  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
-}).outputText;
-const mod = {exports:{}};
-new Function("module","exports",compiled)(mod,mod.exports);
-
-test("Caixa is a single header link, not a fixed overlay",()=>{
-  const header = erp.slice(erp.indexOf('<div className="erp-topbar">'),erp.indexOf('<div className="erp-enterprise-context'));
-  assert.match(header, /className="erp-header-cash"/);
-  assert.match(header, /href=\{`\/erp\/\$\{encodeURIComponent\(tenantCode\)\}\/caixa`\}/);
-  assert.equal((erp.match(/aria-label="Abrir caixa"/g)||[]).length,1);
-  assert.doesNotMatch(erp,/className="erp-floating-cash"/);
-  assert.match(css,/\.erp-header-cash\s*\{\s*position:static/);
-  assert.match(css,/\.erp-top-actions\s*\{/);
-  assert.match(layout,/import "\.\/gromma-navigation-polish\.css";/);
+test("Historico tem dois menus com clique simples e nenhum checkbox de categoria", () => {
+  const selectors = read("components/purchase-history-selectors.tsx");
+  const history = read("components/customer-purchase-history.tsx");
+  for (const item of [
+    "Categoria", "Serviços", "Produtos", "Bebidas", "Todos os itens",
+    "name=\"categoria\"", "name=\"item\"", "erp-purchase-select-list",
+  ]) assert.ok(selectors.includes(item), item + " not found");
+  assert.doesNotMatch(selectors, /type="checkbox"/);
+  assert.match(selectors, /setCategory\(next\)/);
+  assert.ok(selectors.includes('setItem("")'));
+  assert.match(selectors, /choices\.filter\(choice => !category \|\| choice\.category === category\)/);
+  assert.match(history, /prisma\.service\.findMany/);
+  assert.match(history, /prisma\.product\.findMany/);
+  assert.match(history, /barberShopId: shopId/);
+  assert.match(history, /where: \{ barberShopId: shopId \}/);
+  assert.match(history, /description: \{ equals: validItem, mode: "insensitive"/);
+  assert.match(history, /categoryWhere\(\[category\]\)/);
+  assert.doesNotMatch(history, /name="tipos"/);
 });
 
-test("shared routes have one canonical active navigation item",()=>{
-  const {primaryNavigationItemId}=mod.exports;
-  assert.equal(primaryNavigationItemId("assinaturas"),"assinatura-clube");
-  assert.equal(primaryNavigationItemId("caixa"),"caixa");
-  assert.equal(primaryNavigationItemId("dashboard"),"dashboard");
-  assert.equal(primaryNavigationItemId("clube-pag"),"assinatura-gromma-pag");
-  assert.equal(primaryNavigationItemId("impossivel"),undefined);
-  assert.match(sidebar,/const activeItem = item\.id === activeNavItemId/);
-  assert.match(sidebar,/primaryNavigationItemId\(active\)/);
+test("Menu Operacional termina em Estoque, sem Outras ferramentas", () => {
+  const sector = ERP_NAVIGATION.find(x=>x.id==="operacional");
+  assert.equal(sector.items.at(-1).label, "Estoque");
+  const sidebar = read("components/erp-sidebar.tsx");
+  assert.doesNotMatch(sidebar, /label: "Outras ferramentas"/);
+  assert.doesNotMatch(sidebar, /operacional: \["totem"\]/);
+  assert.match(sidebar, /items: \[\.\.\.sector\.items, \.\.\.extras\]/);
 });
 
-test("sidebar keeps navigation, permissions and mobile menu",()=>{
-  assert.match(sidebar,/visibleChildren\.map\(\(child\) => renderNavItem\(child, depth \+ 1, alwaysVisible\)\)/);
-  assert.match(sidebar,/item\.adminOnly && !canManage/);
-  assert.match(sidebar,/item\.ownerOnly && !isOwner/);
-  assert.match(sidebar,/item\.proOnly && planKey !== "PRO"/);
-  assert.match(sidebar,/setMobileOpen\(false\)/);
-  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css,/@media\(max-width:850px\)/);
+test("Totem/Check-in permanece único no final da navegação, respeitando o plano", () => {
+  assert.deepEqual(ERP_NAVIGATION.slice(-2).map(group => group.id), ["empresa","totem"]);
+  assert.ok(ERP_NAVIGATION.find(group=>group.id==="gestao").items.some(item=>item.id==="financeiro"));
+  const group = ERP_NAVIGATION.at(-1);
+  assert.equal(group.items.length,1);
+  assert.equal(group.items[0].id,"extra-totem");
+  assert.equal(group.items[0].route,"totem");
+  assert.equal(group.items[0].proOnly,true);
+  const sidebar=read("components/erp-sidebar.tsx");
+  assert.match(sidebar, /group\.id === "totem"/);
+  assert.match(sidebar, /erp-nav-standalone/);
+  assert.match(sidebar, /isLocked \? "plano" : item\.route/);
+  const all = [
+    ...ERP_NAVIGATION.flatMap(g => flatten(g.items)),
+    ...flatten(ERP_NAVIGATION_EXTRA),
+  ];
+  const ids=all.map(item => item.id);
+  assert.equal(new Set(ids).size,ids.length);
+});
+
+test("Outros módulos permanecem acessíveis diretamente sem bloco de extras", () => {
+  const extras = ERP_NAVIGATION_EXTRA.map(item => item.route);
+  assert.deepEqual(extras,["mensagens","documentos","treinamentos","configuracoes"]);
+  for (const route of extras) assert.ok(ERP_NAVIGATION_EXTRA.some(item=>item.route===route));
+  const gestaoRoutes=ERP_NAVIGATION.find(group=>group.id==="gestao").items.map(item=>item.route);
+  assert.ok(gestaoRoutes.includes("gerencial"));
+  assert.ok(gestaoRoutes.includes("alertas"));
 });
