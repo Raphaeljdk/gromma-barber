@@ -15,6 +15,10 @@ import {
   type LucideIcon,
   FileText,
   LayoutDashboard,
+  Sparkles,
+  ChartNoAxesCombined,
+  Calculator,
+  FileCheck2,
   LogOut,
   Menu,
   MessageCircle,
@@ -88,6 +92,8 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   avaliacoes: Star, unidades: Building2, equipe: UserRoundCog, servicos: Store,
   documentos: FileText, treinamentos: BookOpenCheck, configuracoes: Settings2,
   plano: BadgeDollarSign, financeiro: WalletCards, alertas: BellRing, totem: Store,
+  'gromma-ia': Sparkles, performance: ChartNoAxesCombined, precificacao: Calculator,
+  'financeiro-gromma-nf': FileCheck2,
 };
 
 function itemIncludesNavId(node: ErpNavigationNode, id: string | undefined): boolean {
@@ -292,9 +298,9 @@ export function ErpSidebar({
 
         <nav className="erp-nav" aria-label="Módulos do ERP">
           {NAV_GROUPS.map((group) => {
-            // A single permanent link below Financeiro, not a new expandable
-            // menu section. Respect the existing PRO permission in renderNavItem.
-            if (group.id === "totem") return <div className="erp-nav-standalone" key={group.id}>
+            // Itens independentes abaixo de Financeiro, sem grupos duplicados.
+            // Totem preserva a restrição de plano no próprio item.
+            if (["gromma-ia", "performance", "precificacao", "totem"].includes(group.id)) return <div className="erp-nav-standalone" key={group.id}>
               {group.items.map(item => renderNavItem(item))}
             </div>;
             const alwaysVisible = group.id === "operacional" || group.id === "gestao";
