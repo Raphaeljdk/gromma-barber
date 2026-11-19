@@ -61,16 +61,6 @@ export async function AccountingViews({tenantCode,shopId,view,workspace,isOwner,
           <FileCode2 size={16}/> XML do estoque
         </Link>
       </div>
-      <form className={styles.filters} method="get" action={href(tenantCode,view)}>
-        <label>De<input className="input" type="date" name="kInicio" defaultValue={from} required/></label>
-        <label>Até<input className="input" type="date" name="kFim" defaultValue={to} required/></label>
-        <label>Categoria<select className="select" name="kCategoria" defaultValue={cat}>
-          <option value="">Todas as categorias</option>
-          {workspace.stockCategories.map(c=><option value={c} key={c}>{c}</option>)}
-        </select></label>
-        <button type="submit" className="btn">Filtrar</button>
-      </form>
-      {invalid&&<p className={styles.warning} role="alert">A data inicial deve ser anterior à data final.</p>}
       {result&&<>
         <div className={styles.metrics}>
           {view!=="financeiro-relatorio-saida"&&<div className={styles.metric}><span>Total de entrada</span>
@@ -85,6 +75,18 @@ export async function AccountingViews({tenantCode,shopId,view,workspace,isOwner,
               <small>Recebido menos pago, não lucro fiscal definitivo</small></div>
           </>}
         </div>
+      </>}
+      <form className={styles.filters} method="get" action={href(tenantCode,view)}>
+        <label>De<input className="input" type="date" name="kInicio" defaultValue={from} required/></label>
+        <label>Até<input className="input" type="date" name="kFim" defaultValue={to} required/></label>
+        <label>Categoria<select className="select" name="kCategoria" defaultValue={cat}>
+          <option value="">Todas as categorias</option>
+          {workspace.stockCategories.map(c=><option value={c} key={c}>{c}</option>)}
+        </select></label>
+        <button type="submit" className="btn">Filtrar</button>
+      </form>
+      {invalid&&<p className={styles.warning} role="alert">A data inicial deve ser anterior à data final.</p>}
+      {result&&<>
         {result.truncated&&<p className={styles.warning} role="alert">O período ultrapassa 10.000 movimentos. Reduza o filtro para gerar totais completos.</p>}
         <div className={styles.tableWrap}><table className={styles.table}>
           <thead><tr><th>Data</th><th>Produto</th><th>Categoria</th><th>Filial</th>
