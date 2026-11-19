@@ -38,10 +38,10 @@ const EXPECTED = {
     ],
   },
   marketing: {
-    "marketing-clube": ["Pontos", "Cupons"],
-    "marketing-promocoes": [],
+    "marketing-clube": ["Pontos"],
+    "marketing-promocoes": ["Cupons"],
     "marketing-experiencia": [
-      "Aniversariante da semana", "Avaliação",
+      "Aniversariantes", "Avaliação",
     ],
   },
 };
