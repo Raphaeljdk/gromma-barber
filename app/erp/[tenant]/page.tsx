@@ -1134,7 +1134,7 @@ export async function TenantERPView({
   );
   // O último atendimento concluído por cliente e serviço define o próximo retorno.
   // Esta consulta não envia mensagens: apenas constrói uma fila operacional.
-  const repurchaseAppointments=activeModule==="mensagens"&&canManageCampaigns
+  const repurchaseAppointments=activeModule==="gromma-ia"&&canManageCampaigns
     ? await prisma.appointment.findMany({
         where:{barberShopId:shop.id,customerId:{not:null},status:"COMPLETED"},
         select:{id:true,startsAt:true,customerId:true,serviceId:true,
