@@ -894,7 +894,15 @@ export async function TenantERPView({
     date:(entry.status==="PAID"?entry.paidAt:entry.dueDate??entry.createdAt)?.toISOString()??entry.createdAt.toISOString(),
     unitName:entry.unit?.name??"Geral",
     origin:classifyFinanceOrigin(entry.category,subscriptionChargeIds.has(entry.id)),
-    expenseGroup:classifyFinanceExpense(entry.category),
+    expenseGroup:(()=>{
+      const subcategory=workspace.financialEntryMetadata[entry.id]?.subcategory??"";
+      const config=workspace.financialCategories.find(item=>item.name===entry.category&&
+        item.subcategory===subcategory&&(item.type==="PAYABLE"||item.type==="BOTH"));
+      return config?.classification==="EXPENSE_FIXED"?"fixas":
+        config?.classification==="EXPENSE_COMMISSION"?"comissoes":
+        config?.classification==="EXPENSE_OPERATIONAL"?"operacionais":
+        classifyFinanceExpense(entry.category);
+    })(),
   }));
   const relevantRefunds = activeModule === "financeiro" && !invalidFinancePeriod
     ? workspace.clubRefunds.filter(refund=>{
