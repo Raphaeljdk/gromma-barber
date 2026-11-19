@@ -61,7 +61,6 @@ const NAV_GROUPS: readonly ErpNavigationSector[] = [...ERP_NAVIGATION]
     left.id==="assinaturas"&&right.id==="gestao"?1:0)
   .map((sector) => {
   const extraRoutes: Record<string, readonly string[]> = {
-    marketing: ["mensagens"],
     empresa: ["documentos", "treinamentos", "configuracoes"],
   };
   const extras = ERP_NAVIGATION_EXTRA.filter((item) =>
