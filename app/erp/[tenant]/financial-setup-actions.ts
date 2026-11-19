@@ -105,6 +105,7 @@ export async function createFinancialBankAccount(form:FormData){
   const banks=await getBrazilBankDirectory();
   const selectedBank=banks.find(bank=>bank.code===bankCode);
   if(!selectedBank)fail(url,"banco");
+  const verifiedDirectoryBankName=selectedBank.name;
   const input={bankCode,ispb:selectedBank.ispb,agency,account,ownerCnpj,pixKey,pixType};
   const proof=await verifyBankAccountOwnership(input);
   let pending=false;
@@ -118,7 +119,7 @@ export async function createFinancialBankAccount(form:FormData){
         if(proof){
           if(workspace.financialBankAccounts.length>=100)throw Error("Limite de contas");
           workspace.financialBankAccounts.push({
-            id:workspaceId("fbank"),name,bankCode,bankName:selectedBank.name,
+            id:workspaceId("fbank"),name,bankCode,bankName:verifiedDirectoryBankName,
             agency,account,unitId,ownerCnpj,pixType,pixKey,active:true,
             verifiedAt:proof.verifiedAt,verificationReference:proof.provider,
           });
@@ -128,7 +129,7 @@ export async function createFinancialBankAccount(form:FormData){
           if(workspace.financialBankRequests.length>=50)throw Error("Limite de solicitações");
           if(!workspace.financialBankRequests.some(same))
             workspace.financialBankRequests.push({
-              id:workspaceId("fbreq"),name,bankCode,bankName:selectedBank.name,
+              id:workspaceId("fbreq"),name,bankCode,bankName:verifiedDirectoryBankName,
               agency,account,unitId,ownerCnpj,pixType,pixKey,requestedAt:new Date().toISOString(),
             });
         }
