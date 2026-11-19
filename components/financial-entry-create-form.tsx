@@ -9,7 +9,7 @@ import styles from "./financial-entry-create-form.module.css";
 type Props={
   tenantCode:string;type:"RECEIVABLE"|"PAYABLE";returnModule:string;
   units:{id:string;name:string}[];
-  categories:{id:string;name:string;type:"RECEIVABLE"|"PAYABLE"|"BOTH"}[];
+  categories:{id:string;name:string;subcategory:string;type:"RECEIVABLE"|"PAYABLE"|"BOTH"}[];
   banks:{id:string;name:string;account:string;active:boolean}[];
   expenseMethods:string[];
 };
