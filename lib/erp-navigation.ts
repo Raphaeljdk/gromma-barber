@@ -96,6 +96,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "rel-cli-vendas-produtos", label: "Histórico de vendas de produtos" },
           { id: "rel-cli-servicos", label: "Serviços" },
           { id: "rel-cli-periodo", label: "Período e serviços" },
+          { id: "rel-cli-novos", label: "Clientes novos", route: "relatorios-clientes-novos" },
         ] },
         { id: "relatorios-profissionais", label: "Profissionais", children: [
           { id: "rel-pro-comissoes", label: "Comissões", route: "comissoes" },
@@ -116,16 +117,12 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "marketing-cupons", label: "Cupons", route: "promocoes" },
       ] },
       { id: "marketing-promocoes", label: "Promoções", route: "promocoes", children: [
-        { id: "marketing-promocoes-servicos", label: "Serviços", route: "promocoes" },
-        { id: "marketing-promocoes-produtos", label: "Produtos", route: "promocoes" },
+        { id: "marketing-promocoes-servicos", label: "Serviços", route: "promocoes-servicos" },
+        { id: "marketing-promocoes-produtos", label: "Produtos", route: "promocoes-produtos" },
       ] },
       { id: "marketing-experiencia", label: "Experiência", route: "avaliacoes", children: [
-        { id: "marketing-aniversariantes", label: "Aniversariante por período" },
+        { id: "marketing-aniversariantes", label: "Aniversariantes da semana", route: "promocoes-aniversariantes" },
         { id: "marketing-avaliacao", label: "Avaliação", route: "avaliacoes" },
-        { id: "marketing-agendamento-cliente", label: "Agendamento do cliente", route: "agenda" },
-        { id: "marketing-clientes-ausentes", label: "Clientes ausentes" },
-        { id: "marketing-clientes-sem-preferencia", label: "Clientes sem preferência" },
-        { id: "marketing-clientes-novos", label: "Clientes novos", route: "clientes" },
       ] },
     ],
   },
@@ -173,8 +170,8 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     ],
   },
   {
-    id: "gromma-ia", label: "Gromma I.A.", description: "Módulo futuro",
-    items: [{ id: "standalone-gromma-ia", label: "Gromma I.A." }],
+    id: "gromma-ia", label: "Gromma I.A.", description: "Relacionamento e campanhas",
+    items: [{ id: "standalone-gromma-ia", label: "Gromma I.A.", route: "gromma-ia" }],
   },
   {
     id: "performance", label: "Performance", description: "Módulo futuro",
@@ -194,7 +191,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
 
 /* Preserva acesso aos módulos atuais que não são itens explícitos da imagem. */
 export const ERP_NAVIGATION_EXTRA: readonly ErpNavigationNode[] = [
-  { id: "extra-mensagens", label: "Mensagens", route: "mensagens" },
   { id: "extra-documentos", label: "Documentos", route: "documentos" },
   { id: "extra-treinamentos", label: "Tutoriais / Cursos", route: "treinamentos" },
   { id: "extra-configuracoes", label: "Configurações", route: "configuracoes" },
