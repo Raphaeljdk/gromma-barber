@@ -52,7 +52,7 @@ test("Novas rotas não levam a 404 e usam permissão de financeiro",()=>{
   assert.ok(module.includes('"'+route+'"'),"Rota "+route);
   assert.ok(components.includes('"'+route+'"'),"Tela "+route);
  }
- assert.match(page,/financeSubmodule\) \? "VIEW_FINANCE"/);
+ assert.match(page,/financeSubmodule \|\| activeModule==="financeiro-gromma-nf"\) \? "VIEW_FINANCE"/);
  assert.match(page,/<FinancialSubpage tenantCode=\{tenantCode\}/);
  assert.match(page,/financialEntryMetadata\[entry\.id\]/);
 });
@@ -74,7 +74,7 @@ test("Formulários financeiros persistem no tenant e mantém auditoria",()=>{
  assert.match(originals,/ws\.financialEntryMetadata\[entry\.id\]/);
  assert.match(originals,/status:"PENDING"/);
  assert.match(page,/markFinancialPaid/);
- assert.match(page,/Não associar/);
+ assert.match(read("components/financial-entry-create-form.tsx"),/Não associar/);
 });
 
 test("Despesas, Contas e Contabilidade diferenciam tipos sem duplicar históricos",()=>{

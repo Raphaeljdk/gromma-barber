@@ -14,6 +14,7 @@ import { isProductCommissionCategory } from "@/lib/product-commission-rules";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import { professionalCanServeAt, hasProfessionalPermission } from "@/lib/professional-profile";
 import { parseCountMilli, stockBalanceMilli } from "@/lib/stock-balance";
+import {calculateFinancialAmount, financialDueDates, type FinancialFrequency} from "@/lib/financial-entry-schedule";
 
 const OPERATION_ROLES = ["OWNER", "MANAGER", "RECEPTIONIST", "BARBER"];
 const MANAGEMENT_ROLES = ["OWNER", "MANAGER"];
@@ -383,6 +384,55 @@ export async function markFinancialPaid(formData: FormData) {
   }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
   redirect(`${path}?ok=financeiro-pago${fragment}`);
+}
+
+/**
+ * Baixa em lote exclusivamente de despesas pendentes da própria empresa.
+ * É atômica: se qualquer lançamento já foi pago, cancela todo o lote.
+ */
+export async function markFinancialPaidBulk(formData: FormData) {
+  const {tenantCode,viewer,shop}=await context(formData);
+  const path="/erp/"+encodeURIComponent(tenantCode)+"/financeiro-despesas";
+  if(!allowed(viewer,["OWNER"]))redirect(path+"?erro=permissao");
+  const selected=formData.getAll("entryIds").map(String);
+  const ids=[...new Set(selected)];
+  const reason=text(formData,"reason",600);
+  const inputQuery=text(formData,"returnQuery",500);
+  const parsed=new URLSearchParams(inputQuery);
+  const params=new URLSearchParams();
+  for(const key of ["expInicio","expFim","expFilial","expCategoria","expStatus","expBusca"]){
+    const value=(parsed.get(key)??"").slice(0,100);
+    if(value)params.set(key,value);
+  }
+  const suffix=params.size?"&"+params.toString():"";
+  if(ids.length<1||ids.length>100||ids.length!==selected.length||
+    ids.some(id=>id.length>100)||reason.length<5)
+    redirect(path+"?erro=financeiro-status"+suffix);
+  try{
+    await prisma.$transaction(async tx=>{
+      const entries=await tx.financialEntry.findMany({
+        where:{barberShopId:shop.id,id:{in:ids},type:"PAYABLE",status:"PENDING"},
+        select:{id:true,amount:true,unitId:true,category:true},
+      });
+      if(entries.length!==ids.length)throw Error("Alguma despesa não está pendente");
+      const paidAt=new Date();
+      const result=await tx.financialEntry.updateMany({
+        where:{barberShopId:shop.id,id:{in:ids},type:"PAYABLE",status:"PENDING"},
+        data:{status:"PAID",paidAt},
+      });
+      if(result.count!==ids.length)throw Error("Conflito de baixa concorrente");
+      await tx.adminAuditLog.create({data:{
+        barberShopId:shop.id,adminEmail:viewer.email,action:"FINANCIAL_BULK_PAYMENT_CONFIRMED",
+        details:{ids,amounts:entries.map(item=>({entryId:item.id,amount:String(item.amount),
+          category:item.category,unitId:item.unitId})),reason,paidAt:paidAt.toISOString()},
+      }});
+    },{isolationLevel:"Serializable"});
+  }catch(error){
+    console.error("Failed to mark expenses paid in bulk",error);
+    redirect(path+"?erro=financeiro-status"+suffix);
+  }
+  revalidatePath("/erp/"+encodeURIComponent(tenantCode),"layout");
+  redirect(path+"?ok=financeiro-pago"+suffix);
 }
 
 export async function createAppointment(formData: FormData) {
@@ -905,26 +955,52 @@ export async function archiveService(formData:FormData){
 }
 
 export async function createFinancialEntry(formData: FormData) {
-  const { tenantCode, viewer, shop } = await context(formData);
+  const {tenantCode,viewer,shop}=await context(formData);
   const returnModule=text(formData,"returnModule",45);
   const permittedModules=["financeiro","financeiro-criar-receita","financeiro-criar-despesa"];
   const target=permittedModules.includes(returnModule)?returnModule:"financeiro";
-  const path=`/erp/${encodeURIComponent(tenantCode)}/${target}`;
-  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  const path="/erp/"+encodeURIComponent(tenantCode)+"/"+target;
+  if(!allowed(viewer,["OWNER"]))redirect(path+"?erro=permissao");
 
   const description=text(formData,"description",180);
   const category=text(formData,"category",80)||"Geral";
+  const subcategory=text(formData,"subcategory",80);
+  const notes=text(formData,"notes",500);
   const type=text(formData,"type",20)==="PAYABLE"?"PAYABLE":"RECEIVABLE";
   const amount=decimal(formData,"amount");
-  const dueDate=dateAtNoon(text(formData,"dueDate",10));
+  const discountPercent=decimal(formData,"discountPercent");
+  const interestPercent=decimal(formData,"interestPercent");
+  const feeAmount=decimal(formData,"feeAmount");
+  const discount=Number.isNaN(discountPercent)?0:discountPercent;
+  const interest=Number.isNaN(interestPercent)?0:interestPercent;
+  const fee=Number.isNaN(feeAmount)?0:feeAmount;
   const unitId=text(formData,"unitId",80);
   const unit=await unitForShop(shop.id,unitId);
   const paymentMethod=text(formData,"paymentMethod",20);
   const bankAccountId=text(formData,"bankAccountId",100);
-  if(description.length<2||!Number.isFinite(amount)||amount<=0||amount>99999999||
-     (target==="financeiro-criar-receita"&&type!=="RECEIVABLE")||
-     (target==="financeiro-criar-despesa"&&type!=="PAYABLE"))
-    redirect(`${path}?erro=financeiro`);
+  const rawDate=text(formData,"dueDate",10);
+  const rawCondition=text(formData,"paymentCondition",12);
+  const condition=rawCondition==="RECURRENT"?"RECURRENT":"ONCE";
+  const every=Number(text(formData,"recurrenceEvery",5));
+  const count=Number(text(formData,"recurrenceCount",5));
+  const frequency=text(formData,"recurrenceFrequency",8) as FinancialFrequency;
+  let values:ReturnType<typeof calculateFinancialAmount>;
+  let dates:(string|null)[];
+  try{
+    values=calculateFinancialAmount(amount,discount,interest,fee);
+    if(rawCondition && !["ONCE","RECURRENT"].includes(rawCondition))throw Error("Condição inválida");
+    if(unitId&&!unit)throw Error("Filial não pertence à empresa");
+    if((target==="financeiro-criar-receita"&&type!=="RECEIVABLE")||
+       (target==="financeiro-criar-despesa"&&type!=="PAYABLE")||
+       description.length<2)throw Error("Dados inválidos");
+    if(condition==="RECURRENT")dates=financialDueDates(rawDate,count,every,frequency);
+    else if(rawDate)dates=financialDueDates(rawDate,1,1,"MONTHS");
+    else if(rawCondition==="ONCE")throw Error("Informe o vencimento");
+    else dates=[null]; // Formulário legado de criação rápida permite ausência de vencimento.
+  }catch{
+    redirect(path+"?erro=financeiro");
+  }
+
   try{
     await prisma.$transaction(async tx=>{
       const fresh=await tx.barberShop.findUniqueOrThrow({
@@ -932,34 +1008,55 @@ export async function createFinancialEntry(formData: FormData) {
       });
       const ws=readWorkspace(fresh.enabledFeatures);
       if(paymentMethod){
-        if(type!=="PAYABLE"||!ws.financialExpenseMethods.includes(paymentMethod as typeof ws.financialExpenseMethods[number]))
+        const permitted=["PIX","CASH","DEBIT","CREDIT","TRANSFER"];
+        if(!permitted.includes(paymentMethod)||
+           (type==="PAYABLE"&&!ws.financialExpenseMethods.includes(paymentMethod as typeof ws.financialExpenseMethods[number])))
           throw Error("Forma de pagamento indisponível");
       }
       if(bankAccountId&&!ws.financialBankAccounts.some(item=>item.id===bankAccountId&&item.active))
         throw Error("Conta bancária indisponível");
-      const entry=await tx.financialEntry.create({data:{
-        barberShopId:shop.id,unitId:unit?.id??null,
-        type,status:"PENDING",category,description,amount,dueDate,
-      },select:{id:true}});
-      ws.financialEntryMetadata[entry.id]={
-        bankAccountId,
-        paymentMethod:paymentMethod as ""|"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER",
-      };
+      if(Object.keys(ws.financialEntryMetadata).length+dates.length>5000)
+        throw Error("Limite de metadados financeiros atingido");
+      const createdIds:string[]=[];
+      for(let i=0;i<dates.length;i++){
+        const iso=dates[i];
+        const dueDate=iso?new Date(iso+"T12:00:00-03:00"):null;
+        const entry=await tx.financialEntry.create({data:{
+          barberShopId:shop.id,unitId:unit?.id??null,type,status:"PENDING",category,
+          description:dates.length>1?description+" · "+(i+1)+"/"+dates.length:description,
+          amount:values.totalCents/100,dueDate,
+        },select:{id:true}});
+        createdIds.push(entry.id);
+        ws.financialEntryMetadata[entry.id]={
+          bankAccountId,paymentMethod:paymentMethod as ""|"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER",
+          subcategory,notes,discountPercent:discount,interestPercent:interest,
+          feeAmount:values.feeCents/100,principalAmount:values.principalCents/100,
+          paymentCondition:condition,
+          recurrenceIndex:i+1,recurrenceCount:dates.length,
+          recurrenceEvery:condition==="RECURRENT"?every:1,
+          recurrenceFrequency:condition==="RECURRENT"?frequency:"MONTHS",
+        };
+      }
+      for(const id of createdIds)ws.financialEntryMetadata[id].recurrenceGroupId=createdIds[0];
       await tx.barberShop.update({where:{id:shop.id},data:{
         enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
       }});
       await tx.adminAuditLog.create({data:{
         barberShopId:shop.id,action:"FINANCIAL_ENTRY_CREATED",adminEmail:viewer.email,
-        details:{entryId:entry.id,amount:String(amount),category,type,description,
-          unitId:unit?.id??null,bankAccountId,paymentMethod} as Prisma.InputJsonValue,
+        details:{
+          entryIds:createdIds,amount:String(values.totalCents/100),principal:String(amount),
+          discountPercent:discount,interestPercent:interest,feeAmount:fee,
+          category,type,description,subcategory,unitId:unit?.id??null,bankAccountId,
+          paymentMethod,condition,recurrenceCount:createdIds.length,
+        } as Prisma.InputJsonValue,
       }});
     },{isolationLevel:"Serializable"});
   }catch(error){
     console.error("Failed to create financial entry",error);
-    redirect(`${path}?erro=financeiro`);
+    redirect(path+"?erro=financeiro");
   }
   revalidatePath("/erp/"+encodeURIComponent(tenantCode),"layout");
-  redirect(`${path}?ok=financeiro`);
+  redirect(path+"?ok=financeiro");
 }
 
 export async function createStockMovement(formData: FormData) {

@@ -241,6 +241,11 @@ export type FinancialBankAccountConfig={
 };
 export type FinancialEntryMetadata={
   bankAccountId:string;paymentMethod:"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER"|"";
+  subcategory?:string;discountPercent?:number;interestPercent?:number;
+  feeAmount?:number;principalAmount?:number;notes?:string;
+  paymentCondition?:"ONCE"|"RECURRENT";
+  recurrenceIndex?:number;recurrenceCount?:number;recurrenceGroupId?:string;
+  recurrenceEvery?:number;recurrenceFrequency?:"DAYS"|"WEEKS"|"MONTHS"|"YEARS";
 };
 export type BillingRegularizationRequest={
   month:string;requestedAt:string;requesterEmail:string;
@@ -453,9 +458,25 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     financialEntryMetadata:Object.fromEntries(Object.entries(record(operations.financialEntryMetadata))
       .filter(([id])=>id.length<=100).slice(-5000).map(([id,raw])=>{
         const entry=record(raw);const method=String(entry.paymentMethod??"");
+        const nonnegative=(value:unknown,max:number)=>typeof value==="number"&&Number.isFinite(value)&&value>=0&&value<=max?value:0;
+        const frequency=String(entry.recurrenceFrequency??"");
         return [id,{bankAccountId:typeof entry.bankAccountId==="string"?entry.bankAccountId.slice(0,100):"",
           paymentMethod:["PIX","CASH","DEBIT","CREDIT","TRANSFER"].includes(method)?
-          method as FinancialEntryMetadata["paymentMethod"]:""}];
+          method as FinancialEntryMetadata["paymentMethod"]:"",
+          subcategory:typeof entry.subcategory==="string"?entry.subcategory.slice(0,80):"",
+          notes:typeof entry.notes==="string"?entry.notes.slice(0,500):"",
+          discountPercent:nonnegative(entry.discountPercent,100),
+          interestPercent:nonnegative(entry.interestPercent,100),
+          feeAmount:nonnegative(entry.feeAmount,99999999),
+          principalAmount:nonnegative(entry.principalAmount,99999999),
+          paymentCondition:entry.paymentCondition==="RECURRENT"?"RECURRENT":"ONCE",
+          recurrenceGroupId:typeof entry.recurrenceGroupId==="string"?entry.recurrenceGroupId.slice(0,100):"",
+          recurrenceIndex:nonnegative(entry.recurrenceIndex,60),
+          recurrenceCount:nonnegative(entry.recurrenceCount,60),
+          recurrenceEvery:nonnegative(entry.recurrenceEvery,120),
+          recurrenceFrequency:["DAYS","WEEKS","MONTHS","YEARS"].includes(frequency)?
+            frequency as FinancialEntryMetadata["recurrenceFrequency"]:"MONTHS",
+        }];
       })) as Record<string,FinancialEntryMetadata>,
     billingRegularizationRequests:array<unknown>(operations.billingRegularizationRequests)
       .filter((item):item is BillingRegularizationRequest=>{
