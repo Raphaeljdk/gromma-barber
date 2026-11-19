@@ -61,3 +61,13 @@ test("Link Indique e ganhe é absoluto quando compartilhado no WhatsApp",()=>{
  assert.match(portal,/Conheça a "\+shop\.tradeName\+"! "\+referralUrl/);
  assert.match(portal,/https:\/\/gromma-barber\.vercel\.app/);
 });
+
+test("Cupom salva na subaba correta, exige validade e bloqueia código ativo duplicado",()=>{
+ const form=read("components/marketing-promotions.tsx");
+ const actions=read("app/erp/[tenant]/module-actions.ts");
+ assert.match(form,/name="returnModule" value="marketing-cupons"/);
+ assert.match(actions,/coupon\.active && coupon\.code === code/);
+ assert.match(actions,/returnModule === "marketing-cupons"/);
+ assert.match(actions,/validExpiry/);
+ assert.match(actions,/expiresAt < today/);
+});
