@@ -1013,8 +1013,9 @@ export async function createFinancialEntry(formData: FormData) {
            (type==="PAYABLE"&&!ws.financialExpenseMethods.includes(paymentMethod as typeof ws.financialExpenseMethods[number])))
           throw Error("Forma de pagamento indisponível");
       }
-      if(bankAccountId&&!ws.financialBankAccounts.some(item=>item.id===bankAccountId&&item.active))
-        throw Error("Conta bancária indisponível");
+      if(bankAccountId&&!ws.financialBankAccounts.some(item=>item.id===bankAccountId&&item.active&&
+        item.unitId===(unit?.id??"")&&Boolean(item.verifiedAt)&&Boolean(item.verificationReference)))
+        throw Error("Conta bancária não verificada ou não vinculada à filial selecionada");
       if(Object.keys(ws.financialEntryMetadata).length+dates.length>5000)
         throw Error("Limite de metadados financeiros atingido");
       const createdIds:string[]=[];
