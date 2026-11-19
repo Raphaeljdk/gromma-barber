@@ -51,6 +51,7 @@ const MODULES = new Set([
   "marketing-promocoes-servicos",
   "marketing-promocoes-produtos",
   "marketing-aniversariantes",
+  "relatorios-clientes-novos",
   "caixa",
   "caixa-historico",
   "estoque",
