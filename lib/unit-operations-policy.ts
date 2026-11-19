@@ -8,7 +8,7 @@ export const DEFAULT_UNIT_POLICY:UnitOperationsPolicy={
   legalDocument:"",postalCode:"",complement:"",bankCountry:"BR",bankCode:"",bankName:"",
   bankAgency:"",bankAccount:"",bankSwift:"",paymentConfigurations:{},
   paymentEmail:"",paymentPhone:"",pixKey:"",pixType:"",
-  paymentMethods:["PIX","CASH","DEBIT","CREDIT","TRANSFER"],
+  paymentMethods:["PIX","CASH","DEBIT","CREDIT","TRANSFER"],customPaymentMethods:[],
   debitFeePercent:0,creditFeePercent:0,settlementDays:0,potPercent:null,
   cancellationMinutes:0,noShowBlockHours:0,coverImageUrl:"",welcomeText:"",
 };
