@@ -86,7 +86,7 @@ export default async function CustomerPointsPage({params,searchParams}:{
     <p>As avaliações são vinculadas ao atendimento concluído e aparecem como verificadas para a barbearia.</p>
     {eligibleReviews.slice(0,6).map(a=><form action={createVerifiedCustomerReview} key={a.id}
       style={{display:"grid",gap:9,borderTop:"1px solid #48515e",padding:"12px 0"}}>
-      <input type="hidden" name="tenantCode" value={code}/>
+      <input type="hidden" name="tenantCode" value={tenant.toUpperCase()}/>
       <input type="hidden" name="accessToken" value={token}/>
       <input type="hidden" name="appointmentId" value={a.id}/>
       <strong>{a.barber?.name??"Profissional"} · {new Intl.DateTimeFormat("pt-BR").format(a.startsAt)}</strong>
