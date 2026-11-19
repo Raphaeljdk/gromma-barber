@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {Copy,Gift,KeyRound,ShieldCheck,Users} from "lucide-react";
 import {prisma} from "@/lib/prisma";
-import {loyaltyBalance} from "@/lib/loyalty";
+import {loyaltyBalance,tokenHash} from "@/lib/loyalty";
 import type {ErpWorkspace} from "@/lib/erp-workspace";
 import {saveLoyaltySettings,disableLoyaltyReward,createCustomerPointsLink,finishLoyaltyReward}
   from "@/app/erp/[tenant]/loyalty-actions";
@@ -26,8 +26,8 @@ export async function LoyaltyPointsManager({tenantCode,shopId,ws,isOwner,query}:
   const access=get("acesso");
   const customer=get("cliente");
   const link=ws.loyaltyAccess.find(a=>a.customerId===customer);
-  const domain="/meu-clube/"+encodeURIComponent(tenantCode)+"/"+encodeURIComponent(access);
-  const linkValid=Boolean(access&&link&&link.tokenHash&&/^[A-Za-z0-9_-]{42,44}$/.test(access));
+  const domain="https://gromma-barber.vercel.app/meu-clube/"+encodeURIComponent(tenantCode)+"/"+encodeURIComponent(access);
+  const linkValid=Boolean(access&&link&&/^[A-Za-z0-9_-]{42,44}$/.test(access)&&link.tokenHash===tokenHash(access));
   const linkName=customers.find(c=>c.id===customer)?.name??"cliente";
   return <section className={styles.wrap}>
     <header><div className="eyebrow">Marketing e promoção / Clube do assinante</div><h2>Pontos e recompensas</h2>
