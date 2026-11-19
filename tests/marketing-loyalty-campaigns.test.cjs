@@ -61,8 +61,8 @@ test("Promoções privadas, avaliação autenticada, Gromma IA e navegação",()
  const portal=read("app/meu-clube/[tenant]/[token]/page.tsx");
  const actions=read("app/erp/[tenant]/marketing-offer-actions.ts");
  const checkout=read("app/erp/[tenant]/checkout-actions.ts");
- for(const label of ["marketing-pontos","marketing-cupons","marketing-promocoes-servicos",
-  "marketing-promocoes-produtos","marketing-aniversariantes","relatorios-clientes-novos"])
+ for(const label of ["marketing-pontos","marketing-cupons","marketing-promocoes",
+  "marketing-aniversariantes","relatorios-clientes-novos"])
    assert.ok(nav.includes(label),label);
  for(const bad of ["marketing-agendamento-cliente","marketing-clientes-ausentes",
   "marketing-clientes-sem-preferencia","marketing-clientes-novos"])
