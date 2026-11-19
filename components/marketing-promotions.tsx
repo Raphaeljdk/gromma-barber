@@ -4,6 +4,7 @@ import {saveCoupon} from "@/app/erp/[tenant]/module-actions";
 import {saveBirthdayPromotion} from "@/app/erp/[tenant]/marketing-offer-actions";
 import {MarketingOfferForm} from "@/components/marketing-offer-form";
 import type {ErpWorkspace} from "@/lib/erp-workspace";
+import {resolveStockCategory} from "@/lib/accounting-kardex";
 import {customerBirthdayThisWeek,marketingTodayISO} from "@/lib/marketing-birthday";
 type View="promocoes"|"marketing-promocoes-servicos"|"marketing-promocoes-produtos"|"marketing-cupons"|"marketing-aniversariantes";
 const tabs=[
@@ -40,12 +41,12 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
   {ok&&<p className="notice success" role="status">Registro salvo com sucesso.</p>}
   {showOffers&&<>
     {isOwner&&<article className="card"><h3>Publicar promoção</h3>
-      <MarketingOfferForm tenantCode={tenantCode} services={services} products={products}
+      <MarketingOfferForm tenantCode={tenantCode} services={services} products={products.map(p=>({...p,category:resolveStockCategory(ws,p.id)}))}
        initialKind={segment} returnModule={view}/>
     </article>}
     <article className="card"><h3>Postagens cadastradas</h3>
       <div className="erp-stacked-list">{offers.map(o=><div key={o.id}><div><strong>{o.title}</strong>
-       <span>{o.description}</span><small>{o.kind==="SERVICE"?"Serviço":"Produto / bebida"} · {o.discountPercent}% · Até {o.expiresAt} · Público: {o.audience}</small></div></div>)}
+       <span>{o.description}</span>{!!o.itemNames?.length&&<small>Itens: {o.itemNames.join(", ")}</small>}<small>{o.kind==="SERVICE"?"Serviço":"Produto / bebida"} · {o.discountPercent}% · Até {o.expiresAt} · Público: {o.audience}</small></div></div>)}
        {ws.campaigns.filter(c=>c.kind==="PROMOTION"&&c.active).map(c=><div key={c.id}>
          <div><strong>{c.title}</strong><span>{c.message}</span>
            <small>Campanha comercial existente · Público: {c.audience} · Mantida para preservar o histórico</small>
@@ -60,6 +61,7 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
    <h3>Cupons de desconto</h3>
    {isOwner&&<form action={saveCoupon} className="erp-compact-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
+    <input type="hidden" name="returnModule" value="marketing-cupons"/>
     <label>Código <input className="input" name="code" required maxLength={40} placeholder="EX.: CLUBE10"/></label>
     <div className="grid grid-3">
      <label>Tipo <select className="select" name="kind" defaultValue="PERCENT"><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>

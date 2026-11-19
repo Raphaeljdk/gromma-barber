@@ -28,6 +28,9 @@ export default async function CustomerPointsPage({params,searchParams}:{
  const eligibleReviews=appointments.filter(a=>a.barberId&&!ws.reviews.some(r=>r.appointmentId===a.id));
  const rewards=ws.loyaltyRewards.filter(x=>x.active);
  const referral="/indique/"+encodeURIComponent(tenant)+"/"+encodeURIComponent(access.referralCode);
+ const configuredOrigin=process.env.NEXT_PUBLIC_APP_URL||"https://gromma-barber.vercel.app";
+ const baseOrigin=/^https:\/\/[a-z0-9.-]+(?::\d+)?\/?$/i.test(configuredOrigin)?configuredOrigin:"https://gromma-barber.vercel.app";
+ const referralUrl=new URL(referral,baseOrigin).toString();
  const redemptions=ws.loyaltyRedemptions.filter(x=>x.customerId===customer.id).slice(-20).reverse();
  const lastCompleted=appointments[0]?.startsAt??null;
  const daysSinceLast=lastCompleted?Math.floor((Date.now()-lastCompleted.getTime())/86400000):999;
@@ -62,7 +65,7 @@ export default async function CustomerPointsPage({params,searchParams}:{
    </section>
    {targetOffers.length>0&&<section style={panel}><h2>Promoções para você</h2>
     {targetOffers.map(offer=><article key={offer.id} style={{borderTop:"1px solid #48515e",padding:"10px 0"}}>
-      <strong>{offer.title} · {offer.discountPercent}%</strong><p>{offer.description}</p>
+      <strong>{offer.title} · {offer.discountPercent}%</strong><p>{offer.description}</p>{!!offer.itemNames?.length&&<small>Válida para: {offer.itemNames.join(", ")}</small>}
       <small>Válido até {offer.expiresAt}</small>
     </article>)}
    </section>}
@@ -74,9 +77,9 @@ export default async function CustomerPointsPage({params,searchParams}:{
    <section style={panel}><h2>Indique e ganhe</h2>
      <p>Compartilhe seu link. Você recebe {ws.loyaltySettings.referralPoints} pontos quando seu indicado fizer o primeiro atendimento pago elegível.</p>
      {ws.loyaltySettings.enabled&&ws.loyaltySettings.referralPoints>0&&<>
-       <p><Link href={referral} style={{color:"#77d5b9"}}>{referral}</Link></p>
+       <p><Link href={referral} style={{color:"#77d5b9",overflowWrap:"anywhere"}}>{referralUrl}</Link></p>
        <a target="_blank" rel="noopener noreferrer" style={{color:"#77d5b9"}}
-        href={"https://wa.me/?text="+encodeURIComponent("Conheça a "+shop.tradeName+"! "+referral)}>Compartilhar pelo WhatsApp</a>
+        href={"https://wa.me/?text="+encodeURIComponent("Conheça a "+shop.tradeName+"! "+referralUrl)}>Compartilhar pelo WhatsApp</a>
      </>}
    </section>
    <section style={panel}><h2>Avalie seu atendimento</h2>
