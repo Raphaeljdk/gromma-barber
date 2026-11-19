@@ -111,7 +111,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
   {
     id: "marketing", label: "Marketing e promoção", description: "Fidelização e experiência",
     items: [
-      { id: "marketing-clube", label: "Clube do assinante", route: "marketing-parceiros", children: [
+      { id: "marketing-clube", label: "Clube do assinante", route: "marketing-parceiros", ownerOnly: true, children: [
         { id: "marketing-pontos", label: "Pontos" },
         { id: "marketing-cupons", label: "Cupons", route: "promocoes" },
       ] },
