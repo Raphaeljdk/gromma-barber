@@ -261,6 +261,16 @@ export type FinancialEntryMetadata={
   recurrenceIndex?:number;recurrenceCount?:number;recurrenceGroupId?:string;
   recurrenceEvery?:number;recurrenceFrequency?:"DAYS"|"WEEKS"|"MONTHS"|"YEARS";
 };
+export type ClubPartner={
+  id:string;name:string;cnpj:string;address:string;phone:string;instagramUrl:string;
+  category:"ESPORTE"|"GASTRONOMIA"|"LAZER"|"SAUDE_ESTETICA"|"SERVICOS"|"VESTUARIO";
+  discountPercent:number;logoUrl:string;promoCode:string;promoDescription:string;
+  expiresAt:string;active:boolean;createdAt:string;
+};
+export type AccountingXmlDocument={
+  id:string;fileName:string;accessKey:string;number:string;issueDate:string;
+  issuerCnpj:string;amount:number;hash:string;importedAt:string;xmlBase64:string;
+};
 export type BillingRegularizationRequest={
   month:string;requestedAt:string;requesterEmail:string;
 };
@@ -298,6 +308,11 @@ export type ErpWorkspace = {
   financialBankRequests: FinancialBankRequest[];
   customPaymentMethods: FinancialCustomPaymentMethod[];
   financialExpenseMethods: FinancialEntryMetadata["paymentMethod"][];
+  financialExpenseCustomMethods:string[];
+  stockCategories:string[];
+  stockCategoryOverrides:Record<string,string>;
+  accountingXmlDocuments:AccountingXmlDocument[];
+  clubPartners:ClubPartner[];
   financialEntryMetadata: Record<string,FinancialEntryMetadata>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
@@ -333,6 +348,11 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   financialBankRequests: [],
   customPaymentMethods: [],
   financialExpenseMethods: ["PIX","CASH","DEBIT","CREDIT","TRANSFER"],
+  financialExpenseCustomMethods:[],
+  stockCategories:["Produtos","Bebidas"],
+  stockCategoryOverrides:{},
+  accountingXmlDocuments:[],
+  clubPartners:[],
   financialEntryMetadata: {},
   rolePermissions: {},
   professionalProfiles: {},
@@ -504,6 +524,45 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
       return Array.isArray(raw)?raw.filter((method):method is typeof methods[number]=>
         typeof method==="string"&&(methods as readonly string[]).includes(method)): [...methods];
     })(),
+    financialExpenseCustomMethods:array<unknown>(operations.financialExpenseCustomMethods)
+      .filter((id):id is string=>typeof id==="string"&&/^fpay_[a-z0-9_]{6,80}$/.test(id)).slice(0,60),
+    stockCategories:[...new Set(["Produtos","Bebidas",
+      ...array<unknown>(operations.stockCategories).filter((v):v is string=>
+        typeof v==="string"&&v.trim().length>=2&&v.length<=60).slice(0,60)])],
+    stockCategoryOverrides:Object.fromEntries(Object.entries(record(operations.stockCategoryOverrides))
+      .filter(([key,value])=>key.length<=100&&typeof value==="string"&&value.length<=60).slice(-5000)) as Record<string,string>,
+    accountingXmlDocuments:array<unknown>(operations.accountingXmlDocuments).flatMap(item=>{
+      const p=record(item);
+      if(typeof p.id!=="string"||typeof p.accessKey!=="string"||!/^\d{44}$/.test(p.accessKey)||
+        typeof p.xmlBase64!=="string"||p.xmlBase64.length>180000)return [];
+      return [{
+        id:p.id.slice(0,100),fileName:String(p.fileName??"").slice(0,120),
+        accessKey:p.accessKey,number:String(p.number??"").slice(0,20),
+        issueDate:String(p.issueDate??"").slice(0,35),issuerCnpj:String(p.issuerCnpj??"").slice(0,14),
+        amount:Number.isFinite(p.amount)?Math.max(0,Number(p.amount)):0,
+        hash:String(p.hash??"").slice(0,64),importedAt:String(p.importedAt??"").slice(0,35),
+        xmlBase64:p.xmlBase64,
+      }];
+    }).slice(-20) as AccountingXmlDocument[],
+    clubPartners:array<unknown>(operations.clubPartners).flatMap(item=>{
+      const p=record(item);
+      const cat=String(p.category??"");
+      if(typeof p.id!=="string"||typeof p.name!=="string"||
+        !["ESPORTE","GASTRONOMIA","LAZER","SAUDE_ESTETICA","SERVICOS","VESTUARIO"].includes(cat))return [];
+      const discount=Number(p.discountPercent);
+      return [{
+        id:p.id.slice(0,100),name:p.name.slice(0,120),cnpj:String(p.cnpj??"").slice(0,14),
+        address:String(p.address??"").slice(0,240),phone:String(p.phone??"").slice(0,24),
+        instagramUrl:typeof p.instagramUrl==="string"&&/^https:\/\/(www\.)?instagram\.com\//i.test(p.instagramUrl)
+          ?p.instagramUrl.slice(0,240):"",
+        category:cat as ClubPartner["category"],
+        discountPercent:Number.isFinite(discount)&&discount>=0&&discount<=100?discount:0,
+        logoUrl:typeof p.logoUrl==="string"&&/^https:\/\//.test(p.logoUrl)?p.logoUrl.slice(0,800):"",
+        promoCode:String(p.promoCode??"").slice(0,40),promoDescription:String(p.promoDescription??"").slice(0,400),
+        expiresAt:String(p.expiresAt??"").slice(0,10),active:p.active===true,
+        createdAt:String(p.createdAt??"").slice(0,35),
+      }];
+    }).slice(0,100) as ClubPartner[],
     financialEntryMetadata:Object.fromEntries(Object.entries(record(operations.financialEntryMetadata))
       .filter(([id])=>id.length<=100).slice(-5000).map(([id,raw])=>{
         const entry=record(raw);const method=String(entry.paymentMethod??"");
