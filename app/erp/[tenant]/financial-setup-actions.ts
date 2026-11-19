@@ -10,8 +10,6 @@ import {unitPolicy} from "@/lib/unit-operations-policy";
 import {PAYMENT_METHODS} from "@/lib/checkout";
 import {getBrazilBankDirectory} from "@/lib/bank-directory";
 import {validatedOwnerCnpj,validPixKey,verifyBankAccountOwnership,type PixRegistrationType} from "@/lib/financial-registry-security";
-import {unitPolicy} from "@/lib/unit-operations-policy";
-
 type FinanceEditor={
   code:string;viewerEmail:string;shopId:string;isTenantOwner:boolean;
   document:string;legalName:string;
