@@ -1,13 +1,14 @@
 import { saveCompleteUnit } from "@/app/erp/[tenant]/unit-complete-actions";
 import { PAYMENT_METHODS,PAYMENT_LABELS } from "@/lib/unit-operations-policy";
-import type { UnitOperationsPolicy } from "@/lib/erp-workspace";
-import type { BankOption } from "@/lib/bank-directory";
+import type { UnitOperationsPolicy,FinancialBankAccountConfig,FinancialCustomPaymentMethod } from "@/lib/erp-workspace";
 import { UnitBankFields } from "@/components/unit-bank-fields";
 import { Pencil } from "lucide-react";
 
 type Unit={id:string;code:string;name:string;city:string;state:string;address:string|null;active:boolean};
-export function UnitOperationsForm({tenantCode,unit,policy,banks}:{
-  tenantCode:string;unit:Unit;policy:UnitOperationsPolicy;banks:BankOption[];
+export function UnitOperationsForm({tenantCode,unit,policy,verifiedAccounts,customPaymentMethods}:{
+  tenantCode:string;unit:Unit;policy:UnitOperationsPolicy;
+  verifiedAccounts:FinancialBankAccountConfig[];
+  customPaymentMethods:FinancialCustomPaymentMethod[];
 }){
   return <details className="gromma-unit-editor" id={"editar-filial-"+unit.id}>
     <summary><Pencil size={16} aria-hidden="true"/> Editar filial</summary>
@@ -45,27 +46,15 @@ export function UnitOperationsForm({tenantCode,unit,policy,banks}:{
       <p className="small muted">O CNPJ fica bloqueado após o primeiro cadastro. Alterações fiscais exigem validação administrativa.</p>
 
       <h3>Conta de recebimento</h3>
-      <UnitBankFields policy={policy} banks={banks}/>
+      <UnitBankFields policy={policy} unitId={unit.id} verifiedAccounts={verifiedAccounts}/>
       <div className="gromma-unit-pix-grid">
-        <label>Tipo de chave Pix
-          <select className="select" name="pixType" defaultValue={policy.pixType}>
-            <option value="">Não configurada</option>
-            <option value="CNPJ">CNPJ</option>
-            <option value="EMAIL">E-mail</option>
-            <option value="PHONE">Telefone (+55...)</option>
-            <option value="EVP">Chave aleatória</option>
-          </select>
-        </label>
-        <label>Chave Pix<input className="input" name="pixKey" maxLength={150}
-          defaultValue={policy.pixKey} autoComplete="off"/>
-        </label>
-        <label>E-mail<input className="input" name="paymentEmail" type="email"
-          defaultValue={policy.paymentEmail} maxLength={180} placeholder="financeiro@empresa.com.br"/>
+        <label>E-mail de contato financeiro
+          <input className="input" name="paymentEmail" type="email"
+            defaultValue={policy.paymentEmail} maxLength={180} placeholder="financeiro@empresa.com.br"/>
         </label>
       </div>
-      <p className="small muted">Bancos brasileiros: número-código/ISPB consultados em diretório bancário com atualização diária em cache.
-        Bancos internacionais usam SWIFT/BIC. A validação de chave Pix tipo CNPJ exige correspondência com o CNPJ da filial.
-        Para outras chaves, esta tela valida formato, não titularidade bancária.</p>
+      <p className="small muted">Dados de agência, conta e Pix são definidos exclusivamente pela conta verificada
+        em Financeiro → Contas bancárias. Chaves sem titularidade confirmada não são ativadas pela filial.</p>
 
       <h3>Formas de pagamento, taxas e prazos</h3>
       <div className="gromma-payment-settings-table" role="group" aria-label="Formas de pagamento">
@@ -103,10 +92,33 @@ export function UnitOperationsForm({tenantCode,unit,policy,banks}:{
             </label>
           </div>;
         })}
+        {customPaymentMethods.filter(item=>item.active).map(method=>{
+          const saved=policy.paymentConfigurations[method.id];
+          return <div className="gromma-payment-row" key={method.id}>
+            <strong>{method.name} <small className="muted">({PAYMENT_LABELS[method.type]})</small></strong>
+            <label className="gromma-switch" aria-label={"Ativar "+method.name}>
+              <input type="checkbox" name="customPaymentMethods" value={method.id}
+                defaultChecked={policy.customPaymentMethods?.includes(method.id)??false}/>
+              <span aria-hidden="true"/>
+            </label>
+            <label className="gromma-payment-value">
+              <span className="gromma-mobile-label">Taxa (%)</span>
+              <input className="input" name={"feePercent_"+method.id} type="number"
+                min={0} max={100} step=".01" defaultValue={saved?.feePercent??0} required/>
+            </label>
+            <label className="gromma-payment-value">
+              <span className="gromma-mobile-label">Prazo (dias)</span>
+              <input className="input" name={"settlementDays_"+method.id} type="number"
+                min={0} max={90} step={1} defaultValue={saved?.settlementDays??0} required/>
+            </label>
+            <span className="small muted">Após integração</span>
+          </div>;
+        })}
       </div>
       <p className="small muted">A opção de baixa automática é uma preferência registrada para integração futura.
         O sistema não deve confirmar pagamentos por Pix ou cartão sem confirmação real do recebedor.
-        Taxas e prazos não executam conciliação bancária automaticamente.</p>
+        Taxas e prazos não executam conciliação bancária automaticamente. Novas formas personalizadas
+        aparecem nesta configuração; o recebimento operacional exige integração antes de ser utilizado.</p>
 
       <h3>Página pública da unidade</h3>
       <label className="gromma-unit-welcome">Mensagem de boas-vindas
