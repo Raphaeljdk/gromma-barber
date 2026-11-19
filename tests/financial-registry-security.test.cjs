@@ -74,4 +74,9 @@ test("Proprietário autentica banco; somente verificação externa ativa; filiai
   assert.match(config,/customPaymentMethods\.filter/);
   assert.match(config,/feePercent_/);
   assert.match(actions,/FINANCIAL_CUSTOM_PAYMENT_METHOD_CREATED/);
+  const entries=read("app/erp/[tenant]/actions.ts");
+  assert.match(entries,/item\.unitId===\(unit\?\.id\?\?""\)/);
+  assert.match(entries,/Boolean\(item\.verifiedAt\)/);
+  const create=read("components/financial-entry-create-form.tsx");
+  assert.match(create,/bank\.unitId===selectedUnit/);
 });
