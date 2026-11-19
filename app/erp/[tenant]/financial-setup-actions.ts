@@ -9,7 +9,7 @@ import {readWorkspace,writeWorkspace,workspaceId,type ErpWorkspace} from "@/lib/
 import {unitPolicy} from "@/lib/unit-operations-policy";
 import {PAYMENT_METHODS} from "@/lib/checkout";
 import {getBrazilBankDirectory} from "@/lib/bank-directory";
-import {validatedOwnerCnpj,validPixKey,verifyBankAccountOwnership,isBankVerifierConfigured,bankDigits,type PixRegistrationType} from "@/lib/financial-registry-security";
+import {validatedOwnerCnpj,validPixKey,verifyBankAccountOwnership,type PixRegistrationType} from "@/lib/financial-registry-security";
 import {unitPolicy} from "@/lib/unit-operations-policy";
 
 type FinanceEditor={
@@ -88,7 +88,7 @@ export async function createFinancialBankAccount(form:FormData){
   const name=val(form,"name",90),bankCode=val(form,"bankCode",12),
     unitId=val(form,"unitId",100),agency=val(form,"agency",25),account=val(form,"account",35),
     pixKey=val(form,"pixKey",150),pixType=val(form,"pixType",10) as PixRegistrationType;
-  if(name.length<2||!/^\\d{3}$/.test(bankCode)||!/^[0-9a-zA-Z-]{1,25}$/.test(agency)||
+  if(name.length<2||!/^\d{3}$/.test(bankCode)||!/^[0-9a-zA-Z-]{1,25}$/.test(agency)||
     !/^[0-9a-zA-Z-]{2,35}$/.test(account)||!["PHONE","CPF","CNPJ","EMAIL","EVP"].includes(pixType))
       fail(url,"banco");
   const unit=await prisma.barberShopUnit.findFirst({
