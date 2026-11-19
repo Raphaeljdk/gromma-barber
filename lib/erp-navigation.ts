@@ -111,8 +111,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
   {
     id: "marketing", label: "Marketing e promoção", description: "Fidelização e experiência",
     items: [
-      { id: "marketing-clube", label: "Clube do assinante", route: "assinaturas", children: [
-        { id: "marketing-parceiros", label: "Parceiros do clube" },
+      { id: "marketing-clube", label: "Clube do assinante", route: "marketing-parceiros", children: [
         { id: "marketing-pontos", label: "Pontos" },
         { id: "marketing-cupons", label: "Cupons", route: "promocoes" },
       ] },
@@ -164,7 +163,12 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
             { id: "financeiro-formas-despesas", label: "Despesas", route: "financeiro-formas-despesas" },
           ] },
         ] },
-        { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade" },
+        { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade", children: [
+          { id:"financeiro-cardex",label:"Kardex",route:"financeiro-cardex" },
+          { id:"financeiro-relatorio-entrada",label:"Relatório de entrada",route:"financeiro-relatorio-entrada" },
+          { id:"financeiro-relatorio-saida",label:"Relatório de saída",route:"financeiro-relatorio-saida" },
+          { id:"financeiro-portal-contador",label:"Portal do contador",route:"financeiro-portal-contador" },
+        ] },
       { id: "gromma-nf", label: "Gromma NF" },
     ],
   },
