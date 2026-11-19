@@ -1,6 +1,9 @@
 import Link from "next/link";
 import {Banknote,Building2,Calculator,CheckCircle2,CreditCard,FolderPlus,Plus,ReceiptText} from "lucide-react";
-import {createFinancialEntry,markFinancialPaid} from "@/app/erp/[tenant]/actions";
+import {markFinancialPaid} from "@/app/erp/[tenant]/actions";
+import {FinancialEntryCreateForm} from "@/components/financial-entry-create-form";
+import {FinancialAccountOverview} from "@/components/financial-account-overview";
+import {FinancialExpensesOverview} from "@/components/financial-expenses-overview";
 import {createFinancialCategory,createFinancialBankAccount,saveFinancialPaymentMethods} from "@/app/erp/[tenant]/financial-setup-actions";
 import {brl} from "@/lib/plans";
 import {PAYMENT_METHODS,PAYMENT_LABELS,type PaymentMethod} from "@/lib/checkout";
@@ -24,7 +27,7 @@ export type FinanceEntryRow={
 };
 type Totals={receivablePending:number;payablePending:number;receivablePaid:number;payablePaid:number};
 type Props={
- tenantCode:string;view:FinancialSubmodule;rows:FinanceEntryRow[];total:number;
+ tenantCode:string;shopId:string;view:FinancialSubmodule;rows:FinanceEntryRow[];total:number;
  page:number;pageSize:number;query:Record<string,string|string[]|undefined>;
  filterQuery:string;filterStatus:string;isOwner:boolean;workspace:ErpWorkspace;
  units:{id:string;name:string;paymentMethods:PaymentMethod[]}[];
@@ -44,56 +47,6 @@ const viewNames:Record<FinancialSubmodule,string>={
 };
 const mask=(value:string)=>value.length<=4?"••••":"••••"+value.slice(-4);
 const date=(iso:string|null)=>iso?new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC"}).format(new Date(iso)):"—";
-
-function FinancialEntryForm({tenantCode,type,units,workspace,returnModule}:{
- tenantCode:string;type:"RECEIVABLE"|"PAYABLE";
- units:Props["units"];workspace:ErpWorkspace;returnModule:string;
-}){
- const allowedCategories=workspace.financialCategories.filter(item=>item.type===type||item.type==="BOTH");
- return <form action={createFinancialEntry} className="gromma-finance-entry-form">
-   <input type="hidden" name="tenantCode" value={tenantCode}/>
-   <input type="hidden" name="type" value={type}/>
-   <input type="hidden" name="returnModule" value={returnModule}/>
-   <label className="gromma-finance-form-wide">Descrição do lançamento
-     <input className="input" name="description" minLength={2} maxLength={180} required placeholder={type==="PAYABLE"?"Ex.: Aluguel da unidade":"Ex.: Venda de serviço"}/>
-   </label>
-   <label>Categoria financeira
-     <select name="category" className="select" defaultValue="Geral">
-       <option value="Geral">Geral</option>
-       {allowedCategories.map(item=><option key={item.id} value={item.name}>{item.name}</option>)}
-     </select>
-   </label>
-   <label>Valor (R$)
-     <input className="input" type="number" min=".01" max="99999999" step=".01" name="amount" required placeholder="0,00"/>
-   </label>
-   <label>Vencimento
-     <input className="input" name="dueDate" type="date"/>
-   </label>
-   <label>Filial
-     <select name="unitId" className="select" defaultValue=""><option value="">Geral / Empresa</option>
-       {units.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
-     </select>
-   </label>
-   <label>Conta bancária (opcional)
-     <select className="select" name="bankAccountId" defaultValue="">
-       <option value="">Não associar</option>
-       {workspace.financialBankAccounts.filter(item=>item.active).map(item=>
-         <option key={item.id} value={item.id}>{item.name} · {mask(item.account)}</option>)}
-     </select>
-   </label>
-   {type==="PAYABLE"&&<label>Forma prevista de pagamento (opcional)
-     <select name="paymentMethod" className="select" defaultValue="">
-       <option value="">Ainda não definida</option>
-       {workspace.financialExpenseMethods.map(method=><option key={method} value={method}>
-         {PAYMENT_LABELS[method as PaymentMethod]}</option>)}
-     </select>
-   </label>}
-   <div className="gromma-finance-form-footer">
-     <p className="small muted">O lançamento entra como pendente. Registrar não efetua transferência ou baixa bancária.</p>
-     <button className="btn" type="submit"><Plus size={16}/>{type==="PAYABLE"?"Criar despesa":"Criar receita"}</button>
-   </div>
- </form>;
-}
 
 function FinanceList({tenantCode,view,rows,total,page,pageSize,query,filterQuery,filterStatus,isOwner}:Pick<Props,
  "tenantCode"|"view"|"rows"|"total"|"page"|"pageSize"|"query"|"filterQuery"|"filterStatus"|"isOwner">){
@@ -133,9 +86,11 @@ function FinanceList({tenantCode,view,rows,total,page,pageSize,query,filterQuery
  </>;
 }
 
-export function FinancialSubpage({tenantCode,view,rows,total,page,pageSize,query,
+export function FinancialSubpage({tenantCode,shopId,view,rows,total,page,pageSize,query,
  filterQuery,filterStatus,isOwner,workspace,units,totals,ok,error}:Props){
- const isList=["financeiro-contas-pagar","financeiro-contas-receber","financeiro-despesas","financeiro-contabilidade"].includes(view);
+ const isList=view==="financeiro-contabilidade";
+ const isAccount=view==="financeiro-contas-pagar"||view==="financeiro-contas-receber";
+ const isExpenseSummary=view==="financeiro-despesas";
  const isSetup=view.startsWith("financeiro-formas-")||view==="financeiro-categorias"||view==="financeiro-contas-bancarias";
  const isForm=view==="financeiro-criar-receita"||view==="financeiro-criar-despesa";
  const isExpense=view==="financeiro-criar-despesa";
@@ -150,6 +105,11 @@ export function FinancialSubpage({tenantCode,view,rows,total,page,pageSize,query
      </div></div>
    {ok&&<p className="notice erp-inline-notice success" role="status">{ok==="financeiro-pago"?"Baixa registrada com sucesso.":ok==="financeiro"?"Lançamento criado.":"Configuração salva."}</p>}
    {error&&<p className="notice erp-inline-notice error-notice" role="alert">Não foi possível concluir a operação. Confira os campos e as permissões.</p>}
+   {isAccount&&<FinancialAccountOverview tenantCode={tenantCode} shopId={shopId}
+     view={view as "financeiro-contas-pagar"|"financeiro-contas-receber"}
+     units={units} query={query} isOwner={isOwner} workspace={workspace}/>}
+   {isExpenseSummary&&<FinancialExpensesOverview tenantCode={tenantCode} shopId={shopId}
+     units={units} query={query} isOwner={isOwner} workspace={workspace}/>}
    {isList&&<>
      <div className="gromma-finance-subpage-kpis">
        <div><span>Receitas pendentes</span><strong>{brl(totals.receivablePending)}</strong></div>
@@ -169,8 +129,9 @@ export function FinancialSubpage({tenantCode,view,rows,total,page,pageSize,query
    {isForm&&isOwner&&<article className="card gromma-finance-form-card">
      <h3>{isExpense?"Cadastrar nova despesa":"Cadastrar nova receita"}</h3>
      <p className="small muted">Associe a categoria, a filial e, quando necessário, a conta bancária.</p>
-     <FinancialEntryForm tenantCode={tenantCode} type={isExpense?"PAYABLE":"RECEIVABLE"}
-       units={units} workspace={workspace} returnModule={view}/>
+     <FinancialEntryCreateForm tenantCode={tenantCode} type={isExpense?"PAYABLE":"RECEIVABLE"}
+       units={units} categories={workspace.financialCategories} banks={workspace.financialBankAccounts}
+       expenseMethods={workspace.financialExpenseMethods} returnModule={view}/>
    </article>}
    {view==="financeiro-categorias"&&isOwner&&<>
      <article className="card gromma-finance-form-card"><h3>Cadastrar categoria financeira</h3>
