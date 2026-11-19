@@ -170,8 +170,8 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     ],
   },
   {
-    id: "gromma-ia", label: "Gromma I.A.", description: "Módulo futuro",
-    items: [{ id: "standalone-gromma-ia", label: "Gromma I.A." }],
+    id: "gromma-ia", label: "Gromma I.A.", description: "Relacionamento e campanhas",
+    items: [{ id: "standalone-gromma-ia", label: "Gromma I.A.", route: "gromma-ia" }],
   },
   {
     id: "performance", label: "Performance", description: "Módulo futuro",
@@ -191,7 +191,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
 
 /* Preserva acesso aos módulos atuais que não são itens explícitos da imagem. */
 export const ERP_NAVIGATION_EXTRA: readonly ErpNavigationNode[] = [
-  { id: "extra-mensagens", label: "Mensagens", route: "mensagens" },
   { id: "extra-documentos", label: "Documentos", route: "documentos" },
   { id: "extra-treinamentos", label: "Tutoriais / Cursos", route: "treinamentos" },
   { id: "extra-configuracoes", label: "Configurações", route: "configuracoes" },
