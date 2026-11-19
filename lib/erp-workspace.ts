@@ -474,7 +474,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         account:typeof entry.account==="string"?entry.account.slice(0,35):"",
         unitId:typeof entry.unitId==="string"?entry.unitId.slice(0,100):"",
         ownerCnpj:typeof entry.ownerCnpj==="string"?entry.ownerCnpj.slice(0,14):"",
-        pixType:["PHONE","CPF","CNPJ","EMAIL","EVP"].includes(String(entry.pixType))?entry.pixType:"" as const,
+        pixType:(["PHONE","CPF","CNPJ","EMAIL","EVP"].includes(String(entry.pixType))?entry.pixType:"") as FinancialBankAccountConfig["pixType"],
         pixKey:typeof entry.pixKey==="string"?entry.pixKey.slice(0,150):"",
         verifiedAt:verified?String(entry.verifiedAt):"",
         verificationReference:verified?String(entry.verificationReference).slice(0,80):"",
