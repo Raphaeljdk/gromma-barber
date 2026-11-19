@@ -37,27 +37,37 @@ export async function createMarketingOffer(form:FormData){
  const target=val(form,"returnModule",60),routes=["marketing-promocoes-servicos","marketing-promocoes-produtos","promocoes"];
  const page=routes.includes(target)?target:"promocoes",ctx=await editor(form,page);
  const title=val(form,"title",120),description=val(form,"description",600),
-  kind=val(form,"kind",20),itemId=val(form,"itemId",100),
+  kind=val(form,"kind",20),legacyItemId=val(form,"itemId",100),
   audience=val(form,"audience",30),expiresAt=val(form,"expiresAt",10),
   discountPercent=Number(val(form,"discountPercent",12).replace(",","."));
+ const requested=form.getAll("itemIds").map(item=>String(item).trim());
+ const itemIds=requested.length?[...new Set(requested)]:legacyItemId?[legacyItemId]:[];
  const audiences=["ALL","INACTIVE_30","INACTIVE_60","INACTIVE_90","BIRTHDAY","CLUB"];
  if(!["SERVICE","PRODUCT"].includes(kind)||title.length<2||description.length<3||
   !audiences.includes(audience)||!Number.isFinite(discountPercent)||discountPercent<=0||discountPercent>100||
-  !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)||expiresAt<marketingTodayISO())
+  !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)||expiresAt<marketingTodayISO()||
+  requested.length>30||itemIds.length>30||itemIds.some(id=>!id||id.length>100))
    redirect(url(ctx.code,page)+"?erro=promocao");
  if((page==="marketing-promocoes-servicos"&&kind!=="SERVICE")||
-   (page==="marketing-promocoes-produtos"&&kind!=="PRODUCT"))redirect(url(ctx.code,page)+"?erro=promocao");
- if(itemId){
-  const item=kind==="SERVICE"?await prisma.service.findFirst({where:{
-    id:itemId,barberShopId:ctx.shopId,active:true},select:{id:true}}):
-    await prisma.product.findFirst({where:{id:itemId,barberShopId:ctx.shopId,active:true},select:{id:true}});
-  if(!item)redirect(url(ctx.code,page)+"?erro=produto");
- }
+   (page==="marketing-promocoes-produtos"&&kind!=="PRODUCT")||
+   (page!=="promocoes"&&!itemIds.length))
+   redirect(url(ctx.code,page)+"?erro=promocao");
+
+ // O servidor confere cada item selecionado contra o cadastro ATIVO da mesma barbearia.
+ const found=itemIds.length?(kind==="SERVICE"?await prisma.service.findMany({
+   where:{id:{in:itemIds},barberShopId:ctx.shopId,active:true},select:{id:true,name:true},
+ }):await prisma.product.findMany({
+   where:{id:{in:itemIds},barberShopId:ctx.shopId,active:true},select:{id:true,name:true},
+ })): [];
+ if(found.length!==itemIds.length)redirect(url(ctx.code,page)+"?erro=produto");
+ const foundById=new Map(found.map(item=>[item.id,item.name]));
+ const itemNames=itemIds.map(id=>foundById.get(id)??"");
  try{
-  await save(ctx,"MARKETING_OFFER_CREATED",{title,kind,itemId,audience,discountPercent},ws=>{
+  await save(ctx,"MARKETING_OFFER_CREATED",
+   {title,kind,itemIds,audience,discountPercent,expiresAt},ws=>{
    if(ws.marketingOffers.length>=300)throw Error("Limite de ofertas atingido");
    ws.marketingOffers.push({id:workspaceId("offer"),title,description,
-    kind:kind as "SERVICE"|"PRODUCT",itemId,discountPercent,
+    kind:kind as "SERVICE"|"PRODUCT",itemId:itemIds[0]??"",itemIds,itemNames,discountPercent,
     audience:audience as typeof ws.marketingOffers[number]["audience"],
     expiresAt,active:true,createdAt:new Date().toISOString()});
   });
