@@ -61,6 +61,7 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
    <h3>Cupons de desconto</h3>
    {isOwner&&<form action={saveCoupon} className="erp-compact-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
+    <input type="hidden" name="returnModule" value="marketing-cupons"/>
     <label>Código <input className="input" name="code" required maxLength={40} placeholder="EX.: CLUBE10"/></label>
     <div className="grid grid-3">
      <label>Tipo <select className="select" name="kind" defaultValue="PERCENT"><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>
