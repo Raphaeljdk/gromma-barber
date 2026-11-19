@@ -53,6 +53,7 @@ import {FinancialSubpage,FINANCIAL_SUBMODULES,type FinancialSubmodule} from "@/c
 import {ClubPartnerManager} from "@/components/marketing-partners";
 import {LoyaltyPointsManager} from "@/components/loyalty-points-manager";
 import {MarketingPromotions} from "@/components/marketing-promotions";
+import {eligibleForCampaign} from "@/lib/marketing-audience";
 import {NewCustomersReport} from "@/components/new-customers-report";
 import {FinanceCurrentDashboard} from "@/components/finance-current-dashboard";
 import {classifyFinanceExpense,classifyFinanceOrigin,type FinanceOverviewRow,type FinanceRefundRow} from "@/lib/finance-overview";
@@ -630,7 +631,7 @@ export async function TenantERPView({
       : Promise.resolve([]),
     needsRelationship
       ? prisma.appointment.findMany({
-          where: { barberShopId: shop.id, customerId: { not: null } },
+          where: { barberShopId: shop.id, customerId: { not: null }, status: "COMPLETED", startsAt: { lte: new Date() } },
           orderBy: { startsAt: "desc" },
           select: { customerId: true, startsAt: true, status: true },
           take: 3000,
@@ -967,9 +968,9 @@ export async function TenantERPView({
   const now = new Date();
   const daysSince = (date: Date | null) =>
     date ? Math.floor((now.getTime() - date.getTime()) / (24 * 60 * 60 * 1000)) : 9999;
-  const inactive30 = customersForRelationship.filter((customer) => daysSince(customer.lastAppointmentAt) >= 30);
-  const inactive60 = customersForRelationship.filter((customer) => daysSince(customer.lastAppointmentAt) >= 60);
-  const inactive90 = customersForRelationship.filter((customer) => daysSince(customer.lastAppointmentAt) >= 90);
+  const inactive30 = customersForRelationship.filter((customer) => Boolean(customer.lastAppointmentAt) && daysSince(customer.lastAppointmentAt) >= 30);
+  const inactive60 = customersForRelationship.filter((customer) => Boolean(customer.lastAppointmentAt) && daysSince(customer.lastAppointmentAt) >= 60);
+  const inactive90 = customersForRelationship.filter((customer) => Boolean(customer.lastAppointmentAt) && daysSince(customer.lastAppointmentAt) >= 90);
   const currentMonth = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", month: "numeric" }).format(now));
   const birthdayCustomers = customersForRelationship.filter((customer) => {
     if (!customer.birthDate) return false;
@@ -1128,7 +1129,17 @@ export async function TenantERPView({
     (safeAssinaturasPage - 1) * pageSize,
     safeAssinaturasPage * pageSize,
   );
-  const messageContacts = customersForRelationship.slice(
+  const selectedCampaign = workspace.campaigns.find(item=>
+    item.kind!=="PROMOTION" && item.active && item.id===valueOf("campanha")) ?? null;
+  const selectedGroup = selectedCampaign?.groupId ? workspace.customerGroups.find(group=>
+    group.id===selectedCampaign.groupId && group.active) : null;
+  const audienceForMessages = selectedGroup?.rule ?? selectedCampaign?.audience ?? "ALL";
+  const activeClubCustomerIds = new Set(clubMemberRows.filter(member=>member.status==="ACTIVE")
+    .map(member=>member.customerId));
+  const campaignContacts = selectedCampaign ? customersForRelationship.filter(customer=>
+    eligibleForCampaign(customer,audienceForMessages,now,activeClubCustomerIds,workspace.businessTimeZone))
+    : customersForRelationship;
+  const messageContacts = campaignContacts.slice(
     (mensagensPage - 1) * pageSize,
     mensagensPage * pageSize,
   );
@@ -1901,7 +1912,7 @@ export async function TenantERPView({
                 {workspace.campaigns.filter((item) => item.kind !== "PROMOTION").slice(0, 8).map((campaign) => (
                   <div key={campaign.id}>
                     <div><strong>{campaign.title}</strong><span>{workspace.customerGroups.find((group) => group.id === campaign.groupId)?.name ?? AUDIENCE_LABELS[campaign.audience] ?? campaign.audience}</span></div>
-                    <span className="badge approved">Ativa</span>
+                    <Link href={`/erp/${encodeURIComponent(tenantCode)}/gromma-ia?campanha=${encodeURIComponent(campaign.id)}`} className="btn secondary">Preparar contatos</Link>
                   </div>
                 ))}
                 {!workspace.campaigns.some((item) => item.kind !== "PROMOTION") && <small className="muted">Nenhuma campanha salva ainda.</small>}
@@ -1909,24 +1920,25 @@ export async function TenantERPView({
             </article>
 
             <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>WhatsApp Business</span><strong>Contato operacional</strong></div><StatusPill tone={workspace.settings.whatsappNumber ? "ready" : "pending"}>{workspace.settings.whatsappNumber ? "Número configurado" : "Configurar número"}</StatusPill></div>
-              <p className="small muted">Sem provedor/API conectado, o sistema abre a conversa no WhatsApp para envio assistido. Automação em lote continua dependente da API oficial.</p>
+              <div className="erp-card-title"><div><span>WhatsApp Business</span><strong>{selectedCampaign ? selectedCampaign.title : "Mensagem individual"}</strong></div><StatusPill tone={workspace.settings.whatsappNumber ? "ready" : "pending"}>{workspace.settings.whatsappNumber ? "Número configurado" : "Configurar número"}</StatusPill></div>
+              <p className="small muted">Sem API autorizada, cada mensagem precisa de envio manual. {selectedCampaign ? `Somente clientes elegíveis: ${campaignContacts.length} contato(s).` : "Selecione uma campanha salva para filtrar os destinatários antes de enviar."}</p>
+              {selectedCampaign&&<Link href={`/erp/${encodeURIComponent(tenantCode)}/gromma-ia`} className="small">Limpar filtro de campanha</Link>}
               <div className="erp-contact-list">
                 {messageContacts.map((customer) => {
                   const phone = (customer.whatsapp || customer.phone || "").replace(/\D/g, "");
-                  const message = workspace.campaigns.find((item) => item.kind !== "PROMOTION")?.message ?? `Olá, ${customer.name}! Tudo bem?`;
-                  const waPhone = phone.startsWith("55") ? phone : phone ? `55${phone}` : "";
+                  const message = selectedCampaign?.message ?? `Olá, ${customer.name}! Tudo bem?`;
+                  const waPhone = /^55\d{10,11}$/.test(phone)?phone:/^\d{10,11}$/.test(phone)?`55${phone}`:"";
                   return (
                     <div key={customer.id}>
                       <div><strong>{customer.name}</strong><span>{customer.lastAppointmentAt ? `Último atendimento há ${daysSince(customer.lastAppointmentAt)} dias` : "Sem atendimento registrado"}</span></div>
-                      {waPhone ? <a className="btn secondary" href={`https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">Abrir WhatsApp</a> : <span className="badge pending">Sem telefone</span>}
+                      {canManageCampaigns&&waPhone ? <a className="btn secondary" href={`https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Abrir WhatsApp</a> : <span className="badge pending">{waPhone?"Sem permissão de envio":"Sem telefone válido"}</span>}
                     </div>
                   );
                 })}
               </div>
             </article>
           </div>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/gromma-ia`} searchParams={qs} param="mensagensPage" page={mensagensPage} total={customersForRelationship.length} pageSize={pageSize} label="clientes" />
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/gromma-ia`} searchParams={qs} param="mensagensPage" page={mensagensPage} total={campaignContacts.length} pageSize={pageSize} label="clientes" />
         </section>
 
         <section id="financeiro" className="demo-section gromma-financial-workspace" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
