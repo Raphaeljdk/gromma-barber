@@ -12,8 +12,10 @@ type Props={
   categories:{id:string;name:string;subcategory:string;type:"RECEIVABLE"|"PAYABLE"|"BOTH"}[];
   banks:{id:string;name:string;account:string;unitId:string;active:boolean}[];
   expenseMethods:string[];
+  expenseCustomMethods:string[];
+  customPaymentMethods:{id:string;name:string;type:"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER";active:boolean}[];
 };
-export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,categories,banks,expenseMethods}:Props){
+export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,categories,banks,expenseMethods,expenseCustomMethods,customPaymentMethods}:Props){
   const [condition,setCondition]=useState<"ONCE"|"RECURRENT">("ONCE");
   const [selectedCategory,setSelectedCategory]=useState("");
   const [selectedUnit,setSelectedUnit]=useState("");
@@ -84,6 +86,8 @@ export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,cat
           <select className="select" name="paymentMethod" defaultValue="">
             <option value="">Ainda não definida</option>
             {paymentMethods.map(method=><option key={method} value={method}>{PAYMENT_LABELS[method as PaymentMethod]}</option>)}
+            {customPaymentMethods.filter(method=>method.active&&(!isExpense||expenseCustomMethods.includes(method.id))).map(method=>
+              <option key={method.id} value={method.id}>{method.name} · {PAYMENT_LABELS[method.type]}</option>)}
           </select>
         </label>
         <label>Data de vencimento <span className={styles.required}>*</span>
