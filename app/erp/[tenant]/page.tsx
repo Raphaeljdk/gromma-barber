@@ -840,7 +840,7 @@ export async function TenantERPView({
     : shop.units;
   const unitsTotal = unitPool.length;
   const unitsPageItems = unitPool.slice((unidadesPage - 1) * pageSize, unidadesPage * pageSize);
-  const bankDirectory = moduleId==="unidades" ? await getBrazilBankDirectory() : [];
+  const bankDirectory = ["unidades","financeiro-contas-bancarias"].includes(moduleId??"") ? await getBrazilBankDirectory() : [];
 
   const planKey = shop.activePlan ?? shop.requestedPlan;
   const plan = PLAN_CONFIG[planKey];
@@ -2058,6 +2058,8 @@ export async function TenantERPView({
         </section>
 
         {financeSubmodule && <FinancialSubpage tenantCode={tenantCode} shopId={shop.id}
+          bankDirectory={bankDirectory}
+          bankOwner={viewer.type==="TENANT"&&viewer.barberShopId===shop.id&&viewer.role==="OWNER"}
           view={activeModule as FinancialSubmodule}
           rows={financialEntries.map(entry=>({
             id:entry.id,description:entry.description,type:entry.type,status:entry.status,
@@ -2512,7 +2514,8 @@ export async function TenantERPView({
                 <div><span>Endereço</span><strong>{unit.address??"—"}</strong></div>
               </div>
               {isOwner&&<UnitOperationsForm tenantCode={tenantCode} unit={unit}
-                policy={unitPolicy(workspace,unit.id)} banks={bankDirectory}/>}
+                policy={unitPolicy(workspace,unit.id)} banks={bankDirectory}
+                customPaymentMethods={workspace.customPaymentMethods}/>}
             </article>)}
           </div>
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/unidades`}
