@@ -21,11 +21,8 @@ export function FinancialCategoryForm({tenantCode}:{tenantCode:string}){
   const [classification,setClassification]=useState<string>("GENERAL");
   return <form action={createFinancialCategory} className={styles.categoryForm}>
     <input type="hidden" name="tenantCode" value={tenantCode}/>
-    <label>Nome
+    <label>Categoria
       <input className="input" name="name" maxLength={80} minLength={2} required placeholder="Ex.: Aluguel"/>
-    </label>
-    <label>Subcategoria
-      <input className="input" name="subcategory" maxLength={80} placeholder="Ex.: Filial, condomínio"/>
     </label>
     <label>Aplicável em
       <select className="select" name="type" value={kind} onChange={event=>{
