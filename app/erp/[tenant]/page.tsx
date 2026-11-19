@@ -53,6 +53,7 @@ import {FinancialSubpage,FINANCIAL_SUBMODULES,type FinancialSubmodule} from "@/c
 import {ClubPartnerManager} from "@/components/marketing-partners";
 import {LoyaltyPointsManager} from "@/components/loyalty-points-manager";
 import {MarketingPromotions} from "@/components/marketing-promotions";
+import {NewCustomersReport} from "@/components/new-customers-report";
 import {FinanceCurrentDashboard} from "@/components/finance-current-dashboard";
 import {classifyFinanceExpense,classifyFinanceOrigin,type FinanceOverviewRow,type FinanceRefundRow} from "@/lib/finance-overview";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
@@ -210,6 +211,7 @@ const MODULE_TITLES: Record<string, string> = {
   "marketing-promocoes-servicos":"Promoções · Serviços",
   "marketing-promocoes-produtos":"Promoções · Produtos e bebidas",
   "marketing-aniversariantes":"Aniversariante da semana",
+  "relatorios-clientes-novos":"Clientes novos",
   promocoes: "Promoções / Cupons",
   financeiro: "Financeiro",
   "financeiro-contas-pagar": "Contas a pagar",
@@ -1691,6 +1693,7 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
+        {activeModule==="relatorios-clientes-novos"&&<NewCustomersReport shopId={shop.id}/>}
         {activeModule==="marketing-pontos"&&<LoyaltyPointsManager tenantCode={tenantCode}
           shopId={shop.id} ws={workspace} isOwner={isOwner} query={qs}/>}
         {["promocoes","marketing-promocoes-servicos","marketing-promocoes-produtos",
