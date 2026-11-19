@@ -6,13 +6,19 @@ export function MarketingOfferForm({tenantCode,services,products,initialKind,ret
  tenantCode:string;services:Item[];products:Item[];initialKind:"SERVICE"|"PRODUCT";returnModule:string;
 }){
  const [kind,setKind]=useState<"SERVICE"|"PRODUCT">(initialKind);
+ const [search,setSearch]=useState("");
+ const [selectedId,setSelectedId]=useState("");
  const items=kind==="SERVICE"?services:products;
+ const normalized=search.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();
+ const filtered=items.filter(item=>!normalized||item.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").includes(normalized));
+ const selected=items.find(item=>item.id===selectedId);
+ const displayed=selected&&!filtered.some(item=>item.id===selected.id)?[selected,...filtered]:filtered;
  return <form action={createMarketingOffer} className="erp-compact-form">
   <input type="hidden" name="tenantCode" value={tenantCode}/>
   <input type="hidden" name="returnModule" value={returnModule}/>
   <div className="grid grid-2">
    <label><span className="label">Tipo de promoção</span>
-    <select className="select" name="kind" value={kind} onChange={e=>setKind(e.target.value as "SERVICE"|"PRODUCT")}>
+    <select className="select" name="kind" value={kind} onChange={e=>{setKind(e.target.value as "SERVICE"|"PRODUCT");setSearch("");setSelectedId("");}}>
      <option value="SERVICE">Serviços</option><option value="PRODUCT">Produtos e bebidas</option>
     </select>
    </label>
@@ -20,11 +26,16 @@ export function MarketingOfferForm({tenantCode,services,products,initialKind,ret
     <input name="title" className="input" required minLength={2} maxLength={120} placeholder="Ex.: Corte e barba especial"/>
    </label>
   </div>
+  <label><span className="label">Buscar {kind==="SERVICE"?"serviço cadastrado":"produto ou bebida cadastrados"}</span>
+   <input className="input" type="search" value={search} onChange={e=>setSearch(e.target.value)}
+    placeholder="Digite o nome para encontrar no catálogo"/>
+  </label>
   <label><span className="label">Selecionar {kind==="SERVICE"?"serviço":"produto ou bebida"}</span>
-   <select key={kind} className="select" name="itemId" defaultValue="">
+   <select className="select" name="itemId" value={selectedId} onChange={e=>setSelectedId(e.target.value)}>
     <option value="">Postagem geral (sem item vinculado)</option>
-    {items.map(item=><option value={item.id} key={item.id}>{item.name}</option>)}
+    {displayed.map(item=><option value={item.id} key={item.id}>{item.name}</option>)}
    </select>
+   {!filtered.length&&<small className="muted">Nenhum item encontrado para esta busca.</small>}
   </label>
   <div className="grid grid-3">
    <label><span className="label">Desconto (%)</span><input className="input" name="discountPercent" type="number" min=".01" max="100" step=".01" required/></label>
