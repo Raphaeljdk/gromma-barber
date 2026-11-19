@@ -55,9 +55,10 @@ export async function FinancialAccountOverview({tenantCode,shopId,view,units,que
   const expired=rows.filter(row=>row.status==="PENDING"&&row.dueDate&&row.dueDate<overdueAt);
   const pending=rows.filter(row=>row.status==="PENDING"&&!expired.some(exp=>exp.id===row.id));
   const paid=rows.filter(row=>row.status==="PAID");
-  const fees=Math.round(rows.reduce((total,row)=>total+Math.round(row.fee*100),0))/100;
-  const total=sum(rows.filter(row=>row.status!=="CANCELED"));
-  const base=total-Math.round(rows.filter(row=>row.status!=="CANCELED").reduce((n,row)=>n+Math.round(row.fee*100),0))/100;
+  const nonCanceled=rows.filter(row=>row.status!=="CANCELED");
+  const fees=Math.round(nonCanceled.reduce((total,row)=>total+Math.round(row.fee*100),0))/100;
+  const total=sum(nonCanceled);
+  const base=Math.round((total-fees)*100)/100;
   const metrics=[
     {label:"Vencido",value:sum(expired),tone:"red"},
     {label:payable?"A pagar":"A receber",value:sum(pending),tone:"amber"},
