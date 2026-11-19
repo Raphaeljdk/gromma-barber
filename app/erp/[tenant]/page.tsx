@@ -51,6 +51,8 @@ import {ServiceEditDialog} from "@/components/service-edit-dialog";
 import {ArchiveServiceButton} from "@/components/archive-service-button";
 import {FinancialSubpage,FINANCIAL_SUBMODULES,type FinancialSubmodule} from "@/components/financial-subpages";
 import {ClubPartnerManager} from "@/components/marketing-partners";
+import {LoyaltyPointsManager} from "@/components/loyalty-points-manager";
+import {MarketingPromotions} from "@/components/marketing-promotions";
 import {FinanceCurrentDashboard} from "@/components/finance-current-dashboard";
 import {classifyFinanceExpense,classifyFinanceOrigin,type FinanceOverviewRow,type FinanceRefundRow} from "@/lib/finance-overview";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
@@ -175,7 +177,6 @@ const AUDIENCE_LABELS: Record<string, string> = {
 };
 
 const PENDING_MODULE_DESCRIPTIONS: Record<string, string> = {
-  "gromma-ia": "Área reservada aos recursos de inteligência artificial do GROMMA. Nenhuma automação de IA está ativa nesta tela.",
   performance: "Área reservada à análise de desempenho. Nenhum novo indicador foi ativado nesta tela.",
   "financeiro-gromma-nf": "Área reservada à emissão e consulta de notas fiscais. Ainda não é possível emitir, transmitir ou consultar notas por esta tela.",
   precificacao: "Área reservada à precificação de produtos e serviços. Esta tela não altera preços cadastrados.",
@@ -204,6 +205,11 @@ const MODULE_TITLES: Record<string, string> = {
   "clube-saques": "Solicitar saque",
   "clube-transacoes": "Transações financeiras",
   mensagens: "Mensagens",
+  "marketing-pontos":"Pontos e recompensas",
+  "marketing-cupons":"Cupons",
+  "marketing-promocoes-servicos":"Promoções · Serviços",
+  "marketing-promocoes-produtos":"Promoções · Produtos e bebidas",
+  "marketing-aniversariantes":"Aniversariante da semana",
   promocoes: "Promoções / Cupons",
   financeiro: "Financeiro",
   "financeiro-contas-pagar": "Contas a pagar",
@@ -341,9 +347,10 @@ export async function TenantERPView({
   const actionOk = valueOf("ok");
   const actionError = valueOf("erro");
   const activeModule = moduleId ?? "dashboard";
+  if(activeModule==="mensagens")redirect("/erp/"+encodeURIComponent(tenantCode)+"/gromma-ia");
   const needsCustomerList = activeModule === "clientes";
-  const needsCustomerDirectory = ["agenda", "assinaturas", "mensagens", "promocoes"].includes(activeModule);
-  const needsCustomerCount = ["dashboard", "clientes", "mensagens", "promocoes", "relatorios"].includes(activeModule);
+  const needsCustomerDirectory = ["agenda", "assinaturas", "gromma-ia"].includes(activeModule);
+  const needsCustomerCount = ["dashboard", "clientes", "gromma-ia", "relatorios"].includes(activeModule);
   const needsAgendaList = activeModule === "agenda";
   const needsAgendaCount = ["dashboard", "agenda", "relatorios", "gerencial"].includes(activeModule);
   const needsCommandList = activeModule === "comandas";
@@ -357,7 +364,7 @@ export async function TenantERPView({
   const needsFinancialHealth = ["dashboard", "financeiro", "gerencial", "alertas"].includes(activeModule) || financeSubmodule;
   const needsCashAggregates = ["dashboard", "caixa", "relatorios", "gerencial"].includes(activeModule);
   const needsAgendaBoard = activeModule === "agenda";
-  const needsRelationship = ["mensagens", "promocoes"].includes(activeModule);
+  const needsRelationship = ["gromma-ia"].includes(activeModule);
   const needsProduction = ["dashboard", "comissoes", "gerencial"].includes(activeModule);
 
   const pageSize = 10;
@@ -1684,6 +1691,13 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
+        {activeModule==="marketing-pontos"&&<LoyaltyPointsManager tenantCode={tenantCode}
+          shopId={shop.id} ws={workspace} isOwner={isOwner} query={qs}/>}
+        {["promocoes","marketing-promocoes-servicos","marketing-promocoes-produtos",
+          "marketing-cupons","marketing-aniversariantes"].includes(activeModule)&&
+          <MarketingPromotions tenantCode={tenantCode} shopId={shop.id} ws={workspace}
+            view={activeModule as "promocoes"|"marketing-promocoes-servicos"|"marketing-promocoes-produtos"|"marketing-cupons"|"marketing-aniversariantes"}
+            isOwner={isOwner} error={actionError} ok={actionOk}/>}
         {activeModule==="marketing-parceiros"&&<ClubPartnerManager tenantCode={tenantCode}
           partners={workspace.clubPartners} isOwner={isOwner} ok={actionOk} error={actionError}/>}
 
@@ -1849,9 +1863,9 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} searchParams={qs} param="assinaturasPage" page={safeAssinaturasPage} total={filteredClubMemberRows.length} pageSize={pageSize} label="assinantes" />
         </section>
 
-        <section id="mensagens" className="demo-section" hidden={Boolean(moduleId && moduleId !== "mensagens")}>
+        <section id="gromma-ia" className="demo-section" hidden={Boolean(moduleId && moduleId !== "gromma-ia")}>
           <div className="section-head">
-            <div><div className="eyebrow">Relacionamento</div><h2>Mensagens, follow-up e aniversariantes</h2></div>
+            <div><div className="eyebrow">GROMMA I.A. / Relacionamento</div><h2>Mensagens e follow-up assistido</h2></div>
             <StatusPill tone="ready">Segmentação ativa</StatusPill>
           </div>
 
@@ -1909,95 +1923,7 @@ export async function TenantERPView({
               </div>
             </article>
           </div>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/mensagens`} searchParams={qs} param="mensagensPage" page={mensagensPage} total={customersForRelationship.length} pageSize={pageSize} label="clientes" />
-        </section>
-
-        <section id="promocoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "promocoes")}>
-          <div className="section-head">
-            <div><div className="eyebrow">Comercial</div><h2>Promoções, grupos e cupons</h2></div>
-            <StatusPill tone="ready">Operacional</StatusPill>
-          </div>
-
-          <div className="erp-segment-grid">
-            <article><strong>{customersAllTotal}</strong><span>Todos os clientes</span><small>base completa</small></article>
-            <article><strong>{inactive30.length}</strong><span>Inativos 30+</span><small>recuperação</small></article>
-            <article><strong>{birthdayCustomers.length}</strong><span>Aniversariantes</span><small>campanhas de relacionamento</small></article>
-            <article><strong>{clubMemberRows.length}</strong><span>Assinantes</span><small>clientes do clube</small></article>
-          </div>
-
-          {actionOk === "promocao" && <div className="notice erp-inline-notice success">Promoção salva.</div>}
-          {actionOk === "cupom" && <div className="notice erp-inline-notice success">Cupom criado.</div>}
-          {["promocao","cupom"].includes(actionError) && <div className="notice erp-inline-notice error-notice">Revise os dados comerciais informados.</div>}
-
-          <div className="erp-two-column-workspace">
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Anúncios / Promoções</span><strong>Campanha comercial</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-              {canManage && (
-                <form action={savePromotion} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <label><span className="label">Campanha</span><input className="input" name="title" required placeholder="Ex.: Semana do cliente" /></label>
-                  <label><span className="label">Segmento rápido</span><select className="select" name="audience"><option value="ALL">Todos</option><option value="INACTIVE_30">Inativos 30+</option><option value="INACTIVE_60">Inativos 60+</option><option value="INACTIVE_90">Inativos 90+</option><option value="BIRTHDAY">Aniversariantes</option><option value="CLUB">Assinantes do clube</option></select></label>
-                  {workspace.customerGroups.length > 0 && <label><span className="label">Ou usar grupo salvo</span><select className="select" name="groupId"><option value="">Nenhum</option>{workspace.customerGroups.filter((group) => group.active).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>}
-                  <label><span className="label">Oferta / mensagem</span><textarea className="textarea" name="message" required placeholder="Descreva a oferta, validade e chamada para ação." /></label>
-                  <button className="btn" type="submit">Salvar promoção</button>
-                </form>
-              )}
-              <div className="erp-stacked-list">
-                {promotionCampaignPageRows.map((campaign) => (
-                  <div key={campaign.id}><div><strong>{campaign.title}</strong><span>{workspace.customerGroups.find((group) => group.id === campaign.groupId)?.name ?? AUDIENCE_LABELS[campaign.audience] ?? campaign.audience}</span></div><span className="badge approved">Ativa</span></div>
-                ))}
-                {!workspace.campaigns.some((item) => item.kind === "PROMOTION") && <small className="muted">Nenhuma promoção cadastrada.</small>}
-              </div>
-            </article>
-
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Cupons de desconto</span><strong>Regras e validade</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-              {isOwner && (
-                <form action={saveCoupon} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <label><span className="label">Código</span><input className="input" name="code" required placeholder="VOLTE10" /></label>
-                  <div className="grid grid-2">
-                    <label><span className="label">Tipo</span><select className="select" name="kind"><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>
-                    <label><span className="label">Valor</span><input className="input" name="value" type="number" min="0.01" step="0.01" required /></label>
-                  </div>
-                  <label><span className="label">Validade</span><input className="input" name="expiresAt" type="date" /></label>
-                  <button className="btn" type="submit">Criar cupom</button>
-                </form>
-              )}
-              <div className="erp-coupon-grid">
-                {couponPageRows.map((coupon) => (
-                  <div key={coupon.id}><span>{coupon.code}</span><strong>{coupon.kind === "PERCENT" ? `${coupon.value}%` : brl(coupon.value)}</strong><small>{coupon.expiresAt ? `até ${new Intl.DateTimeFormat("pt-BR").format(new Date(`${coupon.expiresAt}T12:00:00`))}` : "sem validade"}</small></div>
-                ))}
-                {!workspace.coupons.length && <small className="muted">Nenhum cupom criado.</small>}
-              </div>
-            </article>
-
-            <article className="card erp-workspace-card wide">
-              <div className="erp-card-title"><div><span>Grupos de clientes</span><strong>Segmentos inteligentes reutilizáveis</strong></div><StatusPill tone="ready">Ativo</StatusPill></div>
-              {actionOk === "grupo" && <div className="notice erp-inline-notice success">Grupo salvo.</div>}
-              {actionError === "grupo" && <div className="notice erp-inline-notice error-notice">Informe um nome válido para o grupo.</div>}
-              <div className="erp-group-layout">
-                {canManage && (
-                  <form action={saveCustomerGroup} className="erp-compact-form">
-                    <input type="hidden" name="tenantCode" value={tenantCode} />
-                    <label><span className="label">Nome do grupo</span><input className="input" name="name" required placeholder="Ex.: Clientes VIP para recuperação" /></label>
-                    <label><span className="label">Regra automática</span><select className="select" name="rule"><option value="ALL">Todos os clientes</option><option value="INACTIVE_30">Inativos 30+</option><option value="INACTIVE_60">Inativos 60+</option><option value="INACTIVE_90">Inativos 90+</option><option value="BIRTHDAY">Aniversariantes do mês</option><option value="CLUB">Assinantes do clube</option></select></label>
-                    <button className="btn secondary" type="submit">Criar grupo</button>
-                  </form>
-                )}
-                <div className="erp-group-list">
-                  {workspace.customerGroups.map((group) => (
-                    <div key={group.id}>
-                      <div><strong>{group.name}</strong><span>{AUDIENCE_LABELS[group.rule] ?? group.rule}</span></div>
-                      <strong>{segmentCounts[group.rule] ?? 0}</strong>
-                    </div>
-                  ))}
-                  {!workspace.customerGroups.length && <small className="muted">Crie grupos para reutilizar a mesma segmentação em promoções e mensagens.</small>}
-                </div>
-              </div>
-            </article>
-          </div>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/promocoes`} searchParams={qs} param="promocoesPage" page={promocoesPage} total={Math.max(promotionCampaigns.length, workspace.coupons.length)} pageSize={pageSize} label="itens comerciais" />
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/gromma-ia`} searchParams={qs} param="mensagensPage" page={mensagensPage} total={customersForRelationship.length} pageSize={pageSize} label="clientes" />
         </section>
 
         <section id="financeiro" className="demo-section gromma-financial-workspace" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
@@ -2720,7 +2646,7 @@ export async function TenantERPView({
                 {reviewPageRows.map((review) => (
                   <div key={review.id}>
                     <span className="erp-review-score">{review.score.toFixed(0)}★</span>
-                    <div><strong>{review.customerName}</strong><span>{review.professionalName || "Profissional não informado"}</span><small>{review.comment || "Sem comentário"}</small></div>
+                    <div><strong>{review.customerName}</strong><span>{review.professionalName || "Profissional não informado"} · {review.source==="CLIENT_APP"?"Confirmada pelo portal do cliente":"Registrada pela equipe"}</span><small>{review.comment || "Sem comentário"}</small></div>
                   </div>
                 ))}
                 {!workspace.reviews.length && <small className="muted">Nenhuma avaliação registrada ainda.</small>}
