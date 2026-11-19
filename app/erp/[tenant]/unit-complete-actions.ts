@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/tenant-auth";
 import { readWorkspace,writeWorkspace } from "@/lib/erp-workspace";
-import { isValidCnpj,isValidPixKey,unitPolicy,PAYMENT_METHODS } from "@/lib/unit-operations-policy";
+import { isValidCnpj,unitPolicy,PAYMENT_METHODS } from "@/lib/unit-operations-policy";
+import {validatedOwnerCnpj} from "@/lib/financial-registry-security";
 
 const val=(form:FormData,key:string,max=180)=>String(form.get(key)??"").trim().slice(0,max);
 const number=(form:FormData,key:string)=>Number(val(form,key,16).replace(",","."));
@@ -52,18 +53,7 @@ export async function saveCompleteUnit(form:FormData){
     const postalCode=digits(val(form,"postalCode",10));
     const complement=val(form,"complement",120);
     const legalDocument=digits(val(form,"legalDocument",18));
-    const bankCountry: "BR"|"INT"=val(form,"bankCountry",3)==="INT"?"INT":"BR";
-    const bankChoice=val(form,"bankCode",180);
-    const bankMatch=bankChoice.match(/^(\\d{3}|\\d{8})(?:\\s*[—-]\\s*(.*))?$/);
-    if(bankCountry==="BR"&&bankChoice&&!bankMatch)
-      throw Error("Selecione um banco brasileiro da lista por código.");
-    const bankCode=bankCountry==="BR"?(bankMatch?.[1]??""):"";
-    const bankName=bankCountry==="BR"?(bankMatch?.[2]??"").slice(0,150):val(form,"bankName",150);
-    const bankAgency=val(form,"bankAgency",30);
-    const bankAccount=val(form,"bankAccount",35);
-    const bankSwift=val(form,"bankSwift",11).toUpperCase();
-    const pixType=val(form,"pixType",8) as "CNPJ"|"EMAIL"|"PHONE"|"EVP"|"";
-    const pixKey=val(form,"pixKey",150);
+    const verifiedBankAccountId=val(form,"verifiedBankAccountId",100);
     const paymentEmail=val(form,"paymentEmail",180).toLowerCase();
     const paymentMethods=[...new Set(form.getAll("paymentMethods").map(String))].filter(
       (method):method is typeof PAYMENT_METHODS[number]=>(PAYMENT_METHODS as readonly string[]).includes(method));
@@ -81,20 +71,11 @@ export async function saveCompleteUnit(form:FormData){
     if(name.length<2||city.length<2||!/^[A-Z]{2}$/.test(state)||postalCode.length!==0&&postalCode.length!==8)
       throw Error("Confira nome, cidade, UF e CEP da filial.");
     if(legalDocument&&!isValidCnpj(legalDocument))throw Error("CNPJ inválido.");
-    if(bankCountry==="BR"&&bankCode&&bankCode.length!==3&&bankCode.length!==8)
-      throw Error("Informe o número-código bancário de 3 dígitos ou o ISPB de 8 dígitos.");
-    if(bankCountry==="INT"&&bankSwift&&!/^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(bankSwift))
-      throw Error("O código SWIFT/BIC deve ter 8 ou 11 caracteres.");
-    if(paymentEmail&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(paymentEmail))
+    if(paymentEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentEmail))
       throw Error("Informe um e-mail válido.");
-    if((bankAgency||bankAccount)&&!(bankCountry==="BR"?bankCode:bankName&&bankSwift))
-      throw Error("Selecione o banco e seus identificadores antes de informar agência/conta.");
-    if(!["","CNPJ","EMAIL","PHONE","EVP"].includes(pixType)||
-      !isValidPixKey(pixKey,pixType,legalDocument))
-      throw Error("Chave Pix inválida. Se for CNPJ, ela deve corresponder ao CNPJ desta filial.");
     await prisma.$transaction(async tx=>{
       const [shop,unit]=await Promise.all([
-        tx.barberShop.findUniqueOrThrow({where:{id:shopId},select:{enabledFeatures:true}}),
+        tx.barberShop.findUniqueOrThrow({where:{id:shopId},select:{enabledFeatures:true,document:true,legalName:true}}),
         tx.barberShopUnit.findFirst({where:{id:unitId,barberShopId:shopId},
           select:{id:true,name:true,city:true,state:true,address:true,active:true}}),
       ]);
@@ -105,12 +86,43 @@ export async function saveCompleteUnit(form:FormData){
         throw Error("O CNPJ cadastrado não pode ser alterado nesta tela.");
       if(!active&&unit.active)await canDeactivate(tx,shopId,unitId,shop.enabledFeatures,
         await tx.barberShopUnit.count({where:{barberShopId:shopId,active:true}}));
+      const activeCustom=ws.customPaymentMethods.filter(item=>item.active);
+      const submittedCustom=form.getAll("customPaymentMethods").map(String);
+      if(submittedCustom.length!==new Set(submittedCustom).size||
+        submittedCustom.some(id=>!activeCustom.some(item=>item.id===id)))
+        throw Error("Forma personalizada não cadastrada ou repetida");
+      for(const item of activeCustom){
+        const feePercent=number(form,"feePercent_"+item.id);
+        const settlementDays=number(form,"settlementDays_"+item.id);
+        if(!validPct(feePercent)||!Number.isSafeInteger(settlementDays)||settlementDays<0||settlementDays>90)
+          throw Error("Confira a taxa e o prazo da forma de pagamento "+item.name);
+        configurations[item.id]={feePercent,settlementDays,autoMarkPaid:false};
+      }
+      let bankCountry: "BR"|"INT"="BR";
+      let bankCode="",bankName="",bankAgency="",bankAccount="",bankSwift="";
+      let pixType: typeof old.pixType="",pixKey="",verifiedAccountId="";
+      if(verifiedBankAccountId==="__legacy__"){
+        if(!old.bankAccount||old.verifiedBankAccountId)throw Error("Conta antiga não disponível");
+        // Somente histórico: permanece sem identificador de verificação.
+        ({bankCountry,bankCode,bankName,bankAgency,bankAccount,bankSwift,pixType,pixKey}=old);
+      }else if(verifiedBankAccountId){
+        const selected=ws.financialBankAccounts.find(account=>account.id===verifiedBankAccountId&&
+          account.active&&account.unitId===unitId&&Boolean(account.verifiedAt)&&
+          Boolean(account.verificationReference));
+        if(!selected)throw Error("Esta conta não tem verificação bancária ativa para a filial.");
+        const legal=validatedOwnerCnpj(shop.document,old.legalDocument||legalDocument,shop.legalName??"");
+        if(selected.ownerCnpj!==legal)throw Error("Titularidade do CNPJ divergente");
+        bankCode=selected.bankCode;bankName=selected.bankName;
+        bankAgency=selected.agency;bankAccount=selected.account;
+        pixType=selected.pixType;pixKey=selected.pixKey;verifiedAccountId=selected.id;
+      }
       const policy={
         ...old,postalCode,complement,bankCountry,bankCode,bankName,
-        bankAgency,bankAccount,bankSwift,pixType,pixKey,paymentEmail,paymentMethods,
+        bankAgency,bankAccount,bankSwift,pixType,pixKey,paymentEmail,
+        verifiedBankAccountId:verifiedAccountId,paymentMethods,
+        customPaymentMethods:submittedCustom,
         paymentConfigurations:configurations,
         legalDocument:old.legalDocument||legalDocument,
-        // Regras corporativas passam a prevalecer; não duplicar campos por filial.
         potPercent:null,
         cancellationMinutes:ws.bookingRules.cancellationMinutes,
         noShowBlockHours:ws.bookingRules.noShowBlockHours,
@@ -128,10 +140,11 @@ export async function saveCompleteUnit(form:FormData){
       await tx.adminAuditLog.create({data:{barberShopId:shopId,adminEmail:actor,
         action:"UNIT_COMPLETE_SETTINGS_UPDATED",
         details:{unitId,bankCountry,bankCode,bankChanged:old.bankCode!==bankCode,
-          methods:paymentMethods,addressChanged:unit.address!==address,
+          methods:paymentMethods,customMethods:submittedCustom,addressChanged:unit.address!==address,
           statusChanged:unit.active!==active,pixKeyChanged:old.pixKey!==pixKey,
           accountChanged:old.bankAccount!==bankAccount,
-          registrationLocked:Boolean(old.legalDocument),bankOwnershipVerified:false}}});
+          verifiedBankAccountId:verifiedAccountId||null,
+          registrationLocked:Boolean(old.legalDocument),bankOwnershipVerified:Boolean(verifiedAccountId)}}});
     },{isolationLevel:"Serializable"});
   }catch(e){error=e instanceof Error?e.message.slice(0,180):"Não foi possível salvar a filial.";}
   revalidatePath("/erp/"+encodeURIComponent(code),"layout");
