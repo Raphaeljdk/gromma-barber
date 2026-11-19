@@ -115,6 +115,10 @@ export type ReviewConfig = {
   score: number;
   comment: string;
   createdAt: string;
+  source?:"MANUAL"|"CLIENT_APP";
+  appointmentId?:string;
+  customerId?:string;
+  barberId?:string;
 };
 
 export type TrainingConfig = {
@@ -351,6 +355,7 @@ export type ErpWorkspace = {
   loyaltyAccess:LoyaltyAccess[];
   loyaltyReferrals:LoyaltyReferral[];
   marketingOffers:MarketingOffer[];
+  birthdayPromotion:{enabled:boolean;kind:"PERCENT"|"FIXED";value:number;description:string};
   financialEntryMetadata: Record<string,FinancialEntryMetadata>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
@@ -394,6 +399,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   loyaltySettings:{enabled:false,referralPoints:0},
   loyaltyRewards:[],loyaltyMovements:[],loyaltyRedemptions:[],
   loyaltyAccess:[],loyaltyReferrals:[],marketingOffers:[],
+  birthdayPromotion:{enabled:false,kind:"PERCENT",value:0,description:""},
   financialEntryMetadata: {},
   rolePermissions: {},
   professionalProfiles: {},
@@ -604,6 +610,12 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         createdAt:String(p.createdAt??"").slice(0,35),
       }];
     }).slice(0,100) as ClubPartner[],
+    birthdayPromotion:(()=>{
+      const p=record(operations.birthdayPromotion),value=Number(p.value);
+      return {enabled:p.enabled===true,kind:(p.kind==="FIXED"?"FIXED":"PERCENT") as "FIXED"|"PERCENT",
+        value:Number.isFinite(value)&&value>0&&value<=10000?value:0,
+        description:String(p.description??"").slice(0,500)};
+    })(),
     loyaltySettings:(()=>{
       const settings=record(operations.loyaltySettings);
       const referral=Number(settings.referralPoints);
@@ -732,7 +744,18 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     customerGroups: array<CustomerGroupConfig>(operations.customerGroups),
     coupons: array<CouponConfig>(operations.coupons),
     documents: array<DocumentConfig>(operations.documents),
-    reviews: array<ReviewConfig>(operations.reviews),
+    reviews: array<unknown>(operations.reviews).flatMap(item=>{
+      const p=record(item),score=Number(p.score);
+      if(typeof p.id!=="string"||!Number.isInteger(score)||score<1||score>5)return [];
+      return [{id:p.id.slice(0,100),customerName:String(p.customerName??"Cliente").slice(0,120),
+        professionalName:String(p.professionalName??"").slice(0,120),score,
+        comment:String(p.comment??"").slice(0,700),createdAt:String(p.createdAt??"").slice(0,35),
+        source:(p.source==="CLIENT_APP"?"CLIENT_APP":"MANUAL") as ReviewConfig["source"],
+        appointmentId:typeof p.appointmentId==="string"?p.appointmentId.slice(0,100):"",
+        customerId:typeof p.customerId==="string"?p.customerId.slice(0,100):"",
+        barberId:typeof p.barberId==="string"?p.barberId.slice(0,100):"",
+      }];
+    }).slice(0,2000),
     training: array<TrainingConfig>(operations.training),
     commissionRules: array<CommissionRuleConfig>(operations.commissionRules),
     professionalExtraRates: Object.fromEntries(Object.entries(record(operations.professionalExtraRates)).map(([id, raw]) => { const item = record(raw); const sub = Number(item.subscriptionPercent); const prod = Number(item.productPercent); return [id, { subscriptionPercent: Number.isFinite(sub) && sub >= 0 && sub <= 100 ? sub : 0, productPercent: Number.isFinite(prod) && prod >= 0 && prod <= 100 ? prod : 30 }]; })) as Record<string, { subscriptionPercent: number; productPercent: number }>,
