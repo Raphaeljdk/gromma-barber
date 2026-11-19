@@ -10,12 +10,13 @@ type Props={
   tenantCode:string;type:"RECEIVABLE"|"PAYABLE";returnModule:string;
   units:{id:string;name:string}[];
   categories:{id:string;name:string;subcategory:string;type:"RECEIVABLE"|"PAYABLE"|"BOTH"}[];
-  banks:{id:string;name:string;account:string;active:boolean}[];
+  banks:{id:string;name:string;account:string;unitId:string;active:boolean}[];
   expenseMethods:string[];
 };
 export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,categories,banks,expenseMethods}:Props){
   const [condition,setCondition]=useState<"ONCE"|"RECURRENT">("ONCE");
   const [selectedCategory,setSelectedCategory]=useState("");
+  const [selectedUnit,setSelectedUnit]=useState("");
   const isExpense=type==="PAYABLE";
   const allowed=categories.filter(item=>item.type==="BOTH"||item.type===type);
   const paymentMethods=isExpense?PAYMENT_METHODS.filter(item=>expenseMethods.includes(item)):PAYMENT_METHODS;
@@ -25,7 +26,8 @@ export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,cat
     <input type="hidden" name="returnModule" value={returnModule}/>
     <div className={styles.grid}>
       <label>Filial <span className={styles.required}>*</span>
-        <select className="select" name="unitId" required defaultValue="">
+        <select className="select" name="unitId" required value={selectedUnit}
+          onChange={event=>setSelectedUnit(event.target.value)}>
           <option value="" disabled>Selecionar filial</option>
           {units.map(unit=><option key={unit.id} value={unit.id}>{unit.name}</option>)}
         </select>
@@ -110,7 +112,7 @@ export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,cat
       <label>Conta bancária (opcional)
         <select className="select" name="bankAccountId" defaultValue="">
           <option value="">Não associar</option>
-          {banks.filter(bank=>bank.active).map(bank=><option value={bank.id} key={bank.id}>{bank.name} · conta final {bank.account.slice(-4)}</option>)}
+          {banks.filter(bank=>bank.active&&bank.unitId===selectedUnit).map(bank=><option value={bank.id} key={bank.id}>{bank.name} · conta final {bank.account.slice(-4)}</option>)}
         </select>
       </label>
       <button className="btn" type="submit"><Plus size={16}/>{isExpense?"Criar despesa":"Criar receita"}</button>
