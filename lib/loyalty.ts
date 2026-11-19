@@ -17,8 +17,7 @@ export function validatePrivateToken(ws:ErpWorkspace,token:string){
     const digest=Buffer.from(entry.tokenHash,"hex");
     return digest.length===given.length&&timingSafeEqual(digest,given);
   });
-  return record&&record.expiresAt>Date.now().toString()&&false?null:
-    record&&Date.parse(record.expiresAt)>Date.now()?record:null;
+  return record&&Date.parse(record.expiresAt)>Date.now()?record:null;
 }
 export function loyaltyCanAppend(ws:ErpWorkspace,count=1){
   if(ws.loyaltyMovements.length+count>20000)throw Error("Ledger loyalty limit reached; use database migration before more credits");
