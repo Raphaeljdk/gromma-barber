@@ -85,7 +85,7 @@ import { PRODUCT_COMMISSION_CATEGORIES,categoryName } from "@/lib/product-commis
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { addAgendaDays, agendaDateKey, agendaMonthDays, isAgendaDate, type AgendaClientFilter } from "@/lib/agenda";
 import { createCustomer, updateCustomer, deactivateCustomer, createFinancialEntry, createProduct, createService, updateService, createStockMovement, markFinancialPaid, updateAppointmentStatus } from "./actions";
-import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveReview, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionPotRate, requestBillingRegularization } from "./module-actions";
+import { addClubMember, addDeduction, generateClubCharge, processClubBilling, saveCampaign, saveClubPlan, editClubPlan, changeClubMemberPlan, saveCommissionRule, saveServiceCommissionOverride, payCommission, saveCoupon, saveCustomerGroup, saveDocument, saveOperationalSettings, savePromotion, saveTrainingItem, updateClubMemberStatus, saveRolePermissions, changeClubBillingDay, saveSubscriptionPotRate, requestBillingRegularization } from "./module-actions";
 
 function StatusPill({
   children,
@@ -351,6 +351,8 @@ export async function TenantERPView({
   const actionError = valueOf("erro");
   const activeModule = moduleId ?? "dashboard";
   if(activeModule==="mensagens")redirect("/erp/"+encodeURIComponent(tenantCode)+"/gromma-ia");
+  if(activeModule==="marketing-promocoes-servicos"||activeModule==="marketing-promocoes-produtos")
+    redirect("/erp/"+encodeURIComponent(tenantCode)+"/promocoes");
   const needsCustomerList = activeModule === "clientes";
   const needsCustomerDirectory = ["agenda", "assinaturas", "gromma-ia"].includes(activeModule);
   const needsCustomerCount = ["dashboard", "clientes", "gromma-ia", "relatorios"].includes(activeModule);
@@ -1097,8 +1099,12 @@ export async function TenantERPView({
   const topServices = Array.from(serviceRanking.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   const topProfessionals = [...commissionRows].sort((a, b) => b.production - a.production).slice(0, 5);
   const topCustomers = Array.from(customerRanking.values()).sort((a, b) => b.spend - a.spend).slice(0, 8);
-  const reviewAverage = workspace.reviews.length
-    ? workspace.reviews.reduce((sum, review) => sum + review.score, 0) / workspace.reviews.length
+  // A tela exibe somente avaliações enviadas pelo cliente no portal autenticado.
+  // Avaliações manuais anteriores permanecem no histórico interno sem aparecer aqui.
+  const customerReviews = workspace.reviews.filter(review=>review.source==="CLIENT_APP")
+    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const reviewAverage = customerReviews.length
+    ? customerReviews.reduce((sum, review) => sum + review.score, 0) / customerReviews.length
     : 0;
 
   const stockByProduct = new Map<string, number>();
@@ -1185,9 +1191,10 @@ export async function TenantERPView({
     (documentosPage - 1) * pageSize,
     documentosPage * pageSize,
   );
-  const reviewPageRows = workspace.reviews.slice(
-    (avaliacoesPage - 1) * pageSize,
-    avaliacoesPage * pageSize,
+  const safeReviewsPage = Math.min(avaliacoesPage,Math.max(1,Math.ceil(customerReviews.length/pageSize)));
+  const reviewPageRows = customerReviews.slice(
+    (safeReviewsPage - 1) * pageSize,
+    safeReviewsPage * pageSize,
   );
   const treinamentoBusca = valueOf("treinamentosQ").trim().toLocaleLowerCase("pt-BR");
   const treinamentoTipo = ["VIDEO","COURSE","MEDIA"].includes(valueOf("treinamentosTipo"))?valueOf("treinamentosTipo"):"";
@@ -1706,10 +1713,9 @@ export async function TenantERPView({
         {activeModule==="relatorios-clientes-novos"&&<NewCustomersReport shopId={shop.id}/>}
         {activeModule==="marketing-pontos"&&<LoyaltyPointsManager tenantCode={tenantCode}
           shopId={shop.id} ws={workspace} isOwner={isOwner} query={qs}/>}
-        {["promocoes","marketing-promocoes-servicos","marketing-promocoes-produtos",
-          "marketing-cupons","marketing-aniversariantes"].includes(activeModule)&&
+        {["promocoes","marketing-cupons","marketing-aniversariantes"].includes(activeModule)&&
           <MarketingPromotions tenantCode={tenantCode} shopId={shop.id} ws={workspace}
-            view={activeModule as "promocoes"|"marketing-promocoes-servicos"|"marketing-promocoes-produtos"|"marketing-cupons"|"marketing-aniversariantes"}
+            view={activeModule as "promocoes"|"marketing-cupons"|"marketing-aniversariantes"}
             isOwner={isOwner} error={actionError} ok={actionOk}/>}
         {activeModule==="marketing-parceiros"&&<ClubPartnerManager tenantCode={tenantCode}
           partners={workspace.clubPartners} isOwner={isOwner} ok={actionOk} error={actionError}/>}
@@ -2625,49 +2631,37 @@ export async function TenantERPView({
         <section id="avaliacoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "avaliacoes")}>
           <div className="section-head">
             <div><div className="eyebrow">Experiência</div><h2>Avaliações e satisfação</h2></div>
-            <StatusPill tone="ready">Coleta ativa</StatusPill>
+            <StatusPill tone="ready">Recebidas dos clientes</StatusPill>
           </div>
-
           <div className="erp-kpi-row">
             <article><span>Nota média</span><strong>{reviewAverage ? reviewAverage.toFixed(1) : "—"}</strong><small>escala de 1 a 5</small></article>
-            <article><span>Avaliações</span><strong>{workspace.reviews.length}</strong><small>registros recebidos</small></article>
-            <article><span>Promotores</span><strong>{workspace.reviews.filter((review) => review.score >= 4).length}</strong><small>notas 4 ou 5</small></article>
-            <article><span>Críticas</span><strong>{workspace.reviews.filter((review) => review.score <= 2).length}</strong><small>pedem retorno</small></article>
+            <article><span>Avaliações</span><strong>{customerReviews.length}</strong><small>recebidas pelo portal do cliente</small></article>
           </div>
-
-          {actionOk === "avaliacao" && <div className="notice erp-inline-notice success">Avaliação registrada.</div>}
-          {actionError === "avaliacao" && <div className="notice erp-inline-notice error-notice">A nota precisa estar entre 1 e 5.</div>}
-
-          <div className="erp-two-column-workspace">
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Registrar avaliação</span><strong>Pós-atendimento</strong></div><StatusPill tone="ready">Persistente</StatusPill></div>
-              {canOperate && (
-                <form action={saveReview} className="erp-compact-form">
-                  <input type="hidden" name="tenantCode" value={tenantCode} />
-                  <div className="grid grid-2">
-                    <label><span className="label">Cliente</span><input className="input" name="customerName" placeholder="Nome do cliente" /></label>
-                    <label><span className="label">Profissional</span><select className="select" name="professionalName"><option value="">Não informado</option>{shop.users.filter((user) => ["OWNER","MANAGER","BARBER"].includes(user.role)).map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}</select></label>
-                  </div>
-                  <label><span className="label">Nota</span><select className="select" name="score" defaultValue="5"><option value="5">5 · Excelente</option><option value="4">4 · Muito bom</option><option value="3">3 · Bom</option><option value="2">2 · Regular</option><option value="1">1 · Ruim</option></select></label>
-                  <label><span className="label">Comentário</span><textarea className="textarea" name="comment" placeholder="Comentário opcional" /></label>
-                  <button className="btn" type="submit">Salvar avaliação</button>
-                </form>
-              )}
-            </article>
-            <article className="card erp-workspace-card">
-              <div className="erp-card-title"><div><span>Últimas avaliações</span><strong>Feedback do cliente</strong></div><StatusPill tone="ready">Histórico</StatusPill></div>
-              <div className="erp-review-list">
-                {reviewPageRows.map((review) => (
-                  <div key={review.id}>
-                    <span className="erp-review-score">{review.score.toFixed(0)}★</span>
-                    <div><strong>{review.customerName}</strong><span>{review.professionalName || "Profissional não informado"} · {review.source==="CLIENT_APP"?"Confirmada pelo portal do cliente":"Registrada pela equipe"}</span><small>{review.comment || "Sem comentário"}</small></div>
-                  </div>
-                ))}
-                {!workspace.reviews.length && <small className="muted">Nenhuma avaliação registrada ainda.</small>}
-              </div>
-            </article>
-          </div>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/avaliacoes`} searchParams={qs} param="avaliacoesPage" page={avaliacoesPage} total={workspace.reviews.length} pageSize={pageSize} label="avaliações" />
+          <article className="card erp-workspace-card">
+            <div className="erp-card-title">
+              <div><span>Avaliações recebidas</span><strong>Opiniões dos clientes sobre o atendimento e o espaço</strong></div>
+              <StatusPill tone="ready">Somente leitura</StatusPill>
+            </div>
+            <div className="table-wrap erp-inner-table">
+              <table>
+                <thead><tr><th>Cliente</th><th>Mensagem da avaliação</th><th>Nota</th><th>Barbeiro que atendeu</th></tr></thead>
+                <tbody>
+                  {reviewPageRows.map(review=><tr key={review.id}>
+                    <td><strong>{review.customerName}</strong></td>
+                    <td style={{whiteSpace:"normal",overflowWrap:"anywhere"}}>{review.comment||"Sem mensagem"}</td>
+                    <td><span className="erp-review-score">{review.score.toFixed(0)} ★</span></td>
+                    <td>{review.professionalName||"Profissional não informado"}</td>
+                  </tr>)}
+                  {!reviewPageRows.length&&<tr><td colSpan={4} className="muted">
+                    Nenhuma avaliação de cliente recebida pelo portal até o momento.
+                  </td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </article>
+          <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/avaliacoes`}
+            searchParams={qs} param="avaliacoesPage" page={safeReviewsPage}
+            total={customerReviews.length} pageSize={pageSize} label="avaliações"/>
         </section>
 
         <section id="alertas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "alertas")}>
