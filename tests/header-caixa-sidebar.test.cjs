@@ -65,7 +65,7 @@ test("Totem/Check-in permanece único no final da navegação, respeitando o pla
 
 test("Outros módulos permanecem acessíveis diretamente sem bloco de extras", () => {
   const extras = ERP_NAVIGATION_EXTRA.map(item => item.route);
-  assert.deepEqual(extras,["mensagens","documentos","treinamentos","configuracoes"]);
+  assert.deepEqual(extras,["documentos","treinamentos","configuracoes"]);
   for (const route of extras) assert.ok(ERP_NAVIGATION_EXTRA.some(item=>item.route===route));
   const gestaoRoutes=ERP_NAVIGATION.find(group=>group.id==="gestao").items.map(item=>item.route);
   assert.ok(gestaoRoutes.includes("gerencial"));
