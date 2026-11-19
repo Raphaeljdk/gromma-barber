@@ -181,6 +181,7 @@ export type UnitOperationsPolicy = {
   pixKey: string;
   pixType: "CNPJ" | "EMAIL" | "PHONE" | "EVP" | "";
   paymentMethods: ("PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER")[];
+  customPaymentMethods: string[];
   debitFeePercent: number;
   creditFeePercent: number;
   settlementDays: number;
@@ -234,10 +235,22 @@ function isValidBusinessTimeZone(value:string):boolean{
 }
 
 export type FinancialCategoryConfig={
-  id:string;name:string;type:"RECEIVABLE"|"PAYABLE"|"BOTH";
+  id:string;name:string;subcategory:string;
+  type:"RECEIVABLE"|"PAYABLE"|"BOTH";
+  classification:"REVENUE_FIXED"|"REVENUE_VARIABLE"|"EXPENSE_FIXED"|"EXPENSE_OPERATIONAL"|"EXPENSE_COMMISSION"|"GENERAL";
 };
 export type FinancialBankAccountConfig={
   id:string;name:string;bankCode:string;bankName:string;agency:string;account:string;active:boolean;
+  unitId:string;ownerCnpj:string;pixType:"PHONE"|"CPF"|"CNPJ"|"EMAIL"|"EVP"|"";
+  pixKey:string;verifiedAt:string;verificationReference:string;
+};
+export type FinancialBankRequest={
+  id:string;name:string;bankCode:string;bankName:string;agency:string;account:string;
+  unitId:string;ownerCnpj:string;pixType:"PHONE"|"CPF"|"CNPJ"|"EMAIL"|"EVP";
+  pixKey:string;requestedAt:string;
+};
+export type FinancialCustomPaymentMethod={
+  id:string;name:string;type:"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER";active:boolean;
 };
 export type FinancialEntryMetadata={
   bankAccountId:string;paymentMethod:"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER"|"";
@@ -281,6 +294,8 @@ export type ErpWorkspace = {
   billingRegularizationRequests: BillingRegularizationRequest[];
   financialCategories: FinancialCategoryConfig[];
   financialBankAccounts: FinancialBankAccountConfig[];
+  financialBankRequests: FinancialBankRequest[];
+  customPaymentMethods: FinancialCustomPaymentMethod[];
   financialExpenseMethods: FinancialEntryMetadata["paymentMethod"][];
   financialEntryMetadata: Record<string,FinancialEntryMetadata>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
@@ -314,6 +329,8 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   billingRegularizationRequests: [],
   financialCategories: [],
   financialBankAccounts: [],
+  financialBankRequests: [],
+  customPaymentMethods: [],
   financialExpenseMethods: ["PIX","CASH","DEBIT","CREDIT","TRANSFER"],
   financialEntryMetadata: {},
   rolePermissions: {},
@@ -411,7 +428,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
           bankAccount:typeof p.bankAccount==="string"?p.bankAccount.slice(0,35):"",
           bankSwift:typeof p.bankSwift==="string"?p.bankSwift.slice(0,11):"",
           paymentConfigurations:Object.fromEntries(Object.entries(record(p.paymentConfigurations))
-            .filter(([key])=>methods.includes(key as typeof methods[number]))
+            .filter(([key])=>methods.includes(key as typeof methods[number])||/^fpay_[a-z0-9_]{6,80}$/.test(key))
             .map(([key,value])=>{const cfg=record(value);return [key,{
               feePercent:percent(cfg.feePercent,100,0),
               settlementDays:percent(cfg.settlementDays,90,0),
@@ -422,6 +439,8 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
           pixKey:typeof p.pixKey==="string"?p.pixKey.slice(0,150):"",
           pixType:["CNPJ","EMAIL","PHONE","EVP"].includes(String(p.pixType))?p.pixType:"",
           paymentMethods:list,
+          customPaymentMethods:Array.isArray(p.customPaymentMethods)?
+            p.customPaymentMethods.filter((id):id is string=>typeof id==="string"&&/^fpay_[a-z0-9_]{6,80}$/.test(id)).slice(0,60):[],
           debitFeePercent:percent(p.debitFeePercent,100,0),
           creditFeePercent:percent(p.creditFeePercent,100,0),
           settlementDays:percent(p.settlementDays,90,0),
@@ -436,19 +455,47 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
       const entry=record(item);
       if(typeof entry.id!=="string"||typeof entry.name!=="string"||
         !["RECEIVABLE","PAYABLE","BOTH"].includes(String(entry.type)))return [];
+      const classification=String(entry.classification??"GENERAL");
       return [{id:entry.id.slice(0,100),name:entry.name.slice(0,80),
-        type:entry.type as FinancialCategoryConfig["type"]}];
+        subcategory:typeof entry.subcategory==="string"?entry.subcategory.slice(0,80):"",
+        type:entry.type as FinancialCategoryConfig["type"],
+        classification:(["REVENUE_FIXED","REVENUE_VARIABLE","EXPENSE_FIXED","EXPENSE_OPERATIONAL",
+          "EXPENSE_COMMISSION","GENERAL"].includes(classification)?classification:"GENERAL") as FinancialCategoryConfig["classification"]}];
     }).slice(0,250),
     financialBankAccounts:array<unknown>(operations.financialBankAccounts).flatMap(item=>{
       const entry=record(item);
       if(typeof entry.id!=="string"||typeof entry.name!=="string")return [];
+      const verified=typeof entry.verifiedAt==="string"&&Number.isFinite(Date.parse(entry.verifiedAt))&&
+        typeof entry.verificationReference==="string"&&Boolean(entry.verificationReference);
       return [{id:entry.id.slice(0,100),name:entry.name.slice(0,90),
         bankCode:typeof entry.bankCode==="string"?entry.bankCode.slice(0,12):"",
         bankName:typeof entry.bankName==="string"?entry.bankName.slice(0,100):"",
         agency:typeof entry.agency==="string"?entry.agency.slice(0,25):"",
         account:typeof entry.account==="string"?entry.account.slice(0,35):"",
-        active:entry.active!==false}];
+        unitId:typeof entry.unitId==="string"?entry.unitId.slice(0,100):"",
+        ownerCnpj:typeof entry.ownerCnpj==="string"?entry.ownerCnpj.slice(0,14):"",
+        pixType:["PHONE","CPF","CNPJ","EMAIL","EVP"].includes(String(entry.pixType))?entry.pixType:"" as const,
+        pixKey:typeof entry.pixKey==="string"?entry.pixKey.slice(0,150):"",
+        verifiedAt:verified?String(entry.verifiedAt):"",
+        verificationReference:verified?String(entry.verificationReference).slice(0,80):"",
+        active:verified&&entry.active!==false}];
     }).slice(0,100),
+    financialBankRequests:array<unknown>(operations.financialBankRequests).flatMap(item=>{
+      const p=record(item);
+      if(typeof p.id!=="string"||typeof p.name!=="string"||typeof p.unitId!=="string")return [];
+      return [{id:p.id.slice(0,100),name:p.name.slice(0,90),
+        bankCode:String(p.bankCode??"").slice(0,12),bankName:String(p.bankName??"").slice(0,100),
+        agency:String(p.agency??"").slice(0,25),account:String(p.account??"").slice(0,35),
+        unitId:p.unitId.slice(0,100),ownerCnpj:String(p.ownerCnpj??"").slice(0,14),
+        pixType:(["PHONE","CPF","CNPJ","EMAIL","EVP"].includes(String(p.pixType))?p.pixType:"CNPJ") as FinancialBankRequest["pixType"],
+        pixKey:String(p.pixKey??"").slice(0,150),requestedAt:String(p.requestedAt??"").slice(0,35)}];
+    }).slice(0,50),
+    customPaymentMethods:array<unknown>(operations.customPaymentMethods).flatMap(item=>{
+      const p=record(item);
+      if(typeof p.id!=="string"||!/^fpay_[a-z0-9_]{6,80}$/.test(p.id)||
+        typeof p.name!=="string"||!["PIX","CASH","DEBIT","CREDIT","TRANSFER"].includes(String(p.type)))return [];
+      return [{id:p.id,name:p.name.slice(0,80),type:p.type as FinancialCustomPaymentMethod["type"],active:p.active!==false}];
+    }).slice(0,60),
     financialExpenseMethods:(()=>{
       const methods=["PIX","CASH","DEBIT","CREDIT","TRANSFER"] as const;
       const raw=operations.financialExpenseMethods;
