@@ -1589,6 +1589,7 @@ export async function TenantERPView({
               <div className="gromma-service-extra-row">
                 <label><span className="label">Tempo em fichas (min)</span><input className="input" name="ticketValue" type="number" min="1" max="600" step="1" placeholder="Usar duração padrão"/></label>
                 <label><span className="label">Período para recompra (dias)</span><input className="input" name="repurchaseDays" type="number" min="0" max="3650" step="1" placeholder="Opcional" /></label>
+                <label><span className="label">Pontos por atendimento pago</span><input className="input" name="pointsEarned" type="number" min="0" max="10000" step="1" defaultValue="0"/></label>
                 <label><span className="label">Categoria</span><input className="input" name="category" list="gromma-service-categories"
                   maxLength={80} placeholder="Selecione ou digite uma categoria"/></label>
                 <datalist id="gromma-service-categories">{[...new Set(Object.values(workspace.serviceCatalogSettings).map(config=>config.category).filter(Boolean))].map(category=><option key={category} value={category}/>)}</datalist>
