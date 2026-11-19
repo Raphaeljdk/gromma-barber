@@ -39,6 +39,7 @@ export function isValidPixKey(key:string,type:UnitOperationsPolicy["pixType"],un
   if(!clean)return type==="";
   switch(type){
     case "CNPJ":return isValidCnpj(clean)&&clean.replace(/\D/g,"")===unitCnpj;
+    case "CPF":return false; // CPF requer confirmação de titularidade externa, nunca simples validação local.
     case "EMAIL":return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)&&clean.length<=150;
     case "PHONE":return /^\+55\d{10,11}$/.test(clean);
     case "EVP":return /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/.test(clean);
