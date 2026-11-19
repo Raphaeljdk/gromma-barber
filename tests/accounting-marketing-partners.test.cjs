@@ -24,7 +24,7 @@ test("Kardex categorizes drinks and custom categories per product",()=>{
 test("Accounting dates and CSV/XML escaping resist invalid data",()=>{
   assert.equal(m.accountingDate("2026-02-31","2026-02-01"),"2026-02-01");
   assert.equal(m.accountingDate("2026-11-18","2026-02-01"),"2026-11-18");
-  assert.equal(m.escapeCsv("=1+1"),"'=1+1"+"'".repeat(0).replaceAll('"','')?m.escapeCsv("=1+1"):m.escapeCsv("=1+1"));
+  assert.equal(m.escapeCsv("=1+1"),'"\'=1+1"');
   assert.equal(m.escapeXml('<&>"\''),"&lt;&amp;&gt;&quot;&apos;");
   assert.equal(m.quantityText(1234),"1,234");
 });
