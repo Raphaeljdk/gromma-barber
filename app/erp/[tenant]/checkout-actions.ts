@@ -8,6 +8,7 @@ import { cents, paymentAmounts, PAYMENT_METHODS, PAYMENT_LABELS, validatePayment
 import { unitPolicy } from "@/lib/unit-operations-policy";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import { hasProfessionalPermission } from "@/lib/professional-profile";
+import {awardPaidServices,rewardReferral,undoCheckoutRewards} from "@/lib/loyalty";
 import type { Prisma } from "@prisma/client";
 
 const value = (f: FormData, key: string) => String(f.get(key) ?? "").trim().slice(0, 200);
@@ -291,6 +292,35 @@ export async function checkoutCommand(form: FormData) {
       adminEmail:actor,details:{commandId:command.id,previousAmount:command.total.toString(),
         newAmount:String(pricing.totalCents/100),previousDiscount:command.discount.toString(),
         newDiscount:String(pricing.discountCents/100),reason:discountReason,couponCode:pricing.couponCode||null,actor}}});
+    // Pontos somente após pagamento completo, dentro da mesma transação serializável.
+    // Cada linha de serviço tem chave de idempotência associada à comanda.
+    if(workspace.loyaltySettings.enabled&&command.customerId){
+      const linked=new Map(workspace.serviceLines.map(item=>[item.itemId,item.serviceId]));
+      const catalog=await tx.service.findMany({
+        where:{barberShopId:shopId},
+        select:{id:true,name:true},
+      });
+      const resolved=command.items.map(item=>{
+        let serviceId=linked.get(item.id)??null;
+        if(!serviceId&&item.kind==="SERVICE"){
+          const matches=catalog.filter(service=>service.name===item.description);
+          if(matches.length===1)serviceId=matches[0].id;
+        }
+        return {id:item.id,kind:item.kind,quantity:Number(item.quantity),
+          description:item.description,serviceId};
+      });
+      const earned=awardPaidServices(workspace,command.id,command.customerId,resolved);
+      const referred=rewardReferral(workspace,{
+        commandId:command.id,customerId:command.customerId,
+        phone:command.customer?.phone??command.customer?.whatsapp??"",
+        customerCreatedAt:command.customer?.createdAt??null,
+      });
+      if(earned||referred)await tx.adminAuditLog.create({data:{
+        barberShopId:shopId,adminEmail:actor,action:"LOYALTY_POINTS_CREDITED",
+        details:{commandId:command.id,customerId:command.customerId,
+          earnedPoints:earned,referralPoints:referred},
+      }});
+    }
     workspace.commandPayments.push({ id: workspaceId("payment"), commandId: command.id, sessionId: session.id, customerName: command.customer?.name ?? "Cliente avulso", paidAt: now.toISOString(), amounts,
       couponCode: pricing.couponCode || undefined, discountCents: pricing.discountCents,
       manualDiscountCents: pricing.manualCents });
@@ -427,6 +457,7 @@ export async function reopenCommand(form: FormData) {
         },
       });
     }
+    undoCheckoutRewards(workspace,command.id);
     workspace.commandPayments = workspace.commandPayments.filter(item => item.id !== payment.id);
     await tx.barberShop.update({
       where: { id: shopId },
