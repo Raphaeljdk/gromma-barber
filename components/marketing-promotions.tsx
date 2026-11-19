@@ -4,6 +4,7 @@ import {saveCoupon} from "@/app/erp/[tenant]/module-actions";
 import {saveBirthdayPromotion} from "@/app/erp/[tenant]/marketing-offer-actions";
 import {MarketingOfferForm} from "@/components/marketing-offer-form";
 import type {ErpWorkspace} from "@/lib/erp-workspace";
+import {customerBirthdayThisWeek,marketingTodayISO} from "@/lib/marketing-birthday";
 type View="promocoes"|"marketing-promocoes-servicos"|"marketing-promocoes-produtos"|"marketing-cupons"|"marketing-aniversariantes";
 const tabs=[
  {id:"marketing-promocoes-servicos",label:"Serviços"},
@@ -11,14 +12,6 @@ const tabs=[
  {id:"marketing-cupons",label:"Cupons"},
  {id:"marketing-aniversariantes",label:"Aniversariante da semana"},
 ] as const;
-const isWeek=(birth:Date,now:Date)=>{
- const bMonth=birth.getUTCMonth(),bDay=birth.getUTCDate();
- const start=new Date(now);start.setUTCDate(start.getUTCDate()-((start.getUTCDay()+6)%7));
- const end=new Date(start);end.setUTCDate(start.getUTCDate()+6);
- const curr=new Date(Date.UTC(now.getUTCFullYear(),bMonth,bDay,12));
- const near=new Date(Date.UTC(now.getUTCFullYear()+1,bMonth,bDay,12));
- return (curr>=start&&curr<=end)||(near>=start&&near<=end);
-};
 export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,error,ok}:{
  tenantCode:string;shopId:string;ws:ErpWorkspace;view:View;isOwner:boolean;error:string;ok:string;
 }){
@@ -28,8 +21,8 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
   view==="marketing-aniversariantes"?prisma.customer.findMany({where:{barberShopId:shopId,active:true,birthDate:{not:null}},
    select:{birthDate:true},take:10000}):Promise.resolve([]),
  ]);
- const today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
- const qualifying=customers.filter(c=>c.birthDate&&isWeek(c.birthDate,new Date(today+"T12:00:00Z"))).length;
+ const today=marketingTodayISO();
+ const qualifying=customers.filter(c=>customerBirthdayThisWeek(c.birthDate,today)).length;
  const segment=view==="marketing-promocoes-produtos"?"PRODUCT":"SERVICE";
  const showOffers=view==="promocoes"||view==="marketing-promocoes-servicos"||view==="marketing-promocoes-produtos";
  const offers=ws.marketingOffers.filter(o=>o.active&&o.expiresAt>=today&&
