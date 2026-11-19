@@ -211,7 +211,7 @@ const MODULE_TITLES: Record<string, string> = {
   "marketing-cupons":"Cupons",
   "marketing-promocoes-servicos":"Promoções · Serviços",
   "marketing-promocoes-produtos":"Promoções · Produtos e bebidas",
-  "marketing-aniversariantes":"Aniversariante da semana",
+  "marketing-aniversariantes":"Aniversariantes",
   "relatorios-clientes-novos":"Clientes novos",
   promocoes: "Promoções / Cupons",
   financeiro: "Financeiro",
