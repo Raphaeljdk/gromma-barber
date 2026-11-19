@@ -5,6 +5,7 @@ import {readWorkspace,writeWorkspace,workspaceId,type ErpWorkspace} from "@/lib/
 import {requireTenantAccess} from "@/lib/tenant-auth";
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
+import {marketingTodayISO} from "@/lib/marketing-birthday";
 const val=(f:FormData,key:string,max=500)=>String(f.get(key)??"").trim().slice(0,max);
 const url=(code:string,target="promocoes")=>"/erp/"+encodeURIComponent(code)+"/"+target;
 const week=(day:Date)=>{const d=new Date(day);d.setUTCHours(12,0,0,0);return d};
@@ -42,7 +43,7 @@ export async function createMarketingOffer(form:FormData){
  const audiences=["ALL","INACTIVE_30","INACTIVE_60","INACTIVE_90","BIRTHDAY","CLUB"];
  if(!["SERVICE","PRODUCT"].includes(kind)||title.length<2||description.length<3||
   !audiences.includes(audience)||!Number.isFinite(discountPercent)||discountPercent<=0||discountPercent>100||
-  !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)||expiresAt<new Date().toISOString().slice(0,10))
+  !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)||expiresAt<marketingTodayISO())
    redirect(url(ctx.code,page)+"?erro=promocao");
  if((page==="marketing-promocoes-servicos"&&kind!=="SERVICE")||
    (page==="marketing-promocoes-produtos"&&kind!=="PRODUCT"))redirect(url(ctx.code,page)+"?erro=promocao");
