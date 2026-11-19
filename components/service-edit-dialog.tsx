@@ -33,6 +33,7 @@ export function ServiceEditDialog({tenantCode,service,meta}:Props){
           <label>Tempo em fichas (min)<input className="input" name="ticketValue" type="number" min="1" max="600" step="1" defaultValue={meta?.ticketValue??""} placeholder="Usar duração padrão"/></label>
           <label>Recompra (dias)<input className="input" name="repurchaseDays" type="number" min="0" max="3650" defaultValue={meta?.repurchaseDays??""}/></label>
           <label>Categoria<input className="input" name="category" maxLength={80} defaultValue={meta?.category??""}/></label>
+          <label>Pontos por serviço<input className="input" name="pointsEarned" type="number" min="0" max="10000" step="1" defaultValue={meta?.pointsEarned??0}/></label>
         </div>
         <div className="gromma-service-options">
           <label><input name="startingFrom" type="checkbox" defaultChecked={meta?.startingFrom??false}/> A partir de</label>
