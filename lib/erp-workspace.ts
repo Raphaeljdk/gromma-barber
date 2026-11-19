@@ -712,6 +712,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
           startingFrom:meta.startingFrom===true,
           hidden:meta.hidden===true,
           walkIn:meta.walkIn===true,
+          pointsEarned:typeof meta.pointsEarned==="number"&&Number.isSafeInteger(meta.pointsEarned)&&meta.pointsEarned>=0&&meta.pointsEarned<=10000?meta.pointsEarned:0,
         }];
       })) as Record<string,ServiceCatalogMetadata>,
     featuredProfessionalIds: array<unknown>(operations.featuredProfessionalIds).filter(
