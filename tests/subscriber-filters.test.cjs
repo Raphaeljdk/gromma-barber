@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const source = fs.readFileSync('app/erp/[tenant]/page.tsx', 'utf8');
-const block = source.slice(source.indexOf('  const normalizeSubscriberName ='), source.indexOf('  const messageContacts ='));
+const block = source.slice(source.indexOf('  const normalizeSubscriberName ='), source.indexOf('  const selectedCampaign ='));
 const js = ts.transpileModule(block, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
 const filter = new Function('clubMemberRows','assinaturasQ','assinaturasPlano','assinaturasStatus','assinaturasPage','pageSize','now',js + '\nreturn { filteredClubMemberRows, clubMemberPageRows, safeAssinaturasPage };');
 const now = new Date('2026-10-28T12:00:00Z');
