@@ -7,7 +7,8 @@ const read=file=>fs.readFileSync(path.join(root,file),"utf8");
 
 test("Promoções tem uma única entrada na sidebar, sem subabas",()=>{
  const nav=read("lib/erp-navigation.ts");
- assert.match(nav,/\{ id: "marketing-promocoes", label: "Promoções", route: "promocoes" \}/);
+ assert.match(nav,/\{ id: "marketing-promocoes", label: "Promoções", route: "promocoes", children: \[/);
+ assert.match(nav, /\{ id: "marketing-cupons", label: "Cupons", route: "marketing-cupons"/);
  assert.doesNotMatch(nav,/id: "marketing-promocoes-servicos"/);
  assert.doesNotMatch(nav,/id: "marketing-promocoes-produtos"/);
  const page=read("app/erp/[tenant]/page.tsx");
