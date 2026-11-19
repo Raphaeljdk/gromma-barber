@@ -976,7 +976,7 @@ export async function createFinancialEntry(formData: FormData) {
   const fee=Number.isNaN(feeAmount)?0:feeAmount;
   const unitId=text(formData,"unitId",80);
   const unit=await unitForShop(shop.id,unitId);
-  const paymentMethod=text(formData,"paymentMethod",20);
+  const paymentMethod=text(formData,"paymentMethod",100);
   const bankAccountId=text(formData,"bankAccountId",100);
   const rawDate=text(formData,"dueDate",10);
   const rawCondition=text(formData,"paymentCondition",12);
@@ -1007,11 +1007,14 @@ export async function createFinancialEntry(formData: FormData) {
         where:{id:shop.id},select:{enabledFeatures:true},
       });
       const ws=readWorkspace(fresh.enabledFeatures);
+      const customMethod=ws.customPaymentMethods.find(method=>method.id===paymentMethod&&method.active);
       if(paymentMethod){
         const permitted=["PIX","CASH","DEBIT","CREDIT","TRANSFER"];
-        if(!permitted.includes(paymentMethod)||
-           (type==="PAYABLE"&&!ws.financialExpenseMethods.includes(paymentMethod as typeof ws.financialExpenseMethods[number])))
+        if(!customMethod&&(!permitted.includes(paymentMethod)||
+          (type==="PAYABLE"&&!ws.financialExpenseMethods.includes(paymentMethod as typeof ws.financialExpenseMethods[number]))))
           throw Error("Forma de pagamento indisponível");
+        if(customMethod&&type==="PAYABLE"&&!ws.financialExpenseCustomMethods.includes(customMethod.id))
+          throw Error("Forma personalizada de despesa indisponível");
       }
       if(bankAccountId&&!ws.financialBankAccounts.some(item=>item.id===bankAccountId&&item.active&&
         item.unitId===(unit?.id??"")&&Boolean(item.verifiedAt)&&Boolean(item.verificationReference)))
@@ -1029,7 +1032,8 @@ export async function createFinancialEntry(formData: FormData) {
         },select:{id:true}});
         createdIds.push(entry.id);
         ws.financialEntryMetadata[entry.id]={
-          bankAccountId,paymentMethod:paymentMethod as ""|"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER",
+          bankAccountId,paymentMethod:(customMethod?"":paymentMethod) as ""|"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER",
+          customPaymentMethodId:customMethod?.id??"",
           subcategory,notes,discountPercent:discount,interestPercent:interest,
           feeAmount:values.feeCents/100,principalAmount:values.principalCents/100,
           paymentCondition:condition,
