@@ -1,18 +1,12 @@
-import Link from "next/link";
+import {Trash2} from "lucide-react";
 import {prisma} from "@/lib/prisma";
 import {saveCoupon} from "@/app/erp/[tenant]/module-actions";
-import {saveBirthdayPromotion} from "@/app/erp/[tenant]/marketing-offer-actions";
+import {deleteMarketingPromotion,saveBirthdayPromotion} from "@/app/erp/[tenant]/marketing-offer-actions";
 import {MarketingOfferForm} from "@/components/marketing-offer-form";
 import type {ErpWorkspace} from "@/lib/erp-workspace";
 import {resolveStockCategory} from "@/lib/accounting-kardex";
 import {customerBirthdayThisWeek,marketingTodayISO} from "@/lib/marketing-birthday";
-type View="promocoes"|"marketing-promocoes-servicos"|"marketing-promocoes-produtos"|"marketing-cupons"|"marketing-aniversariantes";
-const tabs=[
- {id:"marketing-promocoes-servicos",label:"Serviços"},
- {id:"marketing-promocoes-produtos",label:"Produtos e bebidas"},
- {id:"marketing-cupons",label:"Cupons"},
- {id:"marketing-aniversariantes",label:"Aniversariante da semana"},
-] as const;
+type View="promocoes"|"marketing-cupons"|"marketing-aniversariantes";
 export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,error,ok}:{
  tenantCode:string;shopId:string;ws:ErpWorkspace;view:View;isOwner:boolean;error:string;ok:string;
 }){
@@ -24,36 +18,50 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
  ]);
  const today=marketingTodayISO();
  const qualifying=customers.filter(c=>customerBirthdayThisWeek(c.birthDate,today)).length;
- const segment=view==="marketing-promocoes-produtos"?"PRODUCT":"SERVICE";
- const showOffers=view==="promocoes"||view==="marketing-promocoes-servicos"||view==="marketing-promocoes-produtos";
- const offers=ws.marketingOffers.filter(o=>o.active&&o.expiresAt>=today&&
-  (view==="promocoes"||o.kind===segment));
- const root="/erp/"+encodeURIComponent(tenantCode)+"/";
+ const offers=ws.marketingOffers.filter(o=>o.active);
+ const pastCampaigns=ws.campaigns.filter(c=>c.kind==="PROMOTION"&&c.active);
  return <section className="demo-section" style={{display:"grid",gap:15}}>
   <div className="section-head"><div><span className="eyebrow">Marketing e promoção</span><h2>{
     view==="marketing-cupons"?"Cupons de desconto":view==="marketing-aniversariantes"?"Aniversariantes da semana":"Promoções"
    }</h2></div></div>
-  <nav aria-label="Tipos de promoção" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-   {tabs.map(t=><Link key={t.id} className="btn secondary" href={root+t.id}
-     aria-current={view===t.id?"page":undefined}>{t.label}</Link>)}
-  </nav>
-  {error&&<p className="notice error-notice" role="alert">Não foi possível salvar. Confira os campos e a validade.</p>}
-  {ok&&<p className="notice success" role="status">Registro salvo com sucesso.</p>}
-  {showOffers&&<>
+  {error&&<p className="notice error-notice" role="alert">
+   {error==="excluir"?"Não foi possível excluir esta promoção.":"Não foi possível salvar. Confira os campos, o item escolhido e a validade."}
+  </p>}
+  {ok&&<p className="notice success" role="status">
+   {ok==="excluida"?"Promoção excluída da divulgação.":"Registro salvo com sucesso."}
+  </p>}
+  {view==="promocoes"&&<>
     {isOwner&&<article className="card"><h3>Publicar promoção</h3>
-      <MarketingOfferForm tenantCode={tenantCode} services={services} products={products.map(p=>({...p,category:resolveStockCategory(ws,p.id)}))}
-       initialKind={segment} returnModule={view}/>
+      <MarketingOfferForm tenantCode={tenantCode} services={services}
+       products={products.map(p=>({...p,category:resolveStockCategory(ws,p.id)}))}/>
     </article>}
     <article className="card"><h3>Postagens cadastradas</h3>
-      <div className="erp-stacked-list">{offers.map(o=><div key={o.id}><div><strong>{o.title}</strong>
-       <span>{o.description}</span>{!!o.itemNames?.length&&<small>Itens: {o.itemNames.join(", ")}</small>}<small>{o.kind==="SERVICE"?"Serviço":"Produto / bebida"} · {o.discountPercent}% · Até {o.expiresAt} · Público: {o.audience}</small></div></div>)}
-       {ws.campaigns.filter(c=>c.kind==="PROMOTION"&&c.active).map(c=><div key={c.id}>
-         <div><strong>{c.title}</strong><span>{c.message}</span>
-           <small>Campanha comercial existente · Público: {c.audience} · Mantida para preservar o histórico</small>
-         </div>
+      <div className="erp-stacked-list">
+       {offers.map(o=><div key={o.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+        <div><strong>{o.title}</strong>
+         <span>{o.description}</span>
+         {!!o.itemNames?.length&&<small>Item: {o.itemNames.join(", ")}</small>}
+         <small>{o.offerType==="DRINK"?"Bebida":o.kind==="SERVICE"?"Serviço":"Produto"} · {o.discountPercent}% · Até {o.expiresAt} · Público: {o.audience} · {o.expiresAt<today?"Expirada":"Ativa"}</small>
+        </div>
+        {isOwner&&<form action={deleteMarketingPromotion} style={{flexShrink:0}}>
+         <input type="hidden" name="tenantCode" value={tenantCode}/>
+         <input type="hidden" name="promotionId" value={o.id}/>
+         <input type="hidden" name="source" value="OFFER"/>
+         <button className="btn secondary" type="submit" title={"Excluir promoção "+o.title} aria-label={"Excluir promoção "+o.title}><Trash2 size={16}/></button>
+        </form>}
        </div>)}
-       {!offers.length&&!ws.campaigns.some(c=>c.kind==="PROMOTION"&&c.active)&&
-         <p className="small muted">Nenhuma promoção ativa para o período.</p>}
+       {pastCampaigns.map(c=><div key={c.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+        <div><strong>{c.title}</strong><span>{c.message}</span>
+         <small>Promoção anterior · Público: {c.audience}</small>
+        </div>
+        {isOwner&&<form action={deleteMarketingPromotion} style={{flexShrink:0}}>
+         <input type="hidden" name="tenantCode" value={tenantCode}/>
+         <input type="hidden" name="promotionId" value={c.id}/>
+         <input type="hidden" name="source" value="CAMPAIGN"/>
+         <button className="btn secondary" type="submit" title={"Excluir promoção "+c.title} aria-label={"Excluir promoção "+c.title}><Trash2 size={16}/></button>
+        </form>}
+       </div>)}
+       {!offers.length&&!pastCampaigns.length&&<p className="small muted">Nenhuma promoção cadastrada para divulgação.</p>}
       </div>
     </article>
   </>}
