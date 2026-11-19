@@ -96,17 +96,38 @@ export async function deleteMarketingPromotion(form:FormData){
  redirect(url(ctx.code)+"?ok=excluida");
 }
 export async function saveBirthdayPromotion(form:FormData){
- const ctx=await editor(form,"marketing-aniversariantes"),kind=val(form,"kind",12),
-  value=Number(val(form,"value",12).replace(",",".")),description=val(form,"description",500),
-  enabled=form.get("enabled")==="on";
- if(!["FIXED","PERCENT"].includes(kind)||!Number.isFinite(value)||value<=0||
-   value>(kind==="PERCENT"?100:10000)||description.length<3)
-  redirect(url(ctx.code,"marketing-aniversariantes")+"?erro=promocao");
+ const ctx=await editor(form,"marketing-aniversariantes");
+ const kind=val(form,"kind",12),offerType=val(form,"offerType",20),
+  itemId=val(form,"itemId",100),period=val(form,"period",12),
+  value=Number(val(form,"value",12).replace(",",".")),
+  description=val(form,"description",500),enabled=form.get("enabled")==="on";
+ const error=url(ctx.code,"marketing-aniversariantes")+"?erro=promocao";
+ if(!["FIXED","PERCENT"].includes(kind)||!["DAY","WEEK","MONTH"].includes(period)||
+   !["SERVICE","PRODUCT","DRINK"].includes(offerType)||!Number.isFinite(value)||value<=0||
+   value>(kind==="PERCENT"?100:10000)||description.length<3||
+   (enabled&&!itemId))redirect(error);
+ // Verifica o item no cadastro ativo do tenant antes de aplicar uma promoção.
+ const kindOfItem=offerType==="SERVICE"?"SERVICE":"PRODUCT";
+ const item=itemId?(kindOfItem==="SERVICE"?await prisma.service.findFirst({
+  where:{id:itemId,barberShopId:ctx.shopId,active:true},select:{id:true,name:true},
+ }):await prisma.product.findFirst({
+  where:{id:itemId,barberShopId:ctx.shopId,active:true},select:{id:true,name:true},
+ })):null;
+ if(itemId&&!item)redirect(error);
  try{
-  await save(ctx,"BIRTHDAY_PROMOTION_UPDATED",{kind,value,enabled},ws=>{
-   ws.birthdayPromotion={kind:kind as "FIXED"|"PERCENT",value,description,enabled};
+  await save(ctx,"BIRTHDAY_PROMOTION_UPDATED",{kind,value,enabled,period,offerType,itemId},ws=>{
+   if(item&&kindOfItem==="PRODUCT"){
+    const isDrink=resolveStockCategory(ws,item.id)==="Bebidas";
+    if(isDrink!==(offerType==="DRINK"))throw Error("Tipo não corresponde ao produto");
+   }
+   ws.birthdayPromotion={
+    kind:kind as "FIXED"|"PERCENT",value,description,enabled,
+    period:period as "DAY"|"WEEK"|"MONTH",
+    offerType:offerType as "SERVICE"|"PRODUCT"|"DRINK",
+    itemId:item?.id??"",itemName:item?.name??"",
+   };
   });
- }catch{redirect(url(ctx.code,"marketing-aniversariantes")+"?erro=promocao");}
+ }catch{redirect(error);}
  redirect(url(ctx.code,"marketing-aniversariantes")+"?ok=promocao");
 }
 export async function createVerifiedCustomerReview(form:FormData){
