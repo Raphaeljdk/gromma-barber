@@ -2057,7 +2057,7 @@ export async function TenantERPView({
           </details>
         </section>
 
-        {financeSubmodule && <FinancialSubpage tenantCode={tenantCode}
+        {financeSubmodule && <FinancialSubpage tenantCode={tenantCode} shopId={shop.id}
           view={activeModule as FinancialSubmodule}
           rows={financialEntries.map(entry=>({
             id:entry.id,description:entry.description,type:entry.type,status:entry.status,
