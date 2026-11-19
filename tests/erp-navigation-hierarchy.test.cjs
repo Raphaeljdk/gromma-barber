@@ -31,18 +31,17 @@ const EXPECTED = {
     "relatorios-financeiro": ["Estornos", "Faturamento", "Movimentações", "Vendas e lucro"],
     "relatorios-clientes": [
       "Frequência do cliente", "Histórico de agendamento", "Histórico de vendas de produtos",
-      "Serviços", "Período e serviços",
+      "Serviços", "Clientes novos", "Período e serviços",
     ],
     "relatorios-profissionais": [
       "Comissões", "MC por profissional", "Ticket médio por clientes distintos", "Ticket médio por atendimento",
     ],
   },
   marketing: {
-    "marketing-clube": ["Parceiros do clube", "Pontos", "Cupons"],
-    "marketing-promocoes": ["Serviços", "Produtos"],
+    "marketing-clube": ["Pontos", "Cupons"],
+    "marketing-promocoes": ["Serviços", "Produtos e bebidas"],
     "marketing-experiencia": [
-      "Aniversariante por período", "Avaliação", "Agendamento do cliente",
-      "Clientes ausentes", "Clientes sem preferência", "Clientes novos",
+      "Aniversariante da semana", "Avaliação",
     ],
   },
 };
@@ -89,7 +88,7 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
     "assinaturas-trocas", "assinaturas-cancelados", "assinaturas-transacoes", "assinaturas-vendas", "assinaturas-origem",
     "assinantes", "clube-pag", "clube-reajustes", "clube-pagamentos", "clube-recebiveis", "clube-cancelados", "clube-pote", "clube-inadimplentes", "clube-saques", "clube-transacoes", "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
     "servicos", "unidades", "dados", "identidade", "clube-config", "equipe/novo", "plano", "fatura", "grupos-acesso", "funcionarios-destaque", "configuracoes", "financeiro", "gerencial",
-    "alertas", "mensagens", "documentos", "treinamentos", "totem",
+    "alertas", "mensagens", "gromma-ia", "marketing-pontos", "marketing-cupons", "marketing-promocoes-servicos", "marketing-promocoes-produtos", "marketing-aniversariantes", "relatorios-clientes-novos", "documentos", "treinamentos", "totem",
     "financeiro-contas-pagar", "financeiro-contas-receber", "financeiro-criar-receita",
     "financeiro-criar-despesa", "financeiro-despesas", "financeiro-categorias",
     "financeiro-contas-bancarias", "financeiro-formas-comanda", "financeiro-formas-despesas",
