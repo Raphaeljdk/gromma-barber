@@ -6,6 +6,7 @@ import {FinancialAccountOverview} from "@/components/financial-account-overview"
 import {FinancialExpensesOverview} from "@/components/financial-expenses-overview";
 import {createFinancialBankAccount,removeFinancialBankAccount,removeFinancialBankRequest,createFinancialCustomPaymentMethod,saveFinancialPaymentMethods} from "@/app/erp/[tenant]/financial-setup-actions";
 import {FinancialCategoryForm} from "@/components/financial-category-form";
+import {CustomPaymentMethodForm} from "@/components/custom-payment-method-form";
 import {isBankVerifierConfigured} from "@/lib/financial-registry-security";
 import type {BankOption} from "@/lib/bank-directory";
 import styles from "@/components/financial-registry-forms.module.css";
@@ -136,7 +137,9 @@ export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner
      <p className="small muted">Associe a categoria, a filial e, quando necessário, a conta bancária.</p>
      <FinancialEntryCreateForm tenantCode={tenantCode} type={isExpense?"PAYABLE":"RECEIVABLE"}
        units={units} categories={workspace.financialCategories} banks={workspace.financialBankAccounts}
-       expenseMethods={workspace.financialExpenseMethods} returnModule={view}/>
+       expenseMethods={workspace.financialExpenseMethods}
+       expenseCustomMethods={workspace.financialExpenseCustomMethods}
+       customPaymentMethods={workspace.customPaymentMethods} returnModule={view}/>
    </article>}
    {view==="financeiro-categorias"&&isOwner&&<>
      <article className="card gromma-finance-form-card"><h3>Cadastrar categoria financeira</h3>
@@ -230,22 +233,7 @@ export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner
    </>}
    {view==="financeiro-formas-comanda"&&isOwner&&<div className="gromma-finance-payment-section">
      <p className="small muted">Configure os meios aceitos em cada filial. Novas comandas respeitam estas opções; pagamentos antigos não são alterados.</p>
-     <details className="card" style={{margin:"10px 0 14px"}}>
-       <summary style={{cursor:"pointer",fontWeight:750,fontSize:".85rem"}}><Plus size={15} style={{display:"inline-block",verticalAlign:"middle",marginRight:6}}/> Adicionar forma de pagamento</summary>
-       <p className="small muted">A nova forma aparecerá no cadastro das filiais para configurar ativação, taxas e prazos. Até a integração do checkout, ela não movimenta recebimentos reais.</p>
-       <form action={createFinancialCustomPaymentMethod} className={styles.paymentForm}>
-         <input type="hidden" name="tenantCode" value={tenantCode}/>
-         <label>Nome da forma de pagamento
-           <input className="input" name="name" required minLength={2} maxLength={80} placeholder="Ex.: Carteira Digital XYZ"/>
-         </label>
-         <label>Tipo de pagamento
-           <select className="select" name="type" required defaultValue="PIX">
-             {PAYMENT_METHODS.map(method=><option key={method} value={method}>{PAYMENT_LABELS[method]}</option>)}
-           </select>
-         </label>
-         <button className="btn" type="submit"><Plus size={15}/> Cadastrar forma</button>
-       </form>
-     </details>
+     <CustomPaymentMethodForm tenantCode={tenantCode} destination="COMMAND"/>
      {workspace.customPaymentMethods.length>0&&<div className={styles.list}>
        {workspace.customPaymentMethods.filter(item=>item.active).map(item=><div className={styles.listRow} key={item.id}>
          <strong>{item.name}</strong><span className="small muted">Tipo: {PAYMENT_LABELS[item.type]}</span><span className={styles.pill}>Configuração disponível nas filiais</span>
@@ -275,6 +263,7 @@ export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner
    </div>}
    {view==="financeiro-formas-despesas"&&isOwner&&<article className="card gromma-finance-payment-section">
      <h3>Formas de pagamento das despesas</h3>
+     <CustomPaymentMethodForm tenantCode={tenantCode} destination="EXPENSE"/>
      <p className="small muted">Define as opções disponíveis ao registrar despesas. Não realiza pagamentos externos.</p>
      <form action={saveFinancialPaymentMethods} className="gromma-finance-method-form">
        <input type="hidden" name="tenantCode" value={tenantCode}/>
@@ -285,6 +274,13 @@ export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner
              defaultChecked={workspace.financialExpenseMethods.includes(method)}/>
            <span>{PAYMENT_LABELS[method]}</span></label>)}
        </div>
+       {workspace.customPaymentMethods.some(item=>item.active)&&<div className={styles.methodGrid}>
+         {workspace.customPaymentMethods.filter(item=>item.active).map(item=><label key={item.id}>
+           <input type="checkbox" name="customMethods" value={item.id}
+             defaultChecked={workspace.financialExpenseCustomMethods.includes(item.id)}/>
+           {item.name} ({PAYMENT_LABELS[item.type]})
+         </label>)}
+       </div>}
        <button className="btn" type="submit"><CreditCard size={16}/> Salvar meios das despesas</button>
      </form>
    </article>}
