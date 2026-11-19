@@ -303,6 +303,7 @@ export type LoyaltyReferral={
 };
 export type MarketingOffer={
   id:string;title:string;kind:"SERVICE"|"PRODUCT";itemId:string;
+  offerType?:"SERVICE"|"PRODUCT"|"DRINK";
   itemIds?:string[];itemNames?:string[];
   description:string;discountPercent:number;audience:AudienceRule;
   expiresAt:string;active:boolean;createdAt:string;
@@ -675,6 +676,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         percentage<=0||percentage>100)return [];
       return [{id:p.id.slice(0,100),title:String(p.title??"").slice(0,120),
         kind:kind as MarketingOffer["kind"],itemId:p.itemId.slice(0,100),
+        offerType:(p.offerType==="DRINK"&&kind==="PRODUCT"?"DRINK":kind==="SERVICE"?"SERVICE":"PRODUCT") as MarketingOffer["offerType"],
         itemIds:Array.isArray(p.itemIds)?p.itemIds.filter((id):id is string=>typeof id==="string"&&id.length<=100).slice(0,30):p.itemId?[p.itemId.slice(0,100)]:[],
         itemNames:Array.isArray(p.itemNames)?p.itemNames.filter((name):name is string=>typeof name==="string"&&name.length<=120).slice(0,30):[],
         description:String(p.description??"").slice(0,600),
