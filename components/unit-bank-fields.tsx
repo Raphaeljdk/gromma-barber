@@ -1,46 +1,29 @@
 "use client";
-import { useState } from "react";
-import type { BankOption } from "@/lib/bank-directory";
-import type { UnitOperationsPolicy } from "@/lib/erp-workspace";
+import {useState} from "react";
+import type {UnitOperationsPolicy,FinancialBankAccountConfig} from "@/lib/erp-workspace";
 
-export function UnitBankFields({policy,banks}:{policy:UnitOperationsPolicy;banks:BankOption[]}){
-  const [country,setCountry]=useState<"BR"|"INT">(policy.bankCountry);
-  const [bank,setBank]=useState(policy.bankCode?(policy.bankCountry==="BR"?
-    [policy.bankCode,policy.bankName].filter(Boolean).join(" — "):policy.bankName):"");
+export function UnitBankFields({policy,unitId,verifiedAccounts}:{
+  policy:UnitOperationsPolicy;unitId:string;verifiedAccounts:FinancialBankAccountConfig[];
+}){
+  const eligible=verifiedAccounts.filter(bank=>bank.active&&bank.unitId===unitId&&bank.verifiedAt);
+  const existing=eligible.find(bank=>bank.bankCode===policy.bankCode&&bank.agency===policy.bankAgency&&
+    bank.account===policy.bankAccount);
+  const legacy=Boolean(policy.bankAccount)&&!existing;
+  const [selected,setSelected]=useState(existing?.id??(legacy?"__legacy__":""));
+  const bank=eligible.find(bank=>bank.id===selected);
   return <div className="gromma-unit-bank-grid">
-    <label>País da conta
-      <select className="select" name="bankCountry" value={country} onChange={e=>{setCountry(e.target.value as "BR"|"INT");setBank("");}}>
-        <option value="BR">Brasil — código bancário/ISPB</option>
-        <option value="INT">Internacional — SWIFT/BIC</option>
+    <label className="gromma-unit-bank-name">Conta bancária de recebimento verificada
+      <select className="select" name="verifiedBankAccountId" value={selected} onChange={e=>setSelected(e.target.value)}>
+        <option value="">Nenhuma conta associada</option>
+        {legacy&&<option value="__legacy__">Conta antiga — não verificada (somente histórico)</option>}
+        {eligible.map(item=><option value={item.id} key={item.id}>
+          {item.name} · {item.bankName} · agência {item.agency} · conta final {item.account.slice(-4)}
+        </option>)}
       </select>
     </label>
-    <label className="gromma-unit-bank-name">Banco
-      {country==="BR"?<>
-        <input className="input" name="bankCode" type="search" list="gromma-brazil-banks"
-          value={bank} onChange={e=>setBank(e.target.value)}
-          maxLength={180} placeholder="Pesquise pelo código ou nome do banco"/>
-        <datalist id="gromma-brazil-banks">
-          {banks.map(item=><option key={item.ispb+item.code}
-            value={item.code+" — "+item.name}>{item.name+" · ISPB "+item.ispb}</option>)}
-        </datalist>
-      </>:<>
-        <input type="hidden" name="bankCode" value=""/>
-        <input className="input" name="bankName" maxLength={150}
-          defaultValue={policy.bankCountry==="INT"?policy.bankName:""}
-          placeholder="Nome do banco internacional"/>
-      </>}
-    </label>
-    <label>Agência
-      <input className="input" name="bankAgency" maxLength={30}
-        defaultValue={policy.bankAgency} placeholder="Agência"/>
-    </label>
-    <label>Conta
-      <input className="input" name="bankAccount" maxLength={35}
-        defaultValue={policy.bankAccount} placeholder="Conta / dígito"/>
-    </label>
-    {country==="INT"&&<label>SWIFT/BIC
-      <input className="input" name="bankSwift" maxLength={11}
-        defaultValue={policy.bankSwift} placeholder="8 ou 11 caracteres"/>
-    </label>}
+    {bank?<p className="small muted">Conta verificada vinculada a esta filial: {bank.bankName} · agência {bank.agency} · conta ••••{bank.account.slice(-4)}. A chave Pix foi validada pelo provedor autorizado.</p>:
+      <p className="small muted">{legacy&&selected==="__legacy__"?
+        "Este cadastro antigo permanece somente para referência e NÃO tem titularidade comprovada. Para substituir, cadastre e valide uma conta em Financeiro → Contas bancárias.":
+        "Cadastre primeiro uma conta com titularidade confirmada em Financeiro → Contas bancárias. Contas sem verificação não podem ser ativadas aqui."}</p>}
   </div>;
 }
