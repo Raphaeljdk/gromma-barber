@@ -1,11 +1,12 @@
 import {Trash2} from "lucide-react";
 import {prisma} from "@/lib/prisma";
 import {saveCoupon} from "@/app/erp/[tenant]/module-actions";
-import {deleteMarketingPromotion,saveBirthdayPromotion} from "@/app/erp/[tenant]/marketing-offer-actions";
+import {deleteMarketingPromotion} from "@/app/erp/[tenant]/marketing-offer-actions";
 import {MarketingOfferForm} from "@/components/marketing-offer-form";
+import {BirthdayPromotionForm} from "@/components/birthday-promotion-form";
 import type {ErpWorkspace} from "@/lib/erp-workspace";
 import {resolveStockCategory} from "@/lib/accounting-kardex";
-import {customerBirthdayThisWeek,marketingTodayISO} from "@/lib/marketing-birthday";
+import {customerBirthdayForPeriod,marketingTodayISO} from "@/lib/marketing-birthday";
 type View="promocoes"|"marketing-cupons"|"marketing-aniversariantes";
 export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,error,ok}:{
  tenantCode:string;shopId:string;ws:ErpWorkspace;view:View;isOwner:boolean;error:string;ok:string;
@@ -17,12 +18,13 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
    select:{birthDate:true},take:10000}):Promise.resolve([]),
  ]);
  const today=marketingTodayISO();
- const qualifying=customers.filter(c=>customerBirthdayThisWeek(c.birthDate,today)).length;
+ const qualifying=customers.filter(c=>customerBirthdayForPeriod(c.birthDate,today,ws.birthdayPromotion.period)).length;
+ const periodLabel=ws.birthdayPromotion.period==="DAY"?"do dia":ws.birthdayPromotion.period==="MONTH"?"do mês":"da semana";
  const offers=ws.marketingOffers.filter(o=>o.active);
  const pastCampaigns=ws.campaigns.filter(c=>c.kind==="PROMOTION"&&c.active);
  return <section className="demo-section" style={{display:"grid",gap:15}}>
   <div className="section-head"><div><span className="eyebrow">Marketing e promoção</span><h2>{
-    view==="marketing-cupons"?"Cupons de desconto":view==="marketing-aniversariantes"?"Aniversariantes da semana":"Promoções"
+    view==="marketing-cupons"?"Cupons de desconto":view==="marketing-aniversariantes"?"Aniversariantes "+periodLabel:"Promoções"
    }</h2></div></div>
   {error&&<p className="notice error-notice" role="alert">
    {error==="excluir"?"Não foi possível excluir esta promoção.":"Não foi possível salvar. Confira os campos, o item escolhido e a validade."}
@@ -67,6 +69,7 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
   </>}
   {view==="marketing-cupons"&&<article className="card">
    <h3>Cupons de desconto</h3>
+   <p className="small muted">Válidos para todos os clientes, com ou sem assinatura, conforme as condições e a validade configuradas. Podem ser aplicados no fechamento da comanda.</p>
    {isOwner&&<form action={saveCoupon} className="erp-compact-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="returnModule" value="marketing-cupons"/>
@@ -83,26 +86,16 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
     {!ws.coupons.length&&<p className="small muted">Nenhum cupom cadastrado.</p>}</div>
   </article>}
   {view==="marketing-aniversariantes"&&<>
-    <div className="erp-kpi-row"><article><span>Aniversariantes da semana</span>
-      <strong>{qualifying}</strong><small>Clientes ativos com data de nascimento cadastrada</small></article>
+    <div className="erp-kpi-row"><article><span>ANIVERSARIANTES {periodLabel.toLocaleUpperCase("pt-BR")}</span>
+      <strong>{qualifying}</strong><small>Clientes ativos com nascimento no período selecionado</small></article>
     </div>
-    {isOwner&&<article className="card"><h3>Promoção exclusiva de aniversário</h3>
-     <p className="small muted">Será mostrada somente no site privado dos clientes cujo aniversário ocorre nesta semana.</p>
-     <form action={saveBirthdayPromotion} className="erp-compact-form">
-      <input type="hidden" name="tenantCode" value={tenantCode}/>
-      <label className="erp-check-row"><input type="checkbox" name="enabled" defaultChecked={ws.birthdayPromotion.enabled}/>Ativar a promoção</label>
-      <div className="grid grid-2">
-       <label>Tipo de desconto <select className="select" name="kind" defaultValue={ws.birthdayPromotion.kind}>
-        <option value="PERCENT">Porcentagem (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>
-       <label>Valor do desconto <input className="input" name="value" type="number" min=".01" step=".01"
-         max="10000" required defaultValue={ws.birthdayPromotion.value||undefined}/></label>
-      </div>
-      <label>Texto da promoção <textarea className="textarea" name="description" rows={4} minLength={3}
-        required maxLength={500} defaultValue={ws.birthdayPromotion.description}
-        placeholder="Parabéns! Aproveite este desconto especial durante a semana do seu aniversário."/></label>
-      <button type="submit" className="btn">Salvar promoção de aniversário</button>
-     </form>
+    {isOwner&&<article className="card">
+      <h3>Promoção exclusiva de aniversário</h3>
+      <p className="small muted">A promoção será exibida somente no portal dos clientes cujo aniversário corresponde ao período configurado.</p>
+      <BirthdayPromotionForm tenantCode={tenantCode} settings={ws.birthdayPromotion}
+        services={services} products={products.map(p=>({...p,category:resolveStockCategory(ws,p.id)}))}/>
     </article>}
   </>}
+
  </section>;
 }
