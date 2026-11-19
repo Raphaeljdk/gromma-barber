@@ -6,6 +6,7 @@ import {requireTenantAccess} from "@/lib/tenant-auth";
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 import {marketingTodayISO} from "@/lib/marketing-birthday";
+import {resolveStockCategory} from "@/lib/accounting-kardex";
 const val=(f:FormData,key:string,max=500)=>String(f.get(key)??"").trim().slice(0,max);
 const url=(code:string,target="promocoes")=>"/erp/"+encodeURIComponent(code)+"/"+target;
 const week=(day:Date)=>{const d=new Date(day);d.setUTCHours(12,0,0,0);return d};
@@ -34,45 +35,65 @@ async function save(ctx:{code:string;shopId:string;actor:string},action:string,
  revalidatePath("/barbearia/"+encodeURIComponent(ctx.code.toLowerCase()));
 }
 export async function createMarketingOffer(form:FormData){
- const target=val(form,"returnModule",60),routes=["marketing-promocoes-servicos","marketing-promocoes-produtos","promocoes"];
- const page=routes.includes(target)?target:"promocoes",ctx=await editor(form,page);
+ const ctx=await editor(form,"promocoes");
+ const offerType=val(form,"kind",20);
+ const kind=offerType==="DRINK"?"PRODUCT":offerType;
  const title=val(form,"title",120),description=val(form,"description",600),
-  kind=val(form,"kind",20),legacyItemId=val(form,"itemId",100),
-  audience=val(form,"audience",30),expiresAt=val(form,"expiresAt",10),
+  itemId=val(form,"itemId",100),audience=val(form,"audience",30),
+  expiresAt=val(form,"expiresAt",10),
   discountPercent=Number(val(form,"discountPercent",12).replace(",","."));
- const requested=form.getAll("itemIds").map(item=>String(item).trim());
- const itemIds=requested.length?[...new Set(requested)]:legacyItemId?[legacyItemId]:[];
  const audiences=["ALL","INACTIVE_30","INACTIVE_60","INACTIVE_90","BIRTHDAY","CLUB"];
- if(!["SERVICE","PRODUCT"].includes(kind)||title.length<2||description.length<3||
-  !audiences.includes(audience)||!Number.isFinite(discountPercent)||discountPercent<=0||discountPercent>100||
-  !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)||expiresAt<marketingTodayISO()||
-  requested.length>30||itemIds.length>30||itemIds.some(id=>!id||id.length>100))
-   redirect(url(ctx.code,page)+"?erro=promocao");
- if((page==="marketing-promocoes-servicos"&&kind!=="SERVICE")||
-   (page==="marketing-promocoes-produtos"&&kind!=="PRODUCT")||
-   (page!=="promocoes"&&!itemIds.length))
-   redirect(url(ctx.code,page)+"?erro=promocao");
+ if(!["SERVICE","PRODUCT","DRINK"].includes(offerType)||title.length<2||
+   description.length<3||!itemId||!audiences.includes(audience)||
+   !Number.isFinite(discountPercent)||discountPercent<=0||discountPercent>100||
+   !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)||expiresAt<marketingTodayISO())
+   redirect(url(ctx.code)+"?erro=promocao");
 
- // O servidor confere cada item selecionado contra o cadastro ATIVO da mesma barbearia.
- const found=itemIds.length?(kind==="SERVICE"?await prisma.service.findMany({
-   where:{id:{in:itemIds},barberShopId:ctx.shopId,active:true},select:{id:true,name:true},
- }):await prisma.product.findMany({
-   where:{id:{in:itemIds},barberShopId:ctx.shopId,active:true},select:{id:true,name:true},
- })): [];
- if(found.length!==itemIds.length)redirect(url(ctx.code,page)+"?erro=produto");
- const foundById=new Map(found.map(item=>[item.id,item.name]));
- const itemNames=itemIds.map(id=>foundById.get(id)??"");
+ // Vincula exclusivamente um serviço, produto ou bebida ativo da empresa.
+ const found=kind==="SERVICE" ? await prisma.service.findFirst({
+   where:{id:itemId,barberShopId:ctx.shopId,active:true},select:{id:true,name:true},
+ }) : await prisma.product.findFirst({
+   where:{id:itemId,barberShopId:ctx.shopId,active:true},select:{id:true,name:true},
+ });
+ if(!found)redirect(url(ctx.code)+"?erro=item");
  try{
   await save(ctx,"MARKETING_OFFER_CREATED",
-   {title,kind,itemIds,audience,discountPercent,expiresAt},ws=>{
-   if(ws.marketingOffers.length>=300)throw Error("Limite de ofertas atingido");
-   ws.marketingOffers.push({id:workspaceId("offer"),title,description,
-    kind:kind as "SERVICE"|"PRODUCT",itemId:itemIds[0]??"",itemIds,itemNames,discountPercent,
-    audience:audience as typeof ws.marketingOffers[number]["audience"],
-    expiresAt,active:true,createdAt:new Date().toISOString()});
+   {title,offerType,itemId,audience,discountPercent,expiresAt},ws=>{
+    if(ws.marketingOffers.length>=300)throw Error("Limite de ofertas atingido");
+    if(kind==="PRODUCT"){
+     const isDrink=resolveStockCategory(ws,itemId)==="Bebidas";
+     if(isDrink!==(offerType==="DRINK"))throw Error("Categoria do item não corresponde ao tipo");
+    }
+    ws.marketingOffers.unshift({id:workspaceId("offer"),title,description,
+     kind:kind as "SERVICE"|"PRODUCT",offerType:offerType as "SERVICE"|"PRODUCT"|"DRINK",
+     itemId,itemIds:[itemId],itemNames:[found.name],discountPercent,
+     audience:audience as typeof ws.marketingOffers[number]["audience"],
+     expiresAt,active:true,createdAt:new Date().toISOString()});
   });
- }catch{redirect(url(ctx.code,page)+"?erro=promocao");}
- redirect(url(ctx.code,page)+"?ok=promocao");
+ }catch{redirect(url(ctx.code)+"?erro=promocao");}
+ redirect(url(ctx.code)+"?ok=promocao");
+}
+
+/** Oculta a promoção da lista e das vitrines sem apagar o histórico auditável. */
+export async function deleteMarketingPromotion(form:FormData){
+ const ctx=await editor(form,"promocoes");
+ const id=val(form,"promotionId",100),source=val(form,"source",20);
+ if(!id||!["OFFER","CAMPAIGN"].includes(source))
+  redirect(url(ctx.code)+"?erro=excluir");
+ try{
+  await save(ctx,"MARKETING_PROMOTION_DELETED",{promotionId:id,source},ws=>{
+   if(source==="OFFER"){
+    const offer=ws.marketingOffers.find(item=>item.id===id&&item.active);
+    if(!offer)throw Error("Promoção não encontrada");
+    offer.active=false;
+   }else{
+    const campaign=ws.campaigns.find(item=>item.id===id&&item.active&&item.kind==="PROMOTION");
+    if(!campaign)throw Error("Campanha não encontrada");
+    campaign.active=false;
+   }
+  });
+ }catch{redirect(url(ctx.code)+"?erro=excluir");}
+ redirect(url(ctx.code)+"?ok=excluida");
 }
 export async function saveBirthdayPromotion(form:FormData){
  const ctx=await editor(form,"marketing-aniversariantes"),kind=val(form,"kind",12),
