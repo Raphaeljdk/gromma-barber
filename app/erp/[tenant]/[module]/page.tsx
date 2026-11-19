@@ -29,7 +29,12 @@ const MODULES = new Set([
   "clube-transacoes",
 
   "mensagens",
+  "gromma-ia",
   "promocoes",
+  "promocoes-servicos",
+  "promocoes-produtos",
+  "promocoes-aniversariantes",
+  "relatorios-clientes-novos",
   "financeiro",
   "financeiro-contas-pagar",
   "financeiro-contas-receber",
