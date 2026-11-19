@@ -63,7 +63,9 @@ export async function verifyBankAccountOwnership(input:BankProofRequest):Promise
     const result=raw as Record<string,unknown>;
     if(result.verified!==true||result.pixOwnershipVerified!==true)return null;
     if(bankDigits(String(result.ownerCnpj??""))!==input.ownerCnpj)return null;
-    if(bankDigits(String(result.bankCode??"")).padStart(3,"0")!==input.bankCode)return null;
+    if(bankDigits(String(result.bankCode??"")).padStart(3,"0")!==input.bankCode||
+       bankDigits(String(result.ispb??"")).padStart(8,"0")!==input.ispb||
+       String(result.pixType??"")!==input.pixType)return null;
     if(normalizeAccount(String(result.agency??""))!==normalizeAccount(input.agency)||
        normalizeAccount(String(result.account??""))!==normalizeAccount(input.account))return null;
     if(String(result.pixKey??"").trim().toLowerCase()!==input.pixKey.trim().toLowerCase())return null;
