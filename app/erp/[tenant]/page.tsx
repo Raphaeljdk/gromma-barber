@@ -630,11 +630,10 @@ export async function TenantERPView({
         })
       : Promise.resolve([]),
     needsRelationship
-      ? prisma.appointment.findMany({
+      ? prisma.appointment.groupBy({
+          by: ["customerId"],
           where: { barberShopId: shop.id, customerId: { not: null }, status: "COMPLETED", startsAt: { lte: new Date() } },
-          orderBy: { startsAt: "desc" },
-          select: { customerId: true, startsAt: true, status: true },
-          take: 3000,
+          _max: { startsAt: true },
         })
       : Promise.resolve([]),
     needsProduction
@@ -955,8 +954,8 @@ export async function TenantERPView({
 
   const lastAppointmentByCustomer = new Map<string, Date>();
   relationshipAppointments.forEach((item) => {
-    if (item.customerId && !lastAppointmentByCustomer.has(item.customerId)) {
-      lastAppointmentByCustomer.set(item.customerId, item.startsAt);
+    if (item.customerId && item._max.startsAt) {
+      lastAppointmentByCustomer.set(item.customerId, item._max.startsAt);
     }
   });
 
@@ -974,7 +973,7 @@ export async function TenantERPView({
   const currentMonth = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", month: "numeric" }).format(now));
   const birthdayCustomers = customersForRelationship.filter((customer) => {
     if (!customer.birthDate) return false;
-    return Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", month: "numeric" }).format(customer.birthDate)) === currentMonth;
+    return Number(customer.birthDate.toISOString().slice(5,7)) === currentMonth;
   });
 
   const memberCustomers = ["assinaturas", "assinantes"].includes(activeModule) && workspace.clubMembers.length
