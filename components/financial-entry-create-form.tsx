@@ -45,7 +45,12 @@ export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,cat
         <span className={styles.hint}>Novas categorias podem ser cadastradas em Financeiro → Cadastros.</span>
       </label>
       <label>Subcategoria
-        <input className="input" name="subcategory" maxLength={80} placeholder="Ex.: Manutenção"/>
+        <input className="input" name="subcategory" maxLength={80} list="gromma-finance-subcategories"
+          placeholder="Ex.: Manutenção"/>
+        <datalist id="gromma-finance-subcategories">
+          {[...new Set(allowed.filter(item=>item.name===selectedCategory&&item.subcategory)
+            .map(item=>item.subcategory))].map(name=><option value={name} key={name}/>)}
+        </datalist>
       </label>
       <label>Desconto (%)
         <input className="input" name="discountPercent" type="number" step=".01" min="0" max="100" defaultValue="0"/>
