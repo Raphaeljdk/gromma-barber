@@ -104,7 +104,7 @@ export async function createFinancialBankAccount(form:FormData){
   if(!validPixKey(pixKey,pixType,ownerCnpj))fail(url,"pix");
   const banks=await getBrazilBankDirectory();
   const selectedBank=banks.find(bank=>bank.code===bankCode);
-  if(!selectedBank)fail(url,"banco");
+  if(!selectedBank)return fail(url,"banco");
   const verifiedDirectoryBankName=selectedBank.name;
   const input={bankCode,ispb:selectedBank.ispb,agency,account,ownerCnpj,pixKey,pixType};
   const proof=await verifyBankAccountOwnership(input);
