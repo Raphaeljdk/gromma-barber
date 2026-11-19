@@ -804,6 +804,7 @@ export async function createService(formData: FormData) {
   const startingFrom = formData.get("startingFrom")==="on";
   const hidden = formData.get("hidden")==="on";
   const walkIn = formData.get("walkIn")==="on";
+  const pointsEarned=Number(text(formData,"pointsEarned",8)||"0");
 
   if (
     name.length < 2 ||
@@ -814,7 +815,8 @@ export async function createService(formData: FormData) {
     price < 0 ||
     price > 99999999 ||
     (ticketValue!==null && (!Number.isSafeInteger(ticketValue)||ticketValue<1||ticketValue>600)) ||
-    (repurchaseDays!==null && (!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650))
+    (repurchaseDays!==null && (!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650)) ||
+    !Number.isSafeInteger(pointsEarned)||pointsEarned<0||pointsEarned>10000
   ) {
     redirect(`${path}?erro=servico#servicos`);
   }
@@ -830,7 +832,7 @@ export async function createService(formData: FormData) {
       });
       const ws=readWorkspace(fresh.enabledFeatures);
       ws.serviceCatalogSettings[created.id]={
-        ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn,
+        ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn,pointsEarned,
       };
       await tx.barberShop.update({where:{id:shop.id},data:{
         enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
@@ -869,11 +871,13 @@ export async function updateService(formData:FormData){
   const startingFrom=formData.get("startingFrom")==="on";
   const hidden=formData.get("hidden")==="on";
   const walkIn=formData.get("walkIn")==="on";
+  const pointsEarned=Number(text(formData,"pointsEarned",8)||"0");
   if(!serviceId||name.length<2||!Number.isSafeInteger(durationMinutes)||
      durationMinutes<5||durationMinutes>600||
      !Number.isFinite(price)||price<0||price>99999999||
      (ticketValue!==null&&(!Number.isSafeInteger(ticketValue)||ticketValue<1||ticketValue>600))||
-     (repurchaseDays!==null&&(!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650)))
+     (repurchaseDays!==null&&(!Number.isSafeInteger(repurchaseDays)||repurchaseDays<0||repurchaseDays>3650))||
+     !Number.isSafeInteger(pointsEarned)||pointsEarned<0||pointsEarned>10000)
     redirect(`${path}?erro=servico#servicos`);
   try{
     await prisma.$transaction(async tx=>{
@@ -888,7 +892,7 @@ export async function updateService(formData:FormData){
       const ws=readWorkspace(fresh.enabledFeatures);
       const oldMeta=ws.serviceCatalogSettings[serviceId]??null;
       ws.serviceCatalogSettings[serviceId]={
-        ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn,
+        ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn,pointsEarned,
       };
       await tx.barberShop.update({where:{id:shop.id},data:{
         enabledFeatures:writeWorkspace(fresh.enabledFeatures,ws),
@@ -897,7 +901,7 @@ export async function updateService(formData:FormData){
         barberShopId:shop.id,adminEmail:viewer.email,action:"SERVICE_UPDATED",
         details:{
           serviceId,previous:{name:old.name,price:String(old.price),durationMinutes:old.durationMinutes,metadata:oldMeta},
-          updated:{name,price,durationMinutes,ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn},
+          updated:{name,price,durationMinutes,ticketValue,repurchaseDays,category,startingFrom,hidden,walkIn,pointsEarned},
         } as Prisma.InputJsonValue,
       }});
     },{isolationLevel:"Serializable"});
