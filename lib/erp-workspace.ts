@@ -255,6 +255,7 @@ export type FinancialCustomPaymentMethod={
 };
 export type FinancialEntryMetadata={
   bankAccountId:string;paymentMethod:"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER"|"";
+  customPaymentMethodId?:string;
   subcategory?:string;discountPercent?:number;interestPercent?:number;
   feeAmount?:number;principalAmount?:number;notes?:string;
   paymentCondition?:"ONCE"|"RECURRENT";
@@ -571,6 +572,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         return [id,{bankAccountId:typeof entry.bankAccountId==="string"?entry.bankAccountId.slice(0,100):"",
           paymentMethod:["PIX","CASH","DEBIT","CREDIT","TRANSFER"].includes(method)?
           method as FinancialEntryMetadata["paymentMethod"]:"",
+          customPaymentMethodId:typeof entry.customPaymentMethodId==="string"&&/^fpay_[a-z0-9_]{6,80}$/.test(entry.customPaymentMethodId)?entry.customPaymentMethodId:"",
           subcategory:typeof entry.subcategory==="string"?entry.subcategory.slice(0,80):"",
           notes:typeof entry.notes==="string"?entry.notes.slice(0,500):"",
           discountPercent:nonnegative(entry.discountPercent,100),
