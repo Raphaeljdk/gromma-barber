@@ -404,7 +404,7 @@ export async function TenantERPView({
     : ["clube-cancelados","clube-inadimplentes"].includes(activeModule) ? "VIEW_REPORTS"
     : (activeModule==="financeiro" || financeSubmodule || activeModule==="financeiro-gromma-nf") ? "VIEW_FINANCE"
     : activeModule === "comissoes" ? "VIEW_COMMISSIONS"
-    : activeModule === "relatorios" || Boolean(SUBSCRIPTION_REPORTS[activeModule]) ? "VIEW_REPORTS"
+    : ["relatorios","relatorios-clientes-novos"].includes(activeModule) || Boolean(SUBSCRIPTION_REPORTS[activeModule]) ? "VIEW_REPORTS"
     : activeModule.startsWith("auditoria") ? "VIEW_AUDIT" : null;
   if (viewer.type === "TENANT" && controlledModulePermission &&
       !hasStaffPermission(viewer.role, workspace.rolePermissions, controlledModulePermission)) notFound();
