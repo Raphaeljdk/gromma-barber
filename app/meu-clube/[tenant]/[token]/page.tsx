@@ -4,6 +4,7 @@ import {prisma} from "@/lib/prisma";
 import {readWorkspace} from "@/lib/erp-workspace";
 import {loyaltyBalance,validatePrivateToken} from "@/lib/loyalty";
 import {requestLoyaltyReward} from "@/app/erp/[tenant]/loyalty-actions";
+import {createVerifiedCustomerReview} from "@/app/erp/[tenant]/marketing-offer-actions";
 export const dynamic="force-dynamic";
 export const metadata={title:"Meus pontos | GROMMA",robots:{index:false,follow:false},referrer:"no-referrer"};
 const panel={background:"#192129",padding:17,borderRadius:10,border:"1px solid #374151"};
@@ -21,9 +22,21 @@ export default async function CustomerPointsPage({params,searchParams}:{
   select:{id:true,name:true,birthDate:true}});
  if(!customer)notFound();
  const balance=loyaltyBalance(ws,customer.id);
+ const appointments=await prisma.appointment.findMany({where:{barberShopId:shop.id,customerId:customer.id,status:"COMPLETED"},
+   include:{barber:{select:{name:true}}},orderBy:{startsAt:"desc"},take:30});
+ const eligibleReviews=appointments.filter(a=>a.barberId&&!ws.reviews.some(r=>r.appointmentId===a.id));
  const rewards=ws.loyaltyRewards.filter(x=>x.active);
  const referral="/indique/"+encodeURIComponent(tenant)+"/"+encodeURIComponent(access.referralCode);
  const redemptions=ws.loyaltyRedemptions.filter(x=>x.customerId===customer.id).slice(-20).reverse();
+ const lastCompleted=appointments[0]?.startsAt??null;
+ const daysSinceLast=lastCompleted?Math.floor((Date.now()-lastCompleted.getTime())/86400000):999;
+ const hasClub=ws.clubMembers.some(member=>member.customerId===customer.id&&member.status==="ACTIVE");
+ const targetOffers=ws.marketingOffers.filter(offer=>offer.active&&offer.expiresAt>=new Date().toISOString().slice(0,10)&&(
+    offer.audience==="ALL"||
+    offer.audience==="CLUB"&&hasClub||
+    offer.audience==="INACTIVE_30"&&daysSinceLast>=30||
+    offer.audience==="INACTIVE_60"&&daysSinceLast>=60||
+    offer.audience==="INACTIVE_90"&&daysSinceLast>=90));
  const today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
  const birthWeek=Boolean(customer.birthDate)&&(()=>{const d=new Date(customer.birthDate!);
    const mm=d.getUTCMonth(),dd=d.getUTCDate();
@@ -50,6 +63,12 @@ export default async function CustomerPointsPage({params,searchParams}:{
     </div>)}
     {!rewards.length&&<p>Não há recompensas no momento.</p>}
    </section>
+   {targetOffers.length>0&&<section style={panel}><h2>Promoções para você</h2>
+    {targetOffers.map(offer=><article key={offer.id} style={{borderTop:"1px solid #48515e",padding:"10px 0"}}>
+      <strong>{offer.title} · {offer.discountPercent}%</strong><p>{offer.description}</p>
+      <small>Válido até {offer.expiresAt}</small>
+    </article>)}
+   </section>}
    {birthWeek&&ws.birthdayPromotion?.enabled&&<section style={panel}>
     <h2>Seu presente de aniversário da semana</h2>
     <strong>{ws.birthdayPromotion.kind==="PERCENT"?ws.birthdayPromotion.value+"%":"R$ "+ws.birthdayPromotion.value.toFixed(2)} de desconto</strong>
@@ -62,6 +81,26 @@ export default async function CustomerPointsPage({params,searchParams}:{
        <a target="_blank" rel="noopener noreferrer" style={{color:"#77d5b9"}}
         href={"https://wa.me/?text="+encodeURIComponent("Conheça a "+shop.tradeName+"! "+referral)}>Compartilhar pelo WhatsApp</a>
      </>}
+   </section>
+   <section style={panel}><h2>Avalie seu atendimento</h2>
+    <p>As avaliações são vinculadas ao atendimento concluído e aparecem como verificadas para a barbearia.</p>
+    {eligibleReviews.slice(0,6).map(a=><form action={createVerifiedCustomerReview} key={a.id}
+      style={{display:"grid",gap:9,borderTop:"1px solid #48515e",padding:"12px 0"}}>
+      <input type="hidden" name="tenantCode" value={code}/>
+      <input type="hidden" name="accessToken" value={token}/>
+      <input type="hidden" name="appointmentId" value={a.id}/>
+      <strong>{a.barber?.name??"Profissional"} · {new Intl.DateTimeFormat("pt-BR").format(a.startsAt)}</strong>
+      <label>Nota (1 a 5)
+       <select name="score" required defaultValue="5" style={{marginLeft:8}}>
+        {[1,2,3,4,5].map(n=><option key={n} value={n}>{n} estrela(s)</option>)}
+       </select>
+      </label>
+      <label>Mensagem <textarea name="comment" minLength={3} maxLength={700} required rows={3}
+        style={{display:"block",width:"100%",borderRadius:7}}/></label>
+      <button type="submit" style={{background:"#168f76",color:"white",border:0,padding:10,borderRadius:8}}>
+        Enviar avaliação verificada</button>
+    </form>)}
+    {!eligibleReviews.length&&<p>Não há atendimentos concluídos aguardando avaliação.</p>}
    </section>
    <section style={panel}><h2>Meus resgates</h2>
      {redemptions.map(r=><p key={r.id}>{r.rewardName} · {r.points} pontos · {r.status==="PENDING"?"Pendente":r.status==="FULFILLED"?"Entregue":"Cancelado"}</p>)}
