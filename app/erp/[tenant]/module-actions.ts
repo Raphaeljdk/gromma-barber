@@ -405,7 +405,7 @@ export async function generateClubCharge(formData: FormData) {
 
 export async function saveCampaign(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
-  const path = modulePath(tenantCode, "mensagens");
+  const path = modulePath(tenantCode, "gromma-ia");
   if (viewer.type !== "ADMIN" && !hasStaffPermission(viewer.role, readWorkspace(shop.enabledFeatures).rolePermissions, "MANAGE_CAMPAIGNS")) redirect(`${path}?erro=permissao`);
 
   const title = value(formData, "title", 100);
