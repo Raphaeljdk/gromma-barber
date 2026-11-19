@@ -95,7 +95,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "rel-cli-agendamento", label: "Histórico de agendamento" },
           { id: "rel-cli-vendas-produtos", label: "Histórico de vendas de produtos" },
           { id: "rel-cli-servicos", label: "Serviços" },
-          { id: "rel-cli-novos", label: "Clientes novos", route: "relatorios" },
+          { id: "rel-cli-novos", label: "Clientes novos", route: "relatorios-clientes-novos" },
           { id: "rel-cli-periodo", label: "Período e serviços" },
         ] },
         { id: "relatorios-profissionais", label: "Profissionais", children: [
