@@ -81,6 +81,10 @@ export type CustomerGroupConfig = {
 export type CampaignConfig = {
   id: string;
   kind?: "MESSAGE" | "PROMOTION";
+  targetType?: "SERVICE" | "PRODUCT" | "BIRTHDAY";
+  targetIds?: string[];
+  discountKind?: "PERCENT" | "FIXED";
+  discountValue?: number;
   title: string;
   audience: AudienceRule;
   groupId?: string;
@@ -114,6 +118,10 @@ export type ReviewConfig = {
   professionalName: string;
   score: number;
   comment: string;
+  source?: "STAFF" | "CUSTOMER_LINK";
+  customerId?: string;
+  appointmentId?: string;
+  verifiedAt?: string;
   createdAt: string;
 };
 
