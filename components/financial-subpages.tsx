@@ -4,6 +4,7 @@ import {markFinancialPaid} from "@/app/erp/[tenant]/actions";
 import {FinancialEntryCreateForm} from "@/components/financial-entry-create-form";
 import {FinancialAccountOverview} from "@/components/financial-account-overview";
 import {FinancialExpensesOverview} from "@/components/financial-expenses-overview";
+import {AccountingViews} from "@/components/accounting-views";
 import {createFinancialBankAccount,removeFinancialBankAccount,removeFinancialBankRequest,createFinancialCustomPaymentMethod,saveFinancialPaymentMethods} from "@/app/erp/[tenant]/financial-setup-actions";
 import {FinancialCategoryForm} from "@/components/financial-category-form";
 import {CustomPaymentMethodForm} from "@/components/custom-payment-method-form";
@@ -22,6 +23,8 @@ export const FINANCIAL_SUBMODULES=[
  "financeiro-despesas","financeiro-categorias",
  "financeiro-contas-bancarias","financeiro-formas-comanda",
  "financeiro-formas-despesas","financeiro-contabilidade",
+ "financeiro-cardex","financeiro-relatorio-entrada",
+ "financeiro-relatorio-saida","financeiro-portal-contador",
 ] as const;
 export type FinancialSubmodule=typeof FINANCIAL_SUBMODULES[number];
 
@@ -33,7 +36,7 @@ export type FinanceEntryRow={
 type Totals={receivablePending:number;payablePending:number;receivablePaid:number;payablePaid:number};
 type Props={
  tenantCode:string;shopId:string;view:FinancialSubmodule;rows:FinanceEntryRow[];total:number;
- bankDirectory:BankOption[];bankOwner:boolean;
+ bankDirectory:BankOption[];bankOwner:boolean;canAccountingUpload:boolean;
  page:number;pageSize:number;query:Record<string,string|string[]|undefined>;
  filterQuery:string;filterStatus:string;isOwner:boolean;workspace:ErpWorkspace;
  units:{id:string;name:string;paymentMethods:PaymentMethod[]}[];
@@ -50,6 +53,10 @@ const viewNames:Record<FinancialSubmodule,string>={
  "financeiro-formas-comanda":"Formas de pagamento · Comanda",
  "financeiro-formas-despesas":"Formas de pagamento · Despesas",
  "financeiro-contabilidade":"Contabilidade",
+ "financeiro-cardex":"Kardex",
+ "financeiro-relatorio-entrada":"Relatório de entrada",
+ "financeiro-relatorio-saida":"Relatório de saída",
+ "financeiro-portal-contador":"Portal do contador",
 };
 const mask=(value:string)=>value.length<=4?"••••":"••••"+value.slice(-4);
 const date=(iso:string|null)=>iso?new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC"}).format(new Date(iso)):"—";
@@ -92,9 +99,11 @@ function FinanceList({tenantCode,view,rows,total,page,pageSize,query,filterQuery
  </>;
 }
 
-export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner,rows,total,page,pageSize,query,
+export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner,canAccountingUpload,rows,total,page,pageSize,query,
  filterQuery,filterStatus,isOwner,workspace,units,totals,ok,error}:Props){
- const isList=view==="financeiro-contabilidade";
+ const isAccounting=["financeiro-contabilidade","financeiro-cardex","financeiro-relatorio-entrada",
+   "financeiro-relatorio-saida","financeiro-portal-contador"].includes(view);
+ const isList=false;
  const isAccount=view==="financeiro-contas-pagar"||view==="financeiro-contas-receber";
  const isExpenseSummary=view==="financeiro-despesas";
  const isSetup=view.startsWith("financeiro-formas-")||view==="financeiro-categorias"||view==="financeiro-contas-bancarias";
@@ -111,6 +120,9 @@ export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner
      </div></div>
    {ok&&<p className="notice erp-inline-notice success" role="status">{ok==="verificacao-pendente"?"Solicitação de verificação registrada. A conta não está ativa.":ok==="financeiro-pago"?"Baixa registrada com sucesso.":ok==="financeiro"?"Lançamento criado.":"Configuração salva."}</p>}
    {error&&<p className="notice erp-inline-notice error-notice" role="alert">{error==="cnpj"?"Cadastre razão social/CNPJ em Dados e um CNPJ compatível na filial.":error==="pix"?"Chave Pix inválida ou incompatível com o CNPJ informado.":error==="titularidade"?"Somente o proprietário da empresa pode gerenciar contas bancárias.":"Não foi possível concluir a operação. Confira os campos, categorias e permissões."}</p>}
+   {isAccounting&&<AccountingViews tenantCode={tenantCode} shopId={shopId}
+     view={view as "financeiro-contabilidade"|"financeiro-cardex"|"financeiro-relatorio-entrada"|"financeiro-relatorio-saida"|"financeiro-portal-contador"}
+     workspace={workspace} isOwner={isOwner} canImport={canAccountingUpload} query={query}/>}
    {isAccount&&<FinancialAccountOverview tenantCode={tenantCode} shopId={shopId}
      view={view as "financeiro-contas-pagar"|"financeiro-contas-receber"}
      units={units} query={query} isOwner={isOwner} workspace={workspace}/>}
