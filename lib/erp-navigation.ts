@@ -95,6 +95,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "rel-cli-agendamento", label: "Histórico de agendamento" },
           { id: "rel-cli-vendas-produtos", label: "Histórico de vendas de produtos" },
           { id: "rel-cli-servicos", label: "Serviços" },
+          { id: "rel-cli-novos", label: "Clientes novos", route: "relatorios" },
           { id: "rel-cli-periodo", label: "Período e serviços" },
         ] },
         { id: "relatorios-profissionais", label: "Profissionais", children: [
@@ -112,20 +113,16 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     id: "marketing", label: "Marketing e promoção", description: "Fidelização e experiência",
     items: [
       { id: "marketing-clube", label: "Clube do assinante", route: "marketing-parceiros", ownerOnly: true, children: [
-        { id: "marketing-pontos", label: "Pontos" },
-        { id: "marketing-cupons", label: "Cupons", route: "promocoes" },
+        { id: "marketing-pontos", label: "Pontos", route: "marketing-pontos" },
+        { id: "marketing-cupons", label: "Cupons", route: "marketing-cupons" },
       ] },
       { id: "marketing-promocoes", label: "Promoções", route: "promocoes", children: [
-        { id: "marketing-promocoes-servicos", label: "Serviços", route: "promocoes" },
-        { id: "marketing-promocoes-produtos", label: "Produtos", route: "promocoes" },
+        { id: "marketing-promocoes-servicos", label: "Serviços", route: "marketing-promocoes-servicos" },
+        { id: "marketing-promocoes-produtos", label: "Produtos e bebidas", route: "marketing-promocoes-produtos" },
       ] },
       { id: "marketing-experiencia", label: "Experiência", route: "avaliacoes", children: [
-        { id: "marketing-aniversariantes", label: "Aniversariante por período" },
+        { id: "marketing-aniversariantes", label: "Aniversariante da semana", route: "marketing-aniversariantes" },
         { id: "marketing-avaliacao", label: "Avaliação", route: "avaliacoes" },
-        { id: "marketing-agendamento-cliente", label: "Agendamento do cliente", route: "agenda" },
-        { id: "marketing-clientes-ausentes", label: "Clientes ausentes" },
-        { id: "marketing-clientes-sem-preferencia", label: "Clientes sem preferência" },
-        { id: "marketing-clientes-novos", label: "Clientes novos", route: "clientes" },
       ] },
     ],
   },
