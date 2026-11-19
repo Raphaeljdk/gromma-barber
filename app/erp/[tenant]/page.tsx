@@ -2514,7 +2514,8 @@ export async function TenantERPView({
                 <div><span>Endereço</span><strong>{unit.address??"—"}</strong></div>
               </div>
               {isOwner&&<UnitOperationsForm tenantCode={tenantCode} unit={unit}
-                policy={unitPolicy(workspace,unit.id)} banks={bankDirectory}
+                policy={unitPolicy(workspace,unit.id)}
+                verifiedAccounts={workspace.financialBankAccounts}
                 customPaymentMethods={workspace.customPaymentMethods}/>}
             </article>)}
           </div>
