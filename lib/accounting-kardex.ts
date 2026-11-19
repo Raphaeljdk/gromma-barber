@@ -15,7 +15,7 @@ export const resolveStockCategory=(workspace:Pick<ErpWorkspace,"stockCategoryOve
 export function accountingDate(value:string|undefined,defaultValue:string){
   if(!value||!/^\d{4}-\d{2}-\d{2}$/.test(value))return defaultValue;
   const candidate=new Date(value+"T12:00:00Z");
-  return candidate.toISOString?.()&&candidate.toISOString().slice(0,10)===value?value:defaultValue;
+  return Number.isNaN(candidate.getTime())?defaultValue:candidate.toISOString().slice(0,10)===value?value:defaultValue;
 }
 export function isoDateToday(){
   return new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit",
