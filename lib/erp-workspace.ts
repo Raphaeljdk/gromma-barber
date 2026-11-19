@@ -227,6 +227,7 @@ export type ServiceCatalogMetadata={
   startingFrom:boolean;
   hidden:boolean;
   walkIn:boolean;
+  pointsEarned?:number;
 };
 /** Keep tenant timezone validation safe in isolated workspace replays as well as runtime. */
 function isValidBusinessTimeZone(value:string):boolean{
@@ -272,6 +273,35 @@ export type AccountingXmlDocument={
   id:string;fileName:string;accessKey:string;number:string;issueDate:string;
   issuerCnpj:string;amount:number;hash:string;importedAt:string;xmlBase64:string;
 };
+export type LoyaltySettings={
+  enabled:boolean;referralPoints:number;
+};
+export type LoyaltyReward={
+  id:string;kind:"SERVICE"|"PRODUCT";itemId:string;name:string;
+  points:number;active:boolean;
+};
+export type LoyaltyMovement={
+  id:string;customerId:string;delta:number;
+  kind:"SERVICE"|"REFERRAL"|"REDEMPTION"|"REVERSAL";
+  sourceKey:string;description:string;createdAt:string;
+};
+export type LoyaltyRedemption={
+  id:string;customerId:string;rewardId:string;rewardName:string;
+  kind:"SERVICE"|"PRODUCT";itemId:string;points:number;
+  status:"PENDING"|"FULFILLED"|"CANCELED";createdAt:string;fulfilledAt:string;
+};
+export type LoyaltyAccess={
+  customerId:string;tokenHash:string;expiresAt:string;referralCode:string;createdAt:string;
+};
+export type LoyaltyReferral={
+  id:string;referrerId:string;phone:string;
+  status:"PENDING"|"REWARDED";rewardCommandId:string;createdAt:string;
+};
+export type MarketingOffer={
+  id:string;title:string;kind:"SERVICE"|"PRODUCT";itemId:string;
+  description:string;discountPercent:number;audience:AudienceRule;
+  expiresAt:string;active:boolean;createdAt:string;
+};
 export type BillingRegularizationRequest={
   month:string;requestedAt:string;requesterEmail:string;
 };
@@ -314,6 +344,13 @@ export type ErpWorkspace = {
   stockCategoryOverrides:Record<string,string>;
   accountingXmlDocuments:AccountingXmlDocument[];
   clubPartners:ClubPartner[];
+  loyaltySettings:LoyaltySettings;
+  loyaltyRewards:LoyaltyReward[];
+  loyaltyMovements:LoyaltyMovement[];
+  loyaltyRedemptions:LoyaltyRedemption[];
+  loyaltyAccess:LoyaltyAccess[];
+  loyaltyReferrals:LoyaltyReferral[];
+  marketingOffers:MarketingOffer[];
   financialEntryMetadata: Record<string,FinancialEntryMetadata>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
@@ -354,6 +391,9 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   stockCategoryOverrides:{},
   accountingXmlDocuments:[],
   clubPartners:[],
+  loyaltySettings:{enabled:false,referralPoints:0},
+  loyaltyRewards:[],loyaltyMovements:[],loyaltyRedemptions:[],
+  loyaltyAccess:[],loyaltyReferrals:[],marketingOffers:[],
   financialEntryMetadata: {},
   rolePermissions: {},
   professionalProfiles: {},
@@ -564,6 +604,71 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         createdAt:String(p.createdAt??"").slice(0,35),
       }];
     }).slice(0,100) as ClubPartner[],
+    loyaltySettings:(()=>{
+      const settings=record(operations.loyaltySettings);
+      const referral=Number(settings.referralPoints);
+      return {enabled:settings.enabled===true,
+        referralPoints:Number.isSafeInteger(referral)&&referral>=0&&referral<=100000?referral:0};
+    })(),
+    loyaltyRewards:array<unknown>(operations.loyaltyRewards).flatMap(item=>{
+      const p=record(item),count=Number(p.points),kind=String(p.kind);
+      if(typeof p.id!=="string"||typeof p.itemId!=="string"||
+        !["SERVICE","PRODUCT"].includes(kind)||!Number.isSafeInteger(count)||count<=0||count>1000000)return [];
+      return [{id:p.id.slice(0,100),kind:kind as LoyaltyReward["kind"],
+        itemId:p.itemId.slice(0,100),name:String(p.name??"").slice(0,120),
+        points:count,active:p.active===true}];
+    }).slice(0,150),
+    loyaltyMovements:array<unknown>(operations.loyaltyMovements).flatMap(item=>{
+      const p=record(item),delta=Number(p.delta),kind=String(p.kind);
+      if(typeof p.id!=="string"||typeof p.customerId!=="string"||
+        typeof p.sourceKey!=="string"||!["SERVICE","REFERRAL","REDEMPTION","REVERSAL"].includes(kind)||
+        !Number.isSafeInteger(delta)||Math.abs(delta)>1000000)return [];
+      return [{id:p.id.slice(0,100),customerId:p.customerId.slice(0,100),delta,
+        kind:kind as LoyaltyMovement["kind"],sourceKey:p.sourceKey.slice(0,160),
+        description:String(p.description??"").slice(0,180),createdAt:String(p.createdAt??"").slice(0,35)}];
+    }).slice(0,20000),
+    loyaltyRedemptions:array<unknown>(operations.loyaltyRedemptions).flatMap(item=>{
+      const p=record(item),points=Number(p.points),status=String(p.status),kind=String(p.kind);
+      if(typeof p.id!=="string"||typeof p.customerId!=="string"||
+        !["SERVICE","PRODUCT"].includes(kind)||!Number.isSafeInteger(points)||points<=0||
+        !["PENDING","FULFILLED","CANCELED"].includes(status))return [];
+      return [{id:p.id.slice(0,100),customerId:p.customerId.slice(0,100),
+        rewardId:String(p.rewardId??"").slice(0,100),rewardName:String(p.rewardName??"").slice(0,120),
+        kind:kind as LoyaltyRedemption["kind"],itemId:String(p.itemId??"").slice(0,100),
+        points,status:status as LoyaltyRedemption["status"],
+        createdAt:String(p.createdAt??"").slice(0,35),fulfilledAt:String(p.fulfilledAt??"").slice(0,35)}];
+    }).slice(0,4000),
+    loyaltyAccess:array<unknown>(operations.loyaltyAccess).flatMap(item=>{
+      const p=record(item);
+      if(typeof p.customerId!=="string"||typeof p.tokenHash!=="string"||
+        !/^[0-9a-f]{64}$/.test(p.tokenHash)||typeof p.referralCode!=="string")return [];
+      return [{customerId:p.customerId.slice(0,100),tokenHash:p.tokenHash,
+        referralCode:p.referralCode.slice(0,24),expiresAt:String(p.expiresAt??"").slice(0,35),
+        createdAt:String(p.createdAt??"").slice(0,35)}];
+    }).slice(0,3000),
+    loyaltyReferrals:array<unknown>(operations.loyaltyReferrals).flatMap(item=>{
+      const p=record(item),status=String(p.status);
+      if(typeof p.id!=="string"||typeof p.referrerId!=="string"||
+        typeof p.phone!=="string"||!["PENDING","REWARDED"].includes(status))return [];
+      return [{id:p.id.slice(0,100),referrerId:p.referrerId.slice(0,100),
+        phone:p.phone.slice(0,20),status:status as LoyaltyReferral["status"],
+        rewardCommandId:String(p.rewardCommandId??"").slice(0,100),
+        createdAt:String(p.createdAt??"").slice(0,35)}];
+    }).slice(0,4000),
+    marketingOffers:array<unknown>(operations.marketingOffers).flatMap(item=>{
+      const p=record(item),kind=String(p.kind),percentage=Number(p.discountPercent);
+      if(typeof p.id!=="string"||typeof p.itemId!=="string"||
+        !["SERVICE","PRODUCT"].includes(kind)||!Number.isFinite(percentage)||
+        percentage<=0||percentage>100)return [];
+      return [{id:p.id.slice(0,100),title:String(p.title??"").slice(0,120),
+        kind:kind as MarketingOffer["kind"],itemId:p.itemId.slice(0,100),
+        description:String(p.description??"").slice(0,600),
+        discountPercent:percentage,
+        audience:["ALL","INACTIVE_30","INACTIVE_60","INACTIVE_90","BIRTHDAY","CLUB"].includes(String(p.audience))?
+          p.audience as MarketingOffer["audience"]:"ALL",
+        expiresAt:String(p.expiresAt??"").slice(0,10),active:p.active===true,
+        createdAt:String(p.createdAt??"").slice(0,35)}];
+    }).slice(0,300),
     financialEntryMetadata:Object.fromEntries(Object.entries(record(operations.financialEntryMetadata))
       .filter(([id])=>id.length<=100).slice(-5000).map(([id,raw])=>{
         const entry=record(raw);const method=String(entry.paymentMethod??"");
