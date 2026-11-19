@@ -386,6 +386,55 @@ export async function markFinancialPaid(formData: FormData) {
   redirect(`${path}?ok=financeiro-pago${fragment}`);
 }
 
+/**
+ * Baixa em lote exclusivamente de despesas pendentes da própria empresa.
+ * É atômica: se qualquer lançamento já foi pago, cancela todo o lote.
+ */
+export async function markFinancialPaidBulk(formData: FormData) {
+  const {tenantCode,viewer,shop}=await context(formData);
+  const path="/erp/"+encodeURIComponent(tenantCode)+"/financeiro-despesas";
+  if(!allowed(viewer,["OWNER"]))redirect(path+"?erro=permissao");
+  const selected=formData.getAll("entryIds").map(String);
+  const ids=[...new Set(selected)];
+  const reason=text(formData,"reason",600);
+  const inputQuery=text(formData,"returnQuery",500);
+  const parsed=new URLSearchParams(inputQuery);
+  const params=new URLSearchParams();
+  for(const key of ["expInicio","expFim","expFilial","expCategoria","expStatus","expBusca"]){
+    const value=(parsed.get(key)??"").slice(0,100);
+    if(value)params.set(key,value);
+  }
+  const suffix=params.size?"&"+params.toString():"";
+  if(ids.length<1||ids.length>100||ids.length!==selected.length||
+    ids.some(id=>id.length>100)||reason.length<5)
+    redirect(path+"?erro=financeiro-status"+suffix);
+  try{
+    await prisma.$transaction(async tx=>{
+      const entries=await tx.financialEntry.findMany({
+        where:{barberShopId:shop.id,id:{in:ids},type:"PAYABLE",status:"PENDING"},
+        select:{id:true,amount:true,unitId:true,category:true},
+      });
+      if(entries.length!==ids.length)throw Error("Alguma despesa não está pendente");
+      const paidAt=new Date();
+      const result=await tx.financialEntry.updateMany({
+        where:{barberShopId:shop.id,id:{in:ids},type:"PAYABLE",status:"PENDING"},
+        data:{status:"PAID",paidAt},
+      });
+      if(result.count!==ids.length)throw Error("Conflito de baixa concorrente");
+      await tx.adminAuditLog.create({data:{
+        barberShopId:shop.id,adminEmail:viewer.email,action:"FINANCIAL_BULK_PAYMENT_CONFIRMED",
+        details:{ids,amounts:entries.map(item=>({entryId:item.id,amount:String(item.amount),
+          category:item.category,unitId:item.unitId})),reason,paidAt:paidAt.toISOString()},
+      }});
+    },{isolationLevel:"Serializable"});
+  }catch(error){
+    console.error("Failed to mark expenses paid in bulk",error);
+    redirect(path+"?erro=financeiro-status"+suffix);
+  }
+  revalidatePath("/erp/"+encodeURIComponent(tenantCode),"layout");
+  redirect(path+"?ok=financeiro-pago"+suffix);
+}
+
 export async function createAppointment(formData: FormData) {
   const { tenantCode, viewer, shop } = await context(formData);
   const path = `/erp/${encodeURIComponent(tenantCode)}/agenda`;
