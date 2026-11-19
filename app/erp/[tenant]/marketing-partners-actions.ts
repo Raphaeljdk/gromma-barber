@@ -39,7 +39,9 @@ export async function createClubPartner(form:FormData){
     !/^\/[a-zA-Z0-9_.]+\/?$/.test(instagram.pathname)||
     !categories.includes(category)||!Number.isFinite(discountPercent)||discountPercent<=0||discountPercent>100||
     !/^[A-Z0-9_-]{3,40}$/.test(promoCode)||promoDescription.length<3||
-    !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)||expiresAt<new Date().toISOString().slice(0,10))
+    !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)||expiresAt<
+      new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",
+        year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()))
     fail(ctx.code,"dados");
   const logoFile=form.get("logoFile");
   let logoUrl="";
