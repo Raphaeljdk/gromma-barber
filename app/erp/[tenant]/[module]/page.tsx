@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { TenantERPView } from "../page";
 
 const MODULES = new Set([
@@ -90,6 +90,7 @@ export default async function ErpModulePage({
 }) {
   const { tenant, module } = await params;
 
+  if (module === "mensagens") redirect("/erp/" + encodeURIComponent(tenant) + "/gromma-ia");
   if (!MODULES.has(module)) notFound();
 
   return (
