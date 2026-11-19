@@ -4,7 +4,11 @@ import {markFinancialPaid} from "@/app/erp/[tenant]/actions";
 import {FinancialEntryCreateForm} from "@/components/financial-entry-create-form";
 import {FinancialAccountOverview} from "@/components/financial-account-overview";
 import {FinancialExpensesOverview} from "@/components/financial-expenses-overview";
-import {createFinancialCategory,createFinancialBankAccount,saveFinancialPaymentMethods} from "@/app/erp/[tenant]/financial-setup-actions";
+import {createFinancialBankAccount,removeFinancialBankAccount,removeFinancialBankRequest,createFinancialCustomPaymentMethod,saveFinancialPaymentMethods} from "@/app/erp/[tenant]/financial-setup-actions";
+import {FinancialCategoryForm} from "@/components/financial-category-form";
+import {isBankVerifierConfigured} from "@/lib/financial-registry-security";
+import type {BankOption} from "@/lib/bank-directory";
+import styles from "@/components/financial-registry-forms.module.css";
 import {brl} from "@/lib/plans";
 import {PAYMENT_METHODS,PAYMENT_LABELS,type PaymentMethod} from "@/lib/checkout";
 import {ErpListToolbar} from "@/components/erp-list-toolbar";
@@ -28,6 +32,7 @@ export type FinanceEntryRow={
 type Totals={receivablePending:number;payablePending:number;receivablePaid:number;payablePaid:number};
 type Props={
  tenantCode:string;shopId:string;view:FinancialSubmodule;rows:FinanceEntryRow[];total:number;
+ bankDirectory:BankOption[];bankOwner:boolean;
  page:number;pageSize:number;query:Record<string,string|string[]|undefined>;
  filterQuery:string;filterStatus:string;isOwner:boolean;workspace:ErpWorkspace;
  units:{id:string;name:string;paymentMethods:PaymentMethod[]}[];
@@ -86,7 +91,7 @@ function FinanceList({tenantCode,view,rows,total,page,pageSize,query,filterQuery
  </>;
 }
 
-export function FinancialSubpage({tenantCode,shopId,view,rows,total,page,pageSize,query,
+export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner,rows,total,page,pageSize,query,
  filterQuery,filterStatus,isOwner,workspace,units,totals,ok,error}:Props){
  const isList=view==="financeiro-contabilidade";
  const isAccount=view==="financeiro-contas-pagar"||view==="financeiro-contas-receber";
@@ -103,8 +108,8 @@ export function FinancialSubpage({tenantCode,shopId,view,rows,total,page,pageSiz
          <Plus size={16}/> Novo lançamento</Link>}
        <Link className="btn secondary" href={`/erp/${encodeURIComponent(tenantCode)}/financeiro`}>Financeiro atual</Link>
      </div></div>
-   {ok&&<p className="notice erp-inline-notice success" role="status">{ok==="financeiro-pago"?"Baixa registrada com sucesso.":ok==="financeiro"?"Lançamento criado.":"Configuração salva."}</p>}
-   {error&&<p className="notice erp-inline-notice error-notice" role="alert">Não foi possível concluir a operação. Confira os campos e as permissões.</p>}
+   {ok&&<p className="notice erp-inline-notice success" role="status">{ok==="verificacao-pendente"?"Solicitação de verificação registrada. A conta não está ativa.":ok==="financeiro-pago"?"Baixa registrada com sucesso.":ok==="financeiro"?"Lançamento criado.":"Configuração salva."}</p>}
+   {error&&<p className="notice erp-inline-notice error-notice" role="alert">{error==="cnpj"?"Cadastre razão social/CNPJ em Dados e um CNPJ compatível na filial.":error==="pix"?"Chave Pix inválida ou incompatível com o CNPJ informado.":error==="titularidade"?"Somente o proprietário da empresa pode gerenciar contas bancárias.":"Não foi possível concluir a operação. Confira os campos, categorias e permissões."}</p>}
    {isAccount&&<FinancialAccountOverview tenantCode={tenantCode} shopId={shopId}
      view={view as "financeiro-contas-pagar"|"financeiro-contas-receber"}
      units={units} query={query} isOwner={isOwner} workspace={workspace}/>}
@@ -135,41 +140,117 @@ export function FinancialSubpage({tenantCode,shopId,view,rows,total,page,pageSiz
    </article>}
    {view==="financeiro-categorias"&&isOwner&&<>
      <article className="card gromma-finance-form-card"><h3>Cadastrar categoria financeira</h3>
-       <form action={createFinancialCategory} className="gromma-finance-registry-form">
-         <input type="hidden" name="tenantCode" value={tenantCode}/>
-         <label>Nome<input className="input" name="name" maxLength={80} minLength={2} required placeholder="Ex.: Aluguel, Serviços, Comissão"/></label>
-         <label>Aplicável em<select className="select" name="type" defaultValue="BOTH">
-           <option value="BOTH">Receitas e despesas</option>
-           <option value="RECEIVABLE">Somente receitas</option>
-           <option value="PAYABLE">Somente despesas</option></select></label>
-         <button className="btn" type="submit"><FolderPlus size={16}/> Cadastrar categoria</button>
-       </form>
+       <FinancialCategoryForm tenantCode={tenantCode}/>
      </article>
-     <div className="gromma-finance-registry-list">{workspace.financialCategories.length?
-       workspace.financialCategories.map(item=><div key={item.id}><strong>{item.name}</strong>
-         <span>{item.type==="BOTH"?"Receitas e despesas":item.type==="PAYABLE"?"Despesas":"Receitas"}</span></div>):
-       <p className="muted">Nenhuma categoria cadastrada. Lançamentos existentes continuam com suas categorias históricas.</p>}</div>
+     <div className={styles.list}>
+       {workspace.financialCategories.length?workspace.financialCategories.map(item=><div className={styles.listRow} key={item.id}>
+         <div className={styles.listInfo}><strong>{item.name}</strong><small>{item.subcategory||"Sem subcategoria"}</small></div>
+         <span className={styles.pill}>{{
+           REVENUE_FIXED:"Receita fixa",REVENUE_VARIABLE:"Receita variável",
+           EXPENSE_FIXED:"Despesa fixa",EXPENSE_OPERATIONAL:"Despesa operacional",
+           EXPENSE_COMMISSION:"Comissões",GENERAL:"Receitas e despesas",
+         }[item.classification]}</span>
+         <span className="small muted">{item.type==="BOTH"?"Receitas e despesas":item.type==="PAYABLE"?"Despesas":"Receitas"}</span>
+       </div>):
+         <p className="muted">Nenhuma categoria cadastrada. Os lançamentos históricos foram preservados.</p>}
+     </div>
    </>}
-   {view==="financeiro-contas-bancarias"&&isOwner&&<>
-     <article className="card gromma-finance-form-card"><h3>Cadastrar conta bancária</h3>
-       <p className="small muted">Cadastro interno. Não conecta ao banco nem efetua movimentações.</p>
-       <form action={createFinancialBankAccount} className="gromma-finance-registry-form gromma-finance-bank-form">
+   {view==="financeiro-contas-bancarias"&&<>
+     <article className="card gromma-finance-form-card"><h3>Contas bancárias e titularidade</h3>
+       <p className="small muted">Somente o proprietário contratante pode solicitar, cadastrar e remover contas. O CNPJ cadastrado em Dados deve ter a mesma raiz do CNPJ da filial.</p>
+       <p className={styles.warning}>A lista de bancos valida a instituição, não a existência da conta. Sem verificação bancária externa confirmada, nenhuma conta nova é ativada.</p>
+       {!isBankVerifierConfigured()&&<p className={styles.warning} role="status">Integração de titularidade ainda não conectada: você pode enviar uma solicitação, mas ela ficará pendente e não poderá ser usada para recebimentos.</p>}
+       {bankOwner&&<form action={createFinancialBankAccount} className={styles.bankForm}>
          <input type="hidden" name="tenantCode" value={tenantCode}/>
-         <label>Identificação da conta<input className="input" name="name" maxLength={90} minLength={2} required placeholder="Ex.: Conta principal"/></label>
-         <label>Código do banco<input className="input" name="bankCode" pattern="[0-9]{1,5}" maxLength={5} inputMode="numeric" required placeholder="Ex.: 001"/></label>
-         <label>Banco<input className="input" name="bankName" maxLength={100} minLength={2} required placeholder="Nome do banco"/></label>
-         <label>Agência<input className="input" name="agency" maxLength={25} required placeholder="0001"/></label>
-         <label>Conta<input className="input" name="account" maxLength={35} required placeholder="Número da conta"/></label>
-         <button className="btn" type="submit"><Building2 size={16}/> Cadastrar conta</button>
-       </form>
+         <label>Identificação da conta
+           <input className="input" name="name" maxLength={90} minLength={2} required placeholder="Ex.: Conta empresarial"/>
+         </label>
+         <label>Filial vinculada
+           <select className="select" name="unitId" defaultValue="" required>
+             <option value="" disabled>Selecionar filial</option>
+             {units.map(unit=><option value={unit.id} key={unit.id}>{unit.name}</option>)}
+           </select>
+         </label>
+         <label>Banco brasileiro
+           <select name="bankCode" className="select" defaultValue="" required>
+             <option value="" disabled>Selecionar instituição</option>
+             {bankDirectory.map(bank=><option key={bank.ispb+bank.code} value={bank.code}>{bank.code} · {bank.name}</option>)}
+           </select>
+         </label>
+         <label>Agência
+           <input className="input" name="agency" maxLength={25} minLength={1} required placeholder="0001"/>
+         </label>
+         <label>Conta e dígito
+           <input className="input" name="account" maxLength={35} minLength={2} required placeholder="00000-0"/>
+         </label>
+         <label>Tipo de chave Pix
+           <select className="select" name="pixType" defaultValue="CNPJ" required>
+             <option value="CNPJ">CNPJ</option>
+             <option value="CPF">CPF</option>
+             <option value="PHONE">Número de telefone (+55...)</option>
+             <option value="EMAIL">E-mail</option>
+             <option value="EVP">Chave aleatória</option>
+           </select>
+         </label>
+         <label>Chave Pix
+           <input className="input" name="pixKey" maxLength={150} required autoComplete="off" placeholder="Chave Pix cadastrada na instituição"/>
+         </label>
+         <div className={styles.bankActions}>
+           <p>Será necessário comprovar titularidade do CNPJ, instituição, agência, conta e chave Pix antes da ativação.</p>
+           <button type="submit" className="btn"><Building2 size={15}/> Solicitar verificação</button>
+         </div>
+       </form>}
      </article>
-     <div className="gromma-finance-registry-list">{workspace.financialBankAccounts.length?
-       workspace.financialBankAccounts.map(item=><div key={item.id}><strong>{item.name}</strong>
-         <span>{item.bankName} ({item.bankCode}) · Ag. {item.agency} · Conta {mask(item.account)}</span></div>):
-       <p className="muted">Nenhuma conta cadastrada.</p>}</div>
+     <div className={styles.list}>
+       {workspace.financialBankAccounts.filter(item=>item.active).map(item=><div key={item.id} className={styles.listRow}>
+         <div className={styles.listInfo}><strong>{item.name} · {item.bankName}</strong>
+           <small>{units.find(unit=>unit.id===item.unitId)?.name??"Filial"} · Banco {item.bankCode} · Ag. {item.agency} · Conta ••••{item.account.slice(-4)} · CNPJ final {item.ownerCnpj.slice(-4)}</small>
+         </div>
+         <span className={styles.pill}>Titularidade verificada</span>
+         {bankOwner&&<form action={removeFinancialBankAccount}>
+           <input type="hidden" name="tenantCode" value={tenantCode}/>
+           <input type="hidden" name="bankAccountId" value={item.id}/>
+           <button type="submit" className={styles.danger}>Excluir conta</button>
+         </form>}
+       </div>)}
+       {workspace.financialBankRequests.map(item=><div key={item.id} className={styles.listRow}>
+         <div className={styles.listInfo}><strong>{item.name} · {item.bankName}</strong>
+           <small>{units.find(unit=>unit.id===item.unitId)?.name??"Filial"} · Conta ••••{item.account.slice(-4)}</small>
+         </div>
+         <span className={styles.pill}>Aguardando verificação externa — não ativa</span>
+         {bankOwner&&<form action={removeFinancialBankRequest}>
+           <input type="hidden" name="tenantCode" value={tenantCode}/>
+           <input type="hidden" name="requestId" value={item.id}/>
+           <button type="submit" className={styles.secondaryButton}>Cancelar solicitação</button>
+         </form>}
+       </div>)}
+       {!workspace.financialBankAccounts.some(item=>item.active)&&!workspace.financialBankRequests.length&&
+         <p className="small muted">Nenhuma conta bancária verificada. Cadastros antigos sem confirmação de titularidade não são considerados ativos.</p>}
+     </div>
    </>}
    {view==="financeiro-formas-comanda"&&isOwner&&<div className="gromma-finance-payment-section">
      <p className="small muted">Configure os meios aceitos em cada filial. Novas comandas respeitam estas opções; pagamentos antigos não são alterados.</p>
+     <details className="card" style={{margin:"10px 0 14px"}}>
+       <summary style={{cursor:"pointer",fontWeight:750,fontSize:".85rem"}}><Plus size={15} style={{display:"inline-block",verticalAlign:"middle",marginRight:6}}/> Adicionar forma de pagamento</summary>
+       <p className="small muted">A nova forma aparecerá no cadastro das filiais para configurar ativação, taxas e prazos. Até a integração do checkout, ela não movimenta recebimentos reais.</p>
+       <form action={createFinancialCustomPaymentMethod} className={styles.paymentForm}>
+         <input type="hidden" name="tenantCode" value={tenantCode}/>
+         <label>Nome da forma de pagamento
+           <input className="input" name="name" required minLength={2} maxLength={80} placeholder="Ex.: Carteira Digital XYZ"/>
+         </label>
+         <label>Tipo de pagamento
+           <select className="select" name="type" required defaultValue="PIX">
+             {PAYMENT_METHODS.map(method=><option key={method} value={method}>{PAYMENT_LABELS[method]}</option>)}
+           </select>
+         </label>
+         <button className="btn" type="submit"><Plus size={15}/> Cadastrar forma</button>
+       </form>
+     </details>
+     {workspace.customPaymentMethods.length>0&&<div className={styles.list}>
+       {workspace.customPaymentMethods.filter(item=>item.active).map(item=><div className={styles.listRow} key={item.id}>
+         <strong>{item.name}</strong><span className="small muted">Tipo: {PAYMENT_LABELS[item.type]}</span><span className={styles.pill}>Configuração disponível nas filiais</span>
+       </div>)}
+     </div>}
      {units.length?units.map(unit=><article className="card" key={unit.id}>
        <h3>{unit.name}</h3>
        <form action={saveFinancialPaymentMethods} className="gromma-finance-method-form">
@@ -181,6 +262,13 @@ export function FinancialSubpage({tenantCode,shopId,view,rows,total,page,pageSiz
              <input type="checkbox" name="methods" value={method} defaultChecked={unit.paymentMethods.includes(method)}/>
              <span>{PAYMENT_LABELS[method]}</span></label>)}
          </div>
+         {workspace.customPaymentMethods.some(item=>item.active)&&<div className={styles.methodGrid}>
+           {workspace.customPaymentMethods.filter(item=>item.active).map(method=><label key={method.id}>
+             <input type="checkbox" name="customMethods" value={method.id}
+               defaultChecked={workspace.unitPolicies[unit.id]?.customPaymentMethods?.includes(method.id)??false}/>
+             {method.name} ({PAYMENT_LABELS[method.type]})
+           </label>)}
+         </div>}
          <button className="btn" type="submit"><CheckCircle2 size={16}/> Salvar meios da comanda</button>
        </form>
      </article>):<p className="muted">Cadastre uma filial para definir os métodos de pagamento da comanda.</p>}
