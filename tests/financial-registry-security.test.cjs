@@ -68,7 +68,9 @@ test("Proprietário autentica banco; somente verificação externa ativa; filiai
   assert.match(units,/verifiedBankAccountId/);
   assert.match(units,/selected\.ownerCnpj!==legal/);
   assert.match(workspace,/active:verified&&entry\.active!==false/);
-  for(const field of ["name","subcategory","classification","type"])assert.ok(form.includes('name="'+field+'"'));
+  for(const field of ["name","classification","type"])assert.ok(form.includes('name="'+field+'"'));
+  assert.match(form,/<label>Categoria/);
+  assert.doesNotMatch(form,/name="subcategory"|<label>Subcategoria/);
   assert.match(subpages,/Titularidade verificada/);
   assert.match(subpages,/Solicitar verificação/);
   assert.match(config,/customPaymentMethods\.filter/);
