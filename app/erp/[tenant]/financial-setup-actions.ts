@@ -154,7 +154,7 @@ export async function removeFinancialBankAccount(form:FormData){
       if(policy&&policy.bankCode===account.bankCode&&policy.bankAgency===account.agency&&
         policy.bankAccount===account.account){
           workspace.unitPolicies[account.unitId]={...policy,bankCode:"",bankName:"",bankAgency:"",
-            bankAccount:"",pixKey:"",pixType:""};
+            bankAccount:"",pixKey:"",pixType:"",verifiedBankAccountId:""};
         }
     });
   }catch(error){console.error("Financial bank removal failed",error instanceof Error?error.message:"error");fail(url,"banco");}
