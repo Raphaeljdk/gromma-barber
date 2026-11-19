@@ -6,8 +6,7 @@ export function UnitBankFields({policy,unitId,verifiedAccounts}:{
   policy:UnitOperationsPolicy;unitId:string;verifiedAccounts:FinancialBankAccountConfig[];
 }){
   const eligible=verifiedAccounts.filter(bank=>bank.active&&bank.unitId===unitId&&bank.verifiedAt);
-  const existing=eligible.find(bank=>bank.bankCode===policy.bankCode&&bank.agency===policy.bankAgency&&
-    bank.account===policy.bankAccount);
+  const existing=eligible.find(bank=>bank.id===policy.verifiedBankAccountId);
   const legacy=Boolean(policy.bankAccount)&&!existing;
   const [selected,setSelected]=useState(existing?.id??(legacy?"__legacy__":""));
   const bank=eligible.find(bank=>bank.id===selected);
