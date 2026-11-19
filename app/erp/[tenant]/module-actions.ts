@@ -480,7 +480,8 @@ export async function saveCoupon(formData: FormData) {
   const expiresAt = value(formData, "expiresAt", 20);
   const today = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
   const hasExpiry = /^\d{4}-\d{2}-\d{2}$/.test(expiresAt);
-  const validExpiry = hasExpiry && new Date(expiresAt + "T12:00:00.000Z").toISOString().slice(0,10) === expiresAt;
+  const expiryDate = hasExpiry ? new Date(expiresAt + "T12:00:00.000Z") : null;
+  const validExpiry = Boolean(expiryDate && Number.isFinite(expiryDate.getTime()) && expiryDate.toISOString().slice(0,10) === expiresAt);
   if (code.length < 3 || !Number.isFinite(amount) || amount <= 0 ||
     (kind === "PERCENT" && amount > 100) || (kind === "FIXED" && amount > 1000000) ||
     (returnModule === "marketing-cupons" && (!validExpiry || expiresAt < today)) ||
