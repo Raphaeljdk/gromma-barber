@@ -405,7 +405,7 @@ export async function generateClubCharge(formData: FormData) {
 
 export async function saveCampaign(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
-  const path = modulePath(tenantCode, "mensagens");
+  const path = modulePath(tenantCode, "gromma-ia");
   if (viewer.type !== "ADMIN" && !hasStaffPermission(viewer.role, readWorkspace(shop.enabledFeatures).rolePermissions, "MANAGE_CAMPAIGNS")) redirect(`${path}?erro=permissao`);
 
   const title = value(formData, "title", 100);
@@ -505,39 +505,74 @@ export async function saveCoupon(formData: FormData) {
 
 export async function savePromotion(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
-  const path = modulePath(tenantCode, "promocoes");
-  if (viewer.type !== "ADMIN" && !hasStaffPermission(viewer.role, readWorkspace(shop.enabledFeatures).rolePermissions, "MANAGE_CAMPAIGNS")) redirect(`${path}?erro=permissao`);
+  const targetTypeRaw = value(formData, "targetType", 20);
+  const targetType = ["SERVICE", "PRODUCT", "BIRTHDAY"].includes(targetTypeRaw)
+    ? targetTypeRaw as "SERVICE" | "PRODUCT" | "BIRTHDAY" : undefined;
+  const module = targetType === "SERVICE" ? "promocoes-servicos"
+    : targetType === "PRODUCT" ? "promocoes-produtos"
+    : targetType === "BIRTHDAY" ? "promocoes-aniversariantes" : "promocoes";
+  const path = modulePath(tenantCode, module);
+  if (viewer.type !== "ADMIN" &&
+    !hasStaffPermission(viewer.role, readWorkspace(shop.enabledFeatures).rolePermissions, "MANAGE_CAMPAIGNS"))
+    redirect(path + "?erro=permissao");
 
   const title = value(formData, "title", 100);
   const message = value(formData, "message", 1200);
   const requestedAudience = audienceRule(value(formData, "audience", 30));
   const groupId = value(formData, "groupId", 100);
+  const discountKind = value(formData, "discountKind", 20) === "FIXED" ? "FIXED" as const : "PERCENT" as const;
+  const discountValue = numberValue(formData, "discountValue");
+  const targetIds = [...new Set(formData.getAll("targetIds").map(v => String(v).slice(0, 100)))]
+    .filter(Boolean).slice(0, 30);
 
-  if (title.length < 2 || message.length < 2) redirect(`${path}?erro=promocao`);
+  if (title.length < 2 || message.length < 2 ||
+    (targetType && (!Number.isFinite(discountValue) || discountValue <= 0 ||
+      (discountKind === "PERCENT" && discountValue > 100))) ||
+    (targetType && targetType !== "BIRTHDAY" && !targetIds.length))
+    redirect(path + "?erro=promocao");
+
+  // Só permite relacionar promoções a itens reais da mesma empresa.
+  if (targetType === "SERVICE") {
+    const found = await prisma.service.count({where:{
+      barberShopId:shop.id,active:true,id:{in:targetIds},
+    }});
+    if (found !== targetIds.length) redirect(path + "?erro=itens");
+  }
+  if (targetType === "PRODUCT") {
+    const found = await prisma.product.count({where:{
+      barberShopId:shop.id,active:true,id:{in:targetIds},
+    }});
+    if (found !== targetIds.length) redirect(path + "?erro=itens");
+  }
 
   try {
     await persistWorkspace(shop, (workspace) => {
-      const group = groupId
+      const group = !targetType && groupId
         ? workspace.customerGroups.find((item) => item.id === groupId && item.active)
         : null;
       workspace.campaigns.unshift({
         id: workspaceId("promotion"),
         kind: "PROMOTION",
+        targetType,
+        targetIds: targetType === "BIRTHDAY" ? [] : targetIds,
+        discountKind: targetType ? discountKind : undefined,
+        discountValue: targetType ? discountValue : undefined,
         title,
-        audience: group?.rule ?? requestedAudience,
+        audience: targetType === "BIRTHDAY" ? "BIRTHDAY" : group?.rule ?? (targetType ? "ALL" : requestedAudience),
         groupId: group?.id,
         message,
         active: true,
         createdAt: new Date().toISOString(),
       });
-    });
+      workspace.campaigns = workspace.campaigns.slice(0, 500);
+    }, {action:"PROMOTION_CREATED",actor:viewer.email,
+      details:{targetType:targetType??"GENERAL",targetIds,discountKind,discountValue}});
   } catch (error) {
     console.error("Failed to save promotion", error);
-    redirect(`${path}?erro=banco`);
+    redirect(path + "?erro=banco");
   }
-
   revalidatePath(path);
-  redirect(`${path}?ok=promocao`);
+  redirect(path + "?ok=promocao");
 }
 
 export async function saveDocument(formData: FormData) {
@@ -595,6 +630,7 @@ export async function saveReview(formData: FormData) {
         professionalName,
         score,
         comment,
+        source: "STAFF",
         createdAt: new Date().toISOString(),
       });
     });
