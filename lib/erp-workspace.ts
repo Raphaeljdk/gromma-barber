@@ -175,6 +175,7 @@ export type UnitOperationsPolicy = {
   bankAgency: string;
   bankAccount: string;
   bankSwift: string;
+  verifiedBankAccountId: string;
   paymentConfigurations: Record<string,{feePercent:number;settlementDays:number;autoMarkPaid:boolean}>;
   paymentEmail: string;
   paymentPhone: string;
@@ -426,6 +427,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
           bankName:typeof p.bankName==="string"?p.bankName.slice(0,150):"",
           bankAgency:typeof p.bankAgency==="string"?p.bankAgency.slice(0,30):"",
           bankAccount:typeof p.bankAccount==="string"?p.bankAccount.slice(0,35):"",
+          verifiedBankAccountId:typeof p.verifiedBankAccountId==="string"?p.verifiedBankAccountId.slice(0,100):"",
           bankSwift:typeof p.bankSwift==="string"?p.bankSwift.slice(0,11):"",
           paymentConfigurations:Object.fromEntries(Object.entries(record(p.paymentConfigurations))
             .filter(([key])=>methods.includes(key as typeof methods[number])||/^fpay_[a-z0-9_]{6,80}$/.test(key))
