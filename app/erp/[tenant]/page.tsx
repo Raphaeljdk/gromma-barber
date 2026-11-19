@@ -50,6 +50,7 @@ import {ServiceRepurchaseReminders} from "@/components/service-repurchase-remind
 import {ServiceEditDialog} from "@/components/service-edit-dialog";
 import {ArchiveServiceButton} from "@/components/archive-service-button";
 import {FinancialSubpage,FINANCIAL_SUBMODULES,type FinancialSubmodule} from "@/components/financial-subpages";
+import {ClubPartnerManager} from "@/components/marketing-partners";
 import {FinanceCurrentDashboard} from "@/components/finance-current-dashboard";
 import {classifyFinanceExpense,classifyFinanceOrigin,type FinanceOverviewRow,type FinanceRefundRow} from "@/lib/finance-overview";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
@@ -855,7 +856,8 @@ export async function TenantERPView({
   const isOwner = viewerRole === "ADMIN" || viewerRole === "OWNER";
   if (!isOwner && ["grupos-acesso","funcionarios-destaque","fatura","clube-reajustes","clube-saques",
     "financeiro-criar-receita","financeiro-criar-despesa","financeiro-categorias",
-    "financeiro-contas-bancarias","financeiro-formas-comanda","financeiro-formas-despesas"].includes(activeModule)) notFound();
+    "financeiro-contas-bancarias","financeiro-formas-comanda","financeiro-formas-despesas",
+    "marketing-parceiros"].includes(activeModule)) notFound();
   const canManageCampaigns = hasStaffPermission(viewerRole, workspace.rolePermissions, "MANAGE_CAMPAIGNS");
   const inventoryNotices = isOwner
     ? await loadInventoryNotifications(shop.id, tenantCode, shop.units.map(unit => ({
@@ -1681,6 +1683,9 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/comandas`} searchParams={qs} param="comandasPage" page={comandasPage} total={commandsTotal} pageSize={pageSize} hash="comandas" label="comandas" />
         </section>
 
+        {activeModule==="marketing-parceiros"&&<ClubPartnerManager tenantCode={tenantCode}
+          partners={workspace.clubPartners} isOwner={isOwner} ok={actionOk} error={actionError}/>}
+
         {CLUB_MANAGEMENT_MODULES.includes(activeModule as ClubManagementModule) &&
           <ClubManagementPanels tenantCode={tenantCode} shopId={shop.id} workspace={workspace}
             view={activeModule as ClubManagementModule} month={valueOf("clubeMes")}
@@ -2068,6 +2073,7 @@ export async function TenantERPView({
         {financeSubmodule && <FinancialSubpage tenantCode={tenantCode} shopId={shop.id}
           bankDirectory={bankDirectory}
           bankOwner={viewer.type==="TENANT"&&viewer.barberShopId===shop.id&&viewer.role==="OWNER"}
+          canAccountingUpload={isOwner||viewerRole==="ACCOUNTANT"}
           view={activeModule as FinancialSubmodule}
           rows={financialEntries.map(entry=>({
             id:entry.id,description:entry.description,type:entry.type,status:entry.status,
