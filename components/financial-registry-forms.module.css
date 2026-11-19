@@ -1,5 +1,5 @@
 .categoryForm,.bankForm,.paymentForm{display:grid;gap:11px;align-items:end;min-width:0}
-.categoryForm{grid-template-columns:minmax(120px,1.05fr) minmax(120px,1fr) minmax(150px,1fr) minmax(170px,1.1fr) auto}
+.categoryForm{grid-template-columns:minmax(180px,1.3fr) minmax(170px,1fr) minmax(190px,1.1fr) auto}
 .bankForm{grid-template-columns:repeat(3,minmax(0,1fr))}
 .paymentForm{grid-template-columns:minmax(180px,2fr) minmax(145px,1fr) auto;max-width:780px}
 .categoryForm label,.bankForm label,.paymentForm label{display:grid;gap:7px;min-width:0;font-weight:720;font-size:.75rem;color:var(--gx-muted,#a9b2bf)}

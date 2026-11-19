@@ -54,7 +54,7 @@ const done=(url:string):never=>redirect(url+"?ok=salvo");
 
 export async function createFinancialCategory(form:FormData){
   const ctx=await authorize(form),url=scope(ctx.code,"financeiro-categorias");
-  const name=val(form,"name",80),subcategory=val(form,"subcategory",80);
+  const name=val(form,"name",80);
   const type=val(form,"type",20);
   const classification=val(form,"classification",30);
   const choices:Record<string,string[]>={
@@ -62,16 +62,15 @@ export async function createFinancialCategory(form:FormData){
     PAYABLE:["EXPENSE_FIXED","EXPENSE_OPERATIONAL","EXPENSE_COMMISSION"],
     BOTH:["GENERAL"],
   };
-  if(name.length<2||!choices[type]?.includes(classification)||subcategory.length>80)
+  if(name.length<2||!choices[type]?.includes(classification))
     fail(url,"cadastro");
   try{
-    await mutate(ctx,"FINANCIAL_CATEGORY_CREATED",{name,subcategory,type,classification},workspace=>{
+    await mutate(ctx,"FINANCIAL_CATEGORY_CREATED",{name,type,classification},workspace=>{
       if(workspace.financialCategories.length>=250||
-        workspace.financialCategories.some(item=>item.name.localeCompare(name,"pt-BR",{sensitivity:"base"})===0&&
-          item.subcategory.localeCompare(subcategory,"pt-BR",{sensitivity:"base"})===0&&item.type===type))
-        throw Error("Categoria e subcategoria duplicadas ou limite atingido");
+        workspace.financialCategories.some(item=>item.name.localeCompare(name,"pt-BR",{sensitivity:"base"})===0&&item.type===type))
+        throw Error("Categoria duplicada ou limite atingido");
       workspace.financialCategories.push({
-        id:workspaceId("fcat"),name,subcategory,type:type as "RECEIVABLE"|"PAYABLE"|"BOTH",
+        id:workspaceId("fcat"),name,subcategory:"",type:type as "RECEIVABLE"|"PAYABLE"|"BOTH",
         classification:classification as typeof workspace.financialCategories[number]["classification"],
       });
     });
