@@ -174,7 +174,9 @@ export async function removeFinancialBankRequest(form:FormData){
 }
 
 export async function createFinancialCustomPaymentMethod(form:FormData){
-  const ctx=await authorize(form),url=scope(ctx.code,"financeiro-formas-comanda");
+  const ctx=await authorize(form);
+  const destination=val(form,"destination",30)==="EXPENSE"?"financeiro-formas-despesas":"financeiro-formas-comanda";
+  const url=scope(ctx.code,destination);
   const name=val(form,"name",80),type=val(form,"type",12);
   if(name.length<2||!["PIX","CASH","DEBIT","CREDIT","TRANSFER"].includes(type))fail(url,"metodos");
   try{
@@ -200,7 +202,7 @@ export async function saveFinancialPaymentMethods(form:FormData){
   const submittedCustom=form.getAll("customMethods").map(String);
   const methods=[...new Set(submitted)]
     .filter((name):name is typeof PAYMENT_METHODS[number]=>PAYMENT_METHODS.some(m=>m===name));
-  if(submitted.length!==methods.length||methods.length===0)fail(url,"metodos");
+  if(submitted.length!==methods.length||(!methods.length&&!submittedCustom.length))fail(url,"metodos");
   if(submittedCustom.length!==new Set(submittedCustom).size||submittedCustom.length>60)fail(url,"metodos");
   const unitId=val(form,"unitId",100);
   if(isCommand){
@@ -213,14 +215,17 @@ export async function saveFinancialPaymentMethods(form:FormData){
     await mutate(ctx,"FINANCIAL_PAYMENT_METHODS_UPDATED",
       {kind,unitId:isCommand?unitId:null,methods},
       workspace=>{
+        const valid=workspace.customPaymentMethods.filter(m=>m.active).map(m=>m.id);
+        if(submittedCustom.some(id=>!valid.includes(id)))throw Error("Método personalizado inválido");
         if(isCommand){
-          const valid=workspace.customPaymentMethods.filter(m=>m.active).map(m=>m.id);
-          if(submittedCustom.some(id=>!valid.includes(id)))throw Error("Método personalizado inválido");
           workspace.unitPolicies[unitId]={
             ...unitPolicy(workspace,unitId),paymentMethods:methods,customPaymentMethods:submittedCustom,
           };
         }
-        else workspace.financialExpenseMethods=methods;
+        else {
+          workspace.financialExpenseMethods=methods;
+          workspace.financialExpenseCustomMethods=submittedCustom;
+        }
       });
   }catch(error){console.error("Financial methods failed",error);fail(url,"metodos");}
   done(url);
