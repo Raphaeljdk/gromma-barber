@@ -92,7 +92,7 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
     "financeiro-contas-pagar", "financeiro-contas-receber", "financeiro-criar-receita",
     "financeiro-criar-despesa", "financeiro-despesas", "financeiro-categorias",
     "financeiro-contas-bancarias", "financeiro-formas-comanda", "financeiro-formas-despesas",
-    "financeiro-contabilidade",
+    "financeiro-contabilidade", "financeiro-cardex", "financeiro-relatorio-entrada", "financeiro-relatorio-saida", "financeiro-portal-contador",
     "agenda-feriados", "clientes-bloqueados", "clientes-ranking", "clientes-historico-compras", "caixa-historico", "estoque-balanco", "estoque-compras", "auditoria-estoque", "auditoria-agendamentos", "auditoria-fechamento-caixa", "auditoria-produtividade", "notificacoes",
   ]);
   const all = [...ERP_NAVIGATION.flatMap(group => flatten(group.items)), ...flatten(ERP_NAVIGATION_EXTRA)];
