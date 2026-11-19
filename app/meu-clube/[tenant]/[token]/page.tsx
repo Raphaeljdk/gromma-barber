@@ -5,7 +5,7 @@ import {readWorkspace} from "@/lib/erp-workspace";
 import {loyaltyBalance,validatePrivateToken} from "@/lib/loyalty";
 import {requestLoyaltyReward} from "@/app/erp/[tenant]/loyalty-actions";
 import {createVerifiedCustomerReview} from "@/app/erp/[tenant]/marketing-offer-actions";
-import {customerBirthdayThisWeek,marketingTodayISO} from "@/lib/marketing-birthday";
+import {customerBirthdayThisWeek,customerBirthdayForPeriod,marketingTodayISO} from "@/lib/marketing-birthday";
 export const dynamic="force-dynamic";
 export const metadata={title:"Meus pontos | GROMMA",robots:{index:false,follow:false},referrer:"no-referrer"};
 const panel={background:"#192129",padding:17,borderRadius:10,border:"1px solid #374151"};
@@ -44,7 +44,9 @@ export default async function CustomerPointsPage({params,searchParams}:{
     offer.audience==="INACTIVE_60"&&daysSinceLast>=60||
     offer.audience==="INACTIVE_90"&&daysSinceLast>=90));
  const today=marketingTodayISO();
- const birthWeek=customerBirthdayThisWeek(customer.birthDate,today);
+ const birthdayPeriod=ws.birthdayPromotion.period;
+ const birthdayPeriodLabel=birthdayPeriod==="DAY"?"do dia":birthdayPeriod==="MONTH"?"do mês":"da semana";
+ const birthdayEligible=customerBirthdayForPeriod(customer.birthDate,today,birthdayPeriod);
  return <main style={{minHeight:"100vh",background:"#111820",color:"#f4f5f7",fontFamily:"system-ui,sans-serif",padding:"22px 14px"}}>
   <div style={{maxWidth:860,margin:"auto",display:"grid",gap:14}}>
    <header><small>{shop.tradeName} · Clube do cliente</small><h1 style={{margin:"6px 0"}}>Olá, {customer.name}</h1></header>
@@ -69,9 +71,10 @@ export default async function CustomerPointsPage({params,searchParams}:{
       <small>Válido até {offer.expiresAt}</small>
     </article>)}
    </section>}
-   {birthWeek&&ws.birthdayPromotion?.enabled&&<section style={panel}>
-    <h2>Seu presente de aniversário da semana</h2>
+   {birthdayEligible&&ws.birthdayPromotion.enabled&&<section style={panel}>
+    <h2>Seu presente de aniversário {birthdayPeriodLabel}</h2>
     <strong>{ws.birthdayPromotion.kind==="PERCENT"?ws.birthdayPromotion.value+"%":"R$ "+ws.birthdayPromotion.value.toFixed(2)} de desconto</strong>
+    {ws.birthdayPromotion.itemName&&<p>Válido para: <strong>{ws.birthdayPromotion.itemName}</strong> ({ws.birthdayPromotion.offerType==="SERVICE"?"Serviço":ws.birthdayPromotion.offerType==="DRINK"?"Bebida":"Produto"})</p>}
     <p>{ws.birthdayPromotion.description}</p>
    </section>}
    <section style={panel}><h2>Indique e ganhe</h2>
