@@ -119,7 +119,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
         { id: "marketing-cupons", label: "Cupons", route: "marketing-cupons", ownerOnly: true },
       ] },
       { id: "marketing-experiencia", label: "Experiência", route: "avaliacoes", children: [
-        { id: "marketing-aniversariantes", label: "Aniversariante da semana", route: "marketing-aniversariantes" },
+        { id: "marketing-aniversariantes", label: "Aniversariantes", route: "marketing-aniversariantes" },
         { id: "marketing-avaliacao", label: "Avaliação", route: "avaliacoes" },
       ] },
     ],
