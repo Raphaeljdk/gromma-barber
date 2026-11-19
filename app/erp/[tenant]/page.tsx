@@ -51,6 +51,9 @@ import {ServiceEditDialog} from "@/components/service-edit-dialog";
 import {ArchiveServiceButton} from "@/components/archive-service-button";
 import {FinancialSubpage,FINANCIAL_SUBMODULES,type FinancialSubmodule} from "@/components/financial-subpages";
 import {ClubPartnerManager} from "@/components/marketing-partners";
+import {MarketingPromotionForm} from "@/components/marketing-promotion-form";
+import {birthdayWeek,isBirthdayInCurrentWeek} from "@/lib/birthday-offers";
+import {NewCustomerReport} from "@/components/new-customer-report";
 import {FinanceCurrentDashboard} from "@/components/finance-current-dashboard";
 import {classifyFinanceExpense,classifyFinanceOrigin,type FinanceOverviewRow,type FinanceRefundRow} from "@/lib/finance-overview";
 import { ErpLanguagePicker } from "@/components/erp-language-picker";
@@ -175,7 +178,6 @@ const AUDIENCE_LABELS: Record<string, string> = {
 };
 
 const PENDING_MODULE_DESCRIPTIONS: Record<string, string> = {
-  "gromma-ia": "Área reservada aos recursos de inteligência artificial do GROMMA. Nenhuma automação de IA está ativa nesta tela.",
   performance: "Área reservada à análise de desempenho. Nenhum novo indicador foi ativado nesta tela.",
   "financeiro-gromma-nf": "Área reservada à emissão e consulta de notas fiscais. Ainda não é possível emitir, transmitir ou consultar notas por esta tela.",
   precificacao: "Área reservada à precificação de produtos e serviços. Esta tela não altera preços cadastrados.",
@@ -205,6 +207,10 @@ const MODULE_TITLES: Record<string, string> = {
   "clube-transacoes": "Transações financeiras",
   mensagens: "Mensagens",
   promocoes: "Promoções / Cupons",
+  "promocoes-servicos": "Promoções de serviços",
+  "promocoes-produtos": "Promoções de produtos e bebidas",
+  "promocoes-aniversariantes": "Aniversariantes da semana",
+  "relatorios-clientes-novos": "Clientes novos",
   financeiro: "Financeiro",
   "financeiro-contas-pagar": "Contas a pagar",
   "financeiro-contas-receber": "Contas a receber",
@@ -342,8 +348,8 @@ export async function TenantERPView({
   const actionError = valueOf("erro");
   const activeModule = moduleId ?? "dashboard";
   const needsCustomerList = activeModule === "clientes";
-  const needsCustomerDirectory = ["agenda", "assinaturas", "mensagens", "promocoes"].includes(activeModule);
-  const needsCustomerCount = ["dashboard", "clientes", "mensagens", "promocoes", "relatorios"].includes(activeModule);
+  const needsCustomerDirectory = ["agenda", "assinaturas", "gromma-ia", "promocoes", "promocoes-aniversariantes"].includes(activeModule);
+  const needsCustomerCount = ["dashboard", "clientes", "gromma-ia", "promocoes", "relatorios"].includes(activeModule);
   const needsAgendaList = activeModule === "agenda";
   const needsAgendaCount = ["dashboard", "agenda", "relatorios", "gerencial"].includes(activeModule);
   const needsCommandList = activeModule === "comandas";
@@ -357,7 +363,7 @@ export async function TenantERPView({
   const needsFinancialHealth = ["dashboard", "financeiro", "gerencial", "alertas"].includes(activeModule) || financeSubmodule;
   const needsCashAggregates = ["dashboard", "caixa", "relatorios", "gerencial"].includes(activeModule);
   const needsAgendaBoard = activeModule === "agenda";
-  const needsRelationship = ["mensagens", "promocoes"].includes(activeModule);
+  const needsRelationship = ["gromma-ia", "promocoes"].includes(activeModule);
   const needsProduction = ["dashboard", "comissoes", "gerencial"].includes(activeModule);
 
   const pageSize = 10;
@@ -1125,7 +1131,7 @@ export async function TenantERPView({
   );
   // O último atendimento concluído por cliente e serviço define o próximo retorno.
   // Esta consulta não envia mensagens: apenas constrói uma fila operacional.
-  const repurchaseAppointments=activeModule==="mensagens"&&canManageCampaigns
+  const repurchaseAppointments=activeModule==="gromma-ia"&&canManageCampaigns
     ? await prisma.appointment.findMany({
         where:{barberShopId:shop.id,customerId:{not:null},status:"COMPLETED"},
         select:{id:true,startsAt:true,customerId:true,serviceId:true,
@@ -1150,6 +1156,16 @@ export async function TenantERPView({
   const repurchaseReminders=dueServiceRepurchases(
     repurchaseVisits,workspace.serviceCatalogSettings,businessToday,workspace.businessTimeZone);
   const promotionCampaigns = workspace.campaigns.filter((item) => item.kind === "PROMOTION");
+  const birthdayPeriod = birthdayWeek(now,workspace.businessTimeZone);
+  const birthdayWeekCustomers = customersForRelationship.filter(item=>
+    isBirthdayInCurrentWeek(item.birthDate,now,workspace.businessTimeZone));
+  const promotionProducts = activeModule === "promocoes-produtos"
+    ? await prisma.product.findMany({where:{barberShopId:shop.id,active:true},select:{id:true,name:true},orderBy:{name:"asc"},take:2000})
+    : [];
+  const promotionTargetItems = activeModule === "promocoes-servicos"
+    ? shop.services.map(item=>({id:item.id,name:item.name}))
+    : promotionProducts.map(item=>({id:item.id,name:item.name,category:workspace.stockCategoryOverrides[item.id]??"Produtos"}));
+
   const promotionCampaignPageRows = promotionCampaigns.slice(
     (promocoesPage - 1) * pageSize,
     promocoesPage * pageSize,
@@ -1848,7 +1864,7 @@ export async function TenantERPView({
           <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/assinaturas`} searchParams={qs} param="assinaturasPage" page={safeAssinaturasPage} total={filteredClubMemberRows.length} pageSize={pageSize} label="assinantes" />
         </section>
 
-        <section id="mensagens" className="demo-section" hidden={Boolean(moduleId && moduleId !== "mensagens")}>
+        <section id="gromma-ia" className="demo-section" hidden={Boolean(moduleId && moduleId !== "gromma-ia")}>
           <div className="section-head">
             <div><div className="eyebrow">Relacionamento</div><h2>Mensagens, follow-up e aniversariantes</h2></div>
             <StatusPill tone="ready">Segmentação ativa</StatusPill>
@@ -1908,7 +1924,7 @@ export async function TenantERPView({
               </div>
             </article>
           </div>
-        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/mensagens`} searchParams={qs} param="mensagensPage" page={mensagensPage} total={customersForRelationship.length} pageSize={pageSize} label="clientes" />
+        <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/gromma-ia`} searchParams={qs} param="mensagensPage" page={mensagensPage} total={customersForRelationship.length} pageSize={pageSize} label="clientes" />
         </section>
 
         <section id="promocoes" className="demo-section" hidden={Boolean(moduleId && moduleId !== "promocoes")}>
@@ -1999,6 +2015,49 @@ export async function TenantERPView({
         <SectionPagination basePath={`/erp/${encodeURIComponent(tenantCode)}/promocoes`} searchParams={qs} param="promocoesPage" page={promocoesPage} total={Math.max(promotionCampaigns.length, workspace.coupons.length)} pageSize={pageSize} label="itens comerciais" />
         </section>
 
+
+        {["promocoes-servicos","promocoes-produtos","promocoes-aniversariantes"].includes(activeModule) && (
+          <section className="demo-section" aria-label="Cadastro de promoção">
+            <div className="section-head">
+              <div><div className="eyebrow">Marketing e promoção</div>
+                <h2>{activeModule === "promocoes-servicos" ? "Promoções de serviços"
+                  : activeModule === "promocoes-produtos" ? "Promoções de produtos e bebidas" : "Aniversariantes da semana"}</h2></div>
+              <StatusPill tone="ready">Cadastro por empresa</StatusPill>
+            </div>
+            {activeModule === "promocoes-aniversariantes" && <div className="erp-kpi-row">
+              <article><span>Aniversariantes da semana</span><strong>{birthdayWeekCustomers.length}</strong><small>clientes ativos cadastrados</small></article>
+              <article><span>Início da semana</span><strong>{birthdayPeriod.start.split("-").reverse().join("/")}</strong><small>segunda-feira</small></article>
+              <article><span>Fim da semana</span><strong>{birthdayPeriod.end.split("-").reverse().join("/")}</strong><small>domingo</small></article>
+              <article><span>Promoções ativas</span><strong>{promotionCampaigns.filter(c=>c.targetType==="BIRTHDAY"&&c.active).length}</strong><small>exclusivas para aniversariantes</small></article>
+            </div>}
+            {actionOk === "promocao"&&<div role="status" className="notice success">Promoção salva.</div>}
+            {actionError&&<div role="alert" className="notice error-notice">Verifique os itens cadastrados, o desconto e os campos obrigatórios.</div>}
+            <div className="erp-two-column-workspace">
+              <article className="card erp-workspace-card">
+                <div className="erp-card-title"><div><span>Nova promoção</span><strong>Oferta para clientes</strong></div></div>
+                {canManage ? <MarketingPromotionForm tenantCode={tenantCode}
+                  kind={activeModule==="promocoes-servicos"?"SERVICE":activeModule==="promocoes-produtos"?"PRODUCT":"BIRTHDAY"}
+                  targets={promotionTargetItems} categories={workspace.stockCategories}/> :
+                  <p className="muted">Sem permissão para cadastrar promoções.</p>}
+              </article>
+              <article className="card erp-workspace-card">
+                <div className="erp-card-title"><div><span>Promoções cadastradas</span><strong>Histórico por tipo</strong></div></div>
+                <div className="erp-stacked-list">
+                  {promotionCampaigns.filter(c=>c.targetType===
+                    (activeModule==="promocoes-servicos"?"SERVICE":activeModule==="promocoes-produtos"?"PRODUCT":"BIRTHDAY"))
+                    .slice(0,30).map(item=><div key={item.id}><div>
+                      <strong>{item.title}</strong>
+                      <span>{item.discountKind==="FIXED"?brl(item.discountValue??0):String(item.discountValue??0)+"%"} · {item.message}</span>
+                    </div><span className="badge approved">{item.active?"Ativa":"Inativa"}</span></div>)}
+                  {!promotionCampaigns.some(c=>c.targetType===
+                    (activeModule==="promocoes-servicos"?"SERVICE":activeModule==="promocoes-produtos"?"PRODUCT":"BIRTHDAY"))&&
+                    <small className="muted">Nenhuma promoção desse tipo cadastrada.</small>}
+                </div>
+              </article>
+            </div>
+          </section>
+        )}
+        {activeModule === "relatorios-clientes-novos" && <NewCustomerReport tenantCode={tenantCode} shopId={shop.id} />}
         <section id="financeiro" className="demo-section gromma-financial-workspace" hidden={Boolean(moduleId && moduleId !== "financeiro")}>
           <FinanceCurrentDashboard
             tenantCode={tenantCode} units={shop.units.filter(unit=>unit.active).map(unit=>({id:unit.id,name:unit.name}))}
@@ -2719,7 +2778,7 @@ export async function TenantERPView({
                 {reviewPageRows.map((review) => (
                   <div key={review.id}>
                     <span className="erp-review-score">{review.score.toFixed(0)}★</span>
-                    <div><strong>{review.customerName}</strong><span>{review.professionalName || "Profissional não informado"}</span><small>{review.comment || "Sem comentário"}</small></div>
+                    <div><strong>{review.customerName}</strong><span>{review.professionalName || "Profissional não informado"} · {review.source==="CUSTOMER_LINK"&&review.verifiedAt?"Cliente pelo site (link identificado)":"Registro manual"}</span><small>{review.comment || "Sem comentário"}</small></div>
                   </div>
                 ))}
                 {!workspace.reviews.length && <small className="muted">Nenhuma avaliação registrada ainda.</small>}
