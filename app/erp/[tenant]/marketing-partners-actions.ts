@@ -30,8 +30,8 @@ export async function createClubPartner(form:FormData){
     promoDescription=val(form,"promoDescription",400),
     expiresAt=val(form,"expiresAt",10),rawDiscount=val(form,"discountPercent",12);
   const discountPercent=Number(rawDiscount.replace(",","."));
-  let instagram:URL;
-  try{instagram=new URL(instagramUrl);}catch{fail(ctx.code,"instagram");}
+  const instagram=(()=>{try{return new URL(instagramUrl);}catch{return null;}})();
+  if(!instagram)return fail(ctx.code,"instagram");
   if(name.length<2||!isValidCnpj(cnpj)||address.length<7||
     !/^\+?\d{10,13}$/.test(phone.replace(/[\s()-]/g,""))||
     instagram.protocol!=="https:"||
