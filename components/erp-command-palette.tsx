@@ -79,7 +79,14 @@ const MODULES = [
   { id: "auditoria", label: "Auditoria", group: "Gestão", icon: ScrollText, adminOnly: true },
   { id: "alertas", label: "Alertas", group: "Gestão", icon: BellRing },
   { id: "promocoes", label: "Promoções / Cupons", group: "Marketing e Promoções", icon: Tags },
-  { id: "mensagens", label: "Mensagens", group: "Marketing e Promoções", icon: MessageCircle },
+  { id: "gromma-ia", label: "Gromma I.A. · Mensagens e follow-up", group: "Gromma I.A.", icon: MessageCircle },
+  { id: "marketing-parceiros", label: "Parceiros do Clube", group: "Marketing e Promoções", icon: Users, ownerOnly: true },
+  { id: "marketing-pontos", label: "Pontos e recompensas", group: "Marketing e Promoções", icon: BadgeDollarSign, ownerOnly: true },
+  { id: "marketing-cupons", label: "Cupons", group: "Marketing e Promoções", icon: Tags, ownerOnly: true },
+  { id: "marketing-promocoes-servicos", label: "Promoções · Serviços", group: "Marketing e Promoções", icon: Tags, ownerOnly: true },
+  { id: "marketing-promocoes-produtos", label: "Promoções · Produtos e bebidas", group: "Marketing e Promoções", icon: Tags, ownerOnly: true },
+  { id: "marketing-aniversariantes", label: "Aniversariante da semana", group: "Marketing e Promoções", icon: Star, ownerOnly: true },
+  { id: "relatorios-clientes-novos", label: "Clientes novos", group: "Gestão", icon: Users },
   { id: "avaliacoes", label: "Avaliações", group: "Marketing e Promoções", icon: Star },
   { id: "dados", label: "Dados gerais", group: "Empresa", icon: Building2 },
   { id: "identidade", label: "Identidade visual", group: "Empresa", icon: Store },
@@ -106,6 +113,10 @@ const MODULES = [
   { id: "financeiro-formas-comanda", label: "Formas de pagamento · Comanda", group: "Financeiro", icon: CreditCard, ownerOnly: true },
   { id: "financeiro-formas-despesas", label: "Formas de pagamento · Despesas", group: "Financeiro", icon: CreditCard, ownerOnly: true },
   { id: "financeiro-contabilidade", label: "Contabilidade", group: "Financeiro", icon: ScrollText },
+  { id: "financeiro-cardex", label: "Kardex", group: "Financeiro", icon: PackageSearch },
+  { id: "financeiro-relatorio-entrada", label: "Relatório de entrada", group: "Financeiro", icon: FileText },
+  { id: "financeiro-relatorio-saida", label: "Relatório de saída", group: "Financeiro", icon: FileText },
+  { id: "financeiro-portal-contador", label: "Portal do contador", group: "Financeiro", icon: FileText },
 ] as const;
 
 type SearchModule = {

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { readWorkspace } from "@/lib/erp-workspace";
 import { unitPolicy } from "@/lib/unit-operations-policy";
+import {ClubPartnersPublic} from "@/components/club-partners-public";
+import {PublicMarketingPosts} from "@/components/public-marketing-posts";
 
 export const dynamic="force-dynamic";
 
@@ -83,6 +85,8 @@ export default async function PublicBarbershop({params}:{params:Promise<{tenant:
           Consulte a equipe para confirmar as condições de uso e os benefícios dos parceiros.
         </p>
       </section>}
+      <PublicMarketingPosts offers={ws.marketingOffers}/>
+      <ClubPartnersPublic partners={ws.clubPartners} accentColor={brand.accentColor}/>
       <section style={{marginTop:42}}>
         <h2 style={{fontSize:25}}>Nossos profissionais</h2>
         <p style={{opacity:.72}}>Os destaques são definidos pela barbearia.</p>

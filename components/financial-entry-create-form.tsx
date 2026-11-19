@@ -9,13 +9,16 @@ import styles from "./financial-entry-create-form.module.css";
 type Props={
   tenantCode:string;type:"RECEIVABLE"|"PAYABLE";returnModule:string;
   units:{id:string;name:string}[];
-  categories:{id:string;name:string;type:"RECEIVABLE"|"PAYABLE"|"BOTH"}[];
-  banks:{id:string;name:string;account:string;active:boolean}[];
+  categories:{id:string;name:string;subcategory:string;type:"RECEIVABLE"|"PAYABLE"|"BOTH"}[];
+  banks:{id:string;name:string;account:string;unitId:string;active:boolean}[];
   expenseMethods:string[];
+  expenseCustomMethods:string[];
+  customPaymentMethods:{id:string;name:string;type:"PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER";active:boolean}[];
 };
-export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,categories,banks,expenseMethods}:Props){
+export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,categories,banks,expenseMethods,expenseCustomMethods,customPaymentMethods}:Props){
   const [condition,setCondition]=useState<"ONCE"|"RECURRENT">("ONCE");
   const [selectedCategory,setSelectedCategory]=useState("");
+  const [selectedUnit,setSelectedUnit]=useState("");
   const isExpense=type==="PAYABLE";
   const allowed=categories.filter(item=>item.type==="BOTH"||item.type===type);
   const paymentMethods=isExpense?PAYMENT_METHODS.filter(item=>expenseMethods.includes(item)):PAYMENT_METHODS;
@@ -25,7 +28,8 @@ export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,cat
     <input type="hidden" name="returnModule" value={returnModule}/>
     <div className={styles.grid}>
       <label>Filial <span className={styles.required}>*</span>
-        <select className="select" name="unitId" required defaultValue="">
+        <select className="select" name="unitId" required value={selectedUnit}
+          onChange={event=>setSelectedUnit(event.target.value)}>
           <option value="" disabled>Selecionar filial</option>
           {units.map(unit=><option key={unit.id} value={unit.id}>{unit.name}</option>)}
         </select>
@@ -45,7 +49,12 @@ export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,cat
         <span className={styles.hint}>Novas categorias podem ser cadastradas em Financeiro → Cadastros.</span>
       </label>
       <label>Subcategoria
-        <input className="input" name="subcategory" maxLength={80} placeholder="Ex.: Manutenção"/>
+        <input className="input" name="subcategory" maxLength={80} list="gromma-finance-subcategories"
+          placeholder="Ex.: Manutenção"/>
+        <datalist id="gromma-finance-subcategories">
+          {[...new Set(allowed.filter(item=>item.name===selectedCategory&&item.subcategory)
+            .map(item=>item.subcategory))].map(name=><option value={name} key={name}/>)}
+        </datalist>
       </label>
       <label>Desconto (%)
         <input className="input" name="discountPercent" type="number" step=".01" min="0" max="100" defaultValue="0"/>
@@ -77,6 +86,8 @@ export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,cat
           <select className="select" name="paymentMethod" defaultValue="">
             <option value="">Ainda não definida</option>
             {paymentMethods.map(method=><option key={method} value={method}>{PAYMENT_LABELS[method as PaymentMethod]}</option>)}
+            {customPaymentMethods.filter(method=>method.active&&(!isExpense||expenseCustomMethods.includes(method.id))).map(method=>
+              <option key={method.id} value={method.id}>{method.name} · {PAYMENT_LABELS[method.type]}</option>)}
           </select>
         </label>
         <label>Data de vencimento <span className={styles.required}>*</span>
@@ -105,7 +116,7 @@ export function FinancialEntryCreateForm({tenantCode,type,returnModule,units,cat
       <label>Conta bancária (opcional)
         <select className="select" name="bankAccountId" defaultValue="">
           <option value="">Não associar</option>
-          {banks.filter(bank=>bank.active).map(bank=><option value={bank.id} key={bank.id}>{bank.name} · conta final {bank.account.slice(-4)}</option>)}
+          {banks.filter(bank=>bank.active&&bank.unitId===selectedUnit).map(bank=><option value={bank.id} key={bank.id}>{bank.name} · conta final {bank.account.slice(-4)}</option>)}
         </select>
       </label>
       <button className="btn" type="submit"><Plus size={16}/>{isExpense?"Criar despesa":"Criar receita"}</button>

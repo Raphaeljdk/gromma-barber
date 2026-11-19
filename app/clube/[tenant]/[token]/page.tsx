@@ -3,6 +3,7 @@ import { readWorkspace } from '@/lib/erp-workspace';
 import { findValidInvite, inviteHash } from '@/lib/club-invite';
 import { brl } from '@/lib/plans';
 import { purchaseClubPlan } from './actions';
+import {ClubPartnersPublic} from "@/components/club-partners-public";
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Contratar assinatura | GROMMA', robots: { index: false, follow: false }, referrer: 'no-referrer' };
 export default async function ClubPurchase({ params, searchParams }: { params: Promise<{ tenant: string; token: string }>; searchParams: Promise<Record<string,string|undefined>> }) {
@@ -33,6 +34,7 @@ export default async function ClubPurchase({ params, searchParams }: { params: P
     <p>Olá, {customer.name}. Confira os planos e indique quem realizou sua venda.</p>
     {qs.erro && <p role="alert">Não foi possível contratar. Verifique os campos; se você já possui assinatura, fale com a barbearia.</p>}
     <div className="erp-stacked-list">{plans.map(p => <div key={p.id}><div><strong>{p.name} · {brl(p.monthlyAmount)}/mês</strong><span>{p.visitsPerMonth ? `${p.visitsPerMonth} usos/mês` : 'Uso ilimitado'} · {p.benefits}</span></div></div>)}</div>
+    <ClubPartnersPublic partners={workspace.clubPartners} accentColor={branding.accentColor}/>
     <form action={purchaseClubPlan.bind(null, tenant, token)} className="erp-compact-form">
       <label><span className="label">Plano</span><select className="select" name="planId" required defaultValue=""><option value="" disabled>Selecione</option>{plans.map(p => <option key={p.id} value={p.id}>{p.name} · {brl(p.monthlyAmount)}/mês</option>)}</select></label>
       <label><span className="label">Quem vendeu a assinatura para você?</span><select className="select" name="sellerId" defaultValue=""><option value="">Sem indicação</option>{sellers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>

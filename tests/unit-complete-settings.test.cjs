@@ -12,24 +12,29 @@ test("Cadastro de filiais keeps one save action for all editable unit data",()=>
  assert.match(view,/>Salvar geral<\/button>/);
  assert.equal((view.match(/type="submit"/g)||[]).length,1);
  for(const field of ["name","city","state","address","postalCode","complement","legalDocument",
-   "pixType","pixKey","paymentEmail","welcomeText"])
-   assert.match(view,new RegExp('name="'+field+'"'));
- for(const field of ["bankAgency","bankAccount","bankCode"]) assert.match(src("components/unit-bank-fields.tsx"),new RegExp('name="'+field+'"'));
+   "paymentEmail","welcomeText"])assert.match(view,new RegExp('name="'+field+'"'));
+ const bankFields=src("components/unit-bank-fields.tsx");
+ assert.match(bankFields,/name="verifiedBankAccountId"/);
+ assert.doesNotMatch(bankFields,/name="bankAccount"/);
+ assert.doesNotMatch(view,/name="pixKey"/);
  assert.doesNotMatch(view,/Percentual do pote desta unidade/);
  assert.doesNotMatch(view,/Antecedência para cancelamento online/);
  assert.doesNotMatch(view,/Imagem de capa \(URL HTTPS\)/);
 });
 
-test("Searchable bank directory includes code/ISPB and international SWIFT",()=>{
+test("Diretório de bancos no financeiro e filial apenas vinculada a contas verificadas",()=>{
  const banks=src("lib/bank-directory.ts");
  const fields=src("components/unit-bank-fields.tsx");
  const action=src("app/erp/[tenant]/unit-complete-actions.ts");
+ const finance=src("components/financial-subpages.tsx");
  assert.match(banks,/brasilapi.com.br\/api\/banks\/v1/);
  assert.match(banks,/ispb/);
- assert.match(fields,/<datalist id="gromma-brazil-banks">/);
- assert.match(fields,/Internacional — SWIFT\/BIC/);
- assert.match(action,/bankSwift/);
- assert.match(action,/isValidPixKey\(pixKey,pixType,legalDocument\)/);
+ assert.match(finance,/bankDirectory\.map/);
+ assert.match(finance,/Titularidade verificada/);
+ assert.match(fields,/verifiedAccounts\.filter/);
+ assert.match(fields,/verifiedBankAccountId/);
+ assert.match(action,/validatedOwnerCnpj/);
+ assert.match(action,/selected\.ownerCnpj!==legal/);
  assert.match(action,/old.legalDocument && legalDocument!==old.legalDocument/);
 });
 

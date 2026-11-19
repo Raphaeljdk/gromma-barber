@@ -61,7 +61,6 @@ const NAV_GROUPS: readonly ErpNavigationSector[] = [...ERP_NAVIGATION]
     left.id==="assinaturas"&&right.id==="gestao"?1:0)
   .map((sector) => {
   const extraRoutes: Record<string, readonly string[]> = {
-    marketing: ["mensagens"],
     empresa: ["documentos", "treinamentos", "configuracoes"],
   };
   const extras = ERP_NAVIGATION_EXTRA.filter((item) =>
@@ -299,7 +298,7 @@ export function ErpSidebar({
             if (["gromma-ia", "performance", "precificacao", "totem"].includes(group.id)) return <div className="erp-nav-standalone" key={group.id}>
               {group.items.map(item => renderNavItem(item))}
             </div>;
-            const alwaysVisible = group.id === "operacional" || group.id === "gestao" || group.id === "financeiro";
+            const alwaysVisible = group.id === "operacional" || group.id === "gestao" || group.id === "financeiro" || group.id === "marketing";
             const expanded = !collapsed && (alwaysVisible || (expandedGroups[group.id] ?? group.id === activeGroup));
             const SectorIcon = SECTOR_ICONS[group.id] ?? LayoutDashboard;
             return <div className={["erp-nav-group", "erp-nav-sector", expanded ? "is-expanded" : "", activeGroup === group.id ? "has-active-module" : ""].join(" ")} key={group.id} data-sector={group.id}>

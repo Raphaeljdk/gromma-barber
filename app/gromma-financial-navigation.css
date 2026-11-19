@@ -187,7 +187,8 @@ html .tenant-erp .gromma-finance-disclaimer{
 /* 18/11/2026: títulos de setor como marca-d'água, sem aparência de botão. */
 html .tenant-erp .erp-nav-sector[data-sector="operacional"] > .erp-nav-sector-watermark,
 html .tenant-erp .erp-nav-sector[data-sector="gestao"] > .erp-nav-sector-watermark,
-html .tenant-erp .erp-nav-sector[data-sector="financeiro"] > .erp-nav-sector-watermark {
+html .tenant-erp .erp-nav-sector[data-sector="financeiro"] > .erp-nav-sector-watermark,
+html .tenant-erp .erp-nav-sector[data-sector="marketing"] > .erp-nav-sector-watermark {
   display:flex;align-items:center;gap:9px;
   min-height:28px;padding:9px 8px 3px;
   border:0!important;border-radius:0;
@@ -248,4 +249,12 @@ html .tenant-erp .erp-nav-standalone .erp-nav-tree-row > .erp-nav-item {
   html .tenant-erp .erp-nav-standalone .erp-nav-tree-row > .erp-nav-item {
     min-height:40px!important;
   }
+}
+
+/* Marketing e promoção também aparece como marca d'água, com seus subitens visíveis. */
+html .tenant-erp .erp-nav-sector[data-sector="marketing"] .erp-nav-sector-items .erp-nav-tree-row > .erp-nav-item {
+  font-size:.79rem!important;font-weight:640!important;min-height:34px!important;line-height:1.35!important;
+}
+html .tenant-erp .erp-nav-sector[data-sector="marketing"] .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item {
+  font-size:.74rem!important;font-weight:570!important;min-height:30px!important;line-height:1.35!important;
 }

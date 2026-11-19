@@ -6,9 +6,9 @@ export const PAYMENT_LABELS:Record<typeof PAYMENT_METHODS[number],string>={
 };
 export const DEFAULT_UNIT_POLICY:UnitOperationsPolicy={
   legalDocument:"",postalCode:"",complement:"",bankCountry:"BR",bankCode:"",bankName:"",
-  bankAgency:"",bankAccount:"",bankSwift:"",paymentConfigurations:{},
+  bankAgency:"",bankAccount:"",bankSwift:"",verifiedBankAccountId:"",paymentConfigurations:{},
   paymentEmail:"",paymentPhone:"",pixKey:"",pixType:"",
-  paymentMethods:["PIX","CASH","DEBIT","CREDIT","TRANSFER"],
+  paymentMethods:["PIX","CASH","DEBIT","CREDIT","TRANSFER"],customPaymentMethods:[],
   debitFeePercent:0,creditFeePercent:0,settlementDays:0,potPercent:null,
   cancellationMinutes:0,noShowBlockHours:0,coverImageUrl:"",welcomeText:"",
 };
@@ -39,6 +39,7 @@ export function isValidPixKey(key:string,type:UnitOperationsPolicy["pixType"],un
   if(!clean)return type==="";
   switch(type){
     case "CNPJ":return isValidCnpj(clean)&&clean.replace(/\D/g,"")===unitCnpj;
+    case "CPF":return false; // CPF requer confirmação de titularidade externa, nunca simples validação local.
     case "EMAIL":return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)&&clean.length<=150;
     case "PHONE":return /^\+55\d{10,11}$/.test(clean);
     case "EVP":return /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/.test(clean);

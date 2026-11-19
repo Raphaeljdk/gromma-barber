@@ -95,6 +95,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
           { id: "rel-cli-agendamento", label: "Histórico de agendamento" },
           { id: "rel-cli-vendas-produtos", label: "Histórico de vendas de produtos" },
           { id: "rel-cli-servicos", label: "Serviços" },
+          { id: "rel-cli-novos", label: "Clientes novos", route: "relatorios-clientes-novos" },
           { id: "rel-cli-periodo", label: "Período e serviços" },
         ] },
         { id: "relatorios-profissionais", label: "Profissionais", children: [
@@ -111,22 +112,17 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
   {
     id: "marketing", label: "Marketing e promoção", description: "Fidelização e experiência",
     items: [
-      { id: "marketing-clube", label: "Clube do assinante", route: "assinaturas", children: [
-        { id: "marketing-parceiros", label: "Parceiros do clube" },
-        { id: "marketing-pontos", label: "Pontos" },
-        { id: "marketing-cupons", label: "Cupons", route: "promocoes" },
+      { id: "marketing-clube", label: "Clube do assinante", route: "marketing-parceiros", ownerOnly: true, children: [
+        { id: "marketing-pontos", label: "Pontos", route: "marketing-pontos" },
+        { id: "marketing-cupons", label: "Cupons", route: "marketing-cupons" },
       ] },
       { id: "marketing-promocoes", label: "Promoções", route: "promocoes", children: [
-        { id: "marketing-promocoes-servicos", label: "Serviços", route: "promocoes" },
-        { id: "marketing-promocoes-produtos", label: "Produtos", route: "promocoes" },
+        { id: "marketing-promocoes-servicos", label: "Serviços", route: "marketing-promocoes-servicos" },
+        { id: "marketing-promocoes-produtos", label: "Produtos e bebidas", route: "marketing-promocoes-produtos" },
       ] },
       { id: "marketing-experiencia", label: "Experiência", route: "avaliacoes", children: [
-        { id: "marketing-aniversariantes", label: "Aniversariante por período" },
+        { id: "marketing-aniversariantes", label: "Aniversariante da semana", route: "marketing-aniversariantes" },
         { id: "marketing-avaliacao", label: "Avaliação", route: "avaliacoes" },
-        { id: "marketing-agendamento-cliente", label: "Agendamento do cliente", route: "agenda" },
-        { id: "marketing-clientes-ausentes", label: "Clientes ausentes" },
-        { id: "marketing-clientes-sem-preferencia", label: "Clientes sem preferência" },
-        { id: "marketing-clientes-novos", label: "Clientes novos", route: "clientes" },
       ] },
     ],
   },
@@ -164,13 +160,18 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
             { id: "financeiro-formas-despesas", label: "Despesas", route: "financeiro-formas-despesas" },
           ] },
         ] },
-        { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade" },
+        { id: "financeiro-contabilidade", label: "Contabilidade", route: "financeiro-contabilidade", children: [
+          { id:"financeiro-cardex",label:"Kardex",route:"financeiro-cardex" },
+          { id:"financeiro-relatorio-entrada",label:"Relatório de entrada",route:"financeiro-relatorio-entrada" },
+          { id:"financeiro-relatorio-saida",label:"Relatório de saída",route:"financeiro-relatorio-saida" },
+          { id:"financeiro-portal-contador",label:"Portal do contador",route:"financeiro-portal-contador" },
+        ] },
       { id: "gromma-nf", label: "Gromma NF" },
     ],
   },
   {
-    id: "gromma-ia", label: "Gromma I.A.", description: "Módulo futuro",
-    items: [{ id: "standalone-gromma-ia", label: "Gromma I.A." }],
+    id: "gromma-ia", label: "Gromma I.A.", description: "Relacionamento e campanhas",
+    items: [{ id: "standalone-gromma-ia", label: "Gromma I.A.", route: "gromma-ia" }],
   },
   {
     id: "performance", label: "Performance", description: "Módulo futuro",
@@ -190,7 +191,6 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
 
 /* Preserva acesso aos módulos atuais que não são itens explícitos da imagem. */
 export const ERP_NAVIGATION_EXTRA: readonly ErpNavigationNode[] = [
-  { id: "extra-mensagens", label: "Mensagens", route: "mensagens" },
   { id: "extra-documentos", label: "Documentos", route: "documentos" },
   { id: "extra-treinamentos", label: "Tutoriais / Cursos", route: "treinamentos" },
   { id: "extra-configuracoes", label: "Configurações", route: "configuracoes" },
