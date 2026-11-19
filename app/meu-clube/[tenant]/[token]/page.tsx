@@ -5,6 +5,7 @@ import {readWorkspace} from "@/lib/erp-workspace";
 import {loyaltyBalance,validatePrivateToken} from "@/lib/loyalty";
 import {requestLoyaltyReward} from "@/app/erp/[tenant]/loyalty-actions";
 import {createVerifiedCustomerReview} from "@/app/erp/[tenant]/marketing-offer-actions";
+import {customerBirthdayThisWeek,marketingTodayISO} from "@/lib/marketing-birthday";
 export const dynamic="force-dynamic";
 export const metadata={title:"Meus pontos | GROMMA",robots:{index:false,follow:false},referrer:"no-referrer"};
 const panel={background:"#192129",padding:17,borderRadius:10,border:"1px solid #374151"};
@@ -31,20 +32,16 @@ export default async function CustomerPointsPage({params,searchParams}:{
  const lastCompleted=appointments[0]?.startsAt??null;
  const daysSinceLast=lastCompleted?Math.floor((Date.now()-lastCompleted.getTime())/86400000):999;
  const hasClub=ws.clubMembers.some(member=>member.customerId===customer.id&&member.status==="ACTIVE");
- const targetOffers=ws.marketingOffers.filter(offer=>offer.active&&offer.expiresAt>=new Date().toISOString().slice(0,10)&&(
+ const birthEligible=customerBirthdayThisWeek(customer.birthDate,marketingTodayISO());
+ const targetOffers=ws.marketingOffers.filter(offer=>offer.active&&offer.expiresAt>=marketingTodayISO()&&(
     offer.audience==="ALL"||
+    offer.audience==="BIRTHDAY"&&birthEligible||
     offer.audience==="CLUB"&&hasClub||
     offer.audience==="INACTIVE_30"&&daysSinceLast>=30||
     offer.audience==="INACTIVE_60"&&daysSinceLast>=60||
     offer.audience==="INACTIVE_90"&&daysSinceLast>=90));
- const today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
- const birthWeek=Boolean(customer.birthDate)&&(()=>{const d=new Date(customer.birthDate!);
-   const mm=d.getUTCMonth(),dd=d.getUTCDate();
-   const now=new Date(today+"T12:00:00Z");
-   const anniversary=new Date(Date.UTC(now.getUTCFullYear(),mm,dd,12));
-   const diff=Math.abs(Math.floor((anniversary.getTime()-now.getTime())/86400000));
-   return diff<=3;
- })();
+ const today=marketingTodayISO();
+ const birthWeek=customerBirthdayThisWeek(customer.birthDate,today);
  return <main style={{minHeight:"100vh",background:"#111820",color:"#f4f5f7",fontFamily:"system-ui,sans-serif",padding:"22px 14px"}}>
   <div style={{maxWidth:860,margin:"auto",display:"grid",gap:14}}>
    <header><small>{shop.tradeName} · Clube do cliente</small><h1 style={{margin:"6px 0"}}>Olá, {customer.name}</h1></header>
