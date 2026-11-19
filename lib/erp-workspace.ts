@@ -357,7 +357,8 @@ export type ErpWorkspace = {
   loyaltyAccess:LoyaltyAccess[];
   loyaltyReferrals:LoyaltyReferral[];
   marketingOffers:MarketingOffer[];
-  birthdayPromotion:{enabled:boolean;kind:"PERCENT"|"FIXED";value:number;description:string};
+  birthdayPromotion:{enabled:boolean;kind:"PERCENT"|"FIXED";value:number;description:string;
+    period:"DAY"|"WEEK"|"MONTH";offerType?:"SERVICE"|"PRODUCT"|"DRINK";itemId?:string;itemName?:string};
   financialEntryMetadata: Record<string,FinancialEntryMetadata>;
   professionalExtraRates: Record<string, { subscriptionPercent: number; productPercent: number }>;
   subscriptionCommissionTiers: Record<string, { min: number; max: number | null; percent: number }[]>;
@@ -401,7 +402,7 @@ export const DEFAULT_WORKSPACE: ErpWorkspace = {
   loyaltySettings:{enabled:false,referralPoints:0},
   loyaltyRewards:[],loyaltyMovements:[],loyaltyRedemptions:[],
   loyaltyAccess:[],loyaltyReferrals:[],marketingOffers:[],
-  birthdayPromotion:{enabled:false,kind:"PERCENT",value:0,description:""},
+  birthdayPromotion:{enabled:false,kind:"PERCENT",value:0,description:"",period:"WEEK"},
   financialEntryMetadata: {},
   rolePermissions: {},
   professionalProfiles: {},
@@ -616,7 +617,11 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
       const p=record(operations.birthdayPromotion),value=Number(p.value);
       return {enabled:p.enabled===true,kind:(p.kind==="FIXED"?"FIXED":"PERCENT") as "FIXED"|"PERCENT",
         value:Number.isFinite(value)&&value>0&&value<=10000?value:0,
-        description:String(p.description??"").slice(0,500)};
+        description:String(p.description??"").slice(0,500),
+        period:(p.period==="DAY"||p.period==="MONTH"?p.period:"WEEK") as "DAY"|"WEEK"|"MONTH",
+        offerType:(p.offerType==="SERVICE"||p.offerType==="PRODUCT"||p.offerType==="DRINK"?p.offerType:undefined) as "SERVICE"|"PRODUCT"|"DRINK"|undefined,
+        itemId:typeof p.itemId==="string"?p.itemId.slice(0,100):"",
+        itemName:typeof p.itemName==="string"?p.itemName.slice(0,120):""};
     })(),
     loyaltySettings:(()=>{
       const settings=record(operations.loyaltySettings);
