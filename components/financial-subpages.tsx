@@ -159,7 +159,7 @@ export function FinancialSubpage({tenantCode,shopId,view,bankDirectory,bankOwner
      </article>
      <div className={styles.list}>
        {workspace.financialCategories.length?workspace.financialCategories.map(item=><div className={styles.listRow} key={item.id}>
-         <div className={styles.listInfo}><strong>{item.name}</strong><small>{item.subcategory||"Sem subcategoria"}</small></div>
+         <div className={styles.listInfo}><strong>{item.name}</strong></div>
          <span className={styles.pill}>{{
            REVENUE_FIXED:"Receita fixa",REVENUE_VARIABLE:"Receita variável",
            EXPENSE_FIXED:"Despesa fixa",EXPENSE_OPERATIONAL:"Despesa operacional",
