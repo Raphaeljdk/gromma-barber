@@ -114,9 +114,10 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
     items: [
       { id: "marketing-clube", label: "Clube do assinante", route: "marketing-parceiros", ownerOnly: true, children: [
         { id: "marketing-pontos", label: "Pontos", route: "marketing-pontos" },
-        { id: "marketing-cupons", label: "Cupons", route: "marketing-cupons" },
       ] },
-      { id: "marketing-promocoes", label: "Promoções", route: "promocoes" },
+      { id: "marketing-promocoes", label: "Promoções", route: "promocoes", children: [
+        { id: "marketing-cupons", label: "Cupons", route: "marketing-cupons", ownerOnly: true },
+      ] },
       { id: "marketing-experiencia", label: "Experiência", route: "avaliacoes", children: [
         { id: "marketing-aniversariantes", label: "Aniversariante da semana", route: "marketing-aniversariantes" },
         { id: "marketing-avaliacao", label: "Avaliação", route: "avaliacoes" },
