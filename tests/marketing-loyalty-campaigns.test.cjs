@@ -73,7 +73,7 @@ test("Promoções privadas, avaliação autenticada, Gromma IA e navegação",()
  assert.match(page,/MarketingPromotions/);
  assert.match(portal,/eligibleReviews/);
  assert.match(portal,/targetOffers/);
- assert.match(actions,/appointmentId:appointmentId/);
+ assert.match(actions,/appointmentId,customerId:session\.customerId/);
  assert.match(actions,/status:"COMPLETED"/);
  assert.match(actions,/VERIFIED_CLIENT_REVIEW/);
  assert.match(checkout,/awardPaidServices/);
