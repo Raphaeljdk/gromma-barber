@@ -30,6 +30,13 @@ export function appendMovement(ws:ErpWorkspace,item:Omit<LoyaltyMovement,"id"|"c
   ws.loyaltyMovements.push({...item,id:"pts_"+randomBytes(12).toString("hex"),createdAt:new Date().toISOString()});
   return true;
 }
+/** A reopened and reclosed command earns a fresh cycle, never a duplicate active credit. */
+function nextCheckoutCreditKey(ws:ErpWorkspace,base:string){
+ const prior=ws.loyaltyMovements.filter(row=>row.delta>0&&
+   (row.sourceKey===base||row.sourceKey.startsWith(base+":redo:")));
+ if(prior.some(row=>!ws.loyaltyMovements.some(reverse=>reverse.sourceKey==="undo:"+row.id)))return null;
+ return prior.length?base+":redo:"+prior.length:base;
+}
 export function awardPaidServices(ws:ErpWorkspace,commandId:string,customerId:string|null,
   lines:{id:string;kind:string;quantity:number;serviceId?:string|null;description:string}[]){
   if(!ws.loyaltySettings.enabled||!customerId)return 0;
@@ -41,9 +48,10 @@ export function awardPaidServices(ws:ErpWorkspace,commandId:string,customerId:st
     if(!Number.isInteger(item.quantity)||item.quantity<1||item.quantity>100)continue;
     const points=perService*item.quantity;
     if(points>1000000)throw Error("Excessive points");
+    const creditKey=nextCheckoutCreditKey(ws,"paid:"+commandId+":"+item.id);
+    if(!creditKey)continue;
     const inserted=appendMovement(ws,{
-      customerId,kind:"SERVICE",delta:points,
-      sourceKey:"paid:"+commandId+":"+item.id,
+      customerId,kind:"SERVICE",delta:points,sourceKey:creditKey,
       description:"Serviço realizado: "+item.description.slice(0,110),
     });
     if(inserted)total+=points;
@@ -53,7 +61,8 @@ export function awardPaidServices(ws:ErpWorkspace,commandId:string,customerId:st
 export function undoCheckoutRewards(ws:ErpWorkspace,commandId:string){
   const credits=ws.loyaltyMovements.filter(row=>
     row.delta>0&&(row.sourceKey.startsWith("paid:"+commandId+":")||
-      row.sourceKey==="refer:"+commandId));
+      row.sourceKey==="refer:"+commandId||row.sourceKey.startsWith("refer:"+commandId+":redo:"))&&
+    !ws.loyaltyMovements.some(reverse=>reverse.sourceKey==="undo:"+row.id));
   if(!credits.length)return 0;
   const affected=new Map<string,number>();
   for(const row of credits)affected.set(row.customerId,(affected.get(row.customerId)??0)+row.delta);
@@ -81,9 +90,11 @@ export function rewardReferral(ws:ErpWorkspace,args:{
     args.customerCreatedAt&&new Date(item.createdAt)<=args.customerCreatedAt);
   if(!eligible)return 0;
   const points=ws.loyaltySettings.referralPoints;
+  const key=nextCheckoutCreditKey(ws,"refer:"+args.commandId);
+  if(!key)return 0;
   if(appendMovement(ws,{
     customerId:eligible.referrerId,kind:"REFERRAL",delta:points,
-    sourceKey:"refer:"+args.commandId,description:"Indicação convertida em atendimento pago",
+    sourceKey:key,description:"Indicação convertida em atendimento pago",
   })){
     eligible.status="REWARDED";eligible.rewardCommandId=args.commandId;
     return points;
