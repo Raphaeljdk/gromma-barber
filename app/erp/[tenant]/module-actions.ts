@@ -470,20 +470,28 @@ export async function saveCustomerGroup(formData: FormData) {
 
 export async function saveCoupon(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
-  const path = modulePath(tenantCode, "promocoes");
-  if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
+  const returnModule = value(formData, "returnModule", 50) === "marketing-cupons" ? "marketing-cupons" : "promocoes";
+  const path = modulePath(tenantCode, returnModule);
+  if (!allowed(viewer, ["OWNER"])) redirect(path + "?erro=permissao");
 
   const code = value(formData, "code", 40).toUpperCase().replace(/[^A-Z0-9_-]/g, "");
   const kind = value(formData, "kind", 20) === "FIXED" ? "FIXED" : "PERCENT";
   const amount = numberValue(formData, "value");
   const expiresAt = value(formData, "expiresAt", 20);
-
-  if (!code || amount <= 0 || (kind === "PERCENT" && amount > 100)) {
-    redirect(`${path}?erro=cupom`);
+  const today = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const hasExpiry = /^\d{4}-\d{2}-\d{2}$/.test(expiresAt);
+  const validExpiry = hasExpiry && new Date(expiresAt + "T12:00:00.000Z").toISOString().slice(0,10) === expiresAt;
+  if (code.length < 3 || !Number.isFinite(amount) || amount <= 0 ||
+    (kind === "PERCENT" && amount > 100) || (kind === "FIXED" && amount > 1000000) ||
+    (returnModule === "marketing-cupons" && (!validExpiry || expiresAt < today)) ||
+    (expiresAt && (!validExpiry || expiresAt < today))) {
+    redirect(path + "?erro=cupom");
   }
 
   try {
     await persistWorkspace(shop, (workspace) => {
+      if (workspace.coupons.some(coupon => coupon.active && coupon.code === code &&
+        (!coupon.expiresAt || coupon.expiresAt >= today))) throw new Error("Cupom ativo duplicado");
       workspace.coupons.unshift({
         id: workspaceId("coupon"),
         code,
@@ -496,11 +504,11 @@ export async function saveCoupon(formData: FormData) {
     });
   } catch (error) {
     console.error("Failed to save coupon", error);
-    redirect(`${path}?erro=banco`);
+    redirect(path + "?erro=cupom");
   }
 
   revalidatePath(path);
-  redirect(`${path}?ok=cupom`);
+  redirect(path + "?ok=cupom");
 }
 
 export async function savePromotion(formData: FormData) {
