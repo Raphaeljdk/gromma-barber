@@ -2,7 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { readWorkspace } from '@/lib/erp-workspace';
 import { findValidInvite, inviteHash } from '@/lib/club-invite';
 import { brl } from '@/lib/plans';
-import { purchaseClubPlan } from './actions';
+import { purchaseClubPlan,saveInvitedCustomerReview } from './actions';
+import {isBirthdayInCurrentWeek} from '@/lib/birthday-offers';
 import {ClubPartnersPublic} from "@/components/club-partners-public";
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Contratar assinatura | GROMMA', robots: { index: false, follow: false }, referrer: 'no-referrer' };
@@ -15,10 +16,19 @@ export default async function ClubPurchase({ params, searchParams }: { params: P
   const valid = shop?.status === 'APPROVED' && shop.accessReleased && invite;
   if (!valid) return <main className="container" style={{ maxWidth: 680, padding: 32 }}><article className="card"><h1>Clube de assinaturas</h1><p>{qs.ok === 'contratado' && workspace.clubInvites.some(i => i.hash === inviteHash(token) && i.usedAt) ? 'Contratação recebida. Procure a barbearia para efetuar o pagamento. Nenhum débito automático foi realizado.' : 'Este link expirou, já foi utilizado ou não está disponível. Solicite um novo link à barbearia.'}</p></article></main>;
   const [customer, sellers] = await Promise.all([
-    prisma.customer.findFirst({ where: { id: invite.customerId, barberShopId: shop.id, active: true }, select: { name: true } }),
+    prisma.customer.findFirst({ where: { id: invite.customerId, barberShopId: shop.id, active: true }, select: { name: true,birthDate:true } }),
     prisma.shopUser.findMany({ where: { barberShopId: shop.id, active: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
   if (!customer) return <main className="container"><p>Cadastro indisponível. Entre em contato com a barbearia.</p></main>;
+  const appointments = await prisma.appointment.findMany({where:{
+    barberShopId:shop.id,customerId:invite.customerId,status:"COMPLETED",
+  },orderBy:{startsAt:"desc"},take:20,select:{
+    id:true,startsAt:true,barber:{select:{name:true}},service:{select:{name:true}},
+  }});
+  const unratedAppointments=appointments.filter(item=>!workspace.reviews.some(review=>review.appointmentId===item.id));
+  const birthdayEligible=isBirthdayInCurrentWeek(customer.birthDate,new Date(),workspace.businessTimeZone);
+  const birthdayOffers=birthdayEligible?workspace.campaigns.filter(c=>
+    c.active&&c.kind==="PROMOTION"&&c.targetType==="BIRTHDAY"&&Number(c.discountValue)>0):[];
   const plans = workspace.clubPlans.filter(p => p.active);
   const branding = workspace.branding;
   return <main className="container" style={{ maxWidth: 680, padding: 32 }}><article className="card erp-workspace-card">
@@ -35,6 +45,41 @@ export default async function ClubPurchase({ params, searchParams }: { params: P
     {qs.erro && <p role="alert">Não foi possível contratar. Verifique os campos; se você já possui assinatura, fale com a barbearia.</p>}
     <div className="erp-stacked-list">{plans.map(p => <div key={p.id}><div><strong>{p.name} · {brl(p.monthlyAmount)}/mês</strong><span>{p.visitsPerMonth ? `${p.visitsPerMonth} usos/mês` : 'Uso ilimitado'} · {p.benefits}</span></div></div>)}</div>
     <ClubPartnersPublic partners={workspace.clubPartners} accentColor={branding.accentColor}/>
+    {birthdayOffers.length>0&&<section aria-label="Promoções de aniversário" style={{margin:"18px 0"}}>
+      <h2>Seu presente de aniversário</h2>
+      <p>Essas ofertas são exclusivas para clientes cadastrados que fazem aniversário nesta semana.</p>
+      <div className="erp-stacked-list">
+        {birthdayOffers.map(offer=><div key={offer.id}><div><strong>{offer.title}</strong>
+          <span>{offer.message}</span>
+          <small>{offer.discountKind==="FIXED"?"Desconto de R$ "+Number(offer.discountValue).toFixed(2).replace(".",","):String(offer.discountValue)+"% de desconto"}</small>
+        </div></div>)}
+      </div>
+    </section>}
+    <section aria-label="Sua avaliação" style={{margin:"24px 0"}}>
+      <h2>Avalie seu atendimento</h2>
+      <p>Escolha um atendimento concluído. A avaliação ficará vinculada ao profissional que atendeu você.</p>
+      {qs.ok==="avaliacao"&&<p role="status" className="notice success">Avaliação recebida. Obrigado!</p>}
+      {qs.erro==="avaliacao"&&<p role="alert" className="notice error-notice">Não foi possível receber a avaliação. Verifique os dados ou se o atendimento já foi avaliado.</p>}
+      {unratedAppointments.length>0?<form className="erp-compact-form" action={saveInvitedCustomerReview.bind(null,tenant,token)}>
+        <label><span className="label">Atendimento</span>
+          <select className="select" name="appointmentId" required>
+            {unratedAppointments.map(item=><option key={item.id} value={item.id}>
+              {item.startsAt.toLocaleDateString("pt-BR")} · {item.service?.name??"Atendimento"} · {item.barber?.name??"Profissional"}
+            </option>)}
+          </select>
+        </label>
+        <label><span className="label">Nota de 1 a 5</span>
+          <select className="select" name="score" required defaultValue="5">
+            {[5,4,3,2,1].map(value=><option key={value} value={value}>{value} estrela{value>1?"s":""}</option>)}
+          </select>
+        </label>
+        <label><span className="label">Mensagem</span>
+          <textarea className="textarea" name="comment" rows={3} maxLength={700} placeholder="Como foi sua experiência?"/>
+        </label>
+        <button className="btn" type="submit">Enviar avaliação</button>
+      </form>:<p className="small muted">Nenhum atendimento concluído disponível para avaliar neste acesso.</p>}
+    </section>
+
     <form action={purchaseClubPlan.bind(null, tenant, token)} className="erp-compact-form">
       <label><span className="label">Plano</span><select className="select" name="planId" required defaultValue=""><option value="" disabled>Selecione</option>{plans.map(p => <option key={p.id} value={p.id}>{p.name} · {brl(p.monthlyAmount)}/mês</option>)}</select></label>
       <label><span className="label">Quem vendeu a assinatura para você?</span><select className="select" name="sellerId" defaultValue=""><option value="">Sem indicação</option>{sellers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
