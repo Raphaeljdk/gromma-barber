@@ -9,7 +9,7 @@ export function PublicMarketingPosts({offers}:{offers:MarketingOffer[]}){
    {general.map(o=><article key={o.id} style={{padding:16,borderRadius:11,border:"1px solid #53606d",display:"grid",gap:8}}>
      <small>{o.kind==="SERVICE"?"Serviço":"Produto ou bebida"} · até {o.expiresAt}</small>
      <strong>{o.title}</strong><strong style={{color:"#74d6b9"}}>{o.discountPercent}% de desconto</strong>
-     <p style={{margin:0,fontSize:13,lineHeight:1.5}}>{o.description}</p>
+     <p style={{margin:0,fontSize:13,lineHeight:1.5}}>{o.description}</p>{!!o.itemNames?.length&&<small>Válida para: {o.itemNames.join(", ")}</small>}
    </article>)}
   </div>
  </section>;
