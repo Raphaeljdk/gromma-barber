@@ -46,7 +46,13 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
     <article className="card"><h3>Postagens cadastradas</h3>
       <div className="erp-stacked-list">{offers.map(o=><div key={o.id}><div><strong>{o.title}</strong>
        <span>{o.description}</span><small>{o.kind==="SERVICE"?"Serviço":"Produto / bebida"} · {o.discountPercent}% · Até {o.expiresAt} · Público: {o.audience}</small></div></div>)}
-       {!offers.length&&<p className="small muted">Nenhuma promoção ativa para o período.</p>}
+       {ws.campaigns.filter(c=>c.kind==="PROMOTION"&&c.active).map(c=><div key={c.id}>
+         <div><strong>{c.title}</strong><span>{c.message}</span>
+           <small>Campanha comercial existente · Público: {c.audience} · Mantida para preservar o histórico</small>
+         </div>
+       </div>)}
+       {!offers.length&&!ws.campaigns.some(c=>c.kind==="PROMOTION"&&c.active)&&
+         <p className="small muted">Nenhuma promoção ativa para o período.</p>}
       </div>
     </article>
   </>}
