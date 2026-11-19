@@ -6,7 +6,7 @@ export const PAYMENT_LABELS:Record<typeof PAYMENT_METHODS[number],string>={
 };
 export const DEFAULT_UNIT_POLICY:UnitOperationsPolicy={
   legalDocument:"",postalCode:"",complement:"",bankCountry:"BR",bankCode:"",bankName:"",
-  bankAgency:"",bankAccount:"",bankSwift:"",paymentConfigurations:{},
+  bankAgency:"",bankAccount:"",bankSwift:"",verifiedBankAccountId:"",paymentConfigurations:{},
   paymentEmail:"",paymentPhone:"",pixKey:"",pixType:"",
   paymentMethods:["PIX","CASH","DEBIT","CREDIT","TRANSFER"],customPaymentMethods:[],
   debitFeePercent:0,creditFeePercent:0,settlementDays:0,potPercent:null,
