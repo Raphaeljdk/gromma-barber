@@ -180,7 +180,7 @@ export type UnitOperationsPolicy = {
   paymentEmail: string;
   paymentPhone: string;
   pixKey: string;
-  pixType: "CNPJ" | "EMAIL" | "PHONE" | "EVP" | "";
+  pixType: "CNPJ" | "CPF" | "EMAIL" | "PHONE" | "EVP" | "";
   paymentMethods: ("PIX"|"CASH"|"DEBIT"|"CREDIT"|"TRANSFER")[];
   customPaymentMethods: string[];
   debitFeePercent: number;
@@ -439,7 +439,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
           paymentEmail:typeof p.paymentEmail==="string"?p.paymentEmail.slice(0,180):"",
           paymentPhone:typeof p.paymentPhone==="string"?p.paymentPhone.slice(0,24):"",
           pixKey:typeof p.pixKey==="string"?p.pixKey.slice(0,150):"",
-          pixType:["CNPJ","EMAIL","PHONE","EVP"].includes(String(p.pixType))?p.pixType:"",
+          pixType:["CNPJ","CPF","EMAIL","PHONE","EVP"].includes(String(p.pixType))?p.pixType:"",
           paymentMethods:list,
           customPaymentMethods:Array.isArray(p.customPaymentMethods)?
             p.customPaymentMethods.filter((id):id is string=>typeof id==="string"&&/^fpay_[a-z0-9_]{6,80}$/.test(id)).slice(0,60):[],
