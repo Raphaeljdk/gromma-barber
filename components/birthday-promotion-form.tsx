@@ -10,6 +10,7 @@ export function BirthdayPromotionForm({tenantCode,settings,services,products}:{
  tenantCode:string;settings:ErpWorkspace["birthdayPromotion"];
  services:Item[];products:Item[];
 }){
+ const [enabled,setEnabled]=useState(settings.enabled);
  const [type,setType]=useState<OfferType>(settings.offerType??"SERVICE");
  const [itemId,setItemId]=useState(settings.itemId??"");
  const items=type==="SERVICE"?services:products.filter(item=>
@@ -17,7 +18,7 @@ export function BirthdayPromotionForm({tenantCode,settings,services,products}:{
  return <form action={saveBirthdayPromotion} className="erp-compact-form">
   <input type="hidden" name="tenantCode" value={tenantCode}/>
   <label className="erp-check-row">
-   <input type="checkbox" name="enabled" defaultChecked={settings.enabled}/>
+   <input type="checkbox" name="enabled" checked={enabled} onChange={event=>setEnabled(event.target.checked)}/>
    Ativar a promoção
   </label>
   <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,190px),1fr))",gap:12}}>
@@ -31,7 +32,7 @@ export function BirthdayPromotionForm({tenantCode,settings,services,products}:{
     </select>
    </label>
    <label><span className="label">Item</span>
-    <select className="select" name="itemId" required value={itemId}
+    <select className="select" name="itemId" required={enabled} value={itemId}
      onChange={event=>setItemId(event.target.value)}>
      <option value="">Selecione um item</option>
      {items.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
@@ -65,6 +66,6 @@ export function BirthdayPromotionForm({tenantCode,settings,services,products}:{
     <small className="muted">Somente clientes que fizerem aniversário no período selecionado verão a promoção no portal.</small>
    </label>
   </div>
-  <button type="submit" className="btn" disabled={!itemId}>Salvar promoção de aniversário</button>
+  <button type="submit" className="btn" disabled={enabled&&!itemId}>Salvar promoção de aniversário</button>
  </form>;
 }
