@@ -117,7 +117,8 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
   for(const id of ["gromma-ia","performance","precificacao"]){
     const group=ERP_NAVIGATION.find(item=>item.id===id);
     assert.equal(group.items.length,1);
-    assert.equal(group.items[0].route,undefined,"Módulo futuro não pode abrir 404");
+    assert.equal(group.items[0].route,id==="gromma-ia"?"gromma-ia":undefined,
+      "Gromma IA já tem tela de relacionamento; módulos futuros continuam desativados");
   }
 });
 
