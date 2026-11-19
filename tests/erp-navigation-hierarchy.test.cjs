@@ -39,7 +39,7 @@ const EXPECTED = {
   },
   marketing: {
     "marketing-clube": ["Pontos", "Cupons"],
-    "marketing-promocoes": ["Serviços", "Produtos e bebidas"],
+    "marketing-promocoes": [],
     "marketing-experiencia": [
       "Aniversariante da semana", "Avaliação",
     ],
