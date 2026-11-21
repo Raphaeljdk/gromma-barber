@@ -25,7 +25,7 @@
 }
 .tenant-erp .agenda-multifilter-trigger:hover,
 .tenant-erp .agenda-multifilter-trigger.is-open {
-  background:rgba(195,150,72,.15);
+  background:rgba(42,138,140,.15);
   border-color:#40a8a4;
 }
 .tenant-erp .agenda-multifilter-trigger.is-filtered {
@@ -69,7 +69,7 @@
   border:0;border-radius:7px;
   background:transparent;color:var(--erp-muted,#bba98d);cursor:pointer;
 }
-.tenant-erp .agenda-multifilter-dismiss:hover {background:rgba(184,135,58,.13);}
+.tenant-erp .agenda-multifilter-dismiss:hover {background:rgba(42,138,140,.13);}
 .tenant-erp .agenda-multifilter-popover .agenda-multifilter-options {
   display:grid;align-content:start;gap:3px;
   max-height:min(318px,40dvh);overflow:auto;overscroll-behavior:contain;
@@ -86,8 +86,8 @@
   font-size:.77rem;font-weight:550;cursor:pointer;
 }
 .tenant-erp .agenda-multifilter-row:hover,
-.tenant-erp .agenda-multifilter-row:focus-within {background:rgba(186,142,64,.16);}
-.tenant-erp .agenda-multifilter-row:has(input:checked) {background:rgba(191,145,66,.08);}
+.tenant-erp .agenda-multifilter-row:focus-within {background:rgba(42,138,140,.16);}
+.tenant-erp .agenda-multifilter-row:has(input:checked) {background:rgba(42,138,140,.08);}
 .tenant-erp .agenda-multifilter-row.is-all {
   font-weight:740;color:var(--gold-2,#87d1cf);
   border-bottom:1px solid var(--erp-border,#453a2d);
@@ -113,14 +113,14 @@
   outline:2px solid var(--gold-2,#85d2cf);outline-offset:2px;
 }
 html[data-theme="light"] .tenant-erp .agenda-multifilter-trigger,
-html[data-theme="light"] .tenant-erp .agenda-multifilter-popover {background:#fffdf7;border-color:#ded1b9;}
+html[data-theme="light"] .tenant-erp .agenda-multifilter-popover {background:#fffdf7;border-color:#cbdce0;}
 html[data-theme="light"] .tenant-erp .agenda-multifilter-trigger:hover,
 html[data-theme="light"] .tenant-erp .agenda-multifilter-trigger.is-open {background:#ebf5f6;border-color:#4cbab6;}
 html[data-theme="light"] .tenant-erp .agenda-multifilter-popover {
-  box-shadow:0 16px 45px rgba(65,45,18,.16);
+  box-shadow:0 16px 45px rgba(20,60,75,.16);
 }
 html[data-theme="light"] .tenant-erp .agenda-multifilter-row:hover,
-html[data-theme="light"] .tenant-erp .agenda-multifilter-row:has(input:checked) {background:#f8f0de;}
+html[data-theme="light"] .tenant-erp .agenda-multifilter-row:has(input:checked) {background:#edf6f7;}
 html[data-theme="light"] .tenant-erp .agenda-multifilter-row.is-all {color:#2c7370;}
 /* O painel lateral abre pelo ícone na extremidade direita da barra. */
 .tenant-erp .agenda-toolbar-inline-filters > .agenda-information-toggle {
