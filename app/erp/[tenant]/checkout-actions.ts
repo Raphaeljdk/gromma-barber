@@ -9,6 +9,7 @@ import { unitPolicy } from "@/lib/unit-operations-policy";
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import { hasProfessionalPermission } from "@/lib/professional-profile";
 import {awardPaidServices,rewardReferral,undoCheckoutRewards} from "@/lib/loyalty";
+import {couponPayments} from "@/lib/coupon-analytics";
 import type { Prisma } from "@prisma/client";
 
 const value = (f: FormData, key: string) => String(f.get(key) ?? "").trim().slice(0, 200);
@@ -244,13 +245,20 @@ export async function checkoutCommand(form: FormData) {
       value: value(form, "discountValue"),
       couponCode: value(form, "couponCode"),
     };
+    const coupon=workspace.coupons.find(c=>c.code===discountInput.couponCode.trim().toUpperCase());
+    const used=coupon?couponPayments(coupon,workspace.commandPayments):[];
+    const couponsWithUsage=workspace.coupons.map(c=>c.id===coupon?.id?{
+      ...c,usedTotal:used.length,
+      usedByCustomer:used.filter(p=>p.customerId===command.customerId&&Boolean(command.customerId)).length,
+    }:c);
     let pricing;
     try {
       const applied = parseAppliedItemDiscounts(String(form.get("appliedItemDiscounts") ?? ""));
       pricing = calculateCheckoutPricing(
-        command.items.map(item => ({ id: item.id, total: Number(item.total) })),
-        cents(command.discount), discountInput, workspace.coupons, new Date(), applied,
+        command.items.map(item => ({ id: item.id, total: Number(item.total),kind:item.kind as "SERVICE"|"PRODUCT" })),
+        cents(command.discount), discountInput, couponsWithUsage, new Date(), applied,
         Boolean(command.customerId && workspace.clubMembers.some(member => member.customerId === command.customerId && member.status === "ACTIVE")),
+        command.customerId,
       );
     } catch (e) { throw new OperationError(e instanceof Error ? e.message : "Desconto inválido."); }
     if (String(pricing.totalCents) !== value(form, "expectedTotal") || pricing.subtotalCents !== subtotal)
@@ -323,8 +331,10 @@ export async function checkoutCommand(form: FormData) {
       }});
     }
     workspace.commandPayments.push({ id: workspaceId("payment"), commandId: command.id, sessionId: session.id, customerName: command.customer?.name ?? "Cliente avulso", paidAt: now.toISOString(), amounts,
-      couponCode: pricing.couponCode || undefined, discountCents: pricing.discountCents,
-      manualDiscountCents: pricing.manualCents });
+      couponCode: pricing.couponCode || undefined, couponId:pricing.couponCode?coupon?.id:undefined,
+      couponCents:pricing.couponCode?pricing.couponCents:undefined,
+      customerId:command.customerId??undefined,operatorId:actor,paidTotalCents:pricing.totalCents,
+      discountCents: pricing.discountCents, manualDiscountCents: pricing.manualCents });
     await tx.barberShop.update({ where: { id: shopId }, data: { enabledFeatures: writeWorkspace(shop.enabledFeatures, workspace) } });
     if (command.appointmentId) {
       const appointment=await tx.appointment.findFirst({
