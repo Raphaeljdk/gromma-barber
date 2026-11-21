@@ -122,6 +122,41 @@ html[data-theme="light"] .tenant-erp .agenda-multifilter-popover {
 html[data-theme="light"] .tenant-erp .agenda-multifilter-row:hover,
 html[data-theme="light"] .tenant-erp .agenda-multifilter-row:has(input:checked) {background:#f8f0de;}
 html[data-theme="light"] .tenant-erp .agenda-multifilter-row.is-all {color:#80591f;}
+/* O painel lateral abre pelo ícone na extremidade direita da barra. */
+.tenant-erp .agenda-toolbar-inline-filters > .agenda-information-toggle {
+  flex:0 0 40px;
+  width:40px;
+  height:36px;
+  min-width:40px;
+  margin-left:0;
+}
+.tenant-erp .agenda-interactive .agenda-view-tools {
+  margin-left:0;
+}
+
+/* Ficha de agendamento/comanda: identidade atual da Agenda em vez do dourado
+   legado. Não altera planColor nem a semântica dos status dos atendimentos. */
+.tenant-erp .agenda-interactive {
+  --erp-gold:#287c78;
+}
+.tenant-erp .agenda-interactive .agenda-booking-number,
+.tenant-erp .agenda-interactive .agenda-booking-chosen > span,
+.tenant-erp .agenda-interactive .agenda-booking-total > div:last-child strong,
+.tenant-erp .agenda-interactive .agenda-booking-notes-toggle,
+.tenant-erp .agenda-interactive .agenda-command-summary-title strong,
+.tenant-erp .agenda-interactive .agenda-command-notes summary span {
+  color:var(--agenda-highlight);
+}
+.tenant-erp .agenda-interactive :is(.agenda-booking-submit,.agenda-command-bottom-actions) .btn:not(.secondary):not(.danger) {
+  background:#173447;
+  border-color:#173447;
+  color:#fff;
+}
+.tenant-erp .agenda-interactive :is(.agenda-booking-submit,.agenda-command-bottom-actions) .btn:not(.secondary):not(.danger):hover {
+  background:#244a61;
+  border-color:#244a61;
+}
+
 @media(max-width:650px) {
   .tenant-erp .agenda-multifilter-toolbar {gap:6px;flex-wrap:wrap;}
   .tenant-erp .agenda-multifilter-trigger {min-height:42px;padding:9px;font-size:.75rem;gap:6px;}
@@ -363,46 +398,33 @@ html[data-theme="light"] .tenant-erp .agenda-display-panel[open] > .agenda-displ
 .tenant-erp .agenda-interactive .agenda-lane-grid .agenda-professional-head {
   border-top-color:#2da8a4;
 }
+/* Indicadores independentes das cores dos planos e dos estados das comandas.
+   Os oito cards ficam neutros; somente a filtragem ativa recebe destaque sutil. */
 .tenant-erp .agenda-interactive .agenda-summary-grid article {
-  --agenda-indicator:#5f91c4;
-  --agenda-indicator-text:var(--agenda-indicator);
   position:relative;
   overflow:hidden;
   border:1px solid var(--erp-border);
-  border-left:3px solid var(--agenda-indicator);
-  background:color-mix(in srgb,var(--agenda-indicator) 6%,var(--erp-panel));
+  background:var(--erp-panel);
   box-shadow:none;
   transition:background-color .16s,border-color .16s;
 }
-/* Indicadores da Agenda: agendados, em atendimento, concluídos, horários livres,
-   ocupação, clientes sem plano, clientes com plano e no local (nessa ordem). */
-.tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(1) {--agenda-indicator:#82cf9f;--agenda-indicator-text:#2e7d4e;}
-.tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(2) {--agenda-indicator:#166534;}
-.tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(3) {--agenda-indicator:#8b9098;--agenda-indicator-text:#5b6068;}
-.tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(4) {--agenda-indicator:#171717;}
-.tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(5) {--agenda-indicator:#171717;}
-.tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(6) {--agenda-indicator:#171717;}
-.tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(7) {--agenda-indicator:#171717;}
-.tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(8) {--agenda-indicator:#f6b47f;--agenda-indicator-text:#ab5a20;}
-
-/* No tema escuro, preserva contraste dos quatro indicadores pretos da versão clara. */
-html[data-theme="dark"] .tenant-erp .agenda-interactive .agenda-summary-grid article:nth-child(n+4):nth-child(-n+7) {
-  --agenda-indicator:#c4c4c4;
-  --agenda-indicator-text:#f3f4f6;
-}
 .tenant-erp .agenda-interactive .agenda-summary-grid article > svg,
-.tenant-erp .agenda-interactive .agenda-summary-grid article > a > svg,
+.tenant-erp .agenda-interactive .agenda-summary-grid article > a > svg {
+  color:var(--erp-text);
+}
 .tenant-erp .agenda-interactive .agenda-summary-grid article strong {
-  color:var(--agenda-indicator-text);
+  color:var(--erp-text);
+  font-weight:850;
+  font-variant-numeric:tabular-nums;
 }
 .tenant-erp .agenda-interactive .agenda-summary-grid article.selected {
-  border-color:var(--agenda-indicator);
-  background:color-mix(in srgb,var(--agenda-indicator) 14%,var(--erp-panel));
-  box-shadow:inset 0 -2px var(--agenda-indicator);
+  border-color:var(--agenda-highlight);
+  background:var(--erp-panel-2);
+  box-shadow:inset 0 -2px var(--agenda-highlight);
 }
 .tenant-erp .agenda-interactive .agenda-summary-grid article:has(a):hover {
-  border-color:var(--agenda-indicator);
-  background:color-mix(in srgb,var(--agenda-indicator) 11%,var(--erp-panel));
+  border-color:var(--erp-border-strong);
+  background:var(--erp-panel-2);
 }
 .tenant-erp .agenda-interactive :is(.agenda-slot:not(:disabled):hover,.agenda-free-slot:hover) {
   background:color-mix(in srgb,#2da8a4 9%,var(--erp-panel));
@@ -437,13 +459,19 @@ html[data-theme="light"] .tenant-erp .agenda-interactive {
   --gold-2:#0b827d;
   --agenda-highlight:#0b827d;
 }
+/* Ícones e números em preto no tema claro, com rótulos no tom original. */
 html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article {
-  background:color-mix(in srgb,var(--agenda-indicator) 8%,#fff);
-  border-color:color-mix(in srgb,var(--agenda-indicator) 32%,#ddd);
-  border-left-color:var(--agenda-indicator);
+  background:var(--erp-panel);
+  border-color:var(--erp-border);
+}
+html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article > svg,
+html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article > a > svg,
+html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article strong {
+  color:#111827;
 }
 html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article.selected {
-  background:color-mix(in srgb,var(--agenda-indicator) 16%,#fff);
+  border-color:var(--agenda-highlight);
+  background:var(--erp-panel-2);
 }
 @media(max-width:650px) {
   .tenant-erp .agenda-interactive .agenda-top-actions {padding:9px;gap:9px;}
