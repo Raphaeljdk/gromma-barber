@@ -552,9 +552,9 @@ html[data-theme] .tenant-erp .erp-status-pill.ready {
   border-color:color-mix(in srgb,var(--gromma-good) 24%,var(--gromma-stroke));
 }
 html[data-theme] .tenant-erp .erp-status-pill.pending {
-  color:#369693;
-  background:#fdf3e1;
-  border-color:#ecd7b0;
+  color:#2c607d;
+  background:#eaf2f8;
+  border-color:#c2d5e4;
 }
 
 /* Breakpoints never leave an orphaned command card or horizontally overflowing login. */
