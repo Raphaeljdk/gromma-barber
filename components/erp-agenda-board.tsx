@@ -229,7 +229,7 @@ function AgendaLegend({planNames}:{planNames:string[]}) {
       </div>
       <div className="gromma-plan-legend" aria-label="Cores dos planos">
         {planNames.map(name=><span key={name} className="gromma-plan-legend-item">
-          <i style={{background:planColor(name)}} aria-hidden="true"/>{name}
+          <i style={{background:planColor(name,planNames)}} aria-hidden="true"/>{name}
         </span>)}
         <span className="gromma-plan-legend-item"><i style={{background:planColor(null)}} aria-hidden="true"/>Sem plano</span>
       </div>
@@ -773,9 +773,9 @@ export function ErpAgendaBoard({
             </div>
             <div className="gromma-plan-legend" aria-label="Legenda dos planos">
               {allPlanNames.map(name=><span key={name} className="gromma-plan-legend-item">
-                <i style={{background:planColor(name)}} aria-hidden="true"/>{name} · {countCustomers(activeDay.filter(a=>a.planName===name))}
+                <i style={{background:planColor(name,planNames)}} aria-hidden="true"/>{name}
               </span>)}
-              <span className="gromma-plan-legend-item"><i style={{background:planColor(null)}} aria-hidden="true"/>Sem plano · {countCustomers(activeDay.filter(a=>!a.hasPlan))}</span>
+              <span className="gromma-plan-legend-item"><i style={{background:planColor(null)}} aria-hidden="true"/>Sem plano</span>
             </div>
           </section>
       <div className="agenda-toolbar">
@@ -1124,7 +1124,7 @@ export function ErpAgendaBoard({
                             height: Math.max(24, height - 6),
                             left: `calc(${(track / tracks) * 100}% + 5px)`,
                             width: `calc(${100 / tracks}% - 10px)`,
-                            borderLeft:`4px solid ${planColor(item.planName)}`,
+                            borderLeft:`4px solid ${planColor(item.planName,planNames)}`,
                           }}
                           onClick={() => setDetail(item)}
                           aria-label={`Abrir agendamento de ${item.customerName}, ${agendaTime(item.startsAt)}, ${STATUS_LABELS[item.status]}`}
@@ -1143,7 +1143,7 @@ export function ErpAgendaBoard({
                           </span>
                           <strong>{item.customerName}</strong>
                           <small>{item.serviceName}</small>
-                          {height>=65&&<small className="gromma-agenda-plan-label" style={{color:planColor(item.planName)}}>{planLabel(item.planName)}</small>}
+                          {height>=65&&<small className="gromma-agenda-plan-label" style={{color:planColor(item.planName,planNames)}}>{planLabel(item.planName)}</small>}
                           <AppointmentSignals appointment={item} />
                         </button>
                       );
@@ -1206,13 +1206,14 @@ export function ErpAgendaBoard({
                               <button
                                 type="button"
                                 className={`agenda-week-item ${statusClass(item.status)}`}
-                                style={{borderLeft:`4px solid ${planColor(item.planName)}`}}
+                                style={{borderLeft:`4px solid ${planColor(item.planName,planNames)}`}}
                                 key={item.id}
                                 onClick={() => setDetail(item)}
                               >
                                 <span>{agendaTime(item.startsAt)}</span>
                                 <strong>{item.customerName}</strong>
                                 <small>{item.serviceName}</small>
+                                <span className={`gromma-appointment-status ${statusClass(item.status)}`} aria-label={"Status do atendimento: "+STATUS_LABELS[item.status]}>{STATUS_LABELS[item.status]}</span>
                                 <AppointmentSignals appointment={item} />
                               </button>
                             ))}
@@ -1294,6 +1295,7 @@ export function ErpAgendaBoard({
                           >
                             <span>{agendaTime(item.startsAt)}</span>
                             <strong>{item.customerName}</strong>
+                            <span className={`gromma-appointment-status ${statusClass(item.status)}`} aria-label={"Status do atendimento: "+STATUS_LABELS[item.status]}>{STATUS_LABELS[item.status]}</span>
                             <AppointmentSignals appointment={item} />
                           </button>
                         ))}
@@ -1529,7 +1531,7 @@ export function ErpAgendaBoard({
             <section className="agenda-customer-summary agenda-command-summary">
               <div className="agenda-command-summary-title"><h4>Dados do atendimento</h4><span>{STATUS_LABELS[detail.status]}</span></div>
               <p><strong>Cliente:</strong> {detail.customerName} · {detail.customerPhone || "Telefone não informado"}</p>
-              <p><strong>Plano:</strong> <span className="gromma-plan-badge" style={{borderLeft:`4px solid ${planColor(detail.planName)}`}}>{planLabel(detail.planName)}</span></p>
+              <p><strong>Plano:</strong> <span className="gromma-plan-badge" style={{borderLeft:`4px solid ${planColor(detail.planName,planNames)}`}}>{planLabel(detail.planName)}</span></p>
               {detail.customerNotes && <p><strong>Preferências do cliente:</strong> {detail.customerNotes}</p>}
               <p><strong>Data e horário:</strong> {dateLabel(agendaDateKey(detail.startsAt), { dateStyle: "short" })} · {agendaTime(detail.startsAt)}{detail.endsAt ? ` às ${agendaTime(detail.endsAt)}` : ""}</p>
               <p><strong>Unidade:</strong> {detail.unitName} · <strong>Profissional:</strong> {detail.barberName}</p>
