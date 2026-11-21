@@ -51,3 +51,14 @@ test("Seletor traduz todo o ERP, inclusive opções e atributos acessíveis",()=
   assert.doesNotMatch(picker,/scopeSelector/);
   assert.match(picker,/gromma-sidebar-business-copy/);
 });
+
+test("Agenda reformata datas e valores quando o idioma da interface muda",()=>{
+  const picker=read("components/erp-language-picker.tsx");
+  const board=read("components/erp-agenda-board.tsx");
+  assert.match(picker,/gromma-locale-change/);
+  assert.match(board,/addEventListener\("gromma-locale-change"/);
+  assert.match(board,/new Intl\.DateTimeFormat\(locale/);
+  assert.match(board,/value\.toLocaleString\(locale/);
+  assert.match(board,/localizedDateLabel\(value,options,uiLocale\)/);
+  assert.match(board,/localizedMoney\(value,uiLocale\)/);
+});
