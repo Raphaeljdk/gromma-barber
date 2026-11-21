@@ -1,6 +1,6 @@
 import {Trash2} from "lucide-react";
 import {prisma} from "@/lib/prisma";
-import {saveCoupon} from "@/app/erp/[tenant]/module-actions";
+import {saveCoupon,deleteCoupon} from "@/app/erp/[tenant]/module-actions";
 import {deleteMarketingPromotion} from "@/app/erp/[tenant]/marketing-offer-actions";
 import {MarketingOfferForm} from "@/components/marketing-offer-form";
 import {BirthdayPromotionForm} from "@/components/birthday-promotion-form";
@@ -27,10 +27,10 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
     view==="marketing-cupons"?"Cupons de desconto":view==="marketing-aniversariantes"?"Aniversariantes "+periodLabel:"Promoções"
    }</h2></div></div>
   {error&&<p className="notice error-notice" role="alert">
-   {error==="excluir"?"Não foi possível excluir esta promoção.":"Não foi possível salvar. Confira os campos, o item escolhido e a validade."}
+   {error==="excluir"?"Não foi possível excluir esta promoção.":view==="marketing-cupons"?"Não foi possível salvar ou excluir o cupom. Confira os campos e as permissões.":"Não foi possível salvar. Confira os campos, o item escolhido e a validade."}
   </p>}
   {ok&&<p className="notice success" role="status">
-   {ok==="excluida"?"Promoção excluída da divulgação.":"Registro salvo com sucesso."}
+   {ok==="excluida"?"Promoção excluída da divulgação.":ok==="cupom-excluido"?"Cupom excluído e desativado para novas comandas.":"Registro salvo com sucesso."}
   </p>}
   {view==="promocoes"&&<>
     {isOwner&&<article className="card"><h3>Publicar promoção</h3>
@@ -69,21 +69,36 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
   </>}
   {view==="marketing-cupons"&&<article className="card">
    <h3>Cupons de desconto</h3>
-   <p className="small muted">Válidos para todos os clientes, com ou sem assinatura, conforme as condições e a validade configuradas. Podem ser aplicados no fechamento da comanda.</p>
+   <p className="small muted">Escolha quem poderá utilizar cada cupom: todos, clientes com clube ativo ou clientes sem clube. A regra é conferida no fechamento da comanda.</p>
    {isOwner&&<form action={saveCoupon} className="erp-compact-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="returnModule" value="marketing-cupons"/>
-    <label>Código <input className="input" name="code" required maxLength={40} placeholder="EX.: CLUBE10"/></label>
     <div className="grid grid-3">
+     <label>Código <input className="input" name="code" required minLength={3} maxLength={40} placeholder="Ex.: CORTE10"/></label>
      <label>Tipo <select className="select" name="kind" defaultValue="PERCENT"><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>
      <label>Valor <input className="input" name="value" required type="number" min=".01" step=".01"/></label>
-     <label>Validade <input className="input" name="expiresAt" required type="date"/></label>
+    </div>
+    <div className="grid grid-2">
+     <label>Clientes elegíveis <select className="select" name="audience" defaultValue="ALL">
+       <option value="ALL">Todos os clientes</option>
+       <option value="CLUB">Somente clientes do clube</option>
+       <option value="NON_CLUB">Somente clientes sem clube</option>
+     </select></label>
+     <label>Data de validade <input className="input" name="expiresAt" required type="date"/></label>
     </div>
     <button className="btn" type="submit">Criar cupom</button>
    </form>}
-   <div className="erp-stacked-list">{ws.coupons.map(c=><div key={c.id}><div><strong>{c.code}</strong>
-    <span>{c.kind==="PERCENT"?c.value+"%":"R$ "+c.value.toFixed(2)} · Válido até {c.expiresAt??"Sem data"}</span></div></div>)}
-    {!ws.coupons.length&&<p className="small muted">Nenhum cupom cadastrado.</p>}</div>
+   <div className="erp-stacked-list">{ws.coupons.filter(c=>c.active).map(c=><div key={c.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+    <div><strong>{c.code}</strong>
+     <span>{c.kind==="PERCENT"?c.value+"%":"R$ "+c.value.toFixed(2)} · Válido até {c.expiresAt??"Sem data"} · {c.audience==="CLUB"?"Clientes do clube":c.audience==="NON_CLUB"?"Clientes sem clube":"Todos os clientes"}</span>
+    </div>
+    {isOwner&&<form action={deleteCoupon} style={{flexShrink:0}}>
+     <input type="hidden" name="tenantCode" value={tenantCode}/>
+     <input type="hidden" name="couponId" value={c.id}/>
+     <button className="btn secondary" type="submit" aria-label={"Excluir cupom "+c.code} title={"Excluir cupom "+c.code}><Trash2 size={16}/></button>
+    </form>}
+   </div>)}
+    {!ws.coupons.some(c=>c.active)&&<p className="small muted">Nenhum cupom ativo cadastrado.</p>}</div>
   </article>}
   {view==="marketing-aniversariantes"&&<>
     <div className="erp-kpi-row"><article><span>ANIVERSARIANTES {periodLabel.toLocaleUpperCase("pt-BR")}</span>
