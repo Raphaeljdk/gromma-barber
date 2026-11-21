@@ -2,9 +2,9 @@
 const normalizePlan=(text:string)=>text.trim().normalize("NFD")
   .replace(/[\u0300-\u036f]/g,"").toLowerCase();
 function defaultPlanColor(clean:string):string|null{
- if(/\bpremium\b|\bpremio\b/.test(clean))return "#945de8";
- if(/\bstart\b/.test(clean))return "#329cfa";
- if(/\bbasic\b|\bbasico\b/.test(clean))return "#21b580";
+ if(/^(?:plano )?(?:premium|premio)$/.test(clean))return "#945de8";
+ if(/^(?:plano )?start$/.test(clean))return "#329cfa";
+ if(/^(?:plano )?(?:basic|basico)$/.test(clean))return "#21b580";
  return null;
 }
 /** Paleta complementar sem repetir as cores reservadas para Premium, Start e Basic. */
