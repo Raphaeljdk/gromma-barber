@@ -45,10 +45,10 @@
 .tenant-erp .mgmt-audit-kpis small {font-size:.74rem;color:var(--erp-muted,#b9ae9d);}
 .tenant-erp .mgmt-audit-kpis strong {font-size:1.2rem;font-weight:770;color:var(--erp-gold,#8ad2d0);overflow-wrap:anywhere;}
 .tenant-erp .mgmt-heatmap-legend {display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 18px;font-size:.72rem;color:var(--erp-muted,#b0a18f);}
-.tenant-erp .mgmt-heat {background:rgba(166,133,68,.10);border:1px solid var(--erp-border,#3e3427);}
-.tenant-erp .mgmt-heat.low {background:#78603d;color:#fff3de;}
-.tenant-erp .mgmt-heat.medium {background:#ad8139;color:#15100b;}
-.tenant-erp .mgmt-heat.high {background:#f0bb61;color:#1d150d;font-weight:750;}
+.tenant-erp .mgmt-heat {background:rgba(42,138,140,.10);border:1px solid var(--erp-border,#3e3427);}
+.tenant-erp .mgmt-heat.low {background:#244952;color:#e4f4f6;}
+.tenant-erp .mgmt-heat.medium {background:#367f85;color:#fff;}
+.tenant-erp .mgmt-heat.high {background:#82ced0;color:#102b33;font-weight:750;}
 .tenant-erp .mgmt-heat.no-capacity {background:repeating-linear-gradient(45deg,rgba(115,111,107,.25),rgba(115,111,107,.25) 4px,rgba(50,49,48,.12) 4px,rgba(50,49,48,.12) 8px);color:var(--erp-muted,#bbae98);}
 .tenant-erp .mgmt-heatmap-legend .mgmt-heat {width:17px;height:15px;border-radius:4px;display:inline-block;}
 .tenant-erp .mgmt-heatmap-scroll {overflow:auto;max-width:100%;overscroll-behavior-x:contain;scrollbar-width:thin;}
@@ -59,12 +59,12 @@
 .tenant-erp .mgmt-heatmap th:first-child strong,.tenant-erp .mgmt-heatmap th:first-child small {display:block;font-size:.75rem;}
 .tenant-erp .mgmt-heatmap th:first-child small {font-size:.66rem;color:var(--erp-muted,#b5a997);margin-top:3px;}
 .tenant-erp .mgmt-heatmap td.mgmt-heat {min-width:49px;border-radius:6px;}
-.tenant-erp .mgmt-heat-total {font-weight:800;color:var(--erp-gold,#dfb46a);min-width:56px;}
+.tenant-erp .mgmt-heat-total {font-weight:800;color:var(--erp-gold,#3a9d99);min-width:56px;}
 html[data-theme="light"] .tenant-erp .mgmt-audit-filters input,
 html[data-theme="light"] .tenant-erp .mgmt-audit-filters select {color-scheme:light;background:#fffdf6;border-color:#d9c9b0;}
-html[data-theme="light"] .tenant-erp .mgmt-heat.low {background:#f5d9a9;color:#38270f;}
-html[data-theme="light"] .tenant-erp .mgmt-heat.medium {background:#e9b86c;color:#35250f;}
-html[data-theme="light"] .tenant-erp .mgmt-heat.high {background:#b9802f;color:#fff;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.low {background:#dceff1;color:#27555c;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.medium {background:#7dbdc1;color:#102d33;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.high {background:#287b80;color:#fff;}
 html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-completed {color:#216c43;}
 html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-canceled {color:#a13b31;}
 @media(max-width:660px) {
