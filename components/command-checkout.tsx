@@ -20,12 +20,12 @@ const date = (v: string) => new Date(v).toLocaleDateString("pt-BR", { timeZone: 
 const zeroAmounts = (): Record<PaymentMethod, string> => ({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", TRANSFER: "" });
 
 export function CommandCheckout({
-  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false, sellers = [], viewerRole = 'BARBER', allowedPaymentMethods,
+  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false, sellers = [], viewerRole = 'BARBER', allowedPaymentMethods, isClubMember = false,
 }: {
   tenantCode: string; command: CommandView; catalog: CatalogItem[];
   session?: CashSession; payment?: CommandPayment; canOperate: boolean; allowReopen?: boolean; coupons?: CheckoutCoupon[];
   error?: string; autoOpen?: boolean; sellers?: {id:string;name:string}[]; viewerRole?: string;
-  allowedPaymentMethods?: PaymentMethod[];
+  allowedPaymentMethods?: PaymentMethod[]; isClubMember?: boolean;
 }) {
   const [open, setOpen] = useState(autoOpen);
   const [fiscalOpen, setFiscalOpen] = useState(false);
@@ -50,7 +50,7 @@ export function CommandCheckout({
       command.items.map(item => ({ id: item.id, total: item.total })),
       Math.round(command.discount * 100),
       { kind: discountKind, scope: discountScope, itemId: discountItemId, value: discountValue, couponCode },
-      coupons, new Date(), appliedItemDiscounts,
+      coupons, new Date(), appliedItemDiscounts, isClubMember,
     );
   } catch (e) { pricingError = e instanceof Error ? e.message : "Desconto ou cupom inválido."; }
   const totalCents = pricing.totalCents;
@@ -247,7 +247,7 @@ export function CommandCheckout({
                 <label><span className="label">Cupom promocional (opcional)</span>
                   <input className="input" name="couponCode" list="gromma-checkout-coupons"
                     value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Código do cupom" maxLength={40} />
-                  <datalist id="gromma-checkout-coupons">{coupons.filter(c => c.active).map(c => <option key={c.code} value={c.code}/>)}</datalist>
+                  <datalist id="gromma-checkout-coupons">{coupons.filter(c => c.active && (c.audience !== "CLUB" || isClubMember) && (c.audience !== "NON_CLUB" || !isClubMember)).map(c => <option key={c.code} value={c.code}/>)}</datalist>
                 </label>
                 {(discountKind !== "NONE" || Boolean(couponCode) || appliedItemDiscounts.length > 0) &&
                   <label><span className="label">Motivo da alteração financeira</span>
