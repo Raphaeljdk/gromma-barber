@@ -69,5 +69,5 @@ test("Cupom salva na subaba correta, exige validade e bloqueia código ativo dup
  assert.match(actions,/workspace\.coupons\.some\(c=>c\.code===code\)/);
  assert.match(actions,/const path = modulePath\(tenantCode, "marketing-cupons"\)/);
  assert.match(actions,/date\.toISOString\(\)\.slice\(0,10\)!==expiresAt/);
- assert.match(actions,/expiresAt < today/);
+ assert.match(actions,/expiresAt<today/);
 });
