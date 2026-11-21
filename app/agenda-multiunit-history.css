@@ -3,15 +3,15 @@
   min-width:0;
   padding:14px 16px 12px;
   margin:12px 0 13px;
-  border:1px solid var(--gromma-border, #353027);
+  border:1px solid var(--erp-border, #354252);
   border-radius:14px;
-  background:var(--gromma-panel, #151411);
+  background:var(--erp-panel, #151e28);
 }
 .agenda-unit-checkbox-panel legend {
   padding:0 7px;
   font-weight:750;
   font-size:.84rem;
-  color:var(--gold-2,#ebc57d);
+  color:#5bc5bc;
 }
 .agenda-unit-checkbox-panel legend small {font-weight:500; color:var(--muted,#a7a093);}
 .agenda-unit-checkbox-options {
@@ -27,42 +27,42 @@
   min-height:38px;
   padding:8px 12px;
   border-radius:11px;
-  border:1px solid #4c4334;
-  background:#211d17;
-  color:#e1d6c2;
+  border:1px solid #354a59;
+  background:#1a2731;
+  color:#dde8ef;
   font-size:.77rem;
   font-weight:650;
   cursor:pointer;
   transition: border-color .15s ease, background .15s ease;
   max-width:100%;
 }
-.agenda-unit-checkbox:hover,.agenda-unit-all:hover {border-color:#ab8650; background:#2a2318;}
+.agenda-unit-checkbox:hover,.agenda-unit-all:hover {border-color:#2da8a4; background:#213743;}
 .agenda-unit-checkbox:focus-within,.agenda-unit-all:focus-visible {
-  outline:2px solid var(--gold-2,#f1cf80);
+  outline:2px solid #2da8a4;
   outline-offset:2px;
 }
 .agenda-unit-checkbox:has(input:checked),.agenda-unit-all.active {
-  border-color:#b28a42;
-  background:#342a19;
-  color:#f4db9c;
+  border-color:#2da8a4;
+  background:#203b42;
+  color:#b7efe7;
 }
 .agenda-unit-checkbox input {
   width:16px;
   height:16px;
   margin:0;
   flex:none;
-  accent-color:#d7a84d;
+  accent-color:#2da8a4;
 }
 .agenda-unit-checkbox span {
   min-width:0;
   overflow-wrap:anywhere;
 }
-.agenda-unit-help {display:block;margin-top:9px;color:#afa69a;line-height:1.4;font-size:.72rem;}
-.agenda-unit-side-summary {display:grid;gap:7px;padding:12px 14px;border-radius:12px;background:rgba(175,135,63,.08);border:1px solid #50422d;}
-.agenda-unit-side-summary strong {font-size:.86rem;color:var(--gold-2,#f1cf80);}
-.agenda-unit-side-summary span {color:#e1d8c8;font-size:.84rem;}
-.agenda-unit-side-summary small {color:#b6aa99;line-height:1.45;}
-.agenda-professional-unit {display:block;color:#c8a565!important;font-size:.7rem;line-height:1.3;}
+.agenda-unit-help {display:block;margin-top:9px;color:#9caebd;line-height:1.4;font-size:.72rem;}
+.agenda-unit-side-summary {display:grid;gap:7px;padding:12px 14px;border-radius:12px;background:rgba(45,168,164,.07);border:1px solid #34515a;}
+.agenda-unit-side-summary strong {font-size:.86rem;color:#2da8a4;}
+.agenda-unit-side-summary span {color:#dde8ef;font-size:.84rem;}
+.agenda-unit-side-summary small {color:#a9b8c7;line-height:1.45;}
+.agenda-professional-unit {display:block;color:#5bc5bc!important;font-size:.7rem;line-height:1.3;}
 
 /* Histórico de compras com linhas independentes do Ranking. */
 .erp-purchase-history {min-width:0;}
