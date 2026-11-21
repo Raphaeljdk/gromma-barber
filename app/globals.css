@@ -10456,3 +10456,301 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
   .tenant-erp .gromma-dashboard-plan-legend {padding:7px 8px;}
   .tenant-erp .gromma-dashboard-plan-legend .gromma-plan-legend-item {padding:3px;}
 }
+
+
+/* Cupons: tela em duas colunas, detalhes úteis e lista em largura total. */
+.tenant-erp .erp-main .demo-section .erp-coupons-workspace {
+  padding:16px 18px;
+  gap:13px;
+  width:100%;
+  max-width:100%;
+}
+.tenant-erp .erp-main .demo-section .erp-coupons-heading {
+  display:grid;
+  gap:4px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupons-heading h3,
+.tenant-erp .erp-main .demo-section .erp-coupon-form-panel h4,
+.tenant-erp .erp-main .demo-section .erp-coupon-directory h4,
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-panel h4,
+.tenant-erp .erp-main .demo-section .erp-coupon-records h4 {
+  margin:0;
+  font-size:.91rem;
+  line-height:1.35;
+  font-weight:750;
+}
+.tenant-erp .erp-main .demo-section .erp-coupons-workspace .erp-coupon-kpis {
+  width:100%;
+  max-width:none;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-workspace-grid {
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(315px,.95fr);
+  gap:14px;
+  align-items:start;
+  width:100%;
+  min-width:0;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-primary-column {
+  display:grid;
+  gap:13px;
+  min-width:0;
+  align-content:start;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-form-panel,
+.tenant-erp .erp-main .demo-section .erp-coupon-directory,
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-panel {
+  box-sizing:border-box;
+  border:1px solid var(--erp-border);
+  border-radius:11px;
+  padding:14px;
+  background:var(--erp-panel-2);
+  min-width:0;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-form-panel,
+.tenant-erp .erp-main .demo-section .erp-coupon-directory {
+  display:grid;
+  align-content:start;
+  gap:9px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-form-panel .erp-coupons-form,
+.tenant-erp .erp-main .demo-section .erp-coupon-form-panel .erp-coupon-rules,
+.tenant-erp .erp-main .demo-section .erp-coupon-directory .erp-coupon-filters {
+  width:100%;
+  max-width:none;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-form-panel .erp-coupons-row-primary {
+  grid-template-columns:minmax(125px,1.15fr) minmax(130px,1fr) minmax(100px,.75fr);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-form-panel .erp-coupons-row-secondary {
+  grid-template-columns:minmax(185px,1.25fr) minmax(165px,1fr);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-panel {
+  display:grid;
+  align-content:start;
+  gap:13px;
+  background:color-mix(in srgb,var(--erp-panel-2) 78%,var(--erp-panel));
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-selected-identity {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-selected-identity > strong {
+  font-size:1.1rem;
+  letter-spacing:.02em;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-status-tag {
+  border:1px solid var(--erp-border);
+  border-radius:999px;
+  padding:3px 8px;
+  font-size:.65rem;
+  background:var(--erp-panel);
+  font-weight:700;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-status-tag[data-status="ACTIVE"] {
+  color:#168e63;
+  border-color:#168e635c;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-status-tag[data-status="EXPIRED"],
+.tenant-erp .erp-main .demo-section .erp-coupon-status-tag[data-status="EXHAUSTED"] {
+  color:#d68a3d;
+  border-color:#d68a3d59;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-status-tag[data-status="PAUSED"],
+.tenant-erp .erp-main .demo-section .erp-coupon-status-tag[data-status="DELETED"] {
+  color:var(--erp-muted);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-stats {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-stats > div {
+  display:grid;
+  gap:3px;
+  padding:8px 9px;
+  background:var(--erp-panel);
+  border:1px solid var(--erp-border);
+  border-radius:7px;
+  min-width:0;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-stats span,
+.tenant-erp .erp-main .demo-section .erp-coupon-rule-summary > span {
+  font-size:.67rem;
+  color:var(--erp-muted);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-stats strong {
+  font-size:.76rem;
+  overflow-wrap:anywhere;
+  color:var(--erp-text);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-side-section {
+  display:grid;
+  gap:8px;
+  border-top:1px solid var(--erp-border);
+  padding-top:10px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-side-section h5 {
+  margin:0;
+  font-size:.75rem;
+  color:var(--erp-text);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-side-actions {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-side-actions form {
+  margin:0;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-side-actions .btn {
+  min-height:31px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-panel .erp-coupon-editor {
+  margin:8px 0 0;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-panel .erp-coupon-editor[open] {
+  padding-top:9px;
+  width:100%;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-panel .erp-coupon-editor .erp-coupons-form {
+  width:100%;
+  max-width:100%;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-panel .erp-coupon-editor .erp-coupons-row-primary {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-panel .erp-coupon-editor .erp-coupons-row-primary label:last-child {
+  grid-column:1/-1;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-rule-summary {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-rule-summary > span {
+  display:grid;
+  gap:2px;
+  overflow-wrap:anywhere;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-rule-summary strong {
+  font-size:.73rem;
+  color:var(--erp-text);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-recent-list {
+  display:grid;
+  gap:7px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-recent-use {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding-bottom:7px;
+  border-bottom:1px solid var(--erp-border);
+  font-size:.72rem;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-recent-use > span {
+  display:grid;
+  gap:2px;
+  min-width:0;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-recent-use small {
+  font-size:.65rem;
+  color:var(--erp-muted);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-recent-use > strong {
+  flex-shrink:0;
+  font-size:.7rem;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-records {
+  display:grid;
+  gap:9px;
+  border-top:1px solid var(--erp-border);
+  padding-top:13px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-records-heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-records .erp-coupons-list {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
+  justify-items:stretch;
+  gap:8px;
+  width:100%;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-records .erp-coupons-list > .erp-coupon-entry {
+  box-sizing:border-box;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  min-height:68px;
+  padding:10px 12px;
+  justify-content:space-between;
+  background:var(--erp-panel-2);
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-records .erp-coupon-entry[data-selected="true"] {
+  border-color:#2da8a4;
+  box-shadow:inset 3px 0 #2da8a4;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-records .erp-coupon-entry .erp-coupon-info {
+  flex:1 1 210px;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-empty {
+  display:grid;
+  gap:4px;
+  padding:20px 8px;
+  text-align:center;
+}
+.tenant-erp .erp-main .demo-section .erp-coupon-detail-empty p {
+  margin:0;
+  font-weight:700;
+}
+@media(max-width:1080px) {
+  .tenant-erp .erp-main .demo-section .erp-coupon-workspace-grid {
+    grid-template-columns:1fr;
+  }
+  .tenant-erp .erp-main .demo-section .erp-coupon-detail-panel {
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:720px) {
+  .tenant-erp .erp-main .demo-section .erp-coupons-workspace {
+    padding:12px;
+  }
+  .tenant-erp .erp-main .demo-section .erp-coupons-workspace .erp-coupon-kpis {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .tenant-erp .erp-main .demo-section .erp-coupon-form-panel,
+  .tenant-erp .erp-main .demo-section .erp-coupon-directory,
+  .tenant-erp .erp-main .demo-section .erp-coupon-detail-panel {
+    padding:11px;
+  }
+}
+@media(max-width:500px) {
+  .tenant-erp .erp-main .demo-section .erp-coupon-form-panel .erp-coupons-row-primary {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .tenant-erp .erp-main .demo-section .erp-coupon-form-panel .erp-coupons-row-primary label:first-child {
+    grid-column:1/-1;
+  }
+  .tenant-erp .erp-main .demo-section .erp-coupon-form-panel .erp-coupons-row-secondary,
+  .tenant-erp .erp-main .demo-section .erp-coupon-directory .erp-coupon-filters {
+    grid-template-columns:1fr;
+  }
+}
