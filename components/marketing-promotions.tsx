@@ -88,7 +88,7 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
    Object.values(p.amounts).reduce((sum,v)=>sum+(Number.isFinite(v)?v:0),0)),0);
  const staffDirectory=new Map(staff.map(member=>[member.id,member.name]));
  const couponCodeById=new Map(ws.coupons.map(c=>[c.id,c.code]));
- return <section className="demo-section" style={{display:"grid",gap:15}}>
+ return <section className={view==="marketing-cupons"?"demo-section erp-coupons-page":"demo-section"} style={{display:"grid",gap:15}}>
   <div className="section-head"><div><span className="eyebrow">Marketing e promoção</span><h2>{
     view==="marketing-cupons"?"Cupons de desconto":view==="marketing-aniversariantes"?"Aniversariantes "+periodLabel:"Promoções"
    }</h2></div></div>
