@@ -829,6 +829,14 @@ export async function TenantERPView({
   const activeClubPlans = new Map(workspace.clubPlans.filter((item) => item.active).map((item) => [item.id, item.name]));
   const customerPlan = new Map(entitledMembers.filter(item => activeClubPlans.has(item.planId)).map(item => [item.customerId, activeClubPlans.get(item.planId)!]));
   const dashboardPlanNames=[...new Set(workspace.clubPlans.filter(plan=>plan.active).map(plan=>plan.name))];
+  const dashboardPlanAppointments=activeModule==="dashboard"?await prisma.appointment.findMany({
+    where:{barberShopId:shop.id,status:{notIn:["CANCELED","NO_SHOW"]},
+      startsAt:{gte:new Date(todayDate+"T00:00:00-03:00"),lt:new Date(addAgendaDays(todayDate,1)+"T00:00:00-03:00")}},
+    select:{id:true,customerId:true},
+  }):[];
+  const dashboardPlanCount=(name:string|null)=>new Set(dashboardPlanAppointments.filter(item=>
+    (item.customerId?customerPlan.get(item.customerId)??null:null)===name)
+    .map(item=>item.customerId??item.id)).size;
 
   const servicePool = servicosQ
     ? shop.services.filter((service) => service.name.toLowerCase().includes(servicosQ.toLowerCase()))
@@ -1360,15 +1368,16 @@ export async function TenantERPView({
             <article className="card demo-metric"><span className="small muted">Saldo operacional</span><strong>{brl(cashBalance)}</strong><small>recebíveis menos pagáveis</small></article>
           </div>
 
-          <div className="gromma-dashboard-plan-legend" aria-label="Legenda de cores dos planos">
-            <strong>Legenda dos planos</strong>
+          <section className="card gromma-dashboard-plan-summary" aria-label="Agendamentos de hoje por plano">
+            <h3>Agendamentos por plano · Hoje</h3>
             <div className="gromma-plan-legend">
               {dashboardPlanNames.map(name=><span key={name} className="gromma-plan-legend-item">
-                <i style={{background:planColor(name,dashboardPlanNames)}} aria-hidden="true"/>{name}
+                <i style={{background:planColor(name)}} aria-hidden="true"/>{name}: <strong>{dashboardPlanCount(name)}</strong>
               </span>)}
-              <span className="gromma-plan-legend-item"><i style={{background:planColor(null)}} aria-hidden="true"/>Sem plano</span>
+              <span className="gromma-plan-legend-item"><i style={{background:planColor(null)}} aria-hidden="true"/>
+                Sem plano: <strong>{dashboardPlanCount(null)}</strong></span>
             </div>
-          </div>
+          </section>
           <div className="grid grid-3 erp-dashboard-strip">
             <article className="card">
               <span className="small muted">Pendências financeiras</span>
@@ -1399,7 +1408,7 @@ export async function TenantERPView({
           <ErpAgendaBoard
             key={`${agendaDate}:${agendaView}:${agendaUnit}:${agendaSelectedUnitIds.join(",")}:${agendaSelectedProfessionalIds.join(",")}:${actionOk}:${actionError}:${agendaQuickOpen}:${agendaDraftStart}:${agendaDraftBarberId}:${valueOf("appointmentId")}:${workspace.agendaBlocks.map(b => b.id).join(",")}:${waitlist.map(w => w.id).join(",")}:${agendaBoardAppointments.map((item) => `${item.id}:${item.status}:${item.updatedAt.getTime()}`).join(",")}`}
             tenantCode={tenantCode}
-            planNames={dashboardPlanNames}
+            planNames={workspace.clubPlans.filter(plan=>plan.active).map(plan=>plan.name)}
             selectedDate={agendaDate}
             view={agendaView}
             appointments={agendaBoardAppointments.map((item) => ({
@@ -1703,10 +1712,10 @@ export async function TenantERPView({
             <tbody>{commands.length ? commands.map((command) => (
               <tr key={command.id}>
                 <td>{new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(command.openedAt)}</td>
-                <td><span className="gromma-command-customer" style={{borderLeft:`4px solid ${planColor(command.customerId?customerPlan.get(command.customerId):null,dashboardPlanNames)}`}}>
+                <td><span className="gromma-command-customer" style={{borderLeft:`4px solid ${planColor(command.customerId?customerPlan.get(command.customerId):null)}`}}>
                 {command.customer?.name??"Cliente avulso"}<small>{planLabel(command.customerId?customerPlan.get(command.customerId):null)}</small></span></td><td>{command.unit.name}</td><td>{command.items.length}</td><td>{brl(Number(command.total))}</td><td>{operationalBadge(command.status)}</td>
                 <td>
-                  <CommandCheckout key={`${command.id}:${command.updatedAt.toISOString()}:${valueOf("checkoutOk")}`} tenantCode={tenantCode} canOperate={canOperate} viewerRole={viewerRole} planNames={dashboardPlanNames} sellers={shop.users.filter(user => ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>({id:user.id,name:user.name}))} allowReopen={isOwner} error={valueOf("commandId") === command.id ? valueOf("checkoutError") : ""} autoOpen={valueOf("commandId") === command.id} coupons={workspace.coupons.map(c=>({...c,usedTotal:couponPayments(c,workspace.commandPayments).length,usedByCustomer:couponPayments(c,workspace.commandPayments).filter(p=>Boolean(command.customerId)&&p.customerId===command.customerId).length}))} isClubMember={Boolean(command.customerId && workspace.clubMembers.some(member=>member.customerId===command.customerId && member.status==="ACTIVE"))}
+                  <CommandCheckout key={`${command.id}:${command.updatedAt.toISOString()}:${valueOf("checkoutOk")}`} tenantCode={tenantCode} canOperate={canOperate} viewerRole={viewerRole} sellers={shop.users.filter(user => ["OWNER","MANAGER","BARBER"].includes(user.role)).map(user=>({id:user.id,name:user.name}))} allowReopen={isOwner} error={valueOf("commandId") === command.id ? valueOf("checkoutError") : ""} autoOpen={valueOf("commandId") === command.id} coupons={workspace.coupons.map(c=>({...c,usedTotal:couponPayments(c,workspace.commandPayments).length,usedByCustomer:couponPayments(c,workspace.commandPayments).filter(p=>Boolean(command.customerId)&&p.customerId===command.customerId).length}))} isClubMember={Boolean(command.customerId && workspace.clubMembers.some(member=>member.customerId===command.customerId && member.status==="ACTIVE"))}
                     command={{ id: command.id, customerId:command.customerId,customerName: command.customer?.name ?? "Cliente avulso", customerEmail: command.customer?.email || "", unitName: command.unit.name, status: command.status, total: Number(command.total), subtotal: Number(command.subtotal), discount: Number(command.discount), notes: [command.customer?.notes, command.appointment?.notes].filter(Boolean).join("\n"), plan: command.customerId ? customerPlan.get(command.customerId) || "" : "",
                       items: command.items.map(i => ({ id: i.id, description: i.description, kind: i.kind, quantity: Number(i.quantity), total: Number(i.total) })),
                       history: (commandHistories.find(h => h.customerId === command.customerId)?.history || []).filter(h => h.id !== command.id).slice(0, 10).map(h => ({ id: h.id, date: (h.closedAt || h.openedAt).toISOString(), total: Number(h.total), items: h.items.map(i => ({ id: i.id, description: i.description, kind: i.kind, quantity: Number(i.quantity), total: Number(i.total) })) })),
@@ -1731,7 +1740,8 @@ export async function TenantERPView({
           <MarketingPromotions tenantCode={tenantCode} shopId={shop.id} ws={workspace}
             view={activeModule as "promocoes"|"marketing-cupons"|"marketing-aniversariantes"}
             isOwner={isOwner} error={actionError} ok={actionOk}
-            couponQuery={valueOf("cupomQ")} couponStatusFilter={valueOf("cupomStatus")}/>}
+            couponQuery={valueOf("cupomQ")} couponStatusFilter={valueOf("cupomStatus")}
+            couponSelectedId={valueOf("cupomId")}/>}
         {activeModule==="marketing-parceiros"&&<ClubPartnerManager tenantCode={tenantCode}
           partners={workspace.clubPartners} isOwner={isOwner} ok={actionOk} error={actionError}/>}
 
