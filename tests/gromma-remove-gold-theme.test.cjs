@@ -22,7 +22,7 @@ test("A identidade GROMMA não mostra mais os antigos detalhes dourados",()=>{
  const css=read("app/globals.css");
  assert.match(css,/--gold:\s*#5fc5c1/);
  assert.match(css,/--gold-2:\s*#99d8d6/);
- assert.match(css,/--erp-gold:#379693/);
+ assert.match(css,/--erp-gold:#318582/);
  assert.match(css,/rgba\(42,138,140/);
  assert.match(read("app/gromma-reference-theme.css"),/color:#80cdcb/);
 });
