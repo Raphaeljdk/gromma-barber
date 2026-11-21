@@ -773,7 +773,7 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         maxUses:Number.isSafeInteger(c.maxUses)&&Number(c.maxUses)>0?Number(c.maxUses):undefined,
         maxUsesPerCustomer:Number.isSafeInteger(c.maxUsesPerCustomer)&&Number(c.maxUsesPerCustomer)>0?Number(c.maxUsesPerCustomer):undefined,
         minOrderCents:Number.isSafeInteger(c.minOrderCents)&&Number(c.minOrderCents)>=0?Number(c.minOrderCents):0,
-        appliesTo:c.appliesTo==="SERVICES"||c.appliesTo==="PRODUCTS"?c.appliesTo:"BOTH",
+        appliesTo:(c.appliesTo==="SERVICES"||c.appliesTo==="PRODUCTS"?c.appliesTo:"BOTH") as CouponConfig["appliesTo"],
         paused:c.paused===true,
         expiresAt:typeof c.expiresAt==="string"?c.expiresAt.slice(0,10):null,
         active:c.active===true,
