@@ -82,7 +82,7 @@ export function whatsappAppointmentConfirmation(
 }
 
 
-export type CheckoutCoupon = { code: string; kind: "PERCENT" | "FIXED"; value: number; expiresAt: string | null; active: boolean };
+export type CheckoutCoupon = { code: string; kind: "PERCENT" | "FIXED"; value: number; expiresAt: string | null; active: boolean; audience?: "ALL" | "CLUB" | "NON_CLUB" };
 export type CheckoutDiscountInput = {
   kind: "NONE" | "PERCENT" | "FIXED"; scope: "ORDER" | "ITEM";
   itemId: string; value: string; couponCode: string;
@@ -124,7 +124,7 @@ export function calculateAppliedItemDiscounts(items: CheckoutPricingLine[], disc
 export type CheckoutPricingLine = { id: string; total: number };
 export function calculateCheckoutPricing(
   items: CheckoutPricingLine[], existingDiscountCents: number,
-  input: CheckoutDiscountInput, coupons: CheckoutCoupon[], now = new Date(), appliedItemDiscounts: AppliedItemDiscount[] = [],
+  input: CheckoutDiscountInput, coupons: CheckoutCoupon[], now = new Date(), appliedItemDiscounts: AppliedItemDiscount[] = [], customerHasClub = false,
 ) {
   const subtotalCents = items.reduce((total, item) => total + Math.round(item.total * 100), 0);
   if (subtotalCents < 0 || !Number.isSafeInteger(subtotalCents)) throw new Error("Subtotal inválido.");
@@ -157,7 +157,9 @@ export function calculateCheckoutPricing(
   if (code) {
     const coupon = coupons.find(item => item.code.toUpperCase() === code && item.active);
     if (!coupon) throw new Error("Cupom inexistente ou inativo.");
-    if (coupon.expiresAt && new Date(coupon.expiresAt).getTime() < now.getTime()) throw new Error("Cupom expirado.");
+    if (coupon.audience === "CLUB" && !customerHasClub) throw new Error("Cupom exclusivo para clientes com assinatura ativa.");
+    if (coupon.audience === "NON_CLUB" && customerHasClub) throw new Error("Cupom exclusivo para clientes sem assinatura ativa.");
+    if (coupon.expiresAt && coupon.expiresAt < new Intl.DateTimeFormat("en-CA", { timeZone:"America/Sao_Paulo", year:"numeric", month:"2-digit", day:"2-digit" }).format(now)) throw new Error("Cupom expirado.");
     const available = subtotalCents - manualCents - legacyCents - appliedCents;
     if (coupon.kind === "PERCENT") {
       if (!Number.isFinite(coupon.value) || coupon.value < 0 || coupon.value > 100) throw new Error("Cupom inválido.");
