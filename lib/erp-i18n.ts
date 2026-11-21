@@ -738,7 +738,891 @@ const navigationLabels:Record<string,LocaleTranslations>={
     "Tutorial / Corsi"
   ]
 };
-export const ERP_UI_TRANSLATIONS:Record<string,LocaleTranslations>={...labels,...navigationLabels};
+const screenLabels:Record<string,LocaleTranslations>={
+  "Hoje": [
+    "Today",
+    "Hoy",
+    "Aujourd’hui",
+    "Heute",
+    "Oggi"
+  ],
+  "Agora": [
+    "Now",
+    "Ahora",
+    "Maintenant",
+    "Jetzt",
+    "Adesso"
+  ],
+  "Novo agendamento": [
+    "New appointment",
+    "Nueva cita",
+    "Nouveau rendez-vous",
+    "Neuer Termin",
+    "Nuovo appuntamento"
+  ],
+  "Agendados": [
+    "Scheduled",
+    "Agendados",
+    "Planifiés",
+    "Geplant",
+    "Prenotati"
+  ],
+  "Em atendimento": [
+    "In service",
+    "En atención",
+    "En cours",
+    "In Behandlung",
+    "In servizio"
+  ],
+  "Concluídos": [
+    "Completed",
+    "Finalizados",
+    "Terminés",
+    "Abgeschlossen",
+    "Completati"
+  ],
+  "Horários livres": [
+    "Available slots",
+    "Horarios libres",
+    "Créneaux libres",
+    "Freie Termine",
+    "Orari liberi"
+  ],
+  "Ocupação": [
+    "Occupancy",
+    "Ocupación",
+    "Occupation",
+    "Auslastung",
+    "Occupazione"
+  ],
+  "Clientes sem plano": [
+    "Clients without a plan",
+    "Clientes sin plan",
+    "Clients sans forfait",
+    "Kunden ohne Tarif",
+    "Clienti senza piano"
+  ],
+  "Clientes com plano": [
+    "Clients with a plan",
+    "Clientes con plan",
+    "Clients avec forfait",
+    "Kunden mit Tarif",
+    "Clienti con piano"
+  ],
+  "No local": [
+    "On site",
+    "En el local",
+    "Sur place",
+    "Vor Ort",
+    "Sul posto"
+  ],
+  "Bloquear horário": [
+    "Block time",
+    "Bloquear horario",
+    "Bloquer un créneau",
+    "Zeit sperren",
+    "Blocca orario"
+  ],
+  "Indicadores do dia": [
+    "Daily indicators",
+    "Indicadores del día",
+    "Indicateurs du jour",
+    "Tageskennzahlen",
+    "Indicatori giornalieri"
+  ],
+  "Ir para uma data": [
+    "Go to a date",
+    "Ir a una fecha",
+    "Aller à une date",
+    "Datum auswählen",
+    "Vai a una data"
+  ],
+  "Exibição": [
+    "Display",
+    "Visualización",
+    "Affichage",
+    "Anzeige",
+    "Visualizzazione"
+  ],
+  "Ampliada": [
+    "Expanded",
+    "Ampliada",
+    "Étendue",
+    "Erweitert",
+    "Estesa"
+  ],
+  "Compacta": [
+    "Compact",
+    "Compacta",
+    "Compacte",
+    "Kompakt",
+    "Compatta"
+  ],
+  "Estreita": [
+    "Narrow",
+    "Estrecha",
+    "Étroite",
+    "Schmal",
+    "Stretta"
+  ],
+  "Normal": [
+    "Normal",
+    "Normal",
+    "Normale",
+    "Normal",
+    "Normale"
+  ],
+  "Larga": [
+    "Wide",
+    "Ancha",
+    "Large",
+    "Breit",
+    "Larga"
+  ],
+  "Remover filtro": [
+    "Clear filter",
+    "Quitar filtro",
+    "Retirer le filtre",
+    "Filter entfernen",
+    "Rimuovi filtro"
+  ],
+  "Limpar filtros": [
+    "Clear filters",
+    "Limpiar filtros",
+    "Effacer les filtres",
+    "Filter löschen",
+    "Cancella filtri"
+  ],
+  "Horário": [
+    "Time",
+    "Horario",
+    "Horaire",
+    "Uhrzeit",
+    "Orario"
+  ],
+  "Agendar": [
+    "Book",
+    "Agendar",
+    "Réserver",
+    "Buchen",
+    "Prenota"
+  ],
+  "Unidades e informações": [
+    "Branches and information",
+    "Sucursales e información",
+    "Établissements et informations",
+    "Filialen und Informationen",
+    "Sedi e informazioni"
+  ],
+  "Próximos horários livres": [
+    "Next available slots",
+    "Próximos horarios libres",
+    "Prochains créneaux libres",
+    "Nächste freie Termine",
+    "Prossimi orari liberi"
+  ],
+  "Fila de espera": [
+    "Waiting list",
+    "Lista de espera",
+    "Liste d’attente",
+    "Warteliste",
+    "Lista d’attesa"
+  ],
+  "Avisar pelo WhatsApp": [
+    "Notify via WhatsApp",
+    "Avisar por WhatsApp",
+    "Informer via WhatsApp",
+    "Per WhatsApp benachrichtigen",
+    "Avvisa via WhatsApp"
+  ],
+  "Concluir": [
+    "Complete",
+    "Finalizar",
+    "Terminer",
+    "Abschließen",
+    "Completa"
+  ],
+  "Novo horário": [
+    "New time",
+    "Nuevo horario",
+    "Nouvel horaire",
+    "Neue Uhrzeit",
+    "Nuovo orario"
+  ],
+  "Confirmar remarcação": [
+    "Confirm rescheduling",
+    "Confirmar cambio de horario",
+    "Confirmer le report",
+    "Terminverschiebung bestätigen",
+    "Conferma spostamento"
+  ],
+  "Profissional na mesma unidade": [
+    "Professional at the same branch",
+    "Profesional de la misma sucursal",
+    "Professionnel du même établissement",
+    "Mitarbeiter derselben Filiale",
+    "Professionista della stessa sede"
+  ],
+  "Profissional": [
+    "Professional",
+    "Profesional",
+    "Professionnel",
+    "Mitarbeiter",
+    "Professionista"
+  ],
+  "Motivo": [
+    "Reason",
+    "Motivo",
+    "Motif",
+    "Grund",
+    "Motivo"
+  ],
+  "Início": [
+    "Start",
+    "Inicio",
+    "Début",
+    "Beginn",
+    "Inizio"
+  ],
+  "Fim": [
+    "End",
+    "Fin",
+    "Fin",
+    "Ende",
+    "Fine"
+  ],
+  "Salvar bloqueio": [
+    "Save block",
+    "Guardar bloqueo",
+    "Enregistrer le blocage",
+    "Sperre speichern",
+    "Salva blocco"
+  ],
+  "Liberar este horário": [
+    "Free this slot",
+    "Liberar este horario",
+    "Libérer ce créneau",
+    "Diesen Termin freigeben",
+    "Libera questo orario"
+  ],
+  "Reagendar": [
+    "Reschedule",
+    "Reagendar",
+    "Reporter",
+    "Verschieben",
+    "Riprogramma"
+  ],
+  "Dados do atendimento": [
+    "Appointment details",
+    "Datos de la atención",
+    "Détails du rendez-vous",
+    "Termindetails",
+    "Dettagli appuntamento"
+  ],
+  "Cliente:": [
+    "Client:",
+    "Cliente:",
+    "Client :",
+    "Kunde:",
+    "Cliente:"
+  ],
+  "Plano:": [
+    "Plan:",
+    "Plan:",
+    "Forfait :",
+    "Tarif:",
+    "Piano:"
+  ],
+  "Data e horário:": [
+    "Date and time:",
+    "Fecha y hora:",
+    "Date et heure :",
+    "Datum und Uhrzeit:",
+    "Data e ora:"
+  ],
+  "Unidade:": [
+    "Branch:",
+    "Sucursal:",
+    "Établissement :",
+    "Filiale:",
+    "Sede:"
+  ],
+  "Profissional:": [
+    "Professional:",
+    "Profesional:",
+    "Professionnel :",
+    "Mitarbeiter:",
+    "Professionista:"
+  ],
+  "Agendamentos realizados": [
+    "Completed appointments",
+    "Citas realizadas",
+    "Rendez-vous effectués",
+    "Durchgeführte Termine",
+    "Appuntamenti effettuati"
+  ],
+  "Histórico de compras": [
+    "Purchase history",
+    "Historial de compras",
+    "Historique des achats",
+    "Kaufhistorie",
+    "Storico acquisti"
+  ],
+  "Últimos produtos adquiridos": [
+    "Recently purchased products",
+    "Últimos productos comprados",
+    "Derniers produits achetés",
+    "Zuletzt gekaufte Produkte",
+    "Ultimi prodotti acquistati"
+  ],
+  "Valor do serviço": [
+    "Service price",
+    "Precio del servicio",
+    "Prix du service",
+    "Leistungspreis",
+    "Prezzo del servizio"
+  ],
+  "Observações do agendamento": [
+    "Appointment notes",
+    "Notas de la cita",
+    "Notes du rendez-vous",
+    "Terminhinweise",
+    "Note appuntamento"
+  ],
+  "Observações": [
+    "Notes",
+    "Observaciones",
+    "Observations",
+    "Notizen",
+    "Note"
+  ],
+  "Serviços e produtos na comanda": [
+    "Services and products on the ticket",
+    "Servicios y productos de la comanda",
+    "Services et produits de la fiche",
+    "Leistungen und Produkte im Auftrag",
+    "Servizi e prodotti della scheda"
+  ],
+  "Inserir serviço": [
+    "Add service",
+    "Agregar servicio",
+    "Ajouter un service",
+    "Dienstleistung hinzufügen",
+    "Aggiungi servizio"
+  ],
+  "Selecione o serviço": [
+    "Select a service",
+    "Seleccione el servicio",
+    "Sélectionnez le service",
+    "Leistung auswählen",
+    "Seleziona il servizio"
+  ],
+  "Excluir": [
+    "Delete",
+    "Eliminar",
+    "Supprimer",
+    "Löschen",
+    "Elimina"
+  ],
+  "Editar": [
+    "Edit",
+    "Editar",
+    "Modifier",
+    "Bearbeiten",
+    "Modifica"
+  ],
+  "Opções": [
+    "Options",
+    "Opciones",
+    "Options",
+    "Optionen",
+    "Opzioni"
+  ],
+  "Ações do agendamento": [
+    "Appointment actions",
+    "Acciones de la cita",
+    "Actions du rendez-vous",
+    "Terminaktionen",
+    "Azioni appuntamento"
+  ],
+  "Cancelar e retirar da agenda": [
+    "Cancel and remove from calendar",
+    "Cancelar y quitar de la agenda",
+    "Annuler et retirer du calendrier",
+    "Termin absagen und entfernen",
+    "Annulla e rimuovi dal calendario"
+  ],
+  "Cliente faltou": [
+    "Client did not show",
+    "Cliente ausente",
+    "Client absent",
+    "Kunde nicht erschienen",
+    "Cliente assente"
+  ],
+  "Cliente no local": [
+    "Client on site",
+    "Cliente en el local",
+    "Client sur place",
+    "Kunde vor Ort",
+    "Cliente sul posto"
+  ],
+  "Comanda fechada": [
+    "Ticket closed",
+    "Comanda cerrada",
+    "Fiche clôturée",
+    "Auftrag abgeschlossen",
+    "Scheda chiusa"
+  ],
+  "Fechar comanda →": [
+    "Close ticket →",
+    "Cerrar comanda →",
+    "Clôturer la fiche →",
+    "Auftrag abschließen →",
+    "Chiudi scheda →"
+  ],
+  "Salvar agendamento": [
+    "Save appointment",
+    "Guardar cita",
+    "Enregistrer le rendez-vous",
+    "Termin speichern",
+    "Salva appuntamento"
+  ],
+  "Salvar alterações": [
+    "Save changes",
+    "Guardar cambios",
+    "Enregistrer les modifications",
+    "Änderungen speichern",
+    "Salva modifiche"
+  ],
+  "Cancelar": [
+    "Cancel",
+    "Cancelar",
+    "Annuler",
+    "Abbrechen",
+    "Annulla"
+  ],
+  "Confirmar": [
+    "Confirm",
+    "Confirmar",
+    "Confirmer",
+    "Bestätigen",
+    "Conferma"
+  ],
+  "Confirmar agendamento": [
+    "Confirm appointment",
+    "Confirmar cita",
+    "Confirmer le rendez-vous",
+    "Termin bestätigen",
+    "Conferma appuntamento"
+  ],
+  "Pesquisar": [
+    "Search",
+    "Buscar",
+    "Rechercher",
+    "Suchen",
+    "Cerca"
+  ],
+  "Buscar": [
+    "Search",
+    "Buscar",
+    "Rechercher",
+    "Suchen",
+    "Cerca"
+  ],
+  "Limpar": [
+    "Clear",
+    "Limpiar",
+    "Effacer",
+    "Löschen",
+    "Cancella"
+  ],
+  "Filtrar": [
+    "Filter",
+    "Filtrar",
+    "Filtrer",
+    "Filtern",
+    "Filtra"
+  ],
+  "Filial": [
+    "Branch",
+    "Sucursal",
+    "Établissement",
+    "Filiale",
+    "Sede"
+  ],
+  "Unidades": [
+    "Branches",
+    "Sucursales",
+    "Établissements",
+    "Filialen",
+    "Sedi"
+  ],
+  "Nenhum registro encontrado.": [
+    "No records found.",
+    "No se encontraron registros.",
+    "Aucun résultat trouvé.",
+    "Keine Einträge gefunden.",
+    "Nessun record trovato."
+  ],
+  "Anterior": [
+    "Previous",
+    "Anterior",
+    "Précédent",
+    "Zurück",
+    "Precedente"
+  ],
+  "Próxima": [
+    "Next",
+    "Siguiente",
+    "Suivant",
+    "Weiter",
+    "Successiva"
+  ],
+  "Próximo": [
+    "Next",
+    "Siguiente",
+    "Suivant",
+    "Weiter",
+    "Successivo"
+  ],
+  "Ver todos": [
+    "View all",
+    "Ver todos",
+    "Voir tous",
+    "Alle anzeigen",
+    "Mostra tutti"
+  ],
+  "Ver detalhes": [
+    "View details",
+    "Ver detalles",
+    "Voir les détails",
+    "Details anzeigen",
+    "Vedi dettagli"
+  ],
+  "Nome": [
+    "Name",
+    "Nombre",
+    "Nom",
+    "Name",
+    "Nome"
+  ],
+  "Telefone": [
+    "Phone",
+    "Teléfono",
+    "Téléphone",
+    "Telefon",
+    "Telefono"
+  ],
+  "E-mail": [
+    "Email",
+    "Correo electrónico",
+    "E-mail",
+    "E-Mail",
+    "Email"
+  ],
+  "Nascimento": [
+    "Birth date",
+    "Nacimiento",
+    "Date de naissance",
+    "Geburtsdatum",
+    "Data di nascita"
+  ],
+  "CPF (opcional)": [
+    "CPF (optional)",
+    "CPF (opcional)",
+    "CPF (facultatif)",
+    "CPF (optional)",
+    "CPF (facoltativo)"
+  ],
+  "Endereço (opcional)": [
+    "Address (optional)",
+    "Dirección (opcional)",
+    "Adresse (facultative)",
+    "Adresse (optional)",
+    "Indirizzo (facoltativo)"
+  ],
+  "Não informado": [
+    "Not provided",
+    "No informado",
+    "Non renseigné",
+    "Nicht angegeben",
+    "Non indicato"
+  ],
+  "Outro": [
+    "Other",
+    "Otro",
+    "Autre",
+    "Andere",
+    "Altro"
+  ],
+  "Prontuário e observações": [
+    "Client record and notes",
+    "Ficha y observaciones",
+    "Dossier client et notes",
+    "Kundenakte und Notizen",
+    "Scheda cliente e note"
+  ],
+  "Cadastrar novo cliente": [
+    "Register new client",
+    "Registrar nuevo cliente",
+    "Enregistrer un nouveau client",
+    "Neuen Kunden anlegen",
+    "Registra nuovo cliente"
+  ],
+  "Salvar cliente": [
+    "Save client",
+    "Guardar cliente",
+    "Enregistrer le client",
+    "Kunden speichern",
+    "Salva cliente"
+  ],
+  "Exportar Excel": [
+    "Export to Excel",
+    "Exportar a Excel",
+    "Exporter vers Excel",
+    "Nach Excel exportieren",
+    "Esporta Excel"
+  ],
+  "Exportar PDF": [
+    "Export to PDF",
+    "Exportar a PDF",
+    "Exporter en PDF",
+    "Als PDF exportieren",
+    "Esporta PDF"
+  ],
+  "Todos os clientes": [
+    "All clients",
+    "Todos los clientes",
+    "Tous les clients",
+    "Alle Kunden",
+    "Tutti i clienti"
+  ],
+  "Plano e assinatura": [
+    "Plan and subscription",
+    "Plan y suscripción",
+    "Forfait et abonnement",
+    "Tarif und Abonnement",
+    "Piano e abbonamento"
+  ],
+  "Plano": [
+    "Plan",
+    "Plan",
+    "Forfait",
+    "Tarif",
+    "Piano"
+  ],
+  "Valor (R$)": [
+    "Amount (R$)",
+    "Importe (R$)",
+    "Montant (R$)",
+    "Betrag (R$)",
+    "Importo (R$)"
+  ],
+  "Porcentagem (%)": [
+    "Percentage (%)",
+    "Porcentaje (%)",
+    "Pourcentage (%)",
+    "Prozentsatz (%)",
+    "Percentuale (%)"
+  ],
+  "Total": [
+    "Total",
+    "Total",
+    "Total",
+    "Gesamt",
+    "Totale"
+  ],
+  "Quantidade": [
+    "Quantity",
+    "Cantidad",
+    "Quantité",
+    "Menge",
+    "Quantità"
+  ],
+  "Selecionar filial": [
+    "Select branch",
+    "Seleccionar sucursal",
+    "Choisir un établissement",
+    "Filiale auswählen",
+    "Seleziona sede"
+  ],
+  "Receber e fechar": [
+    "Receive payment and close",
+    "Cobrar y cerrar",
+    "Encaisser et clôturer",
+    "Bezahlen und abschließen",
+    "Incassa e chiudi"
+  ],
+  "Itens da comanda": [
+    "Ticket items",
+    "Artículos de la comanda",
+    "Éléments de la fiche",
+    "Auftragspositionen",
+    "Articoli della scheda"
+  ],
+  "Selecione um item": [
+    "Select an item",
+    "Seleccione un artículo",
+    "Sélectionnez un article",
+    "Artikel auswählen",
+    "Seleziona un articolo"
+  ],
+  "Selecione o profissional": [
+    "Select a professional",
+    "Seleccione al profesional",
+    "Sélectionnez un professionnel",
+    "Mitarbeiter auswählen",
+    "Seleziona professionista"
+  ],
+  "Incluir": [
+    "Add",
+    "Incluir",
+    "Ajouter",
+    "Hinzufügen",
+    "Aggiungi"
+  ],
+  "Descontos e cupons": [
+    "Discounts and coupons",
+    "Descuentos y cupones",
+    "Remises et coupons",
+    "Rabatte und Gutscheine",
+    "Sconti e coupon"
+  ],
+  "Tipo de desconto": [
+    "Discount type",
+    "Tipo de descuento",
+    "Type de remise",
+    "Rabattart",
+    "Tipo di sconto"
+  ],
+  "Sem desconto manual": [
+    "No manual discount",
+    "Sin descuento manual",
+    "Aucune remise manuelle",
+    "Kein manueller Rabatt",
+    "Nessuno sconto manuale"
+  ],
+  "Toda a comanda": [
+    "Entire ticket",
+    "Toda la comanda",
+    "Toute la fiche",
+    "Gesamter Auftrag",
+    "Intera scheda"
+  ],
+  "Somente um item": [
+    "One item only",
+    "Solo un artículo",
+    "Un seul article",
+    "Nur eine Position",
+    "Solo un articolo"
+  ],
+  "Cupom promocional (opcional)": [
+    "Promo code (optional)",
+    "Cupón promocional (opcional)",
+    "Code promo (facultatif)",
+    "Aktionscode (optional)",
+    "Codice promozionale (facoltativo)"
+  ],
+  "Abrir caixa da unidade →": [
+    "Open branch cash register →",
+    "Abrir caja de sucursal →",
+    "Ouvrir la caisse de l’établissement →",
+    "Filialkasse öffnen →",
+    "Apri cassa della sede →"
+  ],
+  "Comanda encerrada": [
+    "Ticket closed",
+    "Comanda cerrada",
+    "Fiche clôturée",
+    "Auftrag abgeschlossen",
+    "Scheda chiusa"
+  ],
+  "Recebimento registrado.": [
+    "Payment recorded.",
+    "Cobro registrado.",
+    "Encaissement enregistré.",
+    "Zahlung erfasst.",
+    "Pagamento registrato."
+  ],
+  "Acompanhe a operação, os atendimentos e as pendências em um único lugar.": [
+    "Track operations, appointments and pending tasks in one place.",
+    "Controle operaciones, citas y pendientes en un solo lugar.",
+    "Suivez les opérations, rendez-vous et tâches en attente au même endroit.",
+    "Betrieb, Termine und offene Aufgaben an einem Ort verfolgen.",
+    "Segui operazioni, appuntamenti e attività in sospeso in un unico posto."
+  ],
+  "Visão geral da operação": [
+    "Operations overview",
+    "Resumen de operaciones",
+    "Vue d’ensemble des opérations",
+    "Betriebsübersicht",
+    "Panoramica operativa"
+  ],
+  "Operação ativa": [
+    "Active operation",
+    "Operación activa",
+    "Activité en cours",
+    "Aktiver Betrieb",
+    "Attività in corso"
+  ],
+  "Em desenvolvimento": [
+    "In development",
+    "En desarrollo",
+    "En développement",
+    "In Entwicklung",
+    "In sviluppo"
+  ],
+  "Lista de espera": [
+    "Waiting list",
+    "Lista de espera",
+    "Liste d’attente",
+    "Warteliste",
+    "Lista d’attesa"
+  ],
+  "Consultar agenda": [
+    "View calendar",
+    "Consultar agenda",
+    "Consulter le planning",
+    "Kalender anzeigen",
+    "Visualizza agenda"
+  ],
+  "Saldo operacional": [
+    "Operating balance",
+    "Saldo operativo",
+    "Solde opérationnel",
+    "Betriebssaldo",
+    "Saldo operativo"
+  ],
+  "Pendências financeiras": [
+    "Pending financial items",
+    "Pendientes financieros",
+    "Éléments financiers en attente",
+    "Offene Finanzposten",
+    "Pendenze finanziarie"
+  ],
+  "Sem plano": [
+    "No plan",
+    "Sin plan",
+    "Sans forfait",
+    "Ohne Tarif",
+    "Senza piano"
+  ],
+  "Legenda dos planos": [
+    "Plan color legend",
+    "Leyenda de planes",
+    "Légende des forfaits",
+    "Tariflegende",
+    "Legenda piani"
+  ],
+  "Legenda das comandas": [
+    "Ticket color legend",
+    "Leyenda de comandas",
+    "Légende des fiches",
+    "Auftragslegende",
+    "Legenda schede"
+  ]
+};
+export const ERP_UI_TRANSLATIONS:Record<string,LocaleTranslations>={...labels,...navigationLabels,...screenLabels};
 const localeIndex: Record<Exclude<ErpLocale,"pt-BR">,number>={en:0,es:1,fr:2,de:3,it:4};
 export function normalizeErpLocale(value:string|null):ErpLocale{
   return ERP_LOCALES.some(item=>item.id===value)?value as ErpLocale:"pt-BR";
