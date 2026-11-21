@@ -18,7 +18,7 @@ export function couponStats(coupon:Pick<CouponConfig,"id"|"code">,payments:reado
  const rows=couponPayments(coupon,payments);
  return {
   uses:rows.length,
-  discountKnownCents:rows.reduce((sum,p)=>sum+(Number.isSafeInteger(p.couponCents)&&p.couponCents!>=0?p.couponCents!:0),0),
+  discountKnownCents:rows.reduce((sum,p)=>sum+(Number.isSafeInteger(p.couponCents)&&p.couponCents! >= 0 ? p.couponCents! : 0),0),
   discountUnknownUses:rows.filter(p=>!Number.isSafeInteger(p.couponCents)).length,
   salesCents:rows.reduce((sum,p)=>sum+
     (Number.isSafeInteger(p.paidTotalCents)?p.paidTotalCents!:Object.values(p.amounts??{}).reduce((a,b)=>a+(Number.isFinite(b)?b:0),0)),0),
