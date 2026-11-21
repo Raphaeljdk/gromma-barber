@@ -2072,7 +2072,527 @@ const feedbackLabels:Record<string,LocaleTranslations>={
     "Nessuna scheda trovata."
   ]
 };
-export const ERP_UI_TRANSLATIONS:Record<string,LocaleTranslations>={...labels,...navigationLabels,...screenLabels,...feedbackLabels};
+const financeClubLabels:Record<string,LocaleTranslations>={
+  "Clube de assinaturas": [
+    "Subscriptions club",
+    "Club de suscripciones",
+    "Club des abonnements",
+    "Abonnement-Club",
+    "Club abbonamenti"
+  ],
+  "Planos, assinantes e cobranças": [
+    "Plans, subscribers and billing",
+    "Planes, suscriptores y cobros",
+    "Forfaits, abonnés et facturation",
+    "Tarife, Abonnenten und Abrechnung",
+    "Piani, abbonati e addebiti"
+  ],
+  "Operacional interno": [
+    "Internal operations",
+    "Operación interna",
+    "Opérations internes",
+    "Interner Betrieb",
+    "Operazioni interne"
+  ],
+  "Planos ativos": [
+    "Active plans",
+    "Planes activos",
+    "Forfaits actifs",
+    "Aktive Tarife",
+    "Piani attivi"
+  ],
+  "Assinantes ativos": [
+    "Active subscribers",
+    "Suscriptores activos",
+    "Abonnés actifs",
+    "Aktive Abonnenten",
+    "Abbonati attivi"
+  ],
+  "Cobranças vencidas": [
+    "Overdue charges",
+    "Cobros vencidos",
+    "Paiements en retard",
+    "Überfällige Forderungen",
+    "Addebiti scaduti"
+  ],
+  "MRR do clube": [
+    "Club recurring revenue",
+    "Ingresos recurrentes del club",
+    "Revenus récurrents du club",
+    "Wiederkehrender Club-Umsatz",
+    "Ricavi ricorrenti del club"
+  ],
+  "Plano atualizado. Cobranças anteriores preservadas.": [
+    "Plan updated. Previous charges preserved.",
+    "Plan actualizado. Se conservaron los cobros anteriores.",
+    "Forfait mis à jour. Facturations précédentes conservées.",
+    "Tarif aktualisiert. Frühere Abbuchungen bleiben erhalten.",
+    "Piano aggiornato. Addebiti precedenti conservati."
+  ],
+  "Plano do assinante atualizado para as próximas cobranças.": [
+    "Subscriber plan updated for future charges.",
+    "Plan del suscriptor actualizado para próximos cobros.",
+    "Forfait de l’abonné mis à jour pour les prochains paiements.",
+    "Abonnententarif für kommende Abbuchungen aktualisiert.",
+    "Piano abbonato aggiornato per i prossimi addebiti."
+  ],
+  "Plano do clube criado.": [
+    "Club plan created.",
+    "Plan del club creado.",
+    "Forfait du club créé.",
+    "Clubtarif erstellt.",
+    "Piano club creato."
+  ],
+  "Assinante incluído no clube.": [
+    "Subscriber added to the club.",
+    "Suscriptor añadido al club.",
+    "Abonné ajouté au club.",
+    "Abonnent zum Club hinzugefügt.",
+    "Abbonato aggiunto al club."
+  ],
+  "Cobrança gerada no Financeiro.": [
+    "Charge created in Finance.",
+    "Cobro generado en Finanzas.",
+    "Paiement généré dans Finances.",
+    "Forderung in Finanzen angelegt.",
+    "Addebito generato in Finanze."
+  ],
+  "Não foi possível concluir a operação do clube.": [
+    "Could not complete the club operation.",
+    "No se pudo completar la operación del club.",
+    "Impossible de terminer l’opération du club.",
+    "Clubvorgang konnte nicht abgeschlossen werden.",
+    "Impossibile completare l’operazione del club."
+  ],
+  "Planos do clube": [
+    "Club plans",
+    "Planes del club",
+    "Forfaits du club",
+    "Clubtarife",
+    "Piani club"
+  ],
+  "Benefícios e recorrência": [
+    "Benefits and recurrence",
+    "Beneficios y recurrencia",
+    "Avantages et récurrence",
+    "Leistungen und Wiederholung",
+    "Vantaggi e ricorrenza"
+  ],
+  "Nome do plano": [
+    "Plan name",
+    "Nombre del plan",
+    "Nom du forfait",
+    "Tarifname",
+    "Nome del piano"
+  ],
+  "Usos por mês": [
+    "Uses per month",
+    "Usos al mes",
+    "Utilisations par mois",
+    "Nutzungen pro Monat",
+    "Utilizzi al mese"
+  ],
+  "Benefícios": [
+    "Benefits",
+    "Beneficios",
+    "Avantages",
+    "Vorteile",
+    "Vantaggi"
+  ],
+  "Criar plano": [
+    "Create plan",
+    "Crear plan",
+    "Créer un forfait",
+    "Tarif erstellen",
+    "Crea piano"
+  ],
+  "Editar plano existente": [
+    "Edit existing plan",
+    "Editar plan existente",
+    "Modifier un forfait existant",
+    "Bestehenden Tarif bearbeiten",
+    "Modifica piano esistente"
+  ],
+  "Plano para editar": [
+    "Plan to edit",
+    "Plan para editar",
+    "Forfait à modifier",
+    "Zu bearbeitender Tarif",
+    "Piano da modificare"
+  ],
+  "Novo nome": [
+    "New name",
+    "Nuevo nombre",
+    "Nouveau nom",
+    "Neuer Name",
+    "Nuovo nome"
+  ],
+  "Nova mensalidade (R$)": [
+    "New monthly fee (R$)",
+    "Nueva mensualidad (R$)",
+    "Nouvel abonnement mensuel (R$)",
+    "Neue Monatsgebühr (R$)",
+    "Nuovo canone mensile (R$)"
+  ],
+  "Usos por mês (0 = ilimitado)": [
+    "Uses per month (0 = unlimited)",
+    "Usos al mes (0 = ilimitado)",
+    "Utilisations par mois (0 = illimité)",
+    "Nutzungen pro Monat (0 = unbegrenzt)",
+    "Utilizzi al mese (0 = illimitato)"
+  ],
+  "Salvar alterações do plano": [
+    "Save plan changes",
+    "Guardar cambios del plan",
+    "Enregistrer les changements du forfait",
+    "Tarifänderungen speichern",
+    "Salva modifiche piano"
+  ],
+  "Crie o primeiro plano recorrente da barbearia.": [
+    "Create the barbershop's first recurring plan.",
+    "Cree el primer plan recurrente de la barbería.",
+    "Créez le premier forfait récurrent du salon.",
+    "Ersten wiederkehrenden Barbershop-Tarif erstellen.",
+    "Crea il primo piano ricorrente della barberia."
+  ],
+  "Vínculo e cobrança": [
+    "Link and billing",
+    "Vínculo y cobro",
+    "Association et facturation",
+    "Zuordnung und Abrechnung",
+    "Collegamento e addebito"
+  ],
+  "Vendedor da assinatura": [
+    "Subscription seller",
+    "Vendedor de la suscripción",
+    "Vendeur de l’abonnement",
+    "Abo-Verkäufer",
+    "Venditore abbonamento"
+  ],
+  "Sem indicação": [
+    "No referral",
+    "Sin recomendación",
+    "Sans recommandation",
+    "Keine Empfehlung",
+    "Nessuna segnalazione"
+  ],
+  "Gerar primeira cobrança no Financeiro": [
+    "Create first charge in Finance",
+    "Generar primer cobro en Finanzas",
+    "Créer la première facture dans Finances",
+    "Erste Forderung in Finanzen anlegen",
+    "Genera primo addebito in Finanze"
+  ],
+  "Motivo / autorização": [
+    "Reason / authorization",
+    "Motivo / autorización",
+    "Motif / autorisation",
+    "Grund / Genehmigung",
+    "Motivo / autorizzazione"
+  ],
+  "Adicionar assinante": [
+    "Add subscriber",
+    "Agregar suscriptor",
+    "Ajouter un abonné",
+    "Abonnenten hinzufügen",
+    "Aggiungi abbonato"
+  ],
+  "Link de contratação para o cliente": [
+    "Client subscription link",
+    "Enlace de contratación del cliente",
+    "Lien de souscription du client",
+    "Abo-Link für Kunden",
+    "Link sottoscrizione cliente"
+  ],
+  "Gerar link individual": [
+    "Generate individual link",
+    "Generar enlace individual",
+    "Générer un lien individuel",
+    "Individuellen Link erstellen",
+    "Genera link individuale"
+  ],
+  "Abrir contratação do cliente": [
+    "Open client subscription",
+    "Abrir contratación del cliente",
+    "Ouvrir la souscription client",
+    "Kundenabo öffnen",
+    "Apri sottoscrizione cliente"
+  ],
+  "Trocar plano de um assinante": [
+    "Change subscriber plan",
+    "Cambiar plan de suscriptor",
+    "Changer le forfait d’un abonné",
+    "Abonnententarif ändern",
+    "Cambia piano abbonato"
+  ],
+  "Novo plano": [
+    "New plan",
+    "Nuevo plan",
+    "Nouveau forfait",
+    "Neuer Tarif",
+    "Nuovo piano"
+  ],
+  "Motivo da troca": [
+    "Reason for change",
+    "Motivo del cambio",
+    "Motif du changement",
+    "Grund der Änderung",
+    "Motivo del cambio"
+  ],
+  "Programar troca": [
+    "Schedule change",
+    "Programar cambio",
+    "Programmer le changement",
+    "Wechsel planen",
+    "Programma cambio"
+  ],
+  "Buscar assinante pelo nome do cliente": [
+    "Search subscribers by client name",
+    "Buscar suscriptor por nombre del cliente",
+    "Rechercher un abonné par nom de client",
+    "Abonnenten nach Kundennamen suchen",
+    "Cerca abbonato per nome cliente"
+  ],
+  "Tipo de plano": [
+    "Plan type",
+    "Tipo de plan",
+    "Type de forfait",
+    "Tarifart",
+    "Tipo di piano"
+  ],
+  "Todos os planos": [
+    "All plans",
+    "Todos los planes",
+    "Tous les forfaits",
+    "Alle Tarife",
+    "Tutti i piani"
+  ],
+  "Status do plano": [
+    "Plan status",
+    "Estado del plan",
+    "Statut du forfait",
+    "Tarifstatus",
+    "Stato del piano"
+  ],
+  "Todos os status": [
+    "All statuses",
+    "Todos los estados",
+    "Tous les statuts",
+    "Alle Status",
+    "Tutti gli stati"
+  ],
+  "Buscar e filtrar": [
+    "Search and filter",
+    "Buscar y filtrar",
+    "Rechercher et filtrer",
+    "Suchen und filtern",
+    "Cerca e filtra"
+  ],
+  "Alterar dia de cobrança": [
+    "Change billing day",
+    "Cambiar día de cobro",
+    "Modifier le jour de facturation",
+    "Abbuchungstag ändern",
+    "Cambia giorno di addebito"
+  ],
+  "Dia mensal (1 a 31)": [
+    "Monthly day (1 to 31)",
+    "Día del mes (1 a 31)",
+    "Jour du mois (1 à 31)",
+    "Monatstag (1 bis 31)",
+    "Giorno del mese (1 a 31)"
+  ],
+  "Salvar vencimento": [
+    "Save due date",
+    "Guardar vencimiento",
+    "Enregistrer l’échéance",
+    "Fälligkeit speichern",
+    "Salva scadenza"
+  ],
+  "Programar cancelamento": [
+    "Schedule cancellation",
+    "Programar cancelación",
+    "Programmer la résiliation",
+    "Kündigung planen",
+    "Programma cancellazione"
+  ],
+  "Nenhum assinante encontrado para os filtros selecionados.": [
+    "No subscribers match the selected filters.",
+    "No se encontraron suscriptores con los filtros seleccionados.",
+    "Aucun abonné ne correspond aux filtres sélectionnés.",
+    "Keine Abonnenten für diese Filter gefunden.",
+    "Nessun abbonato trovato con i filtri selezionati."
+  ],
+  "GROMMA I.A. / Relacionamento": [
+    "GROMMA AI / Relationships",
+    "GROMMA IA / Relaciones",
+    "GROMMA IA / Relation client",
+    "GROMMA KI / Kundenbeziehungen",
+    "GROMMA IA / Relazioni"
+  ],
+  "Mensagens e follow-up assistido": [
+    "Messages and assisted follow-ups",
+    "Mensajes y seguimientos asistidos",
+    "Messages et suivis assistés",
+    "Nachrichten und unterstützte Nachverfolgung",
+    "Messaggi e follow-up assistiti"
+  ],
+  "Nova mensagem": [
+    "New message",
+    "Nuevo mensaje",
+    "Nouveau message",
+    "Neue Nachricht",
+    "Nuovo messaggio"
+  ],
+  "Campanha segmentada": [
+    "Segmented campaign",
+    "Campaña segmentada",
+    "Campagne ciblée",
+    "Segmentierte Kampagne",
+    "Campagna segmentata"
+  ],
+  "Título": [
+    "Title",
+    "Título",
+    "Titre",
+    "Titel",
+    "Titolo"
+  ],
+  "Salvar campanha": [
+    "Save campaign",
+    "Guardar campaña",
+    "Enregistrer la campagne",
+    "Kampagne speichern",
+    "Salva campagna"
+  ],
+  "Preparar contatos": [
+    "Prepare contacts",
+    "Preparar contactos",
+    "Préparer les contacts",
+    "Kontakte vorbereiten",
+    "Prepara contatti"
+  ],
+  "Abrir WhatsApp": [
+    "Open WhatsApp",
+    "Abrir WhatsApp",
+    "Ouvrir WhatsApp",
+    "WhatsApp öffnen",
+    "Apri WhatsApp"
+  ],
+  "Lançamentos financeiros e baixas manuais": [
+    "Financial entries and manual settlements",
+    "Movimientos financieros y bajas manuales",
+    "Écritures financières et règlements manuels",
+    "Finanzbuchungen und manuelle Ausgleiche",
+    "Movimenti finanziari e saldi manuali"
+  ],
+  "Lançamento financeiro criado com sucesso.": [
+    "Financial entry created successfully.",
+    "Movimiento financiero creado correctamente.",
+    "Écriture financière créée avec succès.",
+    "Finanzbuchung erfolgreich erstellt.",
+    "Movimento finanziario creato correttamente."
+  ],
+  "Lançamento marcado como pago.": [
+    "Entry marked as paid.",
+    "Movimiento marcado como pagado.",
+    "Écriture marquée comme payée.",
+    "Buchung als bezahlt markiert.",
+    "Movimento segnato come pagato."
+  ],
+  "Novo lançamento": [
+    "New entry",
+    "Nuevo movimiento",
+    "Nouvelle écriture",
+    "Neue Buchung",
+    "Nuovo movimento"
+  ],
+  "Contas a pagar e receber": [
+    "Payables and receivables",
+    "Cuentas por pagar y cobrar",
+    "Dettes et créances",
+    "Verbindlichkeiten und Forderungen",
+    "Debiti e crediti"
+  ],
+  "Descrição": [
+    "Description",
+    "Descripción",
+    "Description",
+    "Beschreibung",
+    "Descrizione"
+  ],
+  "A receber": [
+    "Receivable",
+    "Por cobrar",
+    "À encaisser",
+    "Forderung",
+    "Da ricevere"
+  ],
+  "A pagar": [
+    "Payable",
+    "Por pagar",
+    "À payer",
+    "Verbindlichkeit",
+    "Da pagare"
+  ],
+  "Salvar lançamento": [
+    "Save entry",
+    "Guardar movimiento",
+    "Enregistrer l’écriture",
+    "Buchung speichern",
+    "Salva movimento"
+  ],
+  "Dar baixa": [
+    "Mark as paid",
+    "Marcar como pagado",
+    "Marquer comme payé",
+    "Als bezahlt buchen",
+    "Segna come pagato"
+  ],
+  "Confirmar baixa": [
+    "Confirm settlement",
+    "Confirmar baja",
+    "Confirmer le règlement",
+    "Ausgleich bestätigen",
+    "Conferma saldo"
+  ],
+  "Nenhum lançamento encontrado.": [
+    "No entries found.",
+    "No se encontraron movimientos.",
+    "Aucune écriture trouvée.",
+    "Keine Buchungen gefunden.",
+    "Nessun movimento trovato."
+  ],
+  "Comandas e recebimentos": [
+    "Tickets and payments",
+    "Comandas y cobros",
+    "Fiches et encaissements",
+    "Aufträge und Zahlungen",
+    "Schede e incassi"
+  ],
+  "Visão financeira consolidada (todos os períodos)": [
+    "Consolidated financial overview (all periods)",
+    "Resumen financiero consolidado (todos los períodos)",
+    "Vue financière consolidée (toutes périodes)",
+    "Konsolidierte Finanzübersicht (alle Zeiträume)",
+    "Panoramica finanziaria consolidata (tutti i periodi)"
+  ],
+  "Receitas / recebíveis": [
+    "Income / receivables",
+    "Ingresos / cobros",
+    "Recettes / créances",
+    "Einnahmen / Forderungen",
+    "Entrate / crediti"
+  ],
+  "Despesas / pagáveis": [
+    "Expenses / payables",
+    "Gastos / pagos pendientes",
+    "Dépenses / dettes",
+    "Ausgaben / Verbindlichkeiten",
+    "Spese / debiti"
+  ]
+};
+export const ERP_UI_TRANSLATIONS:Record<string,LocaleTranslations>={...labels,...navigationLabels,...screenLabels,...feedbackLabels,...financeClubLabels};
 const localeIndex: Record<Exclude<ErpLocale,"pt-BR">,number>={en:0,es:1,fr:2,de:3,it:4};
 export function normalizeErpLocale(value:string|null):ErpLocale{
   return ERP_LOCALES.some(item=>item.id===value)?value as ErpLocale:"pt-BR";
