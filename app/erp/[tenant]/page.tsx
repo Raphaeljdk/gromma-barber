@@ -1740,7 +1740,8 @@ export async function TenantERPView({
           <MarketingPromotions tenantCode={tenantCode} shopId={shop.id} ws={workspace}
             view={activeModule as "promocoes"|"marketing-cupons"|"marketing-aniversariantes"}
             isOwner={isOwner} error={actionError} ok={actionOk}
-            couponQuery={valueOf("cupomQ")} couponStatusFilter={valueOf("cupomStatus")}/>}
+            couponQuery={valueOf("cupomQ")} couponStatusFilter={valueOf("cupomStatus")}
+            couponSelectedId={valueOf("cupomId")}/>}
         {activeModule==="marketing-parceiros"&&<ClubPartnerManager tenantCode={tenantCode}
           partners={workspace.clubPartners} isOwner={isOwner} ok={actionOk} error={actionError}/>}
 
