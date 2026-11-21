@@ -525,12 +525,7 @@ export async function deleteCoupon(formData: FormData) {
       const coupon = workspace.coupons.find(item => item.id === couponId && item.active);
       if (!coupon) throw new Error("Cupom inexistente ou já removido");
       coupon.active = false;
-    });
-    // Auditoria de exclusão, sem apagar a definição usada em comandas anteriores.
-    await prisma.adminAuditLog.create({
-      data: {barberShopId:shop.id,adminEmail:viewer.email,
-        action:"FINANCIAL_COUPON_DEACTIVATED",details:{couponId}}
-    });
+    }, {action:"FINANCIAL_COUPON_DEACTIVATED",actor:viewer.email,details:{couponId}});
   } catch (error) {
     console.error("Failed to deactivate coupon",error);
     redirect(path + "?erro=cupom");
