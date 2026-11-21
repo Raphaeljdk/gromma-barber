@@ -854,15 +854,7 @@ export function ErpAgendaBoard({
             </Link>
           ))}
         </div>
-          <button type="button"
-            className={`agenda-information-toggle${panelOpen ? " active" : ""}`}
-            aria-controls="agenda-information-panel"
-            aria-expanded={panelOpen}
-            aria-label={panelOpen ? "Ocultar unidades e informações" : "Mostrar unidades e informações"}
-            title={panelOpen ? "Recolher informações" : "Abrir unidades e informações"}
-            onClick={() => setPanelOpen(value => !value)}>
-            {panelOpen ? <PanelRightClose size={19} /> : <PanelRightOpen size={19} />}
-          </button>
+
         </div>
         <div className="agenda-toolbar-inline-filters" role="group" aria-label="Filtros e opções da agenda">
           <AgendaPeopleFilters
@@ -917,6 +909,15 @@ export function ErpAgendaBoard({
               )}
             </div>
           </details>
+          <button type="button"
+            className={`agenda-information-toggle${panelOpen ? " active" : ""}`}
+            aria-controls="agenda-information-panel"
+            aria-expanded={panelOpen}
+            aria-label={panelOpen ? "Ocultar unidades e informações" : "Mostrar unidades e informações"}
+            title={panelOpen ? "Recolher informações" : "Abrir unidades e informações"}
+            onClick={() => setPanelOpen(value => !value)}>
+            {panelOpen ? <PanelRightClose size={19} /> : <PanelRightOpen size={19} />}
+          </button>
         </div>
       </div>
       {selectedClientFilter && (

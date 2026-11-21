@@ -57,16 +57,26 @@ test("Cupons tem duas linhas e lixeira somente nas entradas ativas",()=>{
  assert.match(checkout,/coupons\.filter\(c => c\.active\&\&!c\.paused/);
  assert.match(page,/isClubMember=\{Boolean\(command\.customerId/);
 });
-test("Agenda não troca regras de negócio e usa cores distintas sem dourado",()=>{
+test("Agenda mantém indicadores neutros, planos independentes e painel à direita",()=>{
  const css=read("app/agenda-people-filters.css");
  const units=read("app/agenda-multiunit-history.css");
  const board=read("components/erp-agenda-board.tsx");
  assert.match(css,/Agenda 2026/);
- for(const color of ["#60a5fa","#34c79b","#a78bfa","#2da8a4"])assert.ok(css.includes(color),color);
- assert.match(css,/agenda-summary-grid article\.selected/);
- assert.match(css,/--erp-gold:#2da8a4/);
+ assert.match(css,/Indicadores independentes das cores dos planos/);
+ assert.match(css,/agenda-dashboard-panel \.agenda-summary-grid article/);
+ assert.match(css,/background:var\(--erp-panel\)/);
+ assert.match(css,/color:#111827/);
+ assert.match(css,/font-weight:850/);
+ assert.doesNotMatch(css,/--agenda-indicator/);
+ assert.match(css,/agenda-dashboard-panel \.agenda-summary-grid article\.selected/);
+ assert.match(css,/--agenda-highlight:#2da8a4/);
+ assert.match(css,/--erp-gold:#287c78/);
+ assert.match(css,/agenda-toolbar-inline-filters > \.agenda-information-toggle/);
  assert.match(units,/\.agenda-unit-checkbox:has\(input:checked\)/);
  assert.match(board,/agenda-summary-grid/);
  assert.match(board,/agenda-lane-grid/);
+ assert.match(board,/planColor\(item\.planName,planNames\)/);
  assert.match(board,/onClick=\{\(\) => newAppointment\(\)\}/);
+ const toolbar=board.slice(board.indexOf('className="agenda-view-tools"'),board.indexOf('{selectedClientFilter && ('));
+ assert.ok(toolbar.indexOf('<details className="agenda-display-panel">') < toolbar.indexOf('className={`agenda-information-toggle'),"O painel deve abrir na ponta direita, depois de Exibição");
 });
