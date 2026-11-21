@@ -86,7 +86,7 @@
 .erp-purchase-checkboxes {display:flex;gap:8px;flex-wrap:wrap;}
 .erp-purchase-checkbox {display:inline-flex;gap:9px;align-items:center;cursor:pointer;padding:9px 12px;border-radius:9px;
   border:1px solid #4a4133;background:#211e18;color:#e7d9bf;font-size:.82rem;}
-.erp-purchase-checkbox:has(input:checked) {background:#302719;border-color:#4db9b6;color:#f0dbaa;}
+.erp-purchase-checkbox:has(input:checked) {background:#183e49;border-color:#4db9b6;color:#d9f3f2;}
 .erp-purchase-checkbox input {margin:0;width:16px;height:16px;accent-color:#54c0bd;}
 .erp-purchase-filter-actions {display:flex;gap:9px;flex-wrap:wrap;}
 .erp-purchase-summary {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:16px 0;}
@@ -109,13 +109,13 @@ html[data-theme="light"] .agenda-unit-checkbox-panel legend,
 html[data-theme="light"] .erp-purchase-categories legend {color:#2a6d6a;}
 html[data-theme="light"] .agenda-unit-checkbox,
 html[data-theme="light"] .agenda-unit-all,
-html[data-theme="light"] .erp-purchase-checkbox {background:#fffaf0;color:#5c4935;border-color:#d9c8aa;}
+html[data-theme="light"] .erp-purchase-checkbox {background:#f7fbfc;color:#5c4935;border-color:#d9c8aa;}
 html[data-theme="light"] .agenda-unit-checkbox:has(input:checked),
 html[data-theme="light"] .agenda-unit-all.active,
-html[data-theme="light"] .erp-purchase-checkbox:has(input:checked) {background:#e6f2f4;color:#593d16;border-color:#44b1ad;}
+html[data-theme="light"] .erp-purchase-checkbox:has(input:checked) {background:#e6f2f4;color:#28545c;border-color:#44b1ad;}
 html[data-theme="light"] .agenda-unit-help,
 html[data-theme="light"] .agenda-unit-side-summary small {color:#706253;}
-html[data-theme="light"] .agenda-unit-side-summary {background:#f9efdd;border-color:#ddc7a4;}
+html[data-theme="light"] .agenda-unit-side-summary {background:#edf6f8;border-color:#bcd2d8;}
 html[data-theme="light"] .agenda-unit-side-summary span,
 html[data-theme="light"] .erp-purchase-filter-top label {color:#544737;}
 html[data-theme="light"] .erp-purchase-filter-top input {background:#fffcf6;color:#29251c;color-scheme:light;border-color:#d8cbb8;}
