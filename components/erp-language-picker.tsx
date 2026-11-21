@@ -37,6 +37,7 @@ export function ErpLanguagePicker(){
 
   useEffect(()=>{
     document.documentElement.lang=locale;
+    window.dispatchEvent(new CustomEvent("gromma-locale-change",{detail:locale}));
     let frame=0;
     let disposed=false;
 
