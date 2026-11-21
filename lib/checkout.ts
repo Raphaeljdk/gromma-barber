@@ -173,7 +173,8 @@ export function calculateCheckoutPricing(
     const eligibleApplied=relevant.reduce((sum,item)=>sum+(appliedPerItem.get(item.id)??0),0);
     // Descontos anteriores são debitados integralmente da base elegível, evitando
     // desconto excessivo quando a comanda mistura serviços e produtos.
-    const available=Math.max(0,Math.min(remaining,eligibleTotal-eligibleApplied-manualCents-legacyCents));
+    const manualEligible=input.scope==="ITEM"&&!relevant.some(item=>item.id===input.itemId)?0:manualCents;
+    const available=Math.max(0,Math.min(remaining,eligibleTotal-eligibleApplied-manualEligible-legacyCents));
     if(!available)throw new Error("Não há valor elegível restante para aplicar o cupom.");
     if (coupon.kind === "PERCENT") {
       if (!Number.isFinite(coupon.value) || coupon.value < 0 || coupon.value > 100) throw new Error("Cupom inválido.");
