@@ -130,6 +130,13 @@ html[data-theme="light"] .tenant-erp .agenda-multifilter-row.is-all {color:#8059
   min-width:40px;
   margin-left:0;
 }
+@media(max-width:650px) {
+  .tenant-erp .agenda-toolbar-inline-filters > .agenda-information-toggle {
+    margin-left:auto;
+    width:40px;
+    min-height:39px;
+  }
+}
 .tenant-erp .agenda-interactive .agenda-view-tools {
   margin-left:0;
 }
@@ -400,7 +407,7 @@ html[data-theme="light"] .tenant-erp .agenda-display-panel[open] > .agenda-displ
 }
 /* Indicadores independentes das cores dos planos e dos estados das comandas.
    Os oito cards ficam neutros; somente a filtragem ativa recebe destaque sutil. */
-.tenant-erp .agenda-interactive .agenda-summary-grid article {
+.tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article {
   position:relative;
   overflow:hidden;
   border:1px solid var(--erp-border);
@@ -408,21 +415,21 @@ html[data-theme="light"] .tenant-erp .agenda-display-panel[open] > .agenda-displ
   box-shadow:none;
   transition:background-color .16s,border-color .16s;
 }
-.tenant-erp .agenda-interactive .agenda-summary-grid article > svg,
-.tenant-erp .agenda-interactive .agenda-summary-grid article > a > svg {
+.tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article > svg,
+.tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article > a > svg {
   color:var(--erp-text);
 }
-.tenant-erp .agenda-interactive .agenda-summary-grid article strong {
+.tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article strong {
   color:var(--erp-text);
   font-weight:850;
   font-variant-numeric:tabular-nums;
 }
-.tenant-erp .agenda-interactive .agenda-summary-grid article.selected {
+.tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article.selected {
   border-color:var(--agenda-highlight);
   background:var(--erp-panel-2);
   box-shadow:inset 0 -2px var(--agenda-highlight);
 }
-.tenant-erp .agenda-interactive .agenda-summary-grid article:has(a):hover {
+.tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article:has(a):hover {
   border-color:var(--erp-border-strong);
   background:var(--erp-panel-2);
 }
@@ -460,23 +467,23 @@ html[data-theme="light"] .tenant-erp .agenda-interactive {
   --agenda-highlight:#0b827d;
 }
 /* Ícones e números em preto no tema claro, com rótulos no tom original. */
-html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article {
+html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article {
   background:var(--erp-panel);
   border-color:var(--erp-border);
 }
-html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article > svg,
-html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article > a > svg,
-html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article strong {
+html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article > svg,
+html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article > a > svg,
+html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article strong {
   color:#111827;
 }
-html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-summary-grid article.selected {
+html[data-theme="light"] .tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article.selected {
   border-color:var(--agenda-highlight);
   background:var(--erp-panel-2);
 }
 @media(max-width:650px) {
   .tenant-erp .agenda-interactive .agenda-top-actions {padding:9px;gap:9px;}
-  .tenant-erp .agenda-interactive .agenda-summary-grid article {min-height:64px;}
+  .tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article {min-height:64px;}
 }
 @media(prefers-reduced-motion:reduce) {
-  .tenant-erp .agenda-interactive .agenda-summary-grid article {transition:none;}
+  .tenant-erp .agenda-interactive .agenda-dashboard-panel .agenda-summary-grid article {transition:none;}
 }
