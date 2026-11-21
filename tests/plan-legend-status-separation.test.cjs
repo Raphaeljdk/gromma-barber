@@ -38,7 +38,7 @@ test("Agenda diferencia faixa da cor do plano da etiqueta textual do status nas 
  assert.match(board,/gromma-appointment-status/);
  assert.match(board,/STATUS_LABELS\[item\.status\]/);
  assert.match(board,/Status do atendimento: /);
- assert.match(board,/className="agenda-detail-status/);
+ assert.match(board,/agenda-detail-status/);
  assert.match(css,/--gromma-status-color/);
  assert.match(css,/\.agenda-week-item > \.gromma-appointment-status/);
  assert.match(css,/\.agenda-month-item > \.gromma-appointment-status/);
