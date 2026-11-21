@@ -762,8 +762,8 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
          !Number.isFinite(amount)||amount<=0)return [];
       return [{
         id:c.id.slice(0,100),code:c.code.slice(0,40),
-        kind,value:amount,
-        audience:c.audience==="CLUB"||c.audience==="NON_CLUB"?c.audience:"ALL",
+        kind:kind as CouponConfig["kind"],value:amount,
+        audience:(c.audience==="CLUB"||c.audience==="NON_CLUB"?c.audience:"ALL") as CouponConfig["audience"],
         expiresAt:typeof c.expiresAt==="string"?c.expiresAt.slice(0,10):null,
         active:c.active===true,
         createdAt:typeof c.createdAt==="string"?c.createdAt.slice(0,35):"",
