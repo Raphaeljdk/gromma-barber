@@ -1622,7 +1622,457 @@ const screenLabels:Record<string,LocaleTranslations>={
     "Legenda schede"
   ]
 };
-export const ERP_UI_TRANSLATIONS:Record<string,LocaleTranslations>={...labels,...navigationLabels,...screenLabels};
+const feedbackLabels:Record<string,LocaleTranslations>={
+  "Estrutura pronta": [
+    "Structure ready",
+    "Estructura lista",
+    "Structure prête",
+    "Struktur bereit",
+    "Struttura pronta"
+  ],
+  "Horários": [
+    "Time slots",
+    "Horarios",
+    "Créneaux",
+    "Zeiten",
+    "Orari"
+  ],
+  "Produtos / Serviços": [
+    "Products / Services",
+    "Productos / Servicios",
+    "Produits / Services",
+    "Produkte / Leistungen",
+    "Prodotti / Servizi"
+  ],
+  "Solicitações de compra": [
+    "Purchase requests",
+    "Solicitudes de compra",
+    "Demandes d’achat",
+    "Einkaufsanfragen",
+    "Richieste d’acquisto"
+  ],
+  "Totem / Tablet": [
+    "Kiosk / Tablet",
+    "Tótem / Tablet",
+    "Borne / Tablette",
+    "Terminal / Tablet",
+    "Totem / Tablet"
+  ],
+  "Abrir experiência": [
+    "Open experience",
+    "Abrir experiencia",
+    "Ouvrir l’expérience",
+    "Ansicht öffnen",
+    "Apri esperienza"
+  ],
+  "Disponível no Pro": [
+    "Available in Pro",
+    "Disponible en Pro",
+    "Disponible dans Pro",
+    "In Pro verfügbar",
+    "Disponibile in Pro"
+  ],
+  "Equipe ativa": [
+    "Active staff",
+    "Equipo activo",
+    "Équipe active",
+    "Aktives Team",
+    "Team attivo"
+  ],
+  "Comandas abertas": [
+    "Open tickets",
+    "Comandas abiertas",
+    "Fiches ouvertes",
+    "Offene Aufträge",
+    "Schede aperte"
+  ],
+  "Agenda operacional": [
+    "Operational calendar",
+    "Agenda operativa",
+    "Planning opérationnel",
+    "Betriebskalender",
+    "Agenda operativa"
+  ],
+  "Agenda, disponibilidade e fila de espera": [
+    "Calendar, availability and waiting list",
+    "Agenda, disponibilidad y lista de espera",
+    "Agenda, disponibilités et liste d’attente",
+    "Kalender, Verfügbarkeit und Warteliste",
+    "Agenda, disponibilità e lista d’attesa"
+  ],
+  "Comanda atualizada.": [
+    "Ticket updated.",
+    "Comanda actualizada.",
+    "Fiche mise à jour.",
+    "Auftrag aktualisiert.",
+    "Scheda aggiornata."
+  ],
+  "Informações do agendamento atualizadas.": [
+    "Appointment information updated.",
+    "Información de la cita actualizada.",
+    "Informations du rendez-vous mises à jour.",
+    "Termininformationen aktualisiert.",
+    "Informazioni appuntamento aggiornate."
+  ],
+  "Agenda atualizada com sucesso.": [
+    "Calendar updated successfully.",
+    "Agenda actualizada correctamente.",
+    "Planning mis à jour avec succès.",
+    "Kalender erfolgreich aktualisiert.",
+    "Agenda aggiornata correttamente."
+  ],
+  "Não foi possível atualizar as informações do agendamento.": [
+    "Could not update appointment information.",
+    "No se pudo actualizar la información de la cita.",
+    "Impossible de mettre à jour le rendez-vous.",
+    "Termininformationen konnten nicht aktualisiert werden.",
+    "Impossibile aggiornare le informazioni dell’appuntamento."
+  ],
+  "Não foi possível salvar a fila de espera. Tente novamente.": [
+    "Could not save the waiting list. Try again.",
+    "No se pudo guardar la lista de espera. Inténtelo de nuevo.",
+    "Impossible d’enregistrer la liste d’attente. Réessayez.",
+    "Warteliste konnte nicht gespeichert werden. Erneut versuchen.",
+    "Impossibile salvare la lista d’attesa. Riprova."
+  ],
+  "Agendamento criado com sucesso.": [
+    "Appointment created successfully.",
+    "Cita creada correctamente.",
+    "Rendez-vous créé avec succès.",
+    "Termin erfolgreich erstellt.",
+    "Appuntamento creato correttamente."
+  ],
+  "Cliente removido da fila de espera.": [
+    "Client removed from the waiting list.",
+    "Cliente eliminado de la lista de espera.",
+    "Client retiré de la liste d’attente.",
+    "Kunde von der Warteliste entfernt.",
+    "Cliente rimosso dalla lista d’attesa."
+  ],
+  "Cliente adicionado à lista de espera.": [
+    "Client added to the waiting list.",
+    "Cliente añadido a la lista de espera.",
+    "Client ajouté à la liste d’attente.",
+    "Kunde zur Warteliste hinzugefügt.",
+    "Cliente aggiunto alla lista d’attesa."
+  ],
+  "Não foi possível criar o agendamento. Revise os dados informados.": [
+    "Could not create the appointment. Review the information.",
+    "No se pudo crear la cita. Revise los datos.",
+    "Impossible de créer le rendez-vous. Vérifiez les données.",
+    "Termin konnte nicht erstellt werden. Angaben prüfen.",
+    "Impossibile creare l’appuntamento. Controlla i dati."
+  ],
+  "O profissional já possui um atendimento nesse intervalo.": [
+    "This professional already has an appointment during that time.",
+    "El profesional ya tiene una cita en ese horario.",
+    "Ce professionnel a déjà un rendez-vous sur ce créneau.",
+    "Dieser Mitarbeiter hat in diesem Zeitraum bereits einen Termin.",
+    "Il professionista ha già un appuntamento in quell’orario."
+  ],
+  "Revise os dados da lista de espera.": [
+    "Review the waiting list details.",
+    "Revise los datos de la lista de espera.",
+    "Vérifiez les données de la liste d’attente.",
+    "Angaben zur Warteliste prüfen.",
+    "Controlla i dati della lista d’attesa."
+  ],
+  "Status do atendimento atualizado.": [
+    "Appointment status updated.",
+    "Estado de la cita actualizado.",
+    "Statut du rendez-vous mis à jour.",
+    "Terminstatus aktualisiert.",
+    "Stato appuntamento aggiornato."
+  ],
+  "A transição solicitada não é válida para este atendimento.": [
+    "The requested status change is not valid for this appointment.",
+    "El cambio solicitado no es válido para esta cita.",
+    "Le changement de statut demandé est invalide pour ce rendez-vous.",
+    "Der gewünschte Statuswechsel ist für diesen Termin ungültig.",
+    "Il cambio di stato richiesto non è valido per questo appuntamento."
+  ],
+  "Seu perfil não possui permissão para concluir esta ação.": [
+    "Your account does not have permission to complete this action.",
+    "Su perfil no tiene permiso para completar esta acción.",
+    "Votre profil n’est pas autorisé à effectuer cette action.",
+    "Ihr Konto ist für diese Aktion nicht berechtigt.",
+    "Il tuo profilo non è autorizzato a completare l’azione."
+  ],
+  "Cliente cadastrado com sucesso.": [
+    "Client registered successfully.",
+    "Cliente registrado correctamente.",
+    "Client enregistré avec succès.",
+    "Kunde erfolgreich angelegt.",
+    "Cliente registrato correttamente."
+  ],
+  "Cliente e prontuário atualizados.": [
+    "Client and record updated.",
+    "Cliente y ficha actualizados.",
+    "Client et dossier mis à jour.",
+    "Kunde und Kundenakte aktualisiert.",
+    "Cliente e scheda aggiornati."
+  ],
+  "Cliente desativado, com histórico preservado.": [
+    "Client deactivated; history preserved.",
+    "Cliente desactivado; historial conservado.",
+    "Client désactivé ; historique conservé.",
+    "Kunde deaktiviert; Verlauf bleibt erhalten.",
+    "Cliente disattivato; storico conservato."
+  ],
+  "Revise os dados do cliente e tente novamente.": [
+    "Review the client details and try again.",
+    "Revise los datos del cliente e inténtelo de nuevo.",
+    "Vérifiez les données client et réessayez.",
+    "Kundendaten prüfen und erneut versuchen.",
+    "Controlla i dati del cliente e riprova."
+  ],
+  "Dados pessoais e prontuário": [
+    "Personal details and client record",
+    "Datos personales y ficha",
+    "Données personnelles et dossier",
+    "Persönliche Daten und Kundenakte",
+    "Dati personali e scheda cliente"
+  ],
+  "Sem unidade específica": [
+    "No specific branch",
+    "Sin sucursal específica",
+    "Sans établissement spécifique",
+    "Keine bestimmte Filiale",
+    "Nessuna sede specifica"
+  ],
+  "Como conheceu a barbearia?": [
+    "How did you hear about the barbershop?",
+    "¿Cómo conoció la barbería?",
+    "Comment avez-vous connu le salon ?",
+    "Wie haben Sie vom Barbershop erfahren?",
+    "Come hai conosciuto la barberia?"
+  ],
+  "Indicação": [
+    "Referral",
+    "Recomendación",
+    "Recommandation",
+    "Empfehlung",
+    "Passaparola"
+  ],
+  "Filtrar assinantes ativos": [
+    "Filter active subscribers",
+    "Filtrar suscriptores activos",
+    "Filtrer les abonnés actifs",
+    "Aktive Abonnenten filtern",
+    "Filtra abbonati attivi"
+  ],
+  "Filtrar sem assinatura": [
+    "Filter clients without subscription",
+    "Filtrar sin suscripción",
+    "Filtrer sans abonnement",
+    "Kunden ohne Abo filtern",
+    "Filtra senza abbonamento"
+  ],
+  "Prontuário": [
+    "Client record",
+    "Ficha del cliente",
+    "Dossier client",
+    "Kundenakte",
+    "Scheda cliente"
+  ],
+  "Próxima cobrança": [
+    "Next charge",
+    "Próximo cobro",
+    "Prochaine facturation",
+    "Nächste Abbuchung",
+    "Prossimo addebito"
+  ],
+  "Valor mensal": [
+    "Monthly amount",
+    "Importe mensual",
+    "Montant mensuel",
+    "Monatsbetrag",
+    "Importo mensile"
+  ],
+  "Cliente sem assinatura cadastrada.": [
+    "Client has no registered subscription.",
+    "El cliente no tiene suscripción registrada.",
+    "Aucun abonnement enregistré pour ce client.",
+    "Für diesen Kunden ist kein Abo registriert.",
+    "Nessun abbonamento registrato per questo cliente."
+  ],
+  "Histórico de visitas": [
+    "Visit history",
+    "Historial de visitas",
+    "Historique des visites",
+    "Besuchsverlauf",
+    "Storico visite"
+  ],
+  "Nenhum agendamento registrado.": [
+    "No appointments found.",
+    "No hay citas registradas.",
+    "Aucun rendez-vous enregistré.",
+    "Keine Termine erfasst.",
+    "Nessun appuntamento registrato."
+  ],
+  "Histórico de planos": [
+    "Plan history",
+    "Historial de planes",
+    "Historique des forfaits",
+    "Tarifverlauf",
+    "Storico piani"
+  ],
+  "Sem histórico de planos.": [
+    "No plan history.",
+    "Sin historial de planes.",
+    "Aucun historique de forfaits.",
+    "Kein Tarifverlauf.",
+    "Nessuno storico piani."
+  ],
+  "Cartões de pagamento": [
+    "Payment cards",
+    "Tarjetas de pago",
+    "Cartes de paiement",
+    "Zahlungskarten",
+    "Carte di pagamento"
+  ],
+  "Nenhum cliente cadastrado.": [
+    "No clients registered.",
+    "No hay clientes registrados.",
+    "Aucun client enregistré.",
+    "Keine Kunden angelegt.",
+    "Nessun cliente registrato."
+  ],
+  "Serviço cadastrado com sucesso.": [
+    "Service registered successfully.",
+    "Servicio registrado correctamente.",
+    "Service créé avec succès.",
+    "Leistung erfolgreich angelegt.",
+    "Servizio registrato correttamente."
+  ],
+  "Serviço atualizado. Agendamentos já registrados foram preservados.": [
+    "Service updated. Existing appointments were preserved.",
+    "Servicio actualizado. Se conservaron las citas existentes.",
+    "Service mis à jour. Les rendez-vous existants sont conservés.",
+    "Leistung aktualisiert. Bestehende Termine bleiben erhalten.",
+    "Servizio aggiornato. Gli appuntamenti esistenti sono conservati."
+  ],
+  "Serviço excluído do catálogo. Dados históricos preservados.": [
+    "Service removed from the catalog. Historical data preserved.",
+    "Servicio eliminado del catálogo. Se conservaron los datos históricos.",
+    "Service supprimé du catalogue. Historique conservé.",
+    "Leistung aus dem Katalog entfernt. Historische Daten bleiben erhalten.",
+    "Servizio rimosso dal catalogo. Dati storici conservati."
+  ],
+  "Não foi possível excluir. Confira se há agendamentos futuros vinculados ao serviço.": [
+    "Could not delete. Check for upcoming appointments linked to this service.",
+    "No se pudo eliminar. Compruebe las citas futuras vinculadas al servicio.",
+    "Suppression impossible. Vérifiez les rendez-vous futurs liés au service.",
+    "Löschen fehlgeschlagen. Zukünftige Termine mit dieser Leistung prüfen.",
+    "Eliminazione non riuscita. Controlla gli appuntamenti futuri collegati al servizio."
+  ],
+  "Não foi possível cadastrar o serviço. Revise nome, duração e valor.": [
+    "Could not register the service. Check name, duration and price.",
+    "No se pudo registrar el servicio. Revise nombre, duración y precio.",
+    "Impossible de créer le service. Vérifiez le nom, la durée et le prix.",
+    "Leistung konnte nicht angelegt werden. Name, Dauer und Preis prüfen.",
+    "Impossibile registrare il servizio. Controlla nome, durata e prezzo."
+  ],
+  "Tempo em fichas (min)": [
+    "Token time (min)",
+    "Tiempo en fichas (min)",
+    "Temps en jetons (min)",
+    "Markenzeit (Min.)",
+    "Tempo in gettoni (min)"
+  ],
+  "Pontos por atendimento pago": [
+    "Points per paid appointment",
+    "Puntos por atención pagada",
+    "Points par prestation payée",
+    "Punkte pro bezahltem Termin",
+    "Punti per servizio pagato"
+  ],
+  "Oculto (exclusivo)": [
+    "Hidden (exclusive)",
+    "Oculto (exclusivo)",
+    "Masqué (exclusif)",
+    "Verborgen (exklusiv)",
+    "Nascosto (esclusivo)"
+  ],
+  "Tempo de agenda": [
+    "Calendar duration",
+    "Duración en agenda",
+    "Durée dans le planning",
+    "Termindauer",
+    "Durata in agenda"
+  ],
+  "Somente proprietário": [
+    "Owner only",
+    "Solo propietario",
+    "Propriétaire uniquement",
+    "Nur Inhaber",
+    "Solo proprietario"
+  ],
+  "Nenhum serviço cadastrado.": [
+    "No services registered.",
+    "No hay servicios registrados.",
+    "Aucun service enregistré.",
+    "Keine Leistungen angelegt.",
+    "Nessun servizio registrato."
+  ],
+  "Operação salva com sucesso.": [
+    "Operation saved successfully.",
+    "Operación guardada correctamente.",
+    "Opération enregistrée avec succès.",
+    "Vorgang erfolgreich gespeichert.",
+    "Operazione salvata correttamente."
+  ],
+  "Caixa / Comandas": [
+    "Cash register / Tickets",
+    "Caja / Comandas",
+    "Caisse / Fiches",
+    "Kasse / Aufträge",
+    "Cassa / Schede"
+  ],
+  "Comandas e pagamentos": [
+    "Tickets and payments",
+    "Comandas y pagos",
+    "Fiches et paiements",
+    "Aufträge und Zahlungen",
+    "Schede e pagamenti"
+  ],
+  "Voltar ao caixa": [
+    "Back to cash register",
+    "Volver a caja",
+    "Retour à la caisse",
+    "Zurück zur Kasse",
+    "Torna alla cassa"
+  ],
+  "Comanda fechada e financeiro atualizado.": [
+    "Ticket closed and finances updated.",
+    "Comanda cerrada y finanzas actualizadas.",
+    "Fiche clôturée et finances mises à jour.",
+    "Auftrag abgeschlossen und Finanzen aktualisiert.",
+    "Scheda chiusa e contabilità aggiornata."
+  ],
+  "Não foi possível fechar a comanda.": [
+    "Could not close the ticket.",
+    "No se pudo cerrar la comanda.",
+    "Impossible de clôturer la fiche.",
+    "Auftrag konnte nicht abgeschlossen werden.",
+    "Impossibile chiudere la scheda."
+  ],
+  "A data inicial não pode ser posterior à data final.": [
+    "The start date cannot be after the end date.",
+    "La fecha inicial no puede ser posterior a la final.",
+    "La date de début ne peut pas dépasser la date de fin.",
+    "Das Startdatum darf nicht nach dem Enddatum liegen.",
+    "La data iniziale non può essere successiva a quella finale."
+  ],
+  "Nenhuma comanda encontrada.": [
+    "No tickets found.",
+    "No se encontraron comandas.",
+    "Aucune fiche trouvée.",
+    "Keine Aufträge gefunden.",
+    "Nessuna scheda trovata."
+  ]
+};
+export const ERP_UI_TRANSLATIONS:Record<string,LocaleTranslations>={...labels,...navigationLabels,...screenLabels,...feedbackLabels};
 const localeIndex: Record<Exclude<ErpLocale,"pt-BR">,number>={en:0,es:1,fr:2,de:3,it:4};
 export function normalizeErpLocale(value:string|null):ErpLocale{
   return ERP_LOCALES.some(item=>item.id===value)?value as ErpLocale:"pt-BR";
