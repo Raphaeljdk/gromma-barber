@@ -47,14 +47,14 @@ test("Cupons tem duas linhas e lixeira somente nas entradas ativas",()=>{
  assert.match(ui,/Data de validade/);
  assert.match(ui,/action=\{deleteCoupon\}/);
  assert.match(ui,/name="couponId"/);
- assert.match(ui,/ws\.coupons\.filter\(c=>c\.active\)/);
+ assert.match(ui,/const filteredCoupons=couponRows\.filter/);
  assert.match(action,/FINANCIAL_COUPON_DEACTIVATED/);
  assert.match(action,/coupon\.active = false/);
  assert.match(action,/workspace\.coupons\.unshift/);
  assert.match(workspace,/audience\?: "ALL" \| "CLUB" \| "NON_CLUB"/);
  assert.match(workspace,/c\.audience==="CLUB"\|\|c\.audience==="NON_CLUB"\?c\.audience:"ALL"/);
  assert.match(pricing,/member\.status === "ACTIVE"/);
- assert.match(checkout,/coupons\.filter\(c => c\.active &&/);
+ assert.match(checkout,/coupons\.filter\(c => c\.active\&\&!c\.paused/);
  assert.match(page,/isClubMember=\{Boolean\(command\.customerId/);
 });
 test("Agenda não troca regras de negócio e usa cores distintas sem dourado",()=>{
