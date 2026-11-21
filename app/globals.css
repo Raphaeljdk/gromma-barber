@@ -7338,8 +7338,8 @@ html[data-theme="light"] .enterprise-home .enterprise-contact > .card {
   border-left-color: #9872d6;
 }
 .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).service {
-  background: color-mix(in srgb, #62c8c4 22%, var(--erp-panel));
-  border-left-color: #56c3c0;
+  background: color-mix(in srgb, #e8a642 22%, var(--erp-panel));
+  border-left-color: #dea43b;
 }
 .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).completed {
   background: color-mix(in srgb, #5c9f70 13%, var(--erp-panel));
@@ -7350,8 +7350,8 @@ html[data-theme="light"] .enterprise-home .enterprise-contact > .card {
   border-left-color: #c85d5d;
 }
 .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).no-show {
-  background: color-mix(in srgb, #51bdb9 17%, var(--erp-panel));
-  border-left-color: #51bdb9;
+  background: color-mix(in srgb, #bd7951 17%, var(--erp-panel));
+  border-left-color: #bd7951;
 }
 .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item) {
   color: var(--erp-text);
@@ -7498,10 +7498,10 @@ html[data-theme="light"] .enterprise-home .enterprise-contact > .card {
 .agenda-interactive .agenda-status-legend i.scheduled { background:#4387e8; box-shadow:0 0 0 3px #4387e827; }
 .agenda-interactive .agenda-status-legend i.confirmed { background:#33ad80; box-shadow:0 0 0 3px #33ad8027; }
 .agenda-interactive .agenda-status-legend i.checked-in { background:#9872d6; box-shadow:0 0 0 3px #9872d627; }
-.agenda-interactive .agenda-status-legend i.service { background:#56c3c0; box-shadow:0 0 0 3px #56c3c027; }
+.agenda-interactive .agenda-status-legend i.service { background:#dea43b; box-shadow:0 0 0 3px #dea43b27; }
 .agenda-interactive .agenda-status-legend i.completed { background:#6da77d; box-shadow:0 0 0 3px #6da77d27; }
 .agenda-interactive .agenda-status-legend i.canceled { background:#c85d5d; box-shadow:0 0 0 3px #c85d5d27; }
-.agenda-interactive .agenda-status-legend i.no-show { background:#51bdb9; box-shadow:0 0 0 3px #51bdb927; }
+.agenda-interactive .agenda-status-legend i.no-show { background:#bd7951; box-shadow:0 0 0 3px #bd795127; }
 .agenda-customer-purchases {
   display:grid; gap:10px; padding:15px;
   border:1px solid var(--erp-border); border-radius:12px;
