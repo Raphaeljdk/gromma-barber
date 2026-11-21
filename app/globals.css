@@ -10359,6 +10359,105 @@ html[data-theme="light"] .agenda-professional-head .agenda-occupancy-avatar > sp
 }
 
 
+/* Legenda de planos compacta no Dashboard, sem contadores por assinatura. */
+.tenant-erp .gromma-dashboard-plan-legend {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:5px 10px;
+  padding:6px 10px;
+  margin:7px 0 10px;
+  border:1px solid var(--erp-border);
+  border-radius:9px;
+  background:var(--erp-panel-2);
+  max-width:100%;
+}
+.tenant-erp .gromma-dashboard-plan-legend > strong {
+  font-size:.71rem;
+  color:var(--erp-text);
+  white-space:nowrap;
+}
+.tenant-erp .gromma-dashboard-plan-legend .gromma-plan-legend {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:3px 7px;
+  margin:0;
+}
+.tenant-erp .gromma-dashboard-plan-legend .gromma-plan-legend-item {
+  border:0;
+  background:transparent;
+  padding:3px 5px;
+  font-size:.68rem;
+}
+/* A cor lateral é só do plano; o status operacional fica em etiqueta
+   com texto e sua própria cor. Não recolorir a comanda pelo status. */
+.tenant-erp .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item) {
+  background:var(--erp-panel-2) !important;
+  --gromma-status-color:#4187e8;
+}
+.tenant-erp .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).confirmed {
+  --gromma-status-color:#32a985;
+}
+.tenant-erp .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).checked-in {
+  --gromma-status-color:#9872d6;
+}
+.tenant-erp .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).service {
+  --gromma-status-color:#d99b30;
+}
+.tenant-erp .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).completed {
+  --gromma-status-color:#6da77d;
+}
+.tenant-erp .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).canceled {
+  --gromma-status-color:#d56c6c;
+}
+.tenant-erp .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item).no-show {
+  --gromma-status-color:#bd7951;
+}
+.tenant-erp .agenda-interactive :is(.agenda-appointment,.agenda-week-item,.agenda-month-item)
+  :is(.agenda-card-status,.gromma-appointment-status) {
+  display:inline-flex;
+  justify-self:start;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  color:var(--gromma-status-color);
+  background:color-mix(in srgb,var(--gromma-status-color) 11%,var(--erp-panel));
+  border:1px solid color-mix(in srgb,var(--gromma-status-color) 40%,var(--erp-border));
+  border-radius:6px;
+  padding:2px 5px;
+  font-size:.59rem;
+  font-weight:750;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tenant-erp .agenda-interactive .agenda-week-item > .gromma-appointment-status {
+  margin-top:2px;
+}
+.tenant-erp .agenda-interactive .agenda-month-item > .gromma-appointment-status {
+  grid-column:1/-1;
+}
+.tenant-erp .agenda-interactive .agenda-appointment.compact .agenda-card-status {
+  display:inline-flex;
+  padding:0;
+  width:8px;
+  min-width:8px;
+  height:8px;
+  border:0;
+  border-radius:50%;
+  background:var(--gromma-status-color);
+  font-size:0;
+  color:transparent;
+  overflow:hidden;
+}
+@media(max-width:550px) {
+  .tenant-erp .gromma-dashboard-plan-legend {padding:7px 8px;}
+  .tenant-erp .gromma-dashboard-plan-legend .gromma-plan-legend-item {padding:3px;}
+}
+
+
 /* Cupons: tela em duas colunas, detalhes úteis e lista em largura total. */
 .tenant-erp .erp-main .demo-section .erp-coupons-workspace {
   padding:16px 18px;
