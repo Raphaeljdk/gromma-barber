@@ -121,7 +121,7 @@ export function calculateAppliedItemDiscounts(items: CheckoutPricingLine[], disc
   }
   return deductions;
 }
-export type CheckoutPricingLine = { id: string; total: number;kind?:"SERVICE"|"PRODUCT" };
+export type CheckoutPricingLine = { id: string; total: number;kind?:string };
 export function calculateCheckoutPricing(
   items: CheckoutPricingLine[], existingDiscountCents: number,
   input: CheckoutDiscountInput, coupons: CheckoutCoupon[], now = new Date(), appliedItemDiscounts: AppliedItemDiscount[] = [], customerHasClub = false, customerId: string|null = null,
