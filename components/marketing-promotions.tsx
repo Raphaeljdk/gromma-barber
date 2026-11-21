@@ -67,18 +67,18 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
       </div>
     </article>
   </>}
-  {view==="marketing-cupons"&&<article className="card">
+  {view==="marketing-cupons"&&<article className="card erp-coupons-compact">
    <h3>Cupons de desconto</h3>
    <p className="small muted">Escolha quem poderá utilizar cada cupom: todos, clientes com clube ativo ou clientes sem clube. A regra é conferida no fechamento da comanda.</p>
-   {isOwner&&<form action={saveCoupon} className="erp-compact-form">
+   {isOwner&&<form action={saveCoupon} className="erp-compact-form erp-coupons-form">
     <input type="hidden" name="tenantCode" value={tenantCode}/>
     <input type="hidden" name="returnModule" value="marketing-cupons"/>
-    <div className="grid grid-3">
+    <div className="grid erp-coupons-row erp-coupons-row-primary">
      <label>Código <input className="input" name="code" required minLength={3} maxLength={40} placeholder="Ex.: CORTE10"/></label>
      <label>Tipo <select className="select" name="kind" defaultValue="PERCENT"><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>
      <label>Valor <input className="input" name="value" required type="number" min=".01" step=".01"/></label>
     </div>
-    <div className="grid grid-2">
+    <div className="grid erp-coupons-row erp-coupons-row-secondary">
      <label>Clientes elegíveis <select className="select" name="audience" defaultValue="ALL">
        <option value="ALL">Todos os clientes</option>
        <option value="CLUB">Somente clientes do clube</option>
@@ -88,14 +88,14 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
     </div>
     <button className="btn" type="submit">Criar cupom</button>
    </form>}
-   <div className="erp-stacked-list">{ws.coupons.filter(c=>c.active).map(c=><div key={c.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+   <div className="erp-stacked-list erp-coupons-list">{ws.coupons.filter(c=>c.active).map(c=><div key={c.id} className="erp-coupon-entry">
     <div><strong>{c.code}</strong>
      <span>{c.kind==="PERCENT"?c.value+"%":"R$ "+c.value.toFixed(2)} · Válido até {c.expiresAt??"Sem data"} · {c.audience==="CLUB"?"Clientes do clube":c.audience==="NON_CLUB"?"Clientes sem clube":"Todos os clientes"}</span>
     </div>
-    {isOwner&&<form action={deleteCoupon} style={{flexShrink:0}}>
+    {isOwner&&<form action={deleteCoupon} className="erp-coupon-delete-form">
      <input type="hidden" name="tenantCode" value={tenantCode}/>
      <input type="hidden" name="couponId" value={c.id}/>
-     <button className="btn secondary" type="submit" aria-label={"Excluir cupom "+c.code} title={"Excluir cupom "+c.code}><Trash2 size={16}/></button>
+     <button className="btn secondary erp-coupon-delete" type="submit" aria-label={"Excluir cupom "+c.code} title={"Excluir cupom "+c.code}><Trash2 size={16}/></button>
     </form>}
    </div>)}
     {!ws.coupons.some(c=>c.active)&&<p className="small muted">Nenhum cupom ativo cadastrado.</p>}</div>
