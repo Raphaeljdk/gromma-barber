@@ -49,7 +49,7 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
   prisma.product.findMany({where:{barberShopId:shopId,active:true},select:{id:true,name:true},orderBy:{name:"asc"},take:1000}),
   view==="marketing-aniversariantes"?prisma.customer.findMany({where:{barberShopId:shopId,active:true,birthDate:{not:null}},
    select:{birthDate:true},take:10000}):Promise.resolve([]),
-  view==="marketing-cupons"?prisma.shopUser.findMany({
+  view==="marketing-cupons"&&isOwner?prisma.shopUser.findMany({
    where:{barberShopId:shopId},select:{id:true,name:true},take:1000,
   }):Promise.resolve([]),
  ]);
@@ -223,7 +223,7 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
      {!filteredCoupons.length&&<p className="small muted">Nenhum cupom encontrado para estes filtros.</p>}
     </div>
    </div>
-   <details className="erp-coupon-history">
+   {isOwner&&<details className="erp-coupon-history">
     <summary>Histórico de utilização · {redeemed.length} registro(s)</summary>
     <div className="table-wrap erp-inner-table"><table>
      <thead><tr><th>Data</th><th>Cupom</th><th>Cliente</th><th>Comanda</th>
@@ -241,7 +241,7 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
       {!redeemed.length&&<tr><td colSpan={7}>Nenhuma utilização registrada.</td></tr>}
      </tbody>
     </table></div>
-   </details>
+   </details>}
   </article>}
   {view==="marketing-aniversariantes"&&<>
     <div className="erp-kpi-row"><article><span>ANIVERSARIANTES {periodLabel.toLocaleUpperCase("pt-BR")}</span>
