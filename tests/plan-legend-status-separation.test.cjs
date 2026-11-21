@@ -19,6 +19,9 @@ test("Seis planos diferentes recebem seis cores sem conflitar com clientes sem p
  assert.equal(planColor("Start",names),"#329cfa");
  assert.equal(planColor("Basic",names),"#21b580");
  assert.equal(planColor("Master",names),planColor("Master",names.slice().reverse()));
+ const compound=["Premium","Premium Plus","Premium Black","Start","Basic","VIP"];
+ assert.equal(new Set(compound.map(name=>planColor(name,compound))).size,6,
+  "Planos com nomes compostos não podem compartilhar a mesma cor");
 });
 test("Dashboard tem somente legenda horizontal sem contagens ou consulta por plano",()=>{
  const page=read("app/erp/[tenant]/page.tsx");
