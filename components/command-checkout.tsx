@@ -10,7 +10,7 @@ import { brl } from "@/lib/plans";
 
 type Line = { id: string; description: string; quantity: number; total: number; kind: string };
 export type CommandView = {
-  id: string; customerName: string; customerEmail?: string; unitName: string; status: string;
+  id: string; customerId?: string|null; customerName: string; customerEmail?: string; unitName: string; status: string;
   total: number; subtotal: number; discount: number; notes: string; plan: string;
   items: Line[]; history: { id: string; date: string; total: number; items: Line[] }[];
   lastVisit: string | null; visits: number;
@@ -47,10 +47,10 @@ export function CommandCheckout({
   let pricing = { totalCents: Math.round(command.total * 100), discountCents: Math.round(command.discount * 100), subtotalCents: Math.round(command.subtotal * 100), couponCents: 0, manualCents: 0 };
   try {
     pricing = calculateCheckoutPricing(
-      command.items.map(item => ({ id: item.id, total: item.total })),
+      command.items.map(item => ({ id: item.id, total: item.total,kind:item.kind as "SERVICE"|"PRODUCT" })),
       Math.round(command.discount * 100),
       { kind: discountKind, scope: discountScope, itemId: discountItemId, value: discountValue, couponCode },
-      coupons, new Date(), appliedItemDiscounts, isClubMember,
+      coupons, new Date(), appliedItemDiscounts, isClubMember, command.customerId??null,
     );
   } catch (e) { pricingError = e instanceof Error ? e.message : "Desconto ou cupom inválido."; }
   const totalCents = pricing.totalCents;
@@ -247,7 +247,7 @@ export function CommandCheckout({
                 <label><span className="label">Cupom promocional (opcional)</span>
                   <input className="input" name="couponCode" list="gromma-checkout-coupons"
                     value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Código do cupom" maxLength={40} />
-                  <datalist id="gromma-checkout-coupons">{coupons.filter(c => c.active && (c.audience !== "CLUB" || isClubMember) && (c.audience !== "NON_CLUB" || !isClubMember)).map(c => <option key={c.code} value={c.code}/>)}</datalist>
+                  <datalist id="gromma-checkout-coupons">{coupons.filter(c => c.active&&!c.paused && (!c.maxUses||(c.usedTotal??0)<c.maxUses) && (!c.maxUsesPerCustomer||(Boolean(command.customerId)&&(c.usedByCustomer??0)<c.maxUsesPerCustomer)) && (c.audience !== "CLUB" || isClubMember) && (c.audience !== "NON_CLUB" || !isClubMember)).map(c => <option key={c.code} value={c.code}/>)}</datalist>
                 </label>
                 {(discountKind !== "NONE" || Boolean(couponCode) || appliedItemDiscounts.length > 0) &&
                   <label><span className="label">Motivo da alteração financeira</span>
