@@ -21,12 +21,12 @@ const date = (v: string) => new Date(v).toLocaleDateString("pt-BR", { timeZone: 
 const zeroAmounts = (): Record<PaymentMethod, string> => ({ CASH: "", DEBIT: "", CREDIT: "", PIX: "", TRANSFER: "" });
 
 export function CommandCheckout({
-  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false, sellers = [], viewerRole = 'BARBER', allowedPaymentMethods, isClubMember = false,
+  tenantCode, command, catalog, session, payment, canOperate, allowReopen = false, error, coupons = [], autoOpen = false, sellers = [], viewerRole = 'BARBER', planNames = [], allowedPaymentMethods, isClubMember = false,
 }: {
   tenantCode: string; command: CommandView; catalog: CatalogItem[];
   session?: CashSession; payment?: CommandPayment; canOperate: boolean; allowReopen?: boolean; coupons?: CheckoutCoupon[];
   error?: string; autoOpen?: boolean; sellers?: {id:string;name:string}[]; viewerRole?: string;
-  allowedPaymentMethods?: PaymentMethod[]; isClubMember?: boolean;
+  allowedPaymentMethods?: PaymentMethod[]; isClubMember?: boolean;planNames?:string[];
 }) {
   const [open, setOpen] = useState(autoOpen);
   const [fiscalOpen, setFiscalOpen] = useState(false);
@@ -108,7 +108,7 @@ export function CommandCheckout({
         <div className="checkout-compact-title">
           <span className={paid ? "checkout-status is-paid" : "checkout-status"}>{paid ? "Pago" : "Em aberto"}</span>
           <span>{command.items.length} {command.items.length === 1 ? "item" : "itens"}</span>
-          <span className="gromma-plan-badge" style={{borderLeft:`4px solid ${planColor(command.plan)}`}}>Plano: {planLabel(command.plan)}</span>
+          <span className="gromma-plan-badge" style={{borderLeft:`4px solid ${planColor(command.plan,planNames)}`}}>Plano: {planLabel(command.plan)}</span>
         </div>
         <div className="checkout-toolbar-actions">
           {editable && <button type="button" className="btn secondary checkout-compact-action" onClick={() => setShowAdd(v => !v)} aria-expanded={showAdd}><Plus size={15} /> {showAdd ? "Fechar inclusão" : "Adicionar item"}</button>}
