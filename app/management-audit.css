@@ -30,12 +30,12 @@
 .tenant-erp .mgmt-audit-status.is-completed {color:#83d2a4;background:rgba(33,126,71,.12);border-color:rgba(89,186,122,.35);}
 .tenant-erp .mgmt-audit-status.is-canceled {color:#ebaba0;background:rgba(155,51,39,.12);border-color:rgba(208,101,91,.38);}
 .tenant-erp .mgmt-audit-pagination {display:flex;gap:18px;justify-content:center;align-items:center;margin:12px 0 20px;font-size:.8rem;}
-.tenant-erp .mgmt-audit-pagination a {color:var(--erp-gold,#e6ba72);}
+.tenant-erp .mgmt-audit-pagination a {color:var(--erp-gold,#86d2cf);}
 .tenant-erp .mgmt-audit-timeline {margin:16px 0;min-width:0;padding:0;scroll-margin-top:30px;}
 .tenant-erp .mgmt-audit-events {list-style:none;margin:0;padding:14px 20px;}
-.tenant-erp .mgmt-audit-events li {position:relative;display:grid;gap:6px;min-width:0;margin-left:10px;padding:0 0 20px 20px;border-left:1px solid #827049;}
+.tenant-erp .mgmt-audit-events li {position:relative;display:grid;gap:6px;min-width:0;margin-left:10px;padding:0 0 20px 20px;border-left:1px solid #3b908d;}
 .tenant-erp .mgmt-audit-events li:last-child {border-left-color:transparent;}
-.tenant-erp .mgmt-audit-events li::before {content:"";position:absolute;top:1px;left:-5px;width:9px;height:9px;border-radius:50%;background:#b99255;border:2px solid var(--erp-panel,#1b1a17);}
+.tenant-erp .mgmt-audit-events li::before {content:"";position:absolute;top:1px;left:-5px;width:9px;height:9px;border-radius:50%;background:#52bcb9;border:2px solid var(--erp-panel,#1b1a17);}
 .tenant-erp .mgmt-audit-events time {font-size:.76rem;color:var(--erp-muted,#bbae99);}
 .tenant-erp .mgmt-audit-events strong {font-size:.9rem;}
 .tenant-erp .mgmt-audit-events span,.tenant-erp .mgmt-audit-events small {font-size:.78rem;overflow-wrap:anywhere;}
@@ -43,12 +43,12 @@
 .tenant-erp .mgmt-audit-kpis {display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0 16px;}
 .tenant-erp .mgmt-audit-kpis article {min-width:0;display:grid;gap:6px;padding:16px;border:1px solid var(--erp-border,#433a2d);border-radius:13px;background:var(--erp-panel,#1c1a16);}
 .tenant-erp .mgmt-audit-kpis small {font-size:.74rem;color:var(--erp-muted,#b9ae9d);}
-.tenant-erp .mgmt-audit-kpis strong {font-size:1.2rem;font-weight:770;color:var(--erp-gold,#e3bd79);overflow-wrap:anywhere;}
+.tenant-erp .mgmt-audit-kpis strong {font-size:1.2rem;font-weight:770;color:var(--erp-gold,#8ad2d0);overflow-wrap:anywhere;}
 .tenant-erp .mgmt-heatmap-legend {display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 18px;font-size:.72rem;color:var(--erp-muted,#b0a18f);}
-.tenant-erp .mgmt-heat {background:rgba(166,133,68,.10);border:1px solid var(--erp-border,#3e3427);}
-.tenant-erp .mgmt-heat.low {background:#78603d;color:#fff3de;}
-.tenant-erp .mgmt-heat.medium {background:#ad8139;color:#15100b;}
-.tenant-erp .mgmt-heat.high {background:#f0bb61;color:#1d150d;font-weight:750;}
+.tenant-erp .mgmt-heat {background:rgba(42,138,140,.10);border:1px solid var(--erp-border,#3e3427);}
+.tenant-erp .mgmt-heat.low {background:#244952;color:#e4f4f6;}
+.tenant-erp .mgmt-heat.medium {background:#367f85;color:#fff;}
+.tenant-erp .mgmt-heat.high {background:#82ced0;color:#102b33;font-weight:750;}
 .tenant-erp .mgmt-heat.no-capacity {background:repeating-linear-gradient(45deg,rgba(115,111,107,.25),rgba(115,111,107,.25) 4px,rgba(50,49,48,.12) 4px,rgba(50,49,48,.12) 8px);color:var(--erp-muted,#bbae98);}
 .tenant-erp .mgmt-heatmap-legend .mgmt-heat {width:17px;height:15px;border-radius:4px;display:inline-block;}
 .tenant-erp .mgmt-heatmap-scroll {overflow:auto;max-width:100%;overscroll-behavior-x:contain;scrollbar-width:thin;}
@@ -59,12 +59,12 @@
 .tenant-erp .mgmt-heatmap th:first-child strong,.tenant-erp .mgmt-heatmap th:first-child small {display:block;font-size:.75rem;}
 .tenant-erp .mgmt-heatmap th:first-child small {font-size:.66rem;color:var(--erp-muted,#b5a997);margin-top:3px;}
 .tenant-erp .mgmt-heatmap td.mgmt-heat {min-width:49px;border-radius:6px;}
-.tenant-erp .mgmt-heat-total {font-weight:800;color:var(--erp-gold,#dfb46a);min-width:56px;}
+.tenant-erp .mgmt-heat-total {font-weight:800;color:var(--erp-gold,#3a9d99);min-width:56px;}
 html[data-theme="light"] .tenant-erp .mgmt-audit-filters input,
 html[data-theme="light"] .tenant-erp .mgmt-audit-filters select {color-scheme:light;background:#fffdf6;border-color:#d9c9b0;}
-html[data-theme="light"] .tenant-erp .mgmt-heat.low {background:#f5d9a9;color:#38270f;}
-html[data-theme="light"] .tenant-erp .mgmt-heat.medium {background:#e9b86c;color:#35250f;}
-html[data-theme="light"] .tenant-erp .mgmt-heat.high {background:#b9802f;color:#fff;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.low {background:#dceff1;color:#27555c;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.medium {background:#7dbdc1;color:#102d33;}
+html[data-theme="light"] .tenant-erp .mgmt-heat.high {background:#287b80;color:#fff;}
 html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-completed {color:#216c43;}
 html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-canceled {color:#a13b31;}
 @media(max-width:660px) {
@@ -112,7 +112,7 @@ html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-canceled {color:#a13b
   text-decoration:none;
 }
 .mgmt-audit-modal-close:hover,.mgmt-audit-modal-close:focus-visible {
-  outline:2px solid var(--erp-gold,#e2b770);outline-offset:2px;
+  outline:2px solid var(--erp-gold,#82d0cd);outline-offset:2px;
 }
 .mgmt-audit-modal-body {min-height:0;overflow-y:auto;overscroll-behavior:contain;}
 .mgmt-audit-modal .mgmt-audit-timeline {margin:0;padding:0;min-width:0;border:0;background:transparent;}
@@ -132,9 +132,9 @@ html[data-theme="light"] .tenant-erp .mgmt-audit-status.is-canceled {color:#a13b
 .mgmt-audit-modal-backdrop {position:fixed!important;inset:0!important;z-index:2147483000!important;display:flex;align-items:center;justify-content:center;overflow-y:auto;}
 .mgmt-audit-modal {position:relative;flex-shrink:1;max-height:calc(100dvh - 40px);}
 .mgmt-audit-modal .mgmt-audit-events {list-style:none;margin:0;padding:14px 20px;}
-.mgmt-audit-modal .mgmt-audit-events li {position:relative;display:grid;gap:6px;margin-left:10px;padding:0 0 20px 20px;border-left:1px solid #827049;}
+.mgmt-audit-modal .mgmt-audit-events li {position:relative;display:grid;gap:6px;margin-left:10px;padding:0 0 20px 20px;border-left:1px solid #3b908d;}
 .mgmt-audit-modal .mgmt-audit-events li:last-child {border-left-color:transparent;}
-.mgmt-audit-modal .mgmt-audit-events li::before {content:"";position:absolute;top:1px;left:-5px;width:9px;height:9px;border-radius:50%;background:#b99255;}
+.mgmt-audit-modal .mgmt-audit-events li::before {content:"";position:absolute;top:1px;left:-5px;width:9px;height:9px;border-radius:50%;background:#52bcb9;}
 .mgmt-audit-modal .mgmt-audit-events time {font-size:.76rem;opacity:.8;}
 .mgmt-audit-modal .mgmt-audit-events strong {font-size:.9rem;}
 .mgmt-audit-modal .mgmt-audit-events span,.mgmt-audit-modal .mgmt-audit-events small {font-size:.78rem;overflow-wrap:anywhere;}

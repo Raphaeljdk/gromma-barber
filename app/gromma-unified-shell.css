@@ -60,7 +60,7 @@ html[data-theme] .enterprise-home .public-brand {color:#fff;font-size:.91rem;let
 html[data-theme] .enterprise-home .public-brand .brand-mark {
   width:37px;height:37px;flex:0 0 37px;
   background:#243a4c;border:1px solid #465c69;
-  border-radius:9px;color:#e2c38b;
+  border-radius:9px;color:#97d6d4;
 }
 html[data-theme] .enterprise-home .desktop-nav > a:not(.btn) {color:#e4eaf0;font-size:.83rem;}
 html[data-theme] .enterprise-home .desktop-nav > a:not(.btn):hover {color:#fff;}
@@ -147,7 +147,7 @@ html[data-theme] .enterprise-home .home-presentation-card {
 html[data-theme] .enterprise-home .home-presentation-card::before {display:none;}
 html[data-theme] .enterprise-home .enterprise-hero-card-mark {
   background:var(--gromma-deep);
-  color:#e3c48a;
+  color:#97d6d4;
   border:1px solid var(--gromma-deep);
   border-radius:9px;
   width:43px;height:43px;
@@ -242,7 +242,7 @@ html[data-theme] .login-hub-page .public-header {
 }
 html[data-theme] .login-hub-page .public-brand {color:#fff;}
 html[data-theme] .login-hub-page .public-brand .brand-mark {
-  background:#243a4c;border-color:#465c69;color:#e2c38b;
+  background:#243a4c;border-color:#465c69;color:#97d6d4;
 }
 html[data-theme] .login-hub-page .desktop-nav > a:not(.btn) {color:#f2f4f8;}
 html[data-theme] .login-hub-page .login-button {
@@ -552,9 +552,9 @@ html[data-theme] .tenant-erp .erp-status-pill.ready {
   border-color:color-mix(in srgb,var(--gromma-good) 24%,var(--gromma-stroke));
 }
 html[data-theme] .tenant-erp .erp-status-pill.pending {
-  color:#ae741e;
-  background:#fdf3e1;
-  border-color:#ecd7b0;
+  color:#2c607d;
+  background:#eaf2f8;
+  border-color:#c2d5e4;
 }
 
 /* Breakpoints never leave an orphaned command card or horizontally overflowing login. */
