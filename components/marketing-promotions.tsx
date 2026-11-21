@@ -1,4 +1,5 @@
 import {Trash2} from "lucide-react";
+import Link from "next/link";
 import {prisma} from "@/lib/prisma";
 import {saveCoupon,deleteCoupon,updateCoupon,toggleCouponPause} from "@/app/erp/[tenant]/module-actions";
 import {CouponCopyButton,ConfirmCouponDeleteButton} from "@/components/coupon-inline-actions";
@@ -40,9 +41,9 @@ function CouponAdvancedFields({coupon}:{coupon?:CouponConfig}){
   </label>
  </div>;
 }
-export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,error,ok,couponQuery="",couponStatusFilter=""}:{
+export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,error,ok,couponQuery="",couponStatusFilter="",couponSelectedId=""}:{
  tenantCode:string;shopId:string;ws:ErpWorkspace;view:View;isOwner:boolean;error:string;ok:string;
- couponQuery?:string;couponStatusFilter?:string;
+ couponQuery?:string;couponStatusFilter?:string;couponSelectedId?:string;
 }){
  const [services,products,customers,staff]=await Promise.all([
   prisma.service.findMany({where:{barberShopId:shopId,active:true},select:{id:true,name:true},orderBy:{name:"asc"},take:1000}),
@@ -67,6 +68,14 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
  const status=allowedStatuses.includes(couponStatusFilter)?couponStatusFilter:"";
  const filteredCoupons=couponRows.filter(row=>
   (!status||row.status===status)&&(!filter||row.coupon.code.toLocaleLowerCase("pt-BR").includes(filter)));
+ const selectedCouponRow=filteredCoupons.find(row=>row.coupon.id===couponSelectedId)||filteredCoupons[0]||null;
+ const couponLink=(couponId:string)=>{
+  const params=new URLSearchParams();
+  if(filter)params.set("cupomQ",couponQuery.slice(0,60));
+  if(status)params.set("cupomStatus",status);
+  params.set("cupomId",couponId);
+  return "/erp/"+encodeURIComponent(tenantCode)+"/marketing-cupons?"+params.toString();
+ };
  const recognizedCodes=new Set(ws.coupons.map(c=>c.code.toUpperCase()));
  const recognizedIds=new Set(ws.coupons.map(c=>c.id));
  const redeemed=ws.commandPayments.filter(p=>
@@ -124,9 +133,11 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
       </div>
     </article>
   </>}
-  {view==="marketing-cupons"&&<article className="card erp-coupons-compact">
-   <h3>Cupons de desconto</h3>
-   <p className="small muted">Crie e acompanhe cupons com regras de uso. O desconto é validado no fechamento da comanda.</p>
+  {view==="marketing-cupons"&&<article className="card erp-coupons-compact erp-coupons-workspace">
+   <div className="erp-coupons-heading">
+    <h3>Cupons de desconto</h3>
+    <p className="small muted">Cadastre, acompanhe e gerencie cupons com regras aplicadas no fechamento da comanda.</p>
+   </div>
    <div className="erp-coupon-kpis" aria-label="Indicadores de cupons reais">
     <div><span>Cupons ativos</span><strong>{couponRows.filter(r=>r.status==="ACTIVE").length}</strong></div>
     <div><span>Utilizações</span><strong>{usesTotal}</strong></div>
@@ -134,91 +145,176 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
     <div><span>Vendas com cupom</span><strong>{currency(salesTotal)}</strong></div>
    </div>
    {!!missingDiscountCount&&<p className="small muted" role="status">
-    {missingDiscountCount} utilização(ões) antiga(s) não discriminam o valor exclusivo do cupom.
-    O total de descontos acima inclui somente os valores individualizados; não é uma estimativa.
+    {missingDiscountCount} utilização(ões) antiga(s) não discriminam o desconto exclusivo do cupom.
+    O total de descontos inclui somente valores identificados, sem estimativas.
    </p>}
-   {isOwner&&<form action={saveCoupon} className="erp-compact-form erp-coupons-form">
-    <input type="hidden" name="tenantCode" value={tenantCode}/>
-    <div className="grid erp-coupons-row erp-coupons-row-primary">
-     <label>Código <input className="input" name="code" required minLength={3} maxLength={40} placeholder="Ex.: CORTE10"/></label>
-     <label>Tipo <select className="select" name="kind" defaultValue="PERCENT"><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>
-     <label>Valor <input className="input" name="value" required type="number" min=".01" max="1000000" step=".01"/></label>
+   <div className="erp-coupon-workspace-grid">
+    <div className="erp-coupon-primary-column">
+     {isOwner&&<div className="erp-coupon-form-panel">
+      <h4>Cadastrar cupom</h4>
+      <form action={saveCoupon} className="erp-compact-form erp-coupons-form">
+       <input type="hidden" name="tenantCode" value={tenantCode}/>
+       <div className="grid erp-coupons-row erp-coupons-row-primary">
+        <label>Código <input className="input" name="code" required minLength={3} maxLength={40} placeholder="Ex.: CORTE10"/></label>
+        <label>Tipo <select className="select" name="kind" defaultValue="PERCENT">
+         <option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option>
+        </select></label>
+        <label>Valor <input className="input" name="value" required type="number" min=".01" max="1000000" step=".01"/></label>
+       </div>
+       <div className="grid erp-coupons-row erp-coupons-row-secondary">
+        <label>Clientes elegíveis <select className="select" name="audience" defaultValue="ALL">
+         <option value="ALL">Todos os clientes</option>
+         <option value="CLUB">Somente clientes do clube</option>
+         <option value="NON_CLUB">Somente clientes sem clube</option>
+        </select></label>
+        <label>Data de validade <input className="input" name="expiresAt" required type="date"/></label>
+       </div>
+       <details className="erp-coupon-rules"><summary>Regras de utilização (opcional)</summary>
+        <CouponAdvancedFields/>
+       </details>
+       <button className="btn" type="submit">Criar cupom</button>
+      </form>
+     </div>}
+     <div className="erp-coupon-directory">
+      <h4>Localizar cupons</h4>
+      <form action={"/erp/"+encodeURIComponent(tenantCode)+"/marketing-cupons"} method="get" className="erp-coupon-filters">
+       <label>Buscar cupom<input className="input" name="cupomQ" type="search"
+        defaultValue={couponQuery} maxLength={60} placeholder="Código do cupom"/></label>
+       <label>Status<select className="select" name="cupomStatus" defaultValue={status}>
+        <option value="">Todos</option>
+        {allowedStatuses.map(value=><option key={value} value={value}>
+         {couponStatusLabel[value as keyof typeof couponStatusLabel]}
+        </option>)}
+       </select></label>
+       <button className="btn secondary" type="submit">Filtrar</button>
+      </form>
+     </div>
     </div>
-    <div className="grid erp-coupons-row erp-coupons-row-secondary">
-     <label>Clientes elegíveis <select className="select" name="audience" defaultValue="ALL">
-       <option value="ALL">Todos os clientes</option>
-       <option value="CLUB">Somente clientes do clube</option>
-       <option value="NON_CLUB">Somente clientes sem clube</option>
-     </select></label>
-     <label>Data de validade <input className="input" name="expiresAt" required type="date"/></label>
+    <aside className="erp-coupon-detail-panel" aria-label="Cupom selecionado">
+     <div className="erp-coupon-detail-heading">
+      <h4>Detalhes do cupom</h4>
+      <span className="small muted">Acompanhamento e ações</span>
+     </div>
+     {selectedCouponRow?<>
+      <div className="erp-coupon-selected-identity">
+       <strong>{selectedCouponRow.coupon.code}</strong>
+       <span className="erp-coupon-status-tag" data-status={selectedCouponRow.status}>
+        {couponStatusLabel[selectedCouponRow.status]}
+       </span>
+      </div>
+      <div className="erp-coupon-detail-stats">
+       <div><span>Tipo</span><strong>{selectedCouponRow.coupon.kind==="PERCENT"?"Percentual":"Valor fixo"}</strong></div>
+       <div><span>Desconto</span><strong>{selectedCouponRow.coupon.kind==="PERCENT"?
+        selectedCouponRow.coupon.value+"%":currency(Math.round(selectedCouponRow.coupon.value*100))}</strong></div>
+       <div><span>Público</span><strong>{couponAudience(selectedCouponRow.coupon.audience)}</strong></div>
+       <div><span>Validade</span><strong>{selectedCouponRow.coupon.expiresAt??"Sem prazo"}</strong></div>
+      </div>
+      <div className="erp-coupon-side-section">
+       <h5>Ações rápidas</h5>
+       <div className="erp-coupon-side-actions">
+        <CouponCopyButton code={selectedCouponRow.coupon.code}/>
+        <a className="btn secondary erp-coupon-inline-button" target="_blank"
+         rel="noopener noreferrer"
+         href={"https://wa.me/?text="+encodeURIComponent("Cupom "+selectedCouponRow.coupon.code+" da barbearia. Consulte as condições e a validade antes de usar.")}
+         aria-label={"Compartilhar cupom "+selectedCouponRow.coupon.code+" no WhatsApp"}
+         title="Preparar mensagem no WhatsApp">WhatsApp</a>
+        {isOwner&&selectedCouponRow.coupon.active&&<>
+         <form action={toggleCouponPause} className="erp-coupon-delete-form">
+          <input type="hidden" name="tenantCode" value={tenantCode}/>
+          <input type="hidden" name="couponId" value={selectedCouponRow.coupon.id}/>
+          <button className="btn secondary erp-coupon-inline-button" type="submit">
+           {selectedCouponRow.coupon.paused?"Reativar":"Pausar"}</button>
+         </form>
+         <form action={deleteCoupon} className="erp-coupon-delete-form">
+          <input type="hidden" name="tenantCode" value={tenantCode}/>
+          <input type="hidden" name="couponId" value={selectedCouponRow.coupon.id}/>
+          <ConfirmCouponDeleteButton code={selectedCouponRow.coupon.code}/>
+         </form>
+        </>}
+       </div>
+       {isOwner&&selectedCouponRow.coupon.active&&<details className="erp-coupon-editor">
+        <summary>Editar regras do cupom</summary>
+        <form action={updateCoupon} className="erp-compact-form erp-coupons-form">
+         <input type="hidden" name="tenantCode" value={tenantCode}/>
+         <input type="hidden" name="couponId" value={selectedCouponRow.coupon.id}/>
+         <div className="grid erp-coupons-row erp-coupons-row-primary">
+          <label>Tipo<select className="select" name="kind" defaultValue={selectedCouponRow.coupon.kind}>
+           <option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option>
+          </select></label>
+          <label>Valor<input className="input" name="value" type="number" min=".01" max="1000000"
+           step=".01" required defaultValue={selectedCouponRow.coupon.value}/></label>
+          <label>Data de validade<input className="input" name="expiresAt" type="date"
+           required defaultValue={selectedCouponRow.coupon.expiresAt??""}/></label>
+         </div>
+         <div className="grid erp-coupons-row erp-coupons-row-secondary">
+          <label>Clientes elegíveis<select className="select" name="audience"
+           defaultValue={selectedCouponRow.coupon.audience??"ALL"}>
+           <option value="ALL">Todos os clientes</option>
+           <option value="CLUB">Somente clientes do clube</option>
+           <option value="NON_CLUB">Somente clientes sem clube</option>
+          </select></label>
+         </div>
+         <CouponAdvancedFields coupon={selectedCouponRow.coupon}/>
+         <button className="btn" type="submit">Salvar alterações</button>
+        </form>
+       </details>}
+      </div>
+      <div className="erp-coupon-side-section">
+       <h5>Regras de utilização</h5>
+       <div className="erp-coupon-rule-summary">
+        <span>Aplicável em <strong>{couponScope(selectedCouponRow.coupon.appliesTo)}</strong></span>
+        <span>Utilizações <strong>{selectedCouponRow.stats.uses}{selectedCouponRow.coupon.maxUses?
+         "/"+selectedCouponRow.coupon.maxUses:" · Sem limite"}</strong></span>
+        <span>Por cliente <strong>{selectedCouponRow.coupon.maxUsesPerCustomer??"Sem limite"}</strong></span>
+        <span>Valor mínimo <strong>{selectedCouponRow.coupon.minOrderCents?
+         currency(selectedCouponRow.coupon.minOrderCents):"Não exigido"}</strong></span>
+       </div>
+      </div>
+      {isOwner&&<div className="erp-coupon-side-section">
+       <h5>Histórico recente</h5>
+       {selectedCouponRow.usage.length?
+        <div className="erp-coupon-recent-list">
+         {selectedCouponRow.usage.slice().sort((a,b)=>b.paidAt.localeCompare(a.paidAt)).slice(0,5).map(use=>
+          <div key={use.id} className="erp-coupon-recent-use">
+           <span><strong>{use.customerName||"Cliente não informado"}</strong>
+            <small>{new Date(use.paidAt).toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"})}
+             {" · "}Comanda {use.commandId.slice(-8).toUpperCase()}</small>
+           </span>
+           <strong>{Number.isSafeInteger(use.couponCents)?
+            currency(use.couponCents!):"Não discriminado"}</strong>
+          </div>)}
+        </div>:
+        <p className="small muted">Este cupom ainda não foi utilizado.</p>}
+       {!!selectedCouponRow.usage.length&&<p className="small muted">
+        Consulte o histórico completo abaixo para conferir os recebimentos.</p>}
+      </div>}
+     </>:<div className="erp-coupon-detail-empty">
+      <p>Nenhum cupom encontrado.</p>
+      <span className="small muted">Cadastre um cupom ou limpe os filtros para consultar detalhes e ações.</span>
+     </div>}
+    </aside>
+   </div>
+   <div className="erp-coupon-records">
+    <div className="erp-coupon-records-heading">
+     <h4>Cupons cadastrados</h4>
+     <span className="small muted">{filteredCoupons.length} exibido(s) · selecione um para ver os detalhes</span>
     </div>
-    <details className="erp-coupon-rules"><summary>Regras de utilização (opcional)</summary>
-     <CouponAdvancedFields/>
-    </details>
-    <button className="btn" type="submit">Criar cupom</button>
-   </form>}
-   <div className="erp-coupon-directory">
-    <form action={"/erp/"+encodeURIComponent(tenantCode)+"/marketing-cupons"} method="get" className="erp-coupon-filters">
-     <label>Buscar cupom<input className="input" name="cupomQ" type="search" defaultValue={couponQuery} maxLength={60} placeholder="Código"/></label>
-     <label>Status<select className="select" name="cupomStatus" defaultValue={status}>
-      <option value="">Todos</option>
-      {allowedStatuses.map(value=><option key={value} value={value}>{couponStatusLabel[value as keyof typeof couponStatusLabel]}</option>)}
-     </select></label>
-     <button className="btn secondary" type="submit">Filtrar</button>
-    </form>
     <div className="erp-stacked-list erp-coupons-list">
-     {filteredCoupons.map(({coupon:c,stats,status:state})=><div key={c.id} className="erp-coupon-entry">
+     {filteredCoupons.map(({coupon:c,stats,status:state})=><div key={c.id}
+      className="erp-coupon-entry" data-selected={selectedCouponRow?.coupon.id===c.id?"true":"false"}>
       <div className="erp-coupon-info">
        <strong>{c.code}</strong>
        <span>{c.kind==="PERCENT"?c.value+"%":currency(Math.round(c.value*100))}
         {" · "}{couponAudience(c.audience)}{" · "}Até {c.expiresAt??"Sem prazo"}
         {" · "}{stats.uses}{c.maxUses?"/"+c.maxUses:""} uso(s)
        </span>
-       <small>{couponStatusLabel[state]} · {couponScope(c.appliesTo)}{c.minOrderCents?" · Mínimo "+currency(c.minOrderCents):""}</small>
+       <small>{couponStatusLabel[state]} · {couponScope(c.appliesTo)}
+        {c.minOrderCents?" · Mínimo "+currency(c.minOrderCents):""}</small>
       </div>
-      <div className="erp-coupon-inline-actions">
-       <CouponCopyButton code={c.code}/>
-       <a className="btn secondary erp-coupon-inline-button" target="_blank" rel="noopener noreferrer"
-        href={"https://wa.me/?text="+encodeURIComponent("Cupom "+c.code+" da barbearia. Consulte as condições e a validade antes de usar.")}
-        aria-label={"Compartilhar cupom "+c.code+" no WhatsApp"} title="Preparar mensagem no WhatsApp">
-        WhatsApp
-       </a>
-       {isOwner&&c.active&&<>
-        <form action={toggleCouponPause} className="erp-coupon-delete-form">
-         <input type="hidden" name="tenantCode" value={tenantCode}/>
-         <input type="hidden" name="couponId" value={c.id}/>
-         <button className="btn secondary erp-coupon-inline-button" type="submit">
-          {c.paused?"Reativar":"Pausar"}</button>
-        </form>
-        <form action={deleteCoupon} className="erp-coupon-delete-form">
-         <input type="hidden" name="tenantCode" value={tenantCode}/>
-         <input type="hidden" name="couponId" value={c.id}/>
-         <ConfirmCouponDeleteButton code={c.code}/>
-        </form>
-       </>}
-      </div>
-      {isOwner&&c.active&&<details className="erp-coupon-editor">
-       <summary>Editar regras do cupom</summary>
-       <form action={updateCoupon} className="erp-compact-form erp-coupons-form">
-        <input type="hidden" name="tenantCode" value={tenantCode}/>
-        <input type="hidden" name="couponId" value={c.id}/>
-        <div className="grid erp-coupons-row erp-coupons-row-primary">
-         <label>Tipo<select className="select" name="kind" defaultValue={c.kind}>
-          <option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option>
-         </select></label>
-         <label>Valor<input className="input" name="value" type="number" min=".01" max="1000000" step=".01" required defaultValue={c.value}/></label>
-         <label>Data de validade<input className="input" name="expiresAt" type="date" required defaultValue={c.expiresAt??""}/></label>
-        </div>
-        <div className="grid erp-coupons-row erp-coupons-row-secondary">
-         <label>Clientes elegíveis<select className="select" name="audience" defaultValue={c.audience??"ALL"}>
-          <option value="ALL">Todos os clientes</option><option value="CLUB">Somente clientes do clube</option>
-          <option value="NON_CLUB">Somente clientes sem clube</option>
-         </select></label>
-        </div>
-        <CouponAdvancedFields coupon={c}/>
-        <button className="btn" type="submit">Salvar alterações</button>
-       </form>
-      </details>}
+      <Link href={couponLink(c.id)} className="btn secondary erp-coupon-inline-button"
+       aria-current={selectedCouponRow?.coupon.id===c.id?"true":undefined}>
+       {selectedCouponRow?.coupon.id===c.id?"Selecionado":"Ver detalhes"}
+      </Link>
      </div>)}
      {!filteredCoupons.length&&<p className="small muted">Nenhum cupom encontrado para estes filtros.</p>}
     </div>
