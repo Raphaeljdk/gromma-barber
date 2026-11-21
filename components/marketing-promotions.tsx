@@ -190,7 +190,7 @@ export async function MarketingPromotions({tenantCode,shopId,ws,view,isOwner,err
       </form>
      </div>
     </div>
-    <aside className="erp-coupon-detail-panel" aria-label="Cupom selecionado">
+    <aside key={selectedCouponRow?.coupon.id??"empty"} className="erp-coupon-detail-panel" aria-label="Cupom selecionado">
      <div className="erp-coupon-detail-heading">
       <h4>Detalhes do cupom</h4>
       <span className="small muted">Acompanhamento e ações</span>
