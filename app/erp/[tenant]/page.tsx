@@ -1739,7 +1739,8 @@ export async function TenantERPView({
         {["promocoes","marketing-cupons","marketing-aniversariantes"].includes(activeModule)&&
           <MarketingPromotions tenantCode={tenantCode} shopId={shop.id} ws={workspace}
             view={activeModule as "promocoes"|"marketing-cupons"|"marketing-aniversariantes"}
-            isOwner={isOwner} error={actionError} ok={actionOk}/>}
+            isOwner={isOwner} error={actionError} ok={actionOk}
+            couponQuery={valueOf("cupomQ")} couponStatusFilter={valueOf("cupomStatus")}/>}
         {activeModule==="marketing-parceiros"&&<ClubPartnerManager tenantCode={tenantCode}
           partners={workspace.clubPartners} isOwner={isOwner} ok={actionOk} error={actionError}/>}
 
