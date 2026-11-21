@@ -250,6 +250,7 @@ export async function checkoutCommand(form: FormData) {
       pricing = calculateCheckoutPricing(
         command.items.map(item => ({ id: item.id, total: Number(item.total) })),
         cents(command.discount), discountInput, workspace.coupons, new Date(), applied,
+        Boolean(command.customerId && workspace.clubMembers.some(member => member.customerId === command.customerId && member.status === "ACTIVE")),
       );
     } catch (e) { throw new OperationError(e instanceof Error ? e.message : "Desconto inválido."); }
     if (String(pricing.totalCents) !== value(form, "expectedTotal") || pricing.subtotalCents !== subtotal)

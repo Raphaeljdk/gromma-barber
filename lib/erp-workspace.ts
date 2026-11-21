@@ -94,6 +94,8 @@ export type CouponConfig = {
   code: string;
   kind: "PERCENT" | "FIXED";
   value: number;
+  /** ALL is the legacy default, CLUB requires an active plan, NON_CLUB excludes active members. */
+  audience?: "ALL" | "CLUB" | "NON_CLUB";
   expiresAt: string | null;
   active: boolean;
   createdAt: string;
@@ -752,7 +754,21 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
     clubMembers: array<ClubMemberConfig>(operations.clubMembers),
     campaigns: array<CampaignConfig>(operations.campaigns),
     customerGroups: array<CustomerGroupConfig>(operations.customerGroups),
-    coupons: array<CouponConfig>(operations.coupons),
+    coupons: array<unknown>(operations.coupons).flatMap(raw=>{
+      const c=record(raw);
+      const kind=c.kind==="FIXED"?"FIXED":"PERCENT";
+      const amount=Number(c.value);
+      if(typeof c.id!=="string"||typeof c.code!=="string"||
+         !Number.isFinite(amount)||amount<=0)return [];
+      return [{
+        id:c.id.slice(0,100),code:c.code.slice(0,40),
+        kind:kind as CouponConfig["kind"],value:amount,
+        audience:(c.audience==="CLUB"||c.audience==="NON_CLUB"?c.audience:"ALL") as CouponConfig["audience"],
+        expiresAt:typeof c.expiresAt==="string"?c.expiresAt.slice(0,10):null,
+        active:c.active===true,
+        createdAt:typeof c.createdAt==="string"?c.createdAt.slice(0,35):"",
+      }];
+    }).slice(0,500),
     documents: array<DocumentConfig>(operations.documents),
     reviews: array<unknown>(operations.reviews).flatMap(item=>{
       const p=record(item),score=Number(p.score);

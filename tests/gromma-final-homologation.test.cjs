@@ -67,7 +67,7 @@ test("Cupom salva na subaba correta, exige validade e bloqueia código ativo dup
  const actions=read("app/erp/[tenant]/module-actions.ts");
  assert.match(form,/name="returnModule" value="marketing-cupons"/);
  assert.match(actions,/coupon\.active && coupon\.code === code/);
- assert.match(actions,/returnModule === "marketing-cupons"/);
+ assert.match(actions,/const path = modulePath\(tenantCode, "marketing-cupons"\)/);
  assert.match(actions,/validExpiry/);
  assert.match(actions,/expiresAt < today/);
 });
