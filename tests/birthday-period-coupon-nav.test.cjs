@@ -65,5 +65,6 @@ test("Cupons ficam sob Promoções e podem ser usados por clientes sem assinatur
  assert.doesNotMatch(clubSub,/marketing-cupons/);
  assert.match(checkout,/coupons\.find\(item => item\.code\.toUpperCase\(\) === code && item\.active\)/);
  assert.doesNotMatch(checkout,/coupon\.clubOnly|hasClub/);
- assert.match(read("components/marketing-promotions.tsx"),/com ou sem assinatura/);
+ assert.match(read("components/marketing-promotions.tsx"),/Somente clientes sem clube/);
+ assert.match(read("components/marketing-promotions.tsx"),/Todos os clientes/);
 });
