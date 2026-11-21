@@ -10,6 +10,7 @@ import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import { serializeAgendaUnits } from "@/lib/agenda-unit-selection";
 import { AgendaPeopleFilters } from "./agenda-people-filters";
 import {planColor,planLabel} from "@/lib/plan-colors";
+import {normalizeErpLocale, type ErpLocale} from "@/lib/erp-i18n";
 import type { AgendaBlock } from "@/lib/erp-workspace";
 import {
   ArrowLeftRight,
@@ -126,10 +127,10 @@ function subscribeClock(callback: () => void) {
   return () => window.clearInterval(timer);
 }
 const clockSnapshot = () => Math.floor(Date.now() / 30000) * 30000;
-const money = (value: number) =>
-  value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const dateLabel = (value: string, options: Intl.DateTimeFormatOptions) =>
-  new Intl.DateTimeFormat("pt-BR", {
+const localizedMoney = (value: number, locale: ErpLocale) =>
+  value.toLocaleString(locale, { style: "currency", currency: "BRL" });
+const localizedDateLabel = (value: string, options: Intl.DateTimeFormatOptions, locale: ErpLocale) =>
+  new Intl.DateTimeFormat(locale, {
     timeZone: AGENDA_TIME_ZONE,
     ...options,
   }).format(new Date(`${value}T12:00:00-03:00`));
@@ -263,6 +264,26 @@ export function ErpAgendaBoard({
   blocks = [],
 }: Props) {
   const router = useRouter();
+  const [uiLocale,setUiLocale] = useState<ErpLocale>("pt-BR");
+  useEffect(()=>{
+    const sync = (event:Event)=>{
+      const value=(event as CustomEvent<string>).detail;
+      if(value)setUiLocale(normalizeErpLocale(value));
+    };
+    const onStorage=(event:StorageEvent)=>{
+      if(event.key==="gromma-locale")setUiLocale(normalizeErpLocale(event.newValue));
+    };
+    try{setUiLocale(normalizeErpLocale(localStorage.getItem("gromma-locale")));}catch{}
+    window.addEventListener("gromma-locale-change",sync);
+    window.addEventListener("storage",onStorage);
+    return ()=>{
+      window.removeEventListener("gromma-locale-change",sync);
+      window.removeEventListener("storage",onStorage);
+    };
+  },[]);
+  const dateLabel = (value:string,options:Intl.DateTimeFormatOptions) =>
+    localizedDateLabel(value,options,uiLocale);
+  const money = (value:number) => localizedMoney(value,uiLocale);
   const calendarRef = useRef<HTMLDivElement>(null);
   const now = useSyncExternalStore(subscribeClock, clockSnapshot, () => 0);
   const preferenceKey = `gromma:agenda-view:${tenantCode}`;

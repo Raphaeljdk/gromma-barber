@@ -16,15 +16,17 @@ test("time zones are IANA-valid worldwide and persist without Brazil-only allowl
  assert.match(picker,/availableBusinessTimeZones/);
  assert.doesNotMatch(action,/const allowedTimeZones/);
 });
-test("international language selector is accessible, persisted and honest about partial translation",()=>{
+test("international language selector keeps choices, local persistence and a centralized catalog",()=>{
  const page=read("app/erp/[tenant]/page.tsx");
  const picker=read("components/erp-language-picker.tsx");
+ const catalog=read("lib/erp-i18n.ts");
  assert.match(page,/<ErpLanguagePicker\/>/);
  for(const lang of ["pt-BR","en","es","fr","de","it"])
-  assert.ok(picker.includes('id:"'+lang+'"'),"Missing "+lang);
+  assert.ok(catalog.includes('id:"'+lang+'"'),"Missing "+lang);
  assert.match(picker,/localStorage\.setItem\("gromma-locale"/);
- assert.match(picker,/aria-label="Idioma da interface — tradução parcial"/);
+ assert.match(picker,/aria-label=\{pickerLabel\[locale\]\}/);
  assert.match(picker,/useRef\(new WeakMap<Text/);
+ assert.match(picker,/translateErpText\(source,locale\)/);
 });
 test("featured staff uses a real safe toggle with backend audit, no new tabs",()=>{
  const page=read("app/erp/[tenant]/page.tsx");
