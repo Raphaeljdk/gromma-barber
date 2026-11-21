@@ -470,27 +470,27 @@ export async function saveCustomerGroup(formData: FormData) {
 
 export async function saveCoupon(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
-  const returnModule = value(formData, "returnModule", 50) === "marketing-cupons" ? "marketing-cupons" : "promocoes";
-  const path = modulePath(tenantCode, returnModule);
+  const path = modulePath(tenantCode, "marketing-cupons");
   if (!allowed(viewer, ["OWNER"])) redirect(path + "?erro=permissao");
 
   const code = value(formData, "code", 40).toUpperCase().replace(/[^A-Z0-9_-]/g, "");
   const kind = value(formData, "kind", 20) === "FIXED" ? "FIXED" : "PERCENT";
   const amount = numberValue(formData, "value");
+  const audience = value(formData, "audience", 20);
   const expiresAt = value(formData, "expiresAt", 20);
   const today = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
   const hasExpiry = /^\d{4}-\d{2}-\d{2}$/.test(expiresAt);
   const expiryDate = hasExpiry ? new Date(expiresAt + "T12:00:00.000Z") : null;
   const validExpiry = Boolean(expiryDate && Number.isFinite(expiryDate.getTime()) && expiryDate.toISOString().slice(0,10) === expiresAt);
   if (code.length < 3 || !Number.isFinite(amount) || amount <= 0 ||
+    !["ALL","CLUB","NON_CLUB"].includes(audience) ||
     (kind === "PERCENT" && amount > 100) || (kind === "FIXED" && amount > 1000000) ||
-    (returnModule === "marketing-cupons" && (!validExpiry || expiresAt < today)) ||
-    (expiresAt && (!validExpiry || expiresAt < today))) {
+    !validExpiry || expiresAt < today) {
     redirect(path + "?erro=cupom");
   }
 
   try {
-    await persistWorkspace(shop, (workspace) => {
+    await persistWorkspace(shop, workspace => {
       if (workspace.coupons.some(coupon => coupon.active && coupon.code === code &&
         (!coupon.expiresAt || coupon.expiresAt >= today))) throw new Error("Cupom ativo duplicado");
       workspace.coupons.unshift({
@@ -498,7 +498,8 @@ export async function saveCoupon(formData: FormData) {
         code,
         kind,
         value: amount,
-        expiresAt: expiresAt || null,
+        audience:audience as "ALL"|"CLUB"|"NON_CLUB",
+        expiresAt,
         active: true,
         createdAt: new Date().toISOString(),
       });
@@ -510,6 +511,32 @@ export async function saveCoupon(formData: FormData) {
 
   revalidatePath(path);
   redirect(path + "?ok=cupom");
+}
+
+/** Revoga o cupom para novas comandas preservando histórico de pagamentos. */
+export async function deleteCoupon(formData: FormData) {
+  const { tenantCode, viewer, shop } = await moduleContext(formData);
+  const path = modulePath(tenantCode, "marketing-cupons");
+  if (!allowed(viewer, ["OWNER"])) redirect(path + "?erro=permissao");
+  const couponId = value(formData, "couponId", 100);
+  if (!couponId) redirect(path + "?erro=cupom");
+  try {
+    await persistWorkspace(shop, workspace => {
+      const coupon = workspace.coupons.find(item => item.id === couponId && item.active);
+      if (!coupon) throw new Error("Cupom inexistente ou já removido");
+      coupon.active = false;
+    });
+    // Auditoria de exclusão, sem apagar a definição usada em comandas anteriores.
+    await prisma.adminAuditLog.create({
+      data: {barberShopId:shop.id,adminEmail:viewer.email,
+        action:"FINANCIAL_COUPON_DEACTIVATED",details:{couponId}}
+    });
+  } catch (error) {
+    console.error("Failed to deactivate coupon",error);
+    redirect(path + "?erro=cupom");
+  }
+  revalidatePath(path);
+  redirect(path + "?ok=cupom-excluido");
 }
 
 export async function savePromotion(formData: FormData) {
