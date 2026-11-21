@@ -7,6 +7,7 @@ import { AgendaDialog, AgendaSubmit } from "./agenda-dialog";
 import { addCommandItem, removeCommandItem, checkoutCommand, reopenCommand } from "@/app/erp/[tenant]/checkout-actions";
 import { PAYMENT_METHODS, PAYMENT_LABELS, calculateCheckoutPricing, calculateAppliedItemDiscounts, canReopenCommand, type AppliedItemDiscount, type CheckoutCoupon, type CashSession, type CommandPayment, type PaymentMethod } from "@/lib/checkout";
 import { brl } from "@/lib/plans";
+import {planColor,planLabel} from "@/lib/plan-colors";
 
 type Line = { id: string; description: string; quantity: number; total: number; kind: string };
 export type CommandView = {
@@ -107,7 +108,7 @@ export function CommandCheckout({
         <div className="checkout-compact-title">
           <span className={paid ? "checkout-status is-paid" : "checkout-status"}>{paid ? "Pago" : "Em aberto"}</span>
           <span>{command.items.length} {command.items.length === 1 ? "item" : "itens"}</span>
-          {command.plan && <span>Plano: {command.plan}</span>}
+          <span className="gromma-plan-badge" style={{borderLeft:`4px solid ${planColor(command.plan)}`}}>Plano: {planLabel(command.plan)}</span>
         </div>
         <div className="checkout-toolbar-actions">
           {editable && <button type="button" className="btn secondary checkout-compact-action" onClick={() => setShowAdd(v => !v)} aria-expanded={showAdd}><Plus size={15} /> {showAdd ? "Fechar inclusão" : "Adicionar item"}</button>}
