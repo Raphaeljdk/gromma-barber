@@ -113,5 +113,5 @@ test("Premium, Start, Basic e sem plano usam cores consistentes nos três módul
  assert.match(page,/className="gromma-dashboard-plan-legend"/);
  assert.doesNotMatch(page,/dashboardPlanCount|dashboardPlanAppointments|Agendamentos por plano · Hoje/);
  assert.match(page,/className="gromma-command-customer"/);
- assert.match(page,/planNames=\{workspace\.clubPlans\.filter/);
+ assert.match(page,/planNames=\{dashboardPlanNames\}/);
 });
