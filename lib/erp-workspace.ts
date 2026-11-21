@@ -96,6 +96,12 @@ export type CouponConfig = {
   value: number;
   /** ALL is the legacy default, CLUB requires an active plan, NON_CLUB excludes active members. */
   audience?: "ALL" | "CLUB" | "NON_CLUB";
+  /** Limites opcionais; ausência significa sem limite. */
+  maxUses?:number;
+  maxUsesPerCustomer?:number;
+  minOrderCents?:number;
+  appliesTo?:"SERVICES"|"PRODUCTS"|"BOTH";
+  paused?:boolean;
   expiresAt: string | null;
   active: boolean;
   createdAt: string;
@@ -764,6 +770,11 @@ export function readWorkspace(value: Prisma.JsonValue | null | undefined): ErpWo
         id:c.id.slice(0,100),code:c.code.slice(0,40),
         kind:kind as CouponConfig["kind"],value:amount,
         audience:(c.audience==="CLUB"||c.audience==="NON_CLUB"?c.audience:"ALL") as CouponConfig["audience"],
+        maxUses:Number.isSafeInteger(c.maxUses)&&Number(c.maxUses)>0?Number(c.maxUses):undefined,
+        maxUsesPerCustomer:Number.isSafeInteger(c.maxUsesPerCustomer)&&Number(c.maxUsesPerCustomer)>0?Number(c.maxUsesPerCustomer):undefined,
+        minOrderCents:Number.isSafeInteger(c.minOrderCents)&&Number(c.minOrderCents)>=0?Number(c.minOrderCents):0,
+        appliesTo:(c.appliesTo==="SERVICES"||c.appliesTo==="PRODUCTS"?c.appliesTo:"BOTH") as CouponConfig["appliesTo"],
+        paused:c.paused===true,
         expiresAt:typeof c.expiresAt==="string"?c.expiresAt.slice(0,10):null,
         active:c.active===true,
         createdAt:typeof c.createdAt==="string"?c.createdAt.slice(0,35):"",

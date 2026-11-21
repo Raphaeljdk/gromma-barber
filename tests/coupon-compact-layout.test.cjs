@@ -16,10 +16,11 @@ test("Cupons mantém duas linhas: Código/Tipo/Valor e Público/Validade",()=>{
 test("Cupom listado usa card justo e lixeira próxima, preservando exclusão",()=>{
  const s=read("components/marketing-promotions.tsx");
  const css=read("app/globals.css");
+ const buttons=read("components/coupon-inline-actions.tsx");
  assert.match(s,/className="erp-stacked-list erp-coupons-list"/);
  assert.match(s,/className="erp-coupon-entry"/);
  assert.match(s,/className="erp-coupon-delete-form"/);
- assert.match(s,/className="btn secondary erp-coupon-delete"/);
+ assert.match(buttons,/className="btn secondary erp-coupon-delete"/);
  assert.match(s,/action=\{deleteCoupon\}/);
  assert.match(css,/\.erp-coupons-form \{[\s\S]*?max-width:860px;/);
  assert.match(css,/\.erp-coupons-list > \.erp-coupon-entry \{[\s\S]*?width:max-content;[\s\S]*?justify-content:flex-start;/);

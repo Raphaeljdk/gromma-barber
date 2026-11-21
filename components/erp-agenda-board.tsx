@@ -9,6 +9,7 @@ import { addCommandItem, removeCommandItem } from "@/app/erp/[tenant]/checkout-a
 import { hasAgendaBlock, withinAgendaHours } from "@/lib/agenda-availability";
 import { serializeAgendaUnits } from "@/lib/agenda-unit-selection";
 import { AgendaPeopleFilters } from "./agenda-people-filters";
+import {planColor,planLabel} from "@/lib/plan-colors";
 import type { AgendaBlock } from "@/lib/erp-workspace";
 import {
   ArrowLeftRight,
@@ -94,6 +95,7 @@ type Props = {
   selectedDate: string;
   view: AgendaView;
   appointments: AgendaAppointment[];
+  planNames?:string[];
   professionals: AgendaProfessional[];
   units: AgendaUnit[];
   customers: AgendaCustomer[];
@@ -191,7 +193,7 @@ function AppointmentSignals({
   );
 }
 
-function AgendaLegend() {
+function AgendaLegend({planNames}:{planNames:string[]}) {
   const signals = [
     { icon: Smartphone, label: "Agendado pelo celular" },
     { icon: Monitor, label: "Agendado pelo computador" },
@@ -225,6 +227,12 @@ function AgendaLegend() {
           </span>
         ))}
       </div>
+      <div className="gromma-plan-legend" aria-label="Cores dos planos">
+        {planNames.map(name=><span key={name} className="gromma-plan-legend-item">
+          <i style={{background:planColor(name)}} aria-hidden="true"/>{name}
+        </span>)}
+        <span className="gromma-plan-legend-item"><i style={{background:planColor(null)}} aria-hidden="true"/>Sem plano</span>
+      </div>
       <p className="agenda-form-hint">
         A primeira visita considera o histórico de atendimentos concluídos.
       </p>
@@ -237,6 +245,7 @@ export function ErpAgendaBoard({
   selectedDate,
   view,
   appointments,
+  planNames=[],
   professionals,
   units,
   customers,
@@ -574,6 +583,7 @@ export function ErpAgendaBoard({
   );
   const countCustomers = (items: AgendaAppointment[]) =>
     new Set(items.map((item) => item.customerId || item.id)).size;
+  const allPlanNames=[...new Set([...planNames,...appointments.map(a=>a.planName).filter((n):n is string=>Boolean(n))])];
   const summaries = [
     {
       icon: CalendarDays,
@@ -761,7 +771,12 @@ export function ErpAgendaBoard({
                 </article>
               ))}
             </div>
-
+            <div className="gromma-plan-legend" aria-label="Legenda dos planos">
+              {allPlanNames.map(name=><span key={name} className="gromma-plan-legend-item">
+                <i style={{background:planColor(name)}} aria-hidden="true"/>{name} · {countCustomers(activeDay.filter(a=>a.planName===name))}
+              </span>)}
+              <span className="gromma-plan-legend-item"><i style={{background:planColor(null)}} aria-hidden="true"/>Sem plano · {countCustomers(activeDay.filter(a=>!a.hasPlan))}</span>
+            </div>
           </section>
       <div className="agenda-toolbar">
         <button type="button" className="btn secondary" onClick={() => {
@@ -1109,6 +1124,7 @@ export function ErpAgendaBoard({
                             height: Math.max(24, height - 6),
                             left: `calc(${(track / tracks) * 100}% + 5px)`,
                             width: `calc(${100 / tracks}% - 10px)`,
+                            borderLeft:`4px solid ${planColor(item.planName)}`,
                           }}
                           onClick={() => setDetail(item)}
                           aria-label={`Abrir agendamento de ${item.customerName}, ${agendaTime(item.startsAt)}, ${STATUS_LABELS[item.status]}`}
@@ -1127,6 +1143,7 @@ export function ErpAgendaBoard({
                           </span>
                           <strong>{item.customerName}</strong>
                           <small>{item.serviceName}</small>
+                          {height>=65&&<small className="gromma-agenda-plan-label" style={{color:planColor(item.planName)}}>{planLabel(item.planName)}</small>}
                           <AppointmentSignals appointment={item} />
                         </button>
                       );
@@ -1189,6 +1206,7 @@ export function ErpAgendaBoard({
                               <button
                                 type="button"
                                 className={`agenda-week-item ${statusClass(item.status)}`}
+                                style={{borderLeft:`4px solid ${planColor(item.planName)}`}}
                                 key={item.id}
                                 onClick={() => setDetail(item)}
                               >
@@ -1269,6 +1287,7 @@ export function ErpAgendaBoard({
                           <button
                             type="button"
                             className={`agenda-month-item ${statusClass(item.status)}`}
+                            style={{borderLeft:`4px solid ${planColor(item.planName)}`}}
                             key={item.id}
                             onClick={() => setDetail(item)}
                             title={`${item.barberName} · ${STATUS_LABELS[item.status]}`}
@@ -1405,7 +1424,7 @@ export function ErpAgendaBoard({
               )}
             </div>
           </section>
-          <AgendaLegend />
+          <AgendaLegend planNames={allPlanNames}/>
         </aside>
       </div>
       {draft && (
@@ -1510,7 +1529,7 @@ export function ErpAgendaBoard({
             <section className="agenda-customer-summary agenda-command-summary">
               <div className="agenda-command-summary-title"><h4>Dados do atendimento</h4><span>{STATUS_LABELS[detail.status]}</span></div>
               <p><strong>Cliente:</strong> {detail.customerName} · {detail.customerPhone || "Telefone não informado"}</p>
-              <p><strong>Plano:</strong> {detail.planName || "Sem plano ativo"}</p>
+              <p><strong>Plano:</strong> <span className="gromma-plan-badge" style={{borderLeft:`4px solid ${planColor(detail.planName)}`}}>{planLabel(detail.planName)}</span></p>
               {detail.customerNotes && <p><strong>Preferências do cliente:</strong> {detail.customerNotes}</p>}
               <p><strong>Data e horário:</strong> {dateLabel(agendaDateKey(detail.startsAt), { dateStyle: "short" })} · {agendaTime(detail.startsAt)}{detail.endsAt ? ` às ${agendaTime(detail.endsAt)}` : ""}</p>
               <p><strong>Unidade:</strong> {detail.unitName} · <strong>Profissional:</strong> {detail.barberName}</p>

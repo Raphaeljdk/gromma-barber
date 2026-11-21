@@ -468,49 +468,97 @@ export async function saveCustomerGroup(formData: FormData) {
   redirect(`${path}?ok=grupo`);
 }
 
+type CouponFormFields={
+ kind:"FIXED"|"PERCENT";amount:number;audience:"ALL"|"CLUB"|"NON_CLUB";
+ expiresAt:string;maxUses?:number;maxUsesPerCustomer?:number;
+ minOrderCents:number;appliesTo:"SERVICES"|"PRODUCTS"|"BOTH";
+};
+function couponFormFields(form:FormData):CouponFormFields|null{
+ const kind=value(form,"kind",20)==="FIXED"?"FIXED":"PERCENT";
+ const amount=numberValue(form,"value",NaN);
+ const audience=value(form,"audience",20);
+ const expiresAt=value(form,"expiresAt",20);
+ const scope=value(form,"appliesTo",16)||"BOTH";
+ const date=/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)?new Date(expiresAt+"T12:00:00.000Z"):null;
+ const today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+ const rawMax=value(form,"maxUses",10),rawMaxPer=value(form,"maxUsesPerCustomer",10);
+ const maxUses=rawMax?Number(rawMax):undefined,maxUsesPerCustomer=rawMaxPer?Number(rawMaxPer):undefined;
+ const minimum=value(form,"minOrder",20);
+ const minAmount=minimum?Number(minimum.replace(",",".")):0;
+ if(!["ALL","CLUB","NON_CLUB"].includes(audience)||!["SERVICES","PRODUCTS","BOTH"].includes(scope)||
+  !Number.isFinite(amount)||amount<=0||amount>(kind==="PERCENT"?100:1000000)||
+  !date||!Number.isFinite(date.getTime())||date.toISOString().slice(0,10)!==expiresAt||expiresAt<today||
+  (maxUses!==undefined&&(!Number.isSafeInteger(maxUses)||maxUses<1||maxUses>1000000))||
+  (maxUsesPerCustomer!==undefined&&(!Number.isSafeInteger(maxUsesPerCustomer)||maxUsesPerCustomer<1||maxUsesPerCustomer>100000))||
+  !Number.isFinite(minAmount)||minAmount<0||minAmount>1000000||
+  !/^\d{0,7}([.,]\d{1,2})?$/.test(minimum||"0"))return null;
+ return {
+  kind,amount,audience:audience as CouponFormFields["audience"],expiresAt,
+  appliesTo:scope as CouponFormFields["appliesTo"],maxUses,maxUsesPerCustomer,
+  minOrderCents:Math.round(minAmount*100),
+ };
+}
+
 export async function saveCoupon(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
   const path = modulePath(tenantCode, "marketing-cupons");
   if (!allowed(viewer, ["OWNER"])) redirect(path + "?erro=permissao");
-
-  const code = value(formData, "code", 40).toUpperCase().replace(/[^A-Z0-9_-]/g, "");
-  const kind = value(formData, "kind", 20) === "FIXED" ? "FIXED" : "PERCENT";
-  const amount = numberValue(formData, "value");
-  const audience = value(formData, "audience", 20);
-  const expiresAt = value(formData, "expiresAt", 20);
-  const today = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-  const hasExpiry = /^\d{4}-\d{2}-\d{2}$/.test(expiresAt);
-  const expiryDate = hasExpiry ? new Date(expiresAt + "T12:00:00.000Z") : null;
-  const validExpiry = Boolean(expiryDate && Number.isFinite(expiryDate.getTime()) && expiryDate.toISOString().slice(0,10) === expiresAt);
-  if (code.length < 3 || !Number.isFinite(amount) || amount <= 0 ||
-    !["ALL","CLUB","NON_CLUB"].includes(audience) ||
-    (kind === "PERCENT" && amount > 100) || (kind === "FIXED" && amount > 1000000) ||
-    !validExpiry || expiresAt < today) {
-    redirect(path + "?erro=cupom");
-  }
-
-  try {
-    await persistWorkspace(shop, workspace => {
-      if (workspace.coupons.some(coupon => coupon.active && coupon.code === code &&
-        (!coupon.expiresAt || coupon.expiresAt >= today))) throw new Error("Cupom ativo duplicado");
-      workspace.coupons.unshift({
-        id: workspaceId("coupon"),
-        code,
-        kind,
-        value: amount,
-        audience:audience as "ALL"|"CLUB"|"NON_CLUB",
-        expiresAt,
-        active: true,
-        createdAt: new Date().toISOString(),
-      });
+  const code=value(formData,"code",40).toUpperCase();
+  const fields=couponFormFields(formData);
+  if(!fields||! /^[A-Z0-9_-]{3,40}$/.test(code))redirect(path+"?erro=cupom");
+  try{
+   await persistWorkspace(shop,workspace=>{
+    // Não reutilizar códigos: preserva atribuição dos históricos de pagamento antigos.
+    if(workspace.coupons.some(c=>c.code===code)||workspace.coupons.length>=500)
+      throw new Error("Código existente ou limite de cupons atingido");
+    workspace.coupons.unshift({
+     id:workspaceId("coupon"),code,kind:fields.kind,value:fields.amount,
+     audience:fields.audience,expiresAt:fields.expiresAt,active:true,paused:false,
+     maxUses:fields.maxUses,maxUsesPerCustomer:fields.maxUsesPerCustomer,
+     minOrderCents:fields.minOrderCents,appliesTo:fields.appliesTo,
+     createdAt:new Date().toISOString(),
     });
-  } catch (error) {
-    console.error("Failed to save coupon", error);
-    redirect(path + "?erro=cupom");
+   },{action:"FINANCIAL_COUPON_CREATED",actor:viewer.email,details:{code,audience:fields.audience}});
+  }catch(error){
+   console.error("Failed to save coupon",error);redirect(path+"?erro=cupom");
   }
-
   revalidatePath(path);
-  redirect(path + "?ok=cupom");
+  redirect(path+"?ok=cupom");
+}
+export async function updateCoupon(formData:FormData){
+ const {tenantCode,viewer,shop}=await moduleContext(formData);
+ const path=modulePath(tenantCode,"marketing-cupons");
+ if(!allowed(viewer,["OWNER"]))redirect(path+"?erro=permissao");
+ const couponId=value(formData,"couponId",100),fields=couponFormFields(formData);
+ if(!couponId||!fields)redirect(path+"?erro=cupom");
+ try{
+  await persistWorkspace(shop,workspace=>{
+   const coupon=workspace.coupons.find(c=>c.id===couponId&&c.active);
+   if(!coupon)throw new Error("Cupom não encontrado");
+   Object.assign(coupon,{
+    kind:fields.kind,value:fields.amount,audience:fields.audience,
+    expiresAt:fields.expiresAt,maxUses:fields.maxUses,
+    maxUsesPerCustomer:fields.maxUsesPerCustomer,minOrderCents:fields.minOrderCents,
+    appliesTo:fields.appliesTo,
+   });
+  },{action:"FINANCIAL_COUPON_UPDATED",actor:viewer.email,details:{couponId}});
+ }catch(error){console.error("Failed to edit coupon",error);redirect(path+"?erro=cupom");}
+ revalidatePath(path);redirect(path+"?ok=cupom-atualizado");
+}
+export async function toggleCouponPause(formData:FormData){
+ const {tenantCode,viewer,shop}=await moduleContext(formData);
+ const path=modulePath(tenantCode,"marketing-cupons");
+ if(!allowed(viewer,["OWNER"]))redirect(path+"?erro=permissao");
+ const id=value(formData,"couponId",100);
+ if(!id)redirect(path+"?erro=cupom");
+ try{
+  await persistWorkspace(shop,workspace=>{
+   const coupon=workspace.coupons.find(c=>c.id===id&&c.active);
+   if(!coupon)throw new Error("Cupom não encontrado");
+   coupon.paused=!coupon.paused;
+  },{action:"FINANCIAL_COUPON_PAUSE_TOGGLED",actor:viewer.email,details:{couponId:id}});
+ }catch(error){console.error("Failed to change coupon status",error);redirect(path+"?erro=cupom");}
+ revalidatePath(path);redirect(path+"?ok=cupom-status");
 }
 
 /** Revoga o cupom para novas comandas preservando histórico de pagamentos. */

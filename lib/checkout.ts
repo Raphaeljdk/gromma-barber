@@ -2,7 +2,7 @@ export const PAYMENT_METHODS = ["CASH", "DEBIT", "CREDIT", "PIX", "TRANSFER"] as
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
 export const PAYMENT_LABELS: Record<PaymentMethod, string> = { CASH: "Dinheiro", DEBIT: "Débito", CREDIT: "Crédito", PIX: "Pix", TRANSFER: "Transferência" };
 export type CashSession = { id: string; unitId: string; unitName: string; openedAt: string; openedBy: string; openingCents: number; closedAt?: string; closedBy?: string; counted?: Record<PaymentMethod, number>; note?: string };
-export type CommandPayment = { id: string; commandId: string; sessionId: string; customerName: string; paidAt: string; amounts: Record<PaymentMethod, number>; couponCode?: string; discountCents?: number; manualDiscountCents?: number };
+export type CommandPayment = { id: string; commandId: string; sessionId: string; customerName: string; paidAt: string; amounts: Record<PaymentMethod, number>; couponCode?: string; discountCents?: number; manualDiscountCents?: number; couponId?:string;couponCents?:number;customerId?:string;operatorId?:string;paidTotalCents?:number };
 /** A reabertura é permitida somente no caixa ORIGINAL ainda aberto. */
 export function canReopenCommand(
   status: string,
@@ -82,7 +82,7 @@ export function whatsappAppointmentConfirmation(
 }
 
 
-export type CheckoutCoupon = { code: string; kind: "PERCENT" | "FIXED"; value: number; expiresAt: string | null; active: boolean; audience?: "ALL" | "CLUB" | "NON_CLUB" };
+export type CheckoutCoupon = { code: string; kind: "PERCENT" | "FIXED"; value: number; expiresAt: string | null; active: boolean; audience?: "ALL" | "CLUB" | "NON_CLUB";paused?:boolean;maxUses?:number;maxUsesPerCustomer?:number;minOrderCents?:number;appliesTo?:"SERVICES"|"PRODUCTS"|"BOTH";usedTotal?:number;usedByCustomer?:number;id?:string };
 export type CheckoutDiscountInput = {
   kind: "NONE" | "PERCENT" | "FIXED"; scope: "ORDER" | "ITEM";
   itemId: string; value: string; couponCode: string;
@@ -121,10 +121,10 @@ export function calculateAppliedItemDiscounts(items: CheckoutPricingLine[], disc
   }
   return deductions;
 }
-export type CheckoutPricingLine = { id: string; total: number };
+export type CheckoutPricingLine = { id: string; total: number;kind?:string };
 export function calculateCheckoutPricing(
   items: CheckoutPricingLine[], existingDiscountCents: number,
-  input: CheckoutDiscountInput, coupons: CheckoutCoupon[], now = new Date(), appliedItemDiscounts: AppliedItemDiscount[] = [], customerHasClub = false,
+  input: CheckoutDiscountInput, coupons: CheckoutCoupon[], now = new Date(), appliedItemDiscounts: AppliedItemDiscount[] = [], customerHasClub = false, customerId: string|null = null,
 ) {
   const subtotalCents = items.reduce((total, item) => total + Math.round(item.total * 100), 0);
   if (subtotalCents < 0 || !Number.isSafeInteger(subtotalCents)) throw new Error("Subtotal inválido.");
@@ -157,10 +157,25 @@ export function calculateCheckoutPricing(
   if (code) {
     const coupon = coupons.find(item => item.code.toUpperCase() === code && item.active);
     if (!coupon) throw new Error("Cupom inexistente ou inativo.");
+    if(coupon.paused)throw new Error("Este cupom está pausado.");
+    if(coupon.maxUses&& (coupon.usedTotal??0)>=coupon.maxUses)throw new Error("Limite total de usos atingido.");
+    if(coupon.maxUsesPerCustomer&&(!customerId||(coupon.usedByCustomer??0)>=coupon.maxUsesPerCustomer))throw new Error("Limite por cliente atingido ou cliente não identificado.");
+    if(coupon.minOrderCents&&subtotalCents<coupon.minOrderCents)throw new Error("A comanda não atingiu o valor mínimo exigido para o cupom.");
     if (coupon.audience === "CLUB" && !customerHasClub) throw new Error("Cupom exclusivo para clientes com assinatura ativa.");
     if (coupon.audience === "NON_CLUB" && customerHasClub) throw new Error("Cupom exclusivo para clientes sem assinatura ativa.");
     if (coupon.expiresAt && coupon.expiresAt < new Intl.DateTimeFormat("en-CA", { timeZone:"America/Sao_Paulo", year:"numeric", month:"2-digit", day:"2-digit" }).format(now)) throw new Error("Cupom expirado.");
-    const available = subtotalCents - manualCents - legacyCents - appliedCents;
+    const remaining=subtotalCents-manualCents-legacyCents-appliedCents;
+    const relevant=items.filter(item=>coupon.appliesTo!=="SERVICES"&&coupon.appliesTo!=="PRODUCTS"||
+      item.kind===(coupon.appliesTo==="SERVICES"?"SERVICE":"PRODUCT"));
+    if(!relevant.length)throw new Error("Cupom não aplicável aos itens desta comanda.");
+    const eligibleTotal=relevant.reduce((sum,item)=>sum+Math.round(item.total*100),0);
+    const appliedPerItem=calculateAppliedItemDiscounts(items,appliedItemDiscounts);
+    const eligibleApplied=relevant.reduce((sum,item)=>sum+(appliedPerItem.get(item.id)??0),0);
+    // Descontos anteriores são debitados integralmente da base elegível, evitando
+    // desconto excessivo quando a comanda mistura serviços e produtos.
+    const manualEligible=input.scope==="ITEM"&&!relevant.some(item=>item.id===input.itemId)?0:manualCents;
+    const available=Math.max(0,Math.min(remaining,eligibleTotal-eligibleApplied-manualEligible-legacyCents));
+    if(!available)throw new Error("Não há valor elegível restante para aplicar o cupom.");
     if (coupon.kind === "PERCENT") {
       if (!Number.isFinite(coupon.value) || coupon.value < 0 || coupon.value > 100) throw new Error("Cupom inválido.");
       couponCents = Math.round(available * coupon.value / 100);

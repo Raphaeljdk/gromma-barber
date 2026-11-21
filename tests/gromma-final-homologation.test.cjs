@@ -65,9 +65,9 @@ test("Link Indique e ganhe é absoluto quando compartilhado no WhatsApp",()=>{
 test("Cupom salva na subaba correta, exige validade e bloqueia código ativo duplicado",()=>{
  const form=read("components/marketing-promotions.tsx");
  const actions=read("app/erp/[tenant]/module-actions.ts");
- assert.match(form,/name="returnModule" value="marketing-cupons"/);
- assert.match(actions,/coupon\.active && coupon\.code === code/);
+ assert.match(form,/name="tenantCode" value=\{tenantCode\}/);
+ assert.match(actions,/workspace\.coupons\.some\(c=>c\.code===code\)/);
  assert.match(actions,/const path = modulePath\(tenantCode, "marketing-cupons"\)/);
- assert.match(actions,/validExpiry/);
- assert.match(actions,/expiresAt < today/);
+ assert.match(actions,/date\.toISOString\(\)\.slice\(0,10\)!==expiresAt/);
+ assert.match(actions,/expiresAt<today/);
 });
