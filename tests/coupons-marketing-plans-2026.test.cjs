@@ -106,10 +106,12 @@ test("Premium, Start, Basic e sem plano usam cores consistentes nos três módul
  assert.equal(planLabel(null),"Sem plano");
  const agenda=read("components/erp-agenda-board.tsx");
  const page=read("app/erp/[tenant]/page.tsx");
- assert.match(agenda,/style=\{\{borderLeft:\`4px solid \$\{planColor\(item\.planName\)\}\`\}\}/);
- assert.match(agenda,/borderLeft:\`4px solid \$\{planColor\(item\.planName\)\}\`/);
+ assert.match(agenda,/style=\{\{borderLeft:\`4px solid \$\{planColor\(item\.planName,planNames\)\}\`\}\}/);
+ assert.match(agenda,/borderLeft:\`4px solid \$\{planColor\(item\.planName,planNames\)\}\`/);
  assert.match(agenda,/className="gromma-plan-legend"/);
- assert.match(page,/Agendamentos por plano · Hoje/);
+ assert.match(page,/Legenda dos planos/);
+ assert.match(page,/className="gromma-dashboard-plan-legend"/);
+ assert.doesNotMatch(page,/dashboardPlanCount|dashboardPlanAppointments|Agendamentos por plano · Hoje/);
  assert.match(page,/className="gromma-command-customer"/);
- assert.match(page,/planNames=\{workspace\.clubPlans\.filter/);
+ assert.match(page,/planNames=\{dashboardPlanNames\}/);
 });
