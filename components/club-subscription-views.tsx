@@ -22,7 +22,6 @@ const localDay = (value: string | Date) => {
 const dayLabel = (value: string | Date | undefined) => value ? (localDay(value).split("-").reverse().join("/") || "—") : "—";
 const validMonth = (value: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 const validDay = (value: string) => /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(value) && !Number.isNaN(new Date(value + "T12:00:00-03:00").getTime()) && localDay(value + "T12:00:00-03:00") === value;
-const dateObject = (value: string) => new Date(value + "T12:00:00-03:00");
 const dateOffset = (value: string, amount: number) => {
   const date = new Date(value + "T12:00:00Z");
   date.setUTCDate(date.getUTCDate() + amount);
@@ -86,10 +85,11 @@ function Calendar({ month, base, items, title, note, plan, plans }: { month: str
     <p className={"small muted " + styles.note}>{note}</p>
   </>;
 }
-function Period({ base, query, value }: { base: string; query: Query; value: "dia" | "semana" | "mes" }) {
+function Period({ base, query, value, plan }: { base: string; query: Query; value: "dia" | "semana" | "mes"; plan?: string }) {
   const raw = Array.isArray(query.data) ? query.data[0] : query.data;
   const anchor = raw && validDay(raw) ? raw : localDay(new Date());
   return <form className={styles.period} action={base} method="get">
+    {plan && <input type="hidden" name="plano" value={plan}/>}
     <div className={styles.periodChoices}>{(["dia", "semana", "mes"] as const).map(p => <label key={p} className={value === p ? styles.currentChoice : ""}><input type="radio" name="periodo" value={p} defaultChecked={value === p}/>{p === "mes" ? "Mês" : p === "semana" ? "Semana" : "Dia"}</label>)}</div>
     <label className={styles.field}><span>Data de referência</span><input className="input" type="date" name="data" defaultValue={anchor}/></label>
     <button className="btn secondary" type="submit">Aplicar</button>
@@ -218,7 +218,7 @@ export async function ClubSubscriptionViews({ tenantCode, shopId, workspace, vie
     ];
     const rows = cancellations.filter(c => c.date >= from && c.date < to && (!plan || c.planId === plan)).sort((a,b)=>b.date.localeCompare(a.date)).map(c => ({ id: c.id, cells: [named(c.customerId),c.planName,c.reason,dayLabel(c.date)] }));
     return <section className="demo-section club-management-page"><div className="section-head"><div><div className="eyebrow">Clube / Assinaturas</div><h2>Clientes cancelados</h2></div></div>
-      <div className={styles.filtersRow}><form action={base} method="get" className={styles.filters}><input type="hidden" name="periodo" value={period}/><input type="hidden" name="data" value={date}/><Select name="plano" label="Tipo de plano" value={plan} options={[{value:"",label:"Todos"},...planOptions.map(p=>({value:p.id,label:p.name}))]}/><button className="btn secondary" type="submit">Filtrar</button></form><Period base={base} query={query} value={period}/></div>
+      <div className={styles.filtersRow}><form action={base} method="get" className={styles.filters}><input type="hidden" name="periodo" value={period}/><input type="hidden" name="data" value={date}/><Select name="plano" label="Tipo de plano" value={plan} options={[{value:"",label:"Todos"},...planOptions.map(p=>({value:p.id,label:p.name}))]}/><button className="btn secondary" type="submit">Filtrar</button></form><Period base={base} query={query} value={period} plan={plan}/></div>
       <Summary items={[{label:"Clientes cancelados no período",value:String(rows.length)}]}/>
       <Table columns={["Cliente", "Tipo do plano", "Motivo", "Data do encerramento"]} rows={rows} empty="Nenhum cancelamento encontrado para o período e plano selecionados."}/>
     </section>;
