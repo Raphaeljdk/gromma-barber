@@ -23,6 +23,8 @@ const MODULES = new Set([
   "clube-pagamentos",
   "clube-recebiveis",
   "clube-cancelados",
+  "clube-novos",
+  "clube-ativos",
   "clube-pote",
   "clube-inadimplentes",
   "clube-saques",
