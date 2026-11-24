@@ -7,14 +7,15 @@ import { salesRows } from "@/lib/subscription-reports";
 import type { ErpWorkspace } from "@/lib/erp-workspace";
 import styles from "./club-subscription-views.module.css";
 
-type View = "clube-pagamentos" | "clube-recebiveis" | "clube-novos" | "clube-ativos" | "clube-cancelados" | "clube-pote";
+export type ClubSubscriptionView = "clube-pagamentos" | "clube-recebiveis" | "clube-novos" | "clube-ativos" | "clube-cancelados" | "clube-pote";
 type Query = Record<string, string | string[] | undefined>;
-type Props = { tenantCode: string; shopId: string; workspace: ErpWorkspace; view: View; query: Query; month?: string };
+type Props = { tenantCode: string; shopId: string; workspace: ErpWorkspace; view: ClubSubscriptionView; query: Query; month?: string };
 type CalendarItem = { id: string; date: string; value: number; label: string; status: string; planId?: string };
 const formatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const money = (n: number) => formatter.format(n);
 const dates = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
 const localDay = (value: string | Date) => {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? dates.format(date) : "";
 };
