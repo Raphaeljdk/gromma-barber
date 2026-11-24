@@ -201,9 +201,11 @@ const MODULE_TITLES: Record<string, string> = {
   assinaturas: "Clube / Assinaturas",
   "clube-pag": "Dashboard Gromma Pag",
   "clube-reajustes": "Programar reajuste",
-  "clube-pagamentos": "Calendário de pagamentos",
+  "clube-pagamentos": "Calendário de assinaturas",
   "clube-recebiveis": "Calendário de recebíveis",
   "clube-cancelados": "Clientes cancelados",
+  "clube-novos": "Novos contratos",
+  "clube-ativos": "Contratos ativos",
   "clube-pote": "Distribuição do pote",
   "clube-inadimplentes": "Inadimplentes",
   "clube-saques": "Solicitar saque",
@@ -409,7 +411,7 @@ export async function TenantERPView({
   const workspace = readWorkspace(shop.enabledFeatures);
   const financeSelectedUnit = shop.units.some(unit=>unit.id===valueOf("finFilial")&&unit.active) ? valueOf("finFilial") : "";
   const controlledModulePermission = ["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(activeModule) ? "VIEW_FINANCE"
-    : ["clube-cancelados","clube-inadimplentes"].includes(activeModule) ? "VIEW_REPORTS"
+    : ["clube-cancelados","clube-inadimplentes","clube-novos","clube-ativos"].includes(activeModule) ? "VIEW_REPORTS"
     : (activeModule==="financeiro" || financeSubmodule || activeModule==="financeiro-gromma-nf") ? "VIEW_FINANCE"
     : activeModule === "comissoes" ? "VIEW_COMMISSIONS"
     : activeModule === "relatorios" || Boolean(SUBSCRIPTION_REPORTS[activeModule]) ? "VIEW_REPORTS"
@@ -1738,7 +1740,7 @@ export async function TenantERPView({
 
         {CLUB_MANAGEMENT_MODULES.includes(activeModule as ClubManagementModule) &&
           <ClubManagementPanels tenantCode={tenantCode} shopId={shop.id} workspace={workspace}
-            view={activeModule as ClubManagementModule} month={valueOf("clubeMes")}
+            view={activeModule as ClubManagementModule} month={valueOf("clubeMes")} query={qs}
             isOwner={isOwner} ok={actionOk} error={actionError}/>}
 
         {SUBSCRIPTION_REPORTS[activeModule] && <SubscriptionReports report={activeModule} tenantCode={tenantCode} shopId={shop.id} workspace={workspace} canFinance={isOwner} searchParams={qs} />}
