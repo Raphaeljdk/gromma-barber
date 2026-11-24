@@ -7,6 +7,7 @@ const view = read("components/club-subscription-views.tsx");
 const wrapper = read("components/erp-club-management.tsx");
 const nav = read("lib/erp-navigation.ts");
 const route = read("app/erp/[tenant]/page.tsx");
+const moduleRoutes = read("app/erp/[tenant]/[module]/page.tsx");
 
 test("Calendários de assinaturas e recebíveis têm fontes diferentes e não simulam conciliação", () => {
   assert.match(view, /view === "clube-pagamentos"/);
@@ -27,6 +28,8 @@ test("Menu tem rotas próprias para novos contratos e contratos ativos", () => {
   assert.match(wrapper, /"clube-novos","clube-ativos"/);
   assert.match(route, /"clube-novos","clube-ativos"/);
   assert.match(route, /query=\{qs\}/);
+  assert.match(moduleRoutes, /"clube-novos"/);
+  assert.match(moduleRoutes, /"clube-ativos"/);
 });
 test("Dashboard de novos contratos conta pessoas e possui filtros de dia semana mês", () => {
   assert.match(view, /"dia", "semana", "mes"/);
