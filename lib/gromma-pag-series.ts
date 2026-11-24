@@ -117,8 +117,8 @@ export function buildGrommaPagCandles(
       periodLabel: p.periodLabel,
       open: amounts[0] ?? 0,
       close: amounts[amounts.length - 1] ?? 0,
-      high: Math.max(0, ...amounts),
-      low: Math.min(0, ...amounts),
+      high: Math.max(...amounts),
+      low: Math.min(...amounts),
       total: amounts.reduce((sum, value) => sum + value, 0),
       count: p.count,
     };
