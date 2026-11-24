@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { ReceiptText, UsersRound, Wallet } from "lucide-react";
+import { GrommaPagCandles } from "./gromma-pag-candles";
+import styles from "./gromma-pag-dashboard.module.css";
 import { prisma } from "@/lib/prisma";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { effectiveClubMember } from "@/lib/club-lifecycle";
@@ -46,22 +49,26 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
   const base=`/erp/${encodeURIComponent(tenantCode)}`;
   const chargeIds=workspace.clubCharges.map(charge=>charge.entryId);
   const relevantFinance = view!=="clube-reajustes"&&view!=="clube-saques"&&view!=="clube-cancelados";
-  const [charges,outgoing,customers]=await Promise.all([
+  const [charges,outgoing,customers,commandTicket]=await Promise.all([
     relevantFinance&&chargeIds.length?prisma.financialEntry.findMany({
       where:{barberShopId:shopId,id:{in:chargeIds}},
       select:{id:true,amount:true,paidAt:true,dueDate:true,createdAt:true,status:true,type:true,category:true,unitId:true},
-      orderBy:{createdAt:"desc"},take:2000,
+      orderBy:{createdAt:"desc"},take:view==="clube-pag"?undefined:2000,
     }):Promise.resolve([]),
     view==="clube-pagamentos"?prisma.financialEntry.findMany({
       where:{barberShopId:shopId,type:"PAYABLE",dueDate:{gte:from,lt:until}},
       select:{id:true,description:true,amount:true,status:true,dueDate:true,paidAt:true},
       orderBy:{dueDate:"asc"},take:500,
     }):Promise.resolve([]),
-    ["clube-cancelados","clube-inadimplentes","clube-recebiveis","clube-transacoes","clube-pag"].includes(view)?
+    ["clube-cancelados","clube-inadimplentes","clube-recebiveis","clube-transacoes"].includes(view)?
       prisma.customer.findMany({
         where:{barberShopId:shopId,id:{in:[...new Set(workspace.clubMembers.map(c=>c.customerId))]}},
         select:{id:true,name:true},take:2000,
       }):Promise.resolve([]),
+    view==="clube-pag"?prisma.serviceCommand.aggregate({
+      where:{barberShopId:shopId,status:"CLOSED",total:{gt:0}},
+      _avg:{total:true},
+    }):Promise.resolve(null),
   ]);
   const customerNames=new Map(customers.map(c=>[c.id,c.name]));
   const chargeMap=new Map(workspace.clubCharges.map(ch=>[ch.entryId,ch]));
@@ -75,6 +82,15 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
   const paidAmount=countPaid.reduce((sum,e)=>sum+e.amountValue,0);
   const overdueMembers=activeMembers.filter(item=>item.status==="PAST_DUE"||overdueIds.has(item.id));
   const currentReceivables=byMonth.filter(e=>e.status==="PENDING");
+  const eligibleMembers=activeMembers.filter(member=>member.status==="ACTIVE"||member.status==="PAST_DUE");
+  const overdueEligible=eligibleMembers.filter(member=>member.status==="PAST_DUE"||overdueIds.has(member.id));
+  const onTimeMembers=Math.max(0,eligibleMembers.length-overdueEligible.length);
+  const overdueRate=eligibleMembers.length?100*overdueEligible.length/eligibleMembers.length:0;
+  const subscriptionTicket=countPaid.length?paidAmount/countPaid.length:0;
+  const commandTicketAverage=Number(commandTicket?._avg.total??0);
+  const confirmedReceipts=countPaid.filter(entry=>entry.paidAt).map(entry=>({
+    date:entry.paidAt!.toISOString(),amount:entry.amountValue,
+  }));
   const pot = view==="clube-pote"?await calculateSubscriptionPot(
     prisma,shopId,workspace,from,until,
     (await prisma.shopUser.findMany({where:{barberShopId:shopId,active:true,role:{in:["OWNER","MANAGER","BARBER"]}},select:{id:true}})).map(u=>u.id)
@@ -82,33 +98,51 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
   const potUsers=pot?await prisma.shopUser.findMany({where:{barberShopId:shopId,id:{in:Object.keys(pot.distributions)}},select:{id:true,name:true}}):[];
   const potNames=new Map(potUsers.map(user=>[user.id,user.name]));
   return <section id={view} className="demo-section club-management-page">
-    <div className="section-head">
+    {view!=="clube-pag"&&<div className="section-head">
       <div><div className="eyebrow">Clube / Assinaturas</div><h2>{titles[view]}</h2></div>
       <Link href={base+"/assinaturas"} className="btn secondary">Voltar ao clube</Link>
-    </div>
+    </div>}
     {ok&&<p role="status" className="notice success">Operação registrada com sucesso.</p>}
     {error&&<p role="alert" className="notice error-notice">Não foi possível concluir a operação. Confira os campos, o período e suas permissões.</p>}
-    {["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(view)&&
+    {["clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(view)&&
       <form action={base+"/"+view} method="get" className="club-period-filter">
         <label>Mês de referência <input name="clubeMes" type="month" defaultValue={month} className="input"/></label>
         <button className="btn secondary" type="submit">Consultar período</button>
       </form>
     }
-    {view==="clube-pag"&&<>
-      <Notice>Este painel consolida lançamentos internos do clube. Gromma Pag não está conectado a um processador bancário: valores pagos dependem da confirmação registrada no Financeiro.</Notice>
-      <Kpis items={[
-        {label:"Contratos ativos",value:String(activeMembers.filter(a=>a.status==="ACTIVE").length)},
-        {label:"Cobranças pagas (histórico)",value:brl(paidAmount)},
-        {label:"Pendentes no período",value:brl(currentReceivables.reduce((a,e)=>a+e.amountValue,0))},
-        {label:"Contratos com atraso",value:String(overdueMembers.length)},
-      ]}/>
-      <h3>Atividades do clube</h3>
-      <div className="club-list">
-        <Link href={base+"/clube-recebiveis"}>Consultar recebíveis e vencimentos <span>Ver</span></Link>
-        <Link href={base+"/clube-inadimplentes"}>Conferir contratos em atraso <span>Ver</span></Link>
-        <Link href={base+"/clube-transacoes"}>Consultar histórico financeiro <span>Ver</span></Link>
+    {view==="clube-pag"&&<div className={styles.dashboard}>
+      <article className={styles.summaryCard}>
+        <div className={styles.cardHeading}><span className={styles.headingIcon}><UsersRound size={17}/></span>Clientes ativos</div>
+        <div className={styles.customerGrid}>
+          {[
+            {label:"Total",value:String(eligibleMembers.length)},
+            {label:"Em dia",value:String(onTimeMembers)},
+            {label:"Atrasados",value:String(overdueEligible.length)},
+            {label:"Porcentagem de inadimplentes",value:overdueRate.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%"},
+          ].map(item=><div key={item.label}>
+            <span className={styles.statLabel}>{item.label}</span>
+            <strong className={styles.statValue}>{item.value}</strong>
+          </div>)}
+        </div>
+      </article>
+      <div className={styles.summaryRow}>
+        <article className={styles.ticketCard}>
+          <div className={styles.cardHeading}><span className={styles.headingIcon}><ReceiptText size={17}/></span>Ticket médio</div>
+          <div className={styles.ticketGrid}>
+            <div><span className={styles.statLabel}>Ticket médio das assinaturas</span><strong className={styles.statValue}>{brl(subscriptionTicket)}</strong></div>
+            <div><span className={styles.statLabel}>Ticket médio das comandas</span><strong className={styles.statValue}>{brl(commandTicketAverage)}</strong></div>
+          </div>
+        </article>
+        <article className={styles.balanceCard}>
+          <div className={styles.cardHeading}><span className={styles.headingIcon}><Wallet size={17}/></span>Saldos</div>
+          <span className={styles.statLabel}>Saldo em processamento</span>
+          <strong className={styles.statValue+" "+styles.balanceValue}>—</strong>
+          <small className={styles.statSmall}>Indisponível: processador financeiro ainda não conectado.</small>
+        </article>
       </div>
-    </>}
+      <GrommaPagCandles receipts={confirmedReceipts}/>
+      <p className={styles.notice}>Indicadores de assinaturas baseados nas cobranças e contratos registrados nesta barbearia. Ticket das comandas considera comandas fechadas com valor positivo. Pagamentos são conferidos pelos registros internos; o Gromma Pag não está conectado a um gateway bancário.</p>
+    </div>}
     {view==="clube-reajustes"&&<>
       <Notice>Reajustes ficam agendados para uma data futura e só são aplicados quando o proprietário confirmar na data de vigência. Não alteram cobranças já geradas, nem executam reajustes automáticos.</Notice>
       {isOwner&&<form action={scheduleClubPriceAdjustment} className="club-admin-form">
