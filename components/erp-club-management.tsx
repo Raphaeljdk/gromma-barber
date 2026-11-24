@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { effectiveClubMember } from "@/lib/club-lifecycle";
+import { ClubSubscriptionViews, type ClubSubscriptionView } from "@/components/club-subscription-views";
 import type { ErpWorkspace } from "@/lib/erp-workspace";
 import {
   scheduleClubPriceAdjustment, applyClubPriceAdjustment, cancelClubPriceAdjustment,
@@ -10,16 +11,18 @@ import {
 
 export const CLUB_MANAGEMENT_MODULES = [
   "clube-pag","clube-reajustes","clube-pagamentos","clube-recebiveis",
-  "clube-cancelados","clube-pote","clube-inadimplentes","clube-saques","clube-transacoes",
+  "clube-cancelados","clube-novos","clube-ativos","clube-pote","clube-inadimplentes","clube-saques","clube-transacoes",
 ] as const;
 export type ClubManagementModule = typeof CLUB_MANAGEMENT_MODULES[number];
 
 const titles: Record<ClubManagementModule,string> = {
   "clube-pag":"Gromma Pag — painel interno",
   "clube-reajustes":"Programar reajuste",
-  "clube-pagamentos":"Calendário de pagamentos",
+  "clube-pagamentos":"Calendário de assinaturas",
   "clube-recebiveis":"Calendário de recebíveis",
   "clube-cancelados":"Clientes cancelados",
+  "clube-novos":"Novos contratos",
+  "clube-ativos":"Contratos ativos",
   "clube-pote":"Distribuição do pote",
   "clube-inadimplentes":"Inadimplentes",
   "clube-saques":"Solicitar saque",
@@ -35,8 +38,11 @@ const statusLabels: Record<string,string>={PAID:"Pago",PENDING:"Pendente",CANCEL
 function Empty({children}:{children:string}){return <p className="club-empty">{children}</p>}
 function Kpis({items}:{items:{label:string;value:string;detail?:string}[]}){return <div className="club-kpis">{items.map(item=><div className="club-kpi" key={item.label}><span>{item.label}</span><strong>{item.value}</strong>{item.detail&&<small>{item.detail}</small>}</div>)}</div>}
 function Notice({children}:{children:string}){return <p className="club-notice">{children}</p>}
-type Props={tenantCode:string;shopId:string;workspace:ErpWorkspace;view:ClubManagementModule;month?:string;isOwner:boolean;ok?:string;error?:string;};
-export async function ClubManagementPanels({tenantCode,shopId,workspace,view,month:monthRaw,isOwner,ok,error}:Props){
+type Props={tenantCode:string;shopId:string;workspace:ErpWorkspace;view:ClubManagementModule;month?:string;isOwner:boolean;ok?:string;error?:string;query:Record<string,string|string[]|undefined>;};
+export async function ClubManagementPanels({tenantCode,shopId,workspace,view,month:monthRaw,isOwner,ok,error,query}:Props){
+  if (["clube-pagamentos","clube-recebiveis","clube-novos","clube-ativos","clube-cancelados","clube-pote"].includes(view)) {
+    return <ClubSubscriptionViews tenantCode={tenantCode} shopId={shopId} workspace={workspace} view={view as ClubSubscriptionView} query={query} month={monthRaw}/>;
+  }
   const today=new Date();
   const fallbackMonth=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit"}).format(today);
   const month=monthRaw&&/^\d{4}-(0[1-9]|1[0-2])$/.test(monthRaw)?monthRaw:fallbackMonth;
