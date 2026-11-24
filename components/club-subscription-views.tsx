@@ -220,7 +220,7 @@ export async function ClubSubscriptionViews({ tenantCode, shopId, workspace, vie
     return <section className="demo-section club-management-page"><div className="section-head"><div><div className="eyebrow">Clube / Assinaturas</div><h2>Clientes cancelados</h2></div></div>
       <div className={styles.filtersRow}><form action={base} method="get" className={styles.filters}><input type="hidden" name="periodo" value={period}/><input type="hidden" name="data" value={date}/><Select name="plano" label="Tipo de plano" value={plan} options={[{value:"",label:"Todos"},...planOptions.map(p=>({value:p.id,label:p.name}))]}/><button className="btn secondary" type="submit">Filtrar</button></form><Period base={base} query={query} value={period} plan={plan}/></div>
       <Summary items={[{label:"Clientes cancelados no período",value:String(rows.length)}]}/>
-      <Table columns={["Cliente", "Tipo do plano", "Motivo", "Data do encerramento"]} rows={rows} empty="Nenhum cancelamento encontrado para o período e plano selecionados."}/>
+      <Table columns={["Cliente", "Tipo do plano", "Motivo", "Data do encerramento"]} rows={rows} empty="Nenhum cancelamento encontrado para o período e plano selecionados."/>
     </section>;
   }
   const { start, end } = monthRange(month);
