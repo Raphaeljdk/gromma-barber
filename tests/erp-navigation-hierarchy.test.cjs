@@ -70,7 +70,7 @@ test("every referenced subitem remains in its exact hierarchy", () => {
   }
   const subscription = ERP_NAVIGATION.find(group => group.id === "assinaturas");
   assert.deepEqual(subscription.items.map(item => item.label), [
-    "Abrir Clube / Assinaturas", "Dashboard Gromma Pag", "Programar reajuste", "Calendário de pagamentos",
+    "Dashboard Gromma Pag", "Programar reajuste", "Calendário de pagamentos",
     "Calendário de recebíveis", "Novos contratos", "Clientes cancelados",
     "Contratos ativos", "Distribuição do Pote", "Inadimplentes", "Planos",
     "Solicitar saque", "Transações financeiras",
