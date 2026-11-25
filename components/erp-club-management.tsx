@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { dateInPeriod, validPeriod } from "@/lib/subscription-reports";
 import { prisma } from "@/lib/prisma";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { effectiveClubMember } from "@/lib/club-lifecycle";
@@ -56,7 +57,7 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
     relevantFinance&&chargeIds.length?prisma.financialEntry.findMany({
       where:{barberShopId:shopId,id:{in:chargeIds}},
       select:{id:true,amount:true,paidAt:true,dueDate:true,createdAt:true,status:true,type:true,category:true,unitId:true},
-      orderBy:{createdAt:"desc"},take:2000,
+      orderBy:{createdAt:"desc"},take:view==="clube-inadimplentes"?undefined:2000,
     }):Promise.resolve([]),
     view==="clube-pagamentos"?prisma.financialEntry.findMany({
       where:{barberShopId:shopId,type:"PAYABLE",dueDate:{gte:from,lt:until}},
@@ -66,7 +67,7 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
     ["clube-cancelados","clube-inadimplentes","clube-recebiveis","clube-transacoes","clube-pag"].includes(view)?
       prisma.customer.findMany({
         where:{barberShopId:shopId,id:{in:[...new Set(workspace.clubMembers.map(c=>c.customerId))]}},
-        select:{id:true,name:true},take:2000,
+        select:{id:true,name:true,phone:true,whatsapp:true},take:2000,
       }):Promise.resolve([]),
   ]);
   const customerNames=new Map(customers.map(c=>[c.id,c.name]));
@@ -87,6 +88,23 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
   ):null;
   const potUsers=pot?await prisma.shopUser.findMany({where:{barberShopId:shopId,id:{in:Object.keys(pot.distributions)}},select:{id:true,name:true}}):[];
   const potNames=new Map(potUsers.map(user=>[user.id,user.name]));
+  const param=(key:string)=>{const v=query[key];return (Array.isArray(v)?v[0]:v)||"";};
+  const civil=(d:Date)=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+  const todayKey=civil(today);
+  const startFilter=param("de"), endFilter=param("ate");
+  const periodValid=validPeriod(startFilter,endFilter);
+  const debtRows=entryRows.filter(e=>e.status==="PENDING"&&e.dueDate&&civil(e.dueDate)<todayKey&&periodValid&&dateInPeriod(e.dueDate,startFilter,endFilter)).sort((a,b)=>a.dueDate!.getTime()-b.dueDate!.getTime());
+  const debtCount=new Set(debtRows.map(e=>e.charge.customerId)).size;
+  const customersById=new Map(customers.map(c=>[c.id,c]));
+  const daysLate=(d:Date)=>Math.round((Date.parse(todayKey+"T00:00:00Z")-Date.parse(civil(d)+"T00:00:00Z"))/86400000);
+  const contactLink=(id:string,plan:string,due:Date)=>{
+    const customer=customersById.get(id);
+    const raw=(customer?.whatsapp||customer?.phone||"").replace(/\D/g,"");
+    const number=raw.length===10||raw.length===11?"55"+raw:raw;
+    if(!/^55\d{10,11}$/.test(number))return null;
+    const message="Olá, "+(customer?.name||"")+"! Identificamos uma cobrança pendente do plano "+plan+", com vencimento em "+day(due)+". Poderia verificar, por favor? Caso já tenha realizado o pagamento, desconsidere esta mensagem e entre em contato conosco. Obrigado!";
+    return "https://wa.me/"+number+"?text="+encodeURIComponent(message);
+  };
   return <section id={view} className="demo-section club-management-page">
     <div className="section-head">
       <div><div className="eyebrow">Clube / Assinaturas</div><h2>{titles[view]}</h2></div>
@@ -171,12 +189,18 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
       <Link className="btn secondary" href={base+"/comissoes"}>Conferir geração e pagamento de comissões</Link>
     </>}
     {view==="clube-inadimplentes"&&<>
-      <Notice>Contratos com situação de atraso registrada ou cobrança vencida em aberto. A regularização deve ser conferida no Financeiro antes de alterar o contrato.</Notice>
-      <Kpis items={[{label:"Contratos em atraso",value:String(overdueMembers.length)},{label:"Cobranças vencidas",value:String(entryRows.filter(e=>e.status==="PENDING"&&e.dueDate&&e.dueDate<today).length)}]}/>
-      <div className="table-wrap"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Situação</th><th>Próxima cobrança</th></tr></thead><tbody>
-        {overdueMembers.map(a=><tr key={a.id}><td>{customerNames.get(a.customerId)??"Cliente cadastrado"}</td><td>{workspace.clubPlans.find(p=>p.id===a.planId)?.name??"Plano anterior"}</td><td>Em atraso</td><td>{day(a.nextBillingAt)}</td></tr>)}
-        {!overdueMembers.length&&<tr><td colSpan={4}>Nenhum contrato em atraso identificado.</td></tr>}
+      <Kpis items={[{label:"Inadimplentes",value:String(debtCount)}]}/>
+      <form action={base+"/clube-inadimplentes"} method="get" className="club-period-filter">
+        <label>Data inicial<input className="input" type="date" name="de" defaultValue={startFilter}/></label>
+        <label>Data final<input className="input" type="date" name="ate" defaultValue={endFilter}/></label>
+        <button className="btn secondary" type="submit">Filtrar</button><Link className="btn secondary" href={base+"/clube-inadimplentes"}>Limpar</Link>
+      </form>
+      {!periodValid&&<p role="alert">Período inválido.</p>}
+      <div className="table-wrap"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Data de cobrança</th><th>Dias em atraso</th><th>WhatsApp</th></tr></thead><tbody>
+        {debtRows.map(e=>{const href=contactLink(e.charge.customerId,e.charge.planName,e.dueDate!);return <tr key={e.id}><td>{customerNames.get(e.charge.customerId)??"Cliente cadastrado"}</td><td>{e.charge.planName}</td><td>{day(e.dueDate)}</td><td>{daysLate(e.dueDate!)} dia(s)</td><td>{href?<a className="btn secondary" href={href} target="_blank" rel="noopener noreferrer">WhatsApp</a>:<span className="small muted">Sem telefone válido</span>}</td></tr>})}
+        {!debtRows.length&&<tr><td colSpan={5}>Nenhuma cobrança em atraso identificada no período.</td></tr>}
       </tbody></table></div>
+      <p className="small muted">Somente cobranças vencidas e ainda em aberto. O botão abre uma mensagem para conferência e envio manual.</p>
     </>}
     {view==="clube-saques"&&<>
       <Notice>Esta área registra solicitações internas. Ainda não existe gateway de repasse conectado, saldo bancário validado nem transferência automática. Registrar uma solicitação NÃO movimenta dinheiro.</Notice>
