@@ -293,9 +293,10 @@ export function ErpSidebar({
 
         <nav className="erp-nav" aria-label="Módulos do ERP">
           {NAV_GROUPS.map((group) => {
-            // Independentes: não criar seção-pai para IA, Performance, Precificação ou Totem.
+            // Tools é um título visual; as rotas e permissões continuam independentes.
             // Respeitar as permissões e planos existentes dos itens reais.
             if (["gromma-ia", "performance", "precificacao", "totem"].includes(group.id)) return <div className="erp-nav-standalone" key={group.id}>
+              {group.id === "gromma-ia" && <div className="erp-nav-sector-heading erp-nav-sector-watermark" aria-label="Seção Tools"><span className="erp-nav-sector-copy"><strong>Tools</strong></span></div>}
               {group.items.map(item => renderNavItem(item))}
             </div>;
             const alwaysVisible = group.id === "operacional" || group.id === "gestao" || group.id === "financeiro" || group.id === "marketing" || group.id === "assinaturas";
