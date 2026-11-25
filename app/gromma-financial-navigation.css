@@ -188,7 +188,8 @@ html .tenant-erp .gromma-finance-disclaimer{
 html .tenant-erp .erp-nav-sector[data-sector="operacional"] > .erp-nav-sector-watermark,
 html .tenant-erp .erp-nav-sector[data-sector="gestao"] > .erp-nav-sector-watermark,
 html .tenant-erp .erp-nav-sector[data-sector="financeiro"] > .erp-nav-sector-watermark,
-html .tenant-erp .erp-nav-sector[data-sector="marketing"] > .erp-nav-sector-watermark {
+html .tenant-erp .erp-nav-sector[data-sector="marketing"] > .erp-nav-sector-watermark,
+html .tenant-erp .erp-nav-sector[data-sector="assinaturas"] > .erp-nav-sector-watermark {
   display:flex;align-items:center;gap:9px;
   min-height:28px;padding:9px 8px 3px;
   border:0!important;border-radius:0;
@@ -258,3 +259,12 @@ html .tenant-erp .erp-nav-sector[data-sector="marketing"] .erp-nav-sector-items 
 html .tenant-erp .erp-nav-sector[data-sector="marketing"] .erp-nav-tree-item.is-nested > .erp-nav-tree-row > .erp-nav-item {
   font-size:.74rem!important;font-weight:570!important;min-height:30px!important;line-height:1.35!important;
 }
+
+/* Clube: preservar o título completo mesmo com a barra lateral estreita. */
+html .tenant-erp .erp-nav-sector[data-sector="assinaturas"] > .erp-nav-sector-watermark .erp-nav-sector-copy {
+  flex:0 1 auto; min-width:0; max-width:100%;
+}
+html .tenant-erp .erp-nav-sector[data-sector="assinaturas"] > .erp-nav-sector-watermark .erp-nav-sector-copy strong {
+  white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:normal;
+}
+html .tenant-erp .erp-nav-sector[data-sector="assinaturas"] > .erp-nav-sector-watermark::after { min-width:0; }
