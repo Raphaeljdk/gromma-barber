@@ -30,7 +30,9 @@ test("Caixa is a single header link, not a fixed overlay",()=>{
 
 test("shared routes have one canonical active navigation item",()=>{
   const {primaryNavigationItemId}=mod.exports;
-  assert.equal(primaryNavigationItemId("assinaturas"),"assinatura-novos-contratos");
+  assert.equal(primaryNavigationItemId("assinaturas"),undefined);
+  assert.equal(primaryNavigationItemId("clube-novos"),"assinatura-novos-contratos");
+  assert.equal(primaryNavigationItemId("clube-planos"),"assinatura-planos");
   assert.equal(primaryNavigationItemId("caixa"),"caixa");
   assert.equal(primaryNavigationItemId("dashboard"),"dashboard");
   assert.equal(primaryNavigationItemId("clube-pag"),"assinatura-gromma-pag");
