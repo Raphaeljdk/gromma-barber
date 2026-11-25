@@ -1,3 +1,4 @@
+import { ClubPlansPanel } from "@/components/club-plans-panel";
 import { CommissionSelectionTable } from "@/components/commission-selection-table";
 import {FeaturedProfessionalSwitch} from "@/components/featured-professional-switch";
 import { saveBarbershopUnit } from "./unit-actions";
@@ -207,6 +208,7 @@ const MODULE_TITLES: Record<string, string> = {
   "clube-novos": "Novos contratos",
   "clube-ativos": "Contratos ativos",
   "clube-pote": "Distribuição do pote",
+  "clube-planos": "Planos",
   "clube-inadimplentes": "Inadimplentes",
   "clube-saques": "Solicitar saque",
   "clube-transacoes": "Transações financeiras",
@@ -1743,6 +1745,7 @@ export async function TenantERPView({
             view={activeModule as ClubManagementModule} month={valueOf("clubeMes")} query={qs}
             isOwner={isOwner} ok={actionOk} error={actionError}/>}
 
+        {activeModule==="clube-planos"&&<ClubPlansPanel tenantCode={tenantCode} plans={workspace.clubPlans} services={shop.services.map(s=>({id:s.id,name:s.name}))} products={await prisma.product.findMany({where:{barberShopId:shop.id,active:true},select:{id:true,name:true}})} categories={workspace.stockCategories.map(s=>({id:s,name:s}))} professionals={shop.users.filter(u=>["OWNER","MANAGER","BARBER"].includes(u.role)).map(u=>({id:u.id,name:u.name}))} isOwner={isOwner} ok={actionOk} error={actionError}/>}
         {SUBSCRIPTION_REPORTS[activeModule] && <SubscriptionReports report={activeModule} tenantCode={tenantCode} shopId={shop.id} workspace={workspace} canFinance={isOwner} searchParams={qs} />}
 
         <section id="assinaturas" className="demo-section" hidden={Boolean(moduleId && moduleId !== "assinaturas")}>
