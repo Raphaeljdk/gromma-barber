@@ -17,9 +17,9 @@ test("Calendários de assinaturas e recebíveis têm fontes diferentes e não si
   assert.match(view, /status !== "REQUESTED"/);
   assert.match(view, /Ainda não há data bancária prevista nem confirmação de repasse automático/);
   assert.doesNotMatch(view, /type: "PAYABLE"/);
-  assert.match(view, /"Hoje"/);
-  assert.match(view, /"Anterior"/);
-  assert.match(view, /"Próximo"/);
+  assert.match(view, />Hoje<\/Link>/);
+  assert.match(view, />Anterior<\/Link>/);
+  assert.match(view, />Próximo<\/Link>/);
 });
 test("Menu tem rotas próprias para novos contratos e contratos ativos", () => {
   assert.match(nav, /label: "Novos contratos", route: "clube-novos"/);
