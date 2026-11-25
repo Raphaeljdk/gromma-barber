@@ -70,7 +70,7 @@ test("every referenced subitem remains in its exact hierarchy", () => {
   }
   const subscription = ERP_NAVIGATION.find(group => group.id === "assinaturas");
   assert.deepEqual(subscription.items.map(item => item.label), [
-    "Abrir Clube / Assinaturas", "Dashboard Gromma Pag", "Programar reajuste", "Calendário de assinaturas",
+    "Dashboard Gromma Pag", "Programar reajuste", "Calendário de assinaturas",
     "Calendário de recebíveis", "Novos contratos", "Clientes cancelados",
     "Contratos ativos", "Distribuição do Pote", "Inadimplentes", "Planos",
     "Solicitar saque", "Transações financeiras",
@@ -86,7 +86,7 @@ test("routes are real ERP modules and all node identifiers are unique", () => {
   const existing = new Set([
     "dashboard", "agenda", "clientes", "caixa", "comandas", "estoque", "assinaturas",
     "assinaturas-trocas", "assinaturas-cancelados", "assinaturas-transacoes", "assinaturas-vendas", "assinaturas-origem",
-    "assinantes", "clube-pag", "clube-reajustes", "clube-pagamentos", "clube-recebiveis", "clube-cancelados", "clube-novos", "clube-ativos", "clube-pote", "clube-inadimplentes", "clube-saques", "clube-transacoes", "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
+    "assinantes", "clube-pag", "clube-reajustes", "clube-pagamentos", "clube-recebiveis", "clube-cancelados", "clube-novos", "clube-ativos", "clube-planos", "clube-pote", "clube-inadimplentes", "clube-saques", "clube-transacoes", "auditoria", "relatorios", "comissoes", "promocoes", "avaliacoes", "equipe",
     "servicos", "unidades", "dados", "identidade", "clube-config", "equipe/novo", "plano", "fatura", "grupos-acesso", "funcionarios-destaque", "configuracoes", "financeiro", "gerencial",
     "alertas", "mensagens", "gromma-ia", "marketing-parceiros", "marketing-pontos", "marketing-cupons", "marketing-promocoes-servicos", "marketing-promocoes-produtos", "marketing-aniversariantes", "relatorios-clientes-novos", "documentos", "treinamentos", "totem",
     "financeiro-contas-pagar", "financeiro-contas-receber", "financeiro-criar-receita",

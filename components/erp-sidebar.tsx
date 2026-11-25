@@ -298,7 +298,7 @@ export function ErpSidebar({
             if (["gromma-ia", "performance", "precificacao", "totem"].includes(group.id)) return <div className="erp-nav-standalone" key={group.id}>
               {group.items.map(item => renderNavItem(item))}
             </div>;
-            const alwaysVisible = group.id === "operacional" || group.id === "gestao" || group.id === "financeiro" || group.id === "marketing";
+            const alwaysVisible = group.id === "operacional" || group.id === "gestao" || group.id === "financeiro" || group.id === "marketing" || group.id === "assinaturas";
             const expanded = !collapsed && (alwaysVisible || (expandedGroups[group.id] ?? group.id === activeGroup));
             const SectorIcon = SECTOR_ICONS[group.id] ?? LayoutDashboard;
             return <div className={["erp-nav-group", "erp-nav-sector", expanded ? "is-expanded" : "", activeGroup === group.id ? "has-active-module" : ""].join(" ")} key={group.id} data-sector={group.id}>
