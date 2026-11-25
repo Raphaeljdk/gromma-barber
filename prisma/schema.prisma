@@ -95,6 +95,7 @@ model BarberShop {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
+  aiWallet          GrommaAiWallet?
   auditLogs         AdminAuditLog[]
   units             BarberShopUnit[]
   users             ShopUser[]
@@ -380,4 +381,40 @@ model CommissionPayment {
 
   @@unique([barberShopId, userId, periodStart, periodEnd])
   @@index([barberShopId, paidAt])
+}
+
+model GrommaAiWallet {
+  barberShopId String @id
+  balance Int @default(0)
+  enabled Boolean @default(false)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  barberShop BarberShop @relation(fields: [barberShopId], references: [id], onDelete: Restrict)
+  ledger GrommaAiLedger[]
+  usage GrommaAiUsage[]
+}
+model GrommaAiLedger {
+  id String @id
+  barberShopId String
+  operationKey String
+  delta Int
+  kind String
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  wallet GrommaAiWallet @relation(fields: [barberShopId], references: [barberShopId], onDelete: Restrict)
+  @@unique([barberShopId, operationKey])
+  @@index([barberShopId, createdAt], map: "GrommaAiLedger_shop_created_idx")
+}
+model GrommaAiUsage {
+  id String @id
+  barberShopId String
+  operationKey String
+  providerResponseId String? @unique
+  model String
+  inputTokens Int
+  cachedInputTokens Int @default(0)
+  outputTokens Int
+  estimatedCostUsd Decimal? @db.Decimal(18, 8)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  wallet GrommaAiWallet @relation(fields: [barberShopId], references: [barberShopId], onDelete: Restrict)
+  @@unique([barberShopId, operationKey])
+  @@index([barberShopId, createdAt], map: "GrommaAiUsage_shop_created_idx")
 }
