@@ -114,8 +114,22 @@ function Chart({ from, to, period, days }: { from: string; to: string; period: "
     const total = days.filter(date => date >= left && date < right).length;
     groups.push({ name: period === "mes" ? dayLabel(left).slice(0, 5) + "–" + dayLabel(dateOffset(right, -1)).slice(0, 5) : dayLabel(left).slice(0, 5), from: left, to: right, total });
   }
+  if(period === "mes") {
+    const daily = Array.from({length}, (_, i) => {const date=dateOffset(from,i);return {date,total:days.filter(d=>d<=date && d>=from).length};});
+    const max=Math.max(1,...daily.map(d=>d.total));
+    const points=daily.map((d,i)=>({x:40+i*920/Math.max(1,length-1),y:130-d.total/max*106,...d}));
+    const line=points.map(p=>p.x+","+p.y).join(" ");
+    const ticks=points.filter((_,i)=>i===0||i===length-1||((i+1)%7===0 && i<length-3));
+    return <div className={styles.monthChart}><svg viewBox="0 0 1000 160" role="img" aria-label="Evolução acumulada de contratos no mês">
+      {[0,1,2,3].map(i=><line key={i} x1="40" x2="960" y1={24+i*106/3} y2={24+i*106/3} stroke="currentColor" opacity=".12"/>)}
+      <polygon points={"40,130 "+line+" 960,130"} fill="#39938c" opacity=".12"/>
+      <polyline points={line} fill="none" stroke="#39938c" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round"/>
+      {ticks.map(p=><g key={p.date}><circle cx={p.x} cy={p.y} r="3" fill="#39938c"><title>{dayLabel(p.date)}: {p.total} acumulados</title></circle><text x={p.x} y="151" textAnchor="middle" fontSize="11" fill="currentColor">{dayLabel(p.date).slice(0,5)}</text></g>)}
+      <text x="40" y="15" fontSize="12" fill="currentColor">{days.length} contratos no mês</text>
+    </svg><span className={styles.chartHint}>Evolução acumulada · cada ponto representa o total até aquela data.</span></div>;
+  }
   const max = Math.max(1, ...groups.map(g => g.total));
-  return <div className={styles.chart} aria-label="Contratações por " ><div className={styles.chartBars}>{groups.map(group => <div className={styles.chartItem} key={group.from} title={group.name + ": " + group.total + " contratação(ões)"}><span className={styles.barValue}>{group.total}</span><div className={styles.bar} style={{ height: Math.max(4, group.total / max * 120) }}/><small>{group.name}</small></div>)}</div></div>;
+  return <div className={styles.chart} aria-label={period==="semana"?"Contratações por dia da semana":"Contratações no dia"}><div className={styles.chartBars}>{groups.map(group => <div className={styles.chartItem} key={group.from} title={group.name + ": " + group.total + " contratação(ões)"}><span className={styles.barValue}>{group.total}</span><div className={styles.bar} style={{ height: group.total?Math.max(4, group.total / max * 120):2 }}/><small>{period==="semana"?new Intl.DateTimeFormat("pt-BR",{weekday:"short",timeZone:"UTC"}).format(new Date(group.from+"T12:00:00Z"))+" "+group.name:group.name}</small></div>)}</div></div>;
 }
 export async function ClubSubscriptionViews({ tenantCode, shopId, workspace, view, query, month: monthRaw }: Props) {
   const base = "/erp/" + encodeURIComponent(tenantCode) + "/" + view;
@@ -184,7 +198,7 @@ export async function ClubSubscriptionViews({ tenantCode, shopId, workspace, vie
     return <section className="demo-section club-management-page"><div className="section-head"><div><div className="eyebrow">Clube / Assinaturas</div><h2>Novos contratos</h2></div></div>
       <Period base={base} query={query} value={period}/>
       <Summary items={[{ label: "Novos contratos", value: String(sales.length) }, { label: "Clientes que assinaram", value: String(people) }, { label: "Valor contratado", value: money(value), detail: "Valores disponíveis no histórico" }]}/>
-      <article className={styles.panel}><h3>Contratações no período</h3><Chart period={period} from={from} to={to} days={sales.map(s => localDay(s.at))}/></article>
+      <article className={styles.panel}><h3>{period==="mes"?"Evolução mensal de contratos":period==="semana"?"Contratações por dia da semana":"Contratações no dia"}<span className={styles.resultCount}>{dayLabel(from)} – {dayLabel(dateOffset(to,-1))}</span></h3><Chart period={period} from={from} to={to} days={sales.map(s => localDay(s.at))}/></article>
       <Table columns={["Cliente", "Tipo do plano", "Data da contratação", "Valor"]} rows={sales.sort((a,b)=>b.at.localeCompare(a.at)).map(s=>({id:s.id,cells:[named(s.customerId),s.planName,dayLabel(s.at),s.amount === null ? "Não informado" : money(s.amount)]}))} empty="Nenhum novo contrato neste período."/>
     </section>;
   }
