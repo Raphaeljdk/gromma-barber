@@ -214,7 +214,7 @@ export async function ClubSubscriptionViews({ tenantCode, shopId, workspace, vie
     const eventMemberIds = new Set(workspace.clubEvents.filter(e => e.kind === "CANCEL").map(e => e.memberId));
     const cancellations = [
       ...workspace.clubEvents.filter(e => e.kind === "CANCEL" && (e.status !== "SCHEDULED" || (Boolean(e.effectiveAt) && new Date(e.effectiveAt!).getTime() <= Date.now()))).map(e => ({ id: e.id, customerId: e.customerId, planId: e.previousPlanId, planName: e.previousPlanName, reason: e.reason || "Não informado", date: localDay(e.effectiveAt || e.at) })),
-      ...active.filter(m => m.status === "CANCELED" && !eventMemberIds.has(m.id)).map(m => ({ id: m.id, customerId: m.customerId, planId: m.planId, planName: planNames.get(m.planId) || "Plano anterior", reason: "Não informado", date: localDay(m.canceledAt || m.cancelEffectiveAt || m.startedAt) })),
+      ...active.filter(m => m.status === "CANCELED" && !eventMemberIds.has(m.id)).map(m => ({ id: m.id, customerId: m.customerId, planId: m.planId, planName: planNames.get(m.planId) || "Plano anterior", reason: "Não informado", date: localDay(m.canceledAt || m.cancelEffectiveAt || "") })),
     ];
     const rows = cancellations.filter(c => c.date >= from && c.date < to && (!plan || c.planId === plan)).sort((a,b)=>b.date.localeCompare(a.date)).map(c => ({ id: c.id, cells: [named(c.customerId),c.planName,c.reason,dayLabel(c.date)] }));
     return <section className="demo-section club-management-page"><div className="section-head"><div><div className="eyebrow">Clube / Assinaturas</div><h2>Clientes cancelados</h2></div></div>
