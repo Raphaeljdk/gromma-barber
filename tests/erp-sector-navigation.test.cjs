@@ -30,7 +30,7 @@ test("new sector hierarchy preserves access to existing ERP modules", () => {
   // Telas de marca, cadastro e filiais acessíveis por busca ou Dados gerais,
   // sem duplicar o menu Empresa que agora prioriza as rotas operacionais.
   // Notificações permanece no topo do ERP e na busca, fora da lista lateral.
-  const directOnly = new Set(["identidade", "clube-config", "equipe/novo", "unidades", "notificacoes", "financeiro"]);
+  const directOnly = new Set(["assinaturas", "identidade", "clube-config", "equipe/novo", "unidades", "notificacoes", "financeiro"]);
   assert.deepEqual(
     [...links].sort(),
     [...new Set(searchModules.filter(id => !directOnly.has(id)))].sort(),
