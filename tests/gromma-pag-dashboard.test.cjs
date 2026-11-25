@@ -75,3 +75,9 @@ test("sidebar removes Abrir Clube and keeps Clube / Assinaturas as watermark", (
   assert.match(panel, /GrommaPagCandles receipts=\{confirmedReceipts\}/);
   assert.match(panel, /barberShopId:shopId,status:"CLOSED"/);
 });
+
+ test("Clube watermark shares the fixed sector styling and displays its entire label", () => {
+  const css = fs.readFileSync(path.join(root, "app/gromma-financial-navigation.css"), "utf8");
+  assert.match(css, /data-sector="marketing"\] > \.erp-nav-sector-watermark,\s*html \.tenant-erp \.erp-nav-sector\[data-sector="assinaturas"\] > \.erp-nav-sector-watermark\s*\{[^}]*display:flex;[^}]*background:transparent!important/);
+  assert.match(css, /data-sector="assinaturas"\] > \.erp-nav-sector-watermark \.erp-nav-sector-copy strong\s*\{[^}]*white-space:normal;[^}]*text-overflow:clip/);
+});
