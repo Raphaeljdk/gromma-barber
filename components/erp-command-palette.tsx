@@ -66,6 +66,7 @@ const MODULES = [
   { id: "clube-cancelados", label: "Clientes cancelados", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "clube-novos", label: "Novos contratos", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "clube-ativos", label: "Contratos ativos", group: "Assinaturas", icon: BadgeDollarSign },
+  { id: "clube-planos", label: "Planos", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "clube-pote", label: "Distribuição do pote", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "clube-inadimplentes", label: "Inadimplentes", group: "Assinaturas", icon: BadgeDollarSign },
   { id: "clube-saques", label: "Solicitar saque", group: "Assinaturas", icon: BadgeDollarSign, ownerOnly: true },
