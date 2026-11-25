@@ -93,6 +93,8 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
   const todayKey=civil(today);
   const startFilter=param("de"), endFilter=param("ate");
   const periodValid=validPeriod(startFilter,endFilter);
+  const transactionRows=entryRows.filter(e=>periodValid&&dateInPeriod(e.paidAt??e.createdAt,startFilter,endFilter));
+  const transactionRefunds=workspace.clubRefunds.filter(r=>periodValid&&dateInPeriod(r.completedAt??r.requestedAt,startFilter,endFilter));
   const debtRows=entryRows.filter(e=>e.status==="PENDING"&&e.dueDate&&civil(e.dueDate)<todayKey&&periodValid&&dateInPeriod(e.dueDate,startFilter,endFilter)).sort((a,b)=>a.dueDate!.getTime()-b.dueDate!.getTime());
   const debtCount=new Set(debtRows.map(e=>e.charge.customerId)).size;
   const customersById=new Map(customers.map(c=>[c.id,c]));
@@ -112,7 +114,7 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
     </div>
     {ok&&<p role="status" className="notice success">Operação registrada com sucesso.</p>}
     {error&&<p role="alert" className="notice error-notice">Não foi possível concluir a operação. Confira os campos, o período e suas permissões.</p>}
-    {["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(view)&&
+    {["clube-pag","clube-pagamentos","clube-recebiveis","clube-pote"].includes(view)&&
       <form action={base+"/"+view} method="get" className="club-period-filter">
         <label>Mês de referência <input name="clubeMes" type="month" defaultValue={month} className="input"/></label>
         <button className="btn secondary" type="submit">Consultar período</button>
@@ -203,27 +205,20 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
       <p className="small muted">Somente cobranças vencidas e ainda em aberto. O botão abre uma mensagem para conferência e envio manual.</p>
     </>}
     {view==="clube-saques"&&<>
-      <Notice>Esta área registra solicitações internas. Ainda não existe gateway de repasse conectado, saldo bancário validado nem transferência automática. Registrar uma solicitação NÃO movimenta dinheiro.</Notice>
-      {isOwner&&<form action={requestClubWithdrawal} className="club-admin-form">
-        <input type="hidden" name="tenantCode" value={tenantCode}/>
-        <label>Valor solicitado (R$) <input name="amount" type="number" min="0.01" step="0.01" className="input" required/></label>
-        <label>Justificativa / referência <input name="reason" type="text" minLength={10} maxLength={500} className="input" placeholder="Motivo, filial e referência interna" required/></label>
-        <button className="btn" type="submit">Registrar solicitação</button>
-      </form>}
-      <h3>Solicitações registradas</h3>
-      <div className="club-list">{workspace.clubWithdrawalRequests.map(item=><article className="club-row" key={item.id}>
-        <div><strong>{brl(item.amount)}</strong><small>{day(item.requestedAt)} · {item.reason}</small></div><span className="badge">{statusLabels[item.status]??item.status}</span>
-        {isOwner&&item.status==="REQUESTED"&&<form action={cancelClubWithdrawalRequest}><input type="hidden" name="tenantCode" value={tenantCode}/><input type="hidden" name="requestId" value={item.id}/><button className="btn secondary" type="submit">Cancelar registro</button></form>}
-      </article>)}
-      {!workspace.clubWithdrawalRequests.length&&<Empty>Nenhuma solicitação interna registrada.</Empty>}</div>
+      <div className="card" style={{padding:24,marginBottom:16}}><span>Disponível para saque</span><h2>Saldo indisponível</h2><p>Conecte a Celcoin para consultar o saldo confirmado.</p></div>
+      <div className="erp-two-column-workspace"><article className="card"><h3>Quanto você quer transferir?</h3><form className="club-admin-form">
+        <label>Filial<select className="select" name="filial" defaultValue=""><option value="">Selecione uma filial</option>{workspace.financialBankAccounts.filter(a=>a.active&&a.verifiedAt&&a.pixKey&&a.unitId).map(a=><option key={a.id} value={a.id}>{a.name} · PIX {a.pixKey}</option>)}</select></label>
+        <label>Valor solicitado (R$)<input className="input" type="number" min="0.01" step="0.01" placeholder="0,00"/></label>
+      </form><h3>Validações</h3><p>Conta PIX cadastrada e verificada · saldo confirmado · código SMS do proprietário.</p><Notice>Solicitação bloqueada enquanto o gateway e a autenticação SMS não estiverem conectados.</Notice></article><article className="card"><h3>Resumo do saque</h3><p>Taxa PIX: indisponível</p><p>Valor líquido: indisponível</p><button className="btn secondary" disabled>Solicitar saque</button></article></div>
+      <h3>Últimas solicitações</h3><div className="table-wrap"><table><thead><tr><th>Data da solicitação</th><th>Status</th><th>Valor solicitado</th><th>Valor líquido</th></tr></thead><tbody>{workspace.clubWithdrawalRequests.map(item=><tr key={item.id}><td>{day(item.requestedAt)}</td><td>{statusLabels[item.status]??item.status}</td><td>{brl(item.amount)}</td><td>—</td></tr>)}{!workspace.clubWithdrawalRequests.length&&<tr><td colSpan={4}>Nenhuma solicitação registrada.</td></tr>}</tbody></table></div>
     </>}
     {view==="clube-transacoes"&&<>
       <Notice>Histórico de lançamentos vinculados às cobranças recorrentes. Pagamentos e estornos são mostrados conforme os registros internos; esta tela não consulta diretamente um banco.</Notice>
-      <Kpis items={[{label:"Cobranças registradas",value:String(byMonth.length)},{label:"Confirmadas",value:String(byMonth.filter(e=>e.status==="PAID").length)},{label:"Estornos registrados",value:String(workspace.clubRefunds.filter(r=>r.requestedAt.startsWith(month)).length)}]}/>
+      <form action={base+"/clube-transacoes"} method="get" className="club-period-filter"><label>De<input className="input" type="date" name="de" defaultValue={startFilter}/></label><label>Até<input className="input" type="date" name="ate" defaultValue={endFilter}/></label><button className="btn secondary">Consultar período</button></form>{!periodValid&&<p role="alert">Período inválido.</p>}<Kpis items={[{label:"Cobranças registradas",value:String(transactionRows.length)},{label:"Estornos registrados",value:String(transactionRefunds.length)}]}/>
       <div className="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>Operação</th><th>Valor</th><th>Situação</th></tr></thead><tbody>
-        {byMonth.map(e=><tr key={e.id}><td>{day(e.paidAt??e.dueDate??e.createdAt)}</td><td>{customerNames.get(e.charge.customerId)??"Cliente cadastrado"}</td><td>Cobrança — {e.charge.planName}</td><td>{brl(e.amountValue)}</td><td>{statusLabels[e.status]??e.status}</td></tr>)}
-        {workspace.clubRefunds.filter(r=>r.requestedAt.startsWith(month)).map(r=><tr key={r.id}><td>{day(r.completedAt??r.requestedAt)}</td><td>—</td><td>Estorno solicitado</td><td>—</td><td>{r.status==="COMPLETED"?"Concluído":"Solicitado"}</td></tr>)}
-        {!byMonth.length&&!workspace.clubRefunds.some(r=>r.requestedAt.startsWith(month))&&<tr><td colSpan={5}>Nenhuma movimentação vinculada ao clube no mês.</td></tr>}
+        {transactionRows.map(e=><tr key={e.id}><td>{day(e.paidAt??e.dueDate??e.createdAt)}</td><td>{customerNames.get(e.charge.customerId)??"Cliente cadastrado"}</td><td>Cobrança — {e.charge.planName}</td><td>{brl(e.amountValue)}</td><td>{statusLabels[e.status]??e.status}</td></tr>)}
+        {transactionRefunds.map(r=><tr key={r.id}><td>{day(r.completedAt??r.requestedAt)}</td><td>—</td><td>Estorno solicitado</td><td>—</td><td>{r.status==="COMPLETED"?"Concluído":"Solicitado"}</td></tr>)}
+        {!transactionRows.length&&!transactionRefunds.length&&<tr><td colSpan={5}>Nenhuma movimentação vinculada ao clube no mês.</td></tr>}
       </tbody></table></div>
     </>}
   </section>;
