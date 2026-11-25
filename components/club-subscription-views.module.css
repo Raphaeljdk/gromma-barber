@@ -44,3 +44,5 @@
 .filtersRow .filters{margin-bottom:8px}
 @media(max-width:920px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.calendarDay{min-height:76px;padding:4px}.dayAmount{font-size:.71rem}.dayNumber{font-size:.68rem;right:4px}}
 @media(max-width:540px){.summary{grid-template-columns:1fr 1fr;gap:8px}.stat{padding:12px}.stat strong{font-size:1.1rem}.calendarCard{padding:9px}.calendarHeader{flex-direction:column;align-items:stretch;gap:10px}.calendarHeader h3{order:-1}.calendarActions{justify-content:center}.calendarDay{min-height:58px}.dayAmount{font-size:.58rem}.weekday{padding:6px 2px;font-size:.69rem}.dayNumber{top:2px}.filters,.period{padding:12px}.filters>.field{flex-basis:100%}}
+.summary{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))}
+.monthChart{overflow-x:auto}.monthChart svg{display:block;width:100%;min-width:420px;height:auto;max-height:230px;color:var(--muted,#64748b)}.chartHint{display:block;font-size:.75rem;color:var(--muted,#64748b);margin-top:8px}.periodChoices input{accent-color:#39938c}.bar{background:#39938c}
