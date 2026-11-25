@@ -59,7 +59,7 @@ export const ERP_NAVIGATION: readonly ErpNavigationSector[] = [
       { id: "assinatura-contratos-ativos", label: "Contratos ativos", route: "clube-ativos" },
       { id: "assinatura-distribuicao-pote", label: "Distribuição do Pote", route: "clube-pote" },
       { id: "assinatura-inadimplentes", label: "Inadimplentes", route: "clube-inadimplentes" },
-      { id: "assinatura-planos", label: "Planos", route: "assinaturas" },
+      { id: "assinatura-planos", label: "Planos", route: "clube-planos" },
       { id: "assinatura-solicitar-saque", label: "Solicitar saque", route: "clube-saques", ownerOnly: true },
       { id: "assinatura-transacoes", label: "Transações financeiras", route: "clube-transacoes" },
     ],
