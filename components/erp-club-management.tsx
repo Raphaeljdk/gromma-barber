@@ -1,10 +1,12 @@
-import Link from "next/link";
 import { ReceiptText, UsersRound, Wallet } from "lucide-react";
 import { GrommaPagCandles } from "./gromma-pag-candles";
 import styles from "./gromma-pag-dashboard.module.css";
+import Link from "next/link";
+import { dateInPeriod, validPeriod } from "@/lib/subscription-reports";
 import { prisma } from "@/lib/prisma";
 import { calculateSubscriptionPot } from "@/lib/subscription-commission-pool";
 import { effectiveClubMember } from "@/lib/club-lifecycle";
+import { ClubSubscriptionViews, type ClubSubscriptionView } from "@/components/club-subscription-views";
 import type { ErpWorkspace } from "@/lib/erp-workspace";
 import {
   scheduleClubPriceAdjustment, applyClubPriceAdjustment, cancelClubPriceAdjustment,
@@ -13,16 +15,18 @@ import {
 
 export const CLUB_MANAGEMENT_MODULES = [
   "clube-pag","clube-reajustes","clube-pagamentos","clube-recebiveis",
-  "clube-cancelados","clube-pote","clube-inadimplentes","clube-saques","clube-transacoes",
+  "clube-cancelados","clube-novos","clube-ativos","clube-pote","clube-inadimplentes","clube-saques","clube-transacoes",
 ] as const;
 export type ClubManagementModule = typeof CLUB_MANAGEMENT_MODULES[number];
 
 const titles: Record<ClubManagementModule,string> = {
   "clube-pag":"Gromma Pag — painel interno",
   "clube-reajustes":"Programar reajuste",
-  "clube-pagamentos":"Calendário de pagamentos",
+  "clube-pagamentos":"Calendário de assinaturas",
   "clube-recebiveis":"Calendário de recebíveis",
   "clube-cancelados":"Clientes cancelados",
+  "clube-novos":"Novos contratos",
+  "clube-ativos":"Contratos ativos",
   "clube-pote":"Distribuição do pote",
   "clube-inadimplentes":"Inadimplentes",
   "clube-saques":"Solicitar saque",
@@ -38,8 +42,11 @@ const statusLabels: Record<string,string>={PAID:"Pago",PENDING:"Pendente",CANCEL
 function Empty({children}:{children:string}){return <p className="club-empty">{children}</p>}
 function Kpis({items}:{items:{label:string;value:string;detail?:string}[]}){return <div className="club-kpis">{items.map(item=><div className="club-kpi" key={item.label}><span>{item.label}</span><strong>{item.value}</strong>{item.detail&&<small>{item.detail}</small>}</div>)}</div>}
 function Notice({children}:{children:string}){return <p className="club-notice">{children}</p>}
-type Props={tenantCode:string;shopId:string;workspace:ErpWorkspace;view:ClubManagementModule;month?:string;isOwner:boolean;ok?:string;error?:string;};
-export async function ClubManagementPanels({tenantCode,shopId,workspace,view,month:monthRaw,isOwner,ok,error}:Props){
+type Props={tenantCode:string;shopId:string;workspace:ErpWorkspace;view:ClubManagementModule;month?:string;isOwner:boolean;ok?:string;error?:string;query:Record<string,string|string[]|undefined>;};
+export async function ClubManagementPanels({tenantCode,shopId,workspace,view,month:monthRaw,isOwner,ok,error,query}:Props){
+  if (["clube-pagamentos","clube-recebiveis","clube-novos","clube-ativos","clube-cancelados","clube-pote"].includes(view)) {
+    return <ClubSubscriptionViews tenantCode={tenantCode} shopId={shopId} workspace={workspace} view={view as ClubSubscriptionView} query={query} month={monthRaw}/>;
+  }
   const today=new Date();
   const fallbackMonth=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit"}).format(today);
   const month=monthRaw&&/^\d{4}-(0[1-9]|1[0-2])$/.test(monthRaw)?monthRaw:fallbackMonth;
@@ -53,22 +60,19 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
     relevantFinance&&chargeIds.length?prisma.financialEntry.findMany({
       where:{barberShopId:shopId,id:{in:chargeIds}},
       select:{id:true,amount:true,paidAt:true,dueDate:true,createdAt:true,status:true,type:true,category:true,unitId:true},
-      orderBy:{createdAt:"desc"},take:view==="clube-pag"?undefined:2000,
+      orderBy:{createdAt:"desc"},take:["clube-inadimplentes","clube-pag","clube-transacoes"].includes(view)?undefined:2000,
     }):Promise.resolve([]),
     view==="clube-pagamentos"?prisma.financialEntry.findMany({
       where:{barberShopId:shopId,type:"PAYABLE",dueDate:{gte:from,lt:until}},
       select:{id:true,description:true,amount:true,status:true,dueDate:true,paidAt:true},
       orderBy:{dueDate:"asc"},take:500,
     }):Promise.resolve([]),
-    ["clube-cancelados","clube-inadimplentes","clube-recebiveis","clube-transacoes"].includes(view)?
+    ["clube-cancelados","clube-inadimplentes","clube-recebiveis","clube-transacoes","clube-pag"].includes(view)?
       prisma.customer.findMany({
         where:{barberShopId:shopId,id:{in:[...new Set(workspace.clubMembers.map(c=>c.customerId))]}},
-        select:{id:true,name:true},take:2000,
+        select:{id:true,name:true,phone:true,whatsapp:true},take:2000,
       }):Promise.resolve([]),
-    view==="clube-pag"?prisma.serviceCommand.aggregate({
-      where:{barberShopId:shopId,status:"CLOSED",total:{gt:0}},
-      _avg:{total:true},
-    }):Promise.resolve(null),
+    view==="clube-pag"?prisma.serviceCommand.aggregate({where:{barberShopId:shopId,status:"CLOSED",total:{gt:0}},_avg:{total:true}}):Promise.resolve(null),
   ]);
   const customerNames=new Map(customers.map(c=>[c.id,c.name]));
   const chargeMap=new Map(workspace.clubCharges.map(ch=>[ch.entryId,ch]));
@@ -81,7 +85,6 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
   const countPaid=entryRows.filter(e=>e.status==="PAID");
   const paidAmount=countPaid.reduce((sum,e)=>sum+e.amountValue,0);
   const overdueMembers=activeMembers.filter(item=>item.status==="PAST_DUE"||overdueIds.has(item.id));
-  const currentReceivables=byMonth.filter(e=>e.status==="PENDING");
   const eligibleMembers=activeMembers.filter(member=>member.status==="ACTIVE"||member.status==="PAST_DUE");
   const overdueEligible=eligibleMembers.filter(member=>member.status==="PAST_DUE"||overdueIds.has(member.id));
   const onTimeMembers=Math.max(0,eligibleMembers.length-overdueEligible.length);
@@ -91,12 +94,32 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
   const confirmedReceipts=countPaid.filter(entry=>entry.paidAt).map(entry=>({
     date:entry.paidAt!.toISOString(),amount:entry.amountValue,
   }));
+  const currentReceivables=byMonth.filter(e=>e.status==="PENDING");
   const pot = view==="clube-pote"?await calculateSubscriptionPot(
     prisma,shopId,workspace,from,until,
     (await prisma.shopUser.findMany({where:{barberShopId:shopId,active:true,role:{in:["OWNER","MANAGER","BARBER"]}},select:{id:true}})).map(u=>u.id)
   ):null;
   const potUsers=pot?await prisma.shopUser.findMany({where:{barberShopId:shopId,id:{in:Object.keys(pot.distributions)}},select:{id:true,name:true}}):[];
   const potNames=new Map(potUsers.map(user=>[user.id,user.name]));
+  const param=(key:string)=>{const v=query[key];return (Array.isArray(v)?v[0]:v)||"";};
+  const civil=(d:Date)=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+  const todayKey=civil(today);
+  const startFilter=param("de"), endFilter=param("ate");
+  const periodValid=validPeriod(startFilter,endFilter);
+  const transactionRows=entryRows.filter(e=>periodValid&&dateInPeriod(e.paidAt??e.createdAt,startFilter,endFilter));
+  const transactionRefunds=workspace.clubRefunds.filter(r=>periodValid&&dateInPeriod(r.completedAt??r.requestedAt,startFilter,endFilter));
+  const debtRows=entryRows.filter(e=>e.status==="PENDING"&&e.dueDate&&civil(e.dueDate)<todayKey&&periodValid&&dateInPeriod(e.dueDate,startFilter,endFilter)).sort((a,b)=>a.dueDate!.getTime()-b.dueDate!.getTime());
+  const debtCount=new Set(debtRows.map(e=>e.charge.customerId)).size;
+  const customersById=new Map(customers.map(c=>[c.id,c]));
+  const daysLate=(d:Date)=>Math.round((Date.parse(todayKey+"T00:00:00Z")-Date.parse(civil(d)+"T00:00:00Z"))/86400000);
+  const contactLink=(id:string,plan:string,due:Date)=>{
+    const customer=customersById.get(id);
+    const raw=(customer?.whatsapp||customer?.phone||"").replace(/\D/g,"");
+    const number=raw.length===10||raw.length===11?"55"+raw:raw;
+    if(!/^55\d{10,11}$/.test(number))return null;
+    const message="Olá, "+(customer?.name||"")+"! Identificamos uma cobrança pendente do plano "+plan+", com vencimento em "+day(due)+". Poderia verificar, por favor? Caso já tenha realizado o pagamento, desconsidere esta mensagem e entre em contato conosco. Obrigado!";
+    return "https://wa.me/"+number+"?text="+encodeURIComponent(message);
+  };
   return <section id={view} className="demo-section club-management-page">
     {view!=="clube-pag"&&<div className="section-head">
       <div><div className="eyebrow">Clube / Assinaturas</div><h2>{titles[view]}</h2></div>
@@ -104,7 +127,7 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
     </div>}
     {ok&&<p role="status" className="notice success">Operação registrada com sucesso.</p>}
     {error&&<p role="alert" className="notice error-notice">Não foi possível concluir a operação. Confira os campos, o período e suas permissões.</p>}
-    {["clube-pagamentos","clube-recebiveis","clube-pote","clube-transacoes"].includes(view)&&
+    {["clube-pagamentos","clube-recebiveis","clube-pote"].includes(view)&&
       <form action={base+"/"+view} method="get" className="club-period-filter">
         <label>Mês de referência <input name="clubeMes" type="month" defaultValue={month} className="input"/></label>
         <button className="btn secondary" type="submit">Consultar período</button>
@@ -199,35 +222,34 @@ export async function ClubManagementPanels({tenantCode,shopId,workspace,view,mon
       <Link className="btn secondary" href={base+"/comissoes"}>Conferir geração e pagamento de comissões</Link>
     </>}
     {view==="clube-inadimplentes"&&<>
-      <Notice>Contratos com situação de atraso registrada ou cobrança vencida em aberto. A regularização deve ser conferida no Financeiro antes de alterar o contrato.</Notice>
-      <Kpis items={[{label:"Contratos em atraso",value:String(overdueMembers.length)},{label:"Cobranças vencidas",value:String(entryRows.filter(e=>e.status==="PENDING"&&e.dueDate&&e.dueDate<today).length)}]}/>
-      <div className="table-wrap"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Situação</th><th>Próxima cobrança</th></tr></thead><tbody>
-        {overdueMembers.map(a=><tr key={a.id}><td>{customerNames.get(a.customerId)??"Cliente cadastrado"}</td><td>{workspace.clubPlans.find(p=>p.id===a.planId)?.name??"Plano anterior"}</td><td>Em atraso</td><td>{day(a.nextBillingAt)}</td></tr>)}
-        {!overdueMembers.length&&<tr><td colSpan={4}>Nenhum contrato em atraso identificado.</td></tr>}
+      <Kpis items={[{label:"Inadimplentes",value:String(debtCount)}]}/>
+      <form action={base+"/clube-inadimplentes"} method="get" className="club-period-filter">
+        <label>Data inicial<input className="input" type="date" name="de" defaultValue={startFilter}/></label>
+        <label>Data final<input className="input" type="date" name="ate" defaultValue={endFilter}/></label>
+        <button className="btn secondary" type="submit">Filtrar</button><Link className="btn secondary" href={base+"/clube-inadimplentes"}>Limpar</Link>
+      </form>
+      {!periodValid&&<p role="alert">Período inválido.</p>}
+      <div className="table-wrap"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Data de cobrança</th><th>Dias em atraso</th><th>WhatsApp</th></tr></thead><tbody>
+        {debtRows.map(e=>{const href=contactLink(e.charge.customerId,e.charge.planName,e.dueDate!);return <tr key={e.id}><td>{customerNames.get(e.charge.customerId)??"Cliente cadastrado"}</td><td>{e.charge.planName}</td><td>{day(e.dueDate)}</td><td>{daysLate(e.dueDate!)} dia(s)</td><td>{href?<a className="btn secondary" href={href} target="_blank" rel="noopener noreferrer">WhatsApp</a>:<span className="small muted">Sem telefone válido</span>}</td></tr>})}
+        {!debtRows.length&&<tr><td colSpan={5}>Nenhuma cobrança em atraso identificada no período.</td></tr>}
       </tbody></table></div>
+      <p className="small muted">Somente cobranças vencidas e ainda em aberto. O botão abre uma mensagem para conferência e envio manual.</p>
     </>}
     {view==="clube-saques"&&<>
-      <Notice>Esta área registra solicitações internas. Ainda não existe gateway de repasse conectado, saldo bancário validado nem transferência automática. Registrar uma solicitação NÃO movimenta dinheiro.</Notice>
-      {isOwner&&<form action={requestClubWithdrawal} className="club-admin-form">
-        <input type="hidden" name="tenantCode" value={tenantCode}/>
-        <label>Valor solicitado (R$) <input name="amount" type="number" min="0.01" step="0.01" className="input" required/></label>
-        <label>Justificativa / referência <input name="reason" type="text" minLength={10} maxLength={500} className="input" placeholder="Motivo, filial e referência interna" required/></label>
-        <button className="btn" type="submit">Registrar solicitação</button>
-      </form>}
-      <h3>Solicitações registradas</h3>
-      <div className="club-list">{workspace.clubWithdrawalRequests.map(item=><article className="club-row" key={item.id}>
-        <div><strong>{brl(item.amount)}</strong><small>{day(item.requestedAt)} · {item.reason}</small></div><span className="badge">{statusLabels[item.status]??item.status}</span>
-        {isOwner&&item.status==="REQUESTED"&&<form action={cancelClubWithdrawalRequest}><input type="hidden" name="tenantCode" value={tenantCode}/><input type="hidden" name="requestId" value={item.id}/><button className="btn secondary" type="submit">Cancelar registro</button></form>}
-      </article>)}
-      {!workspace.clubWithdrawalRequests.length&&<Empty>Nenhuma solicitação interna registrada.</Empty>}</div>
+      <div className="card" style={{padding:24,marginBottom:16}}><span>Disponível para saque</span><h2>Saldo indisponível</h2><p>Conecte a Celcoin para consultar o saldo confirmado.</p></div>
+      <div className="erp-two-column-workspace"><article className="card"><h3>Quanto você quer transferir?</h3><form className="club-admin-form">
+        <label>Filial<select className="select" name="filial" defaultValue=""><option value="">Selecione uma filial</option>{workspace.financialBankAccounts.filter(a=>a.active&&a.verifiedAt&&a.pixKey&&a.unitId).map(a=><option key={a.id} value={a.id}>{a.name} · PIX {a.pixKey}</option>)}</select></label>
+        <label>Valor solicitado (R$)<input className="input" type="number" min="0.01" step="0.01" placeholder="0,00"/></label>
+      </form><h3>Validações</h3><p>Conta PIX cadastrada e verificada · saldo confirmado · código SMS do proprietário.</p><Notice>Solicitação bloqueada enquanto o gateway e a autenticação SMS não estiverem conectados.</Notice></article><article className="card"><h3>Resumo do saque</h3><p>Taxa PIX: indisponível</p><p>Valor líquido: indisponível</p><button className="btn secondary" disabled>Solicitar saque</button></article></div>
+      <h3>Últimas solicitações</h3><div className="table-wrap"><table><thead><tr><th>Data da solicitação</th><th>Status</th><th>Valor solicitado</th><th>Valor líquido</th></tr></thead><tbody>{workspace.clubWithdrawalRequests.map(item=><tr key={item.id}><td>{day(item.requestedAt)}</td><td>{statusLabels[item.status]??item.status}</td><td>{brl(item.amount)}</td><td>—</td></tr>)}{!workspace.clubWithdrawalRequests.length&&<tr><td colSpan={4}>Nenhuma solicitação registrada.</td></tr>}</tbody></table></div>
     </>}
     {view==="clube-transacoes"&&<>
       <Notice>Histórico de lançamentos vinculados às cobranças recorrentes. Pagamentos e estornos são mostrados conforme os registros internos; esta tela não consulta diretamente um banco.</Notice>
-      <Kpis items={[{label:"Cobranças registradas",value:String(byMonth.length)},{label:"Confirmadas",value:String(byMonth.filter(e=>e.status==="PAID").length)},{label:"Estornos registrados",value:String(workspace.clubRefunds.filter(r=>r.requestedAt.startsWith(month)).length)}]}/>
+      <form action={base+"/clube-transacoes"} method="get" className="club-period-filter"><label>De<input className="input" type="date" name="de" defaultValue={startFilter}/></label><label>Até<input className="input" type="date" name="ate" defaultValue={endFilter}/></label><button className="btn secondary">Consultar período</button></form>{!periodValid&&<p role="alert">Período inválido.</p>}<Kpis items={[{label:"Cobranças registradas",value:String(transactionRows.length)},{label:"Estornos registrados",value:String(transactionRefunds.length)},{label:"Total no período",value:brl(entryRows.filter(e=>periodValid&&e.status==="PAID"&&e.paidAt&&dateInPeriod(e.paidAt,startFilter,endFilter)).reduce((sum,e)=>sum+e.amountValue,0)),detail:"Recebimentos confirmados no período"}]}/>
       <div className="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>Operação</th><th>Valor</th><th>Situação</th></tr></thead><tbody>
-        {byMonth.map(e=><tr key={e.id}><td>{day(e.paidAt??e.dueDate??e.createdAt)}</td><td>{customerNames.get(e.charge.customerId)??"Cliente cadastrado"}</td><td>Cobrança — {e.charge.planName}</td><td>{brl(e.amountValue)}</td><td>{statusLabels[e.status]??e.status}</td></tr>)}
-        {workspace.clubRefunds.filter(r=>r.requestedAt.startsWith(month)).map(r=><tr key={r.id}><td>{day(r.completedAt??r.requestedAt)}</td><td>—</td><td>Estorno solicitado</td><td>—</td><td>{r.status==="COMPLETED"?"Concluído":"Solicitado"}</td></tr>)}
-        {!byMonth.length&&!workspace.clubRefunds.some(r=>r.requestedAt.startsWith(month))&&<tr><td colSpan={5}>Nenhuma movimentação vinculada ao clube no mês.</td></tr>}
+        {transactionRows.map(e=><tr key={e.id}><td>{day(e.paidAt??e.dueDate??e.createdAt)}</td><td>{customerNames.get(e.charge.customerId)??"Cliente cadastrado"}</td><td>Cobrança — {e.charge.planName}</td><td>{brl(e.amountValue)}</td><td>{statusLabels[e.status]??e.status}</td></tr>)}
+        {transactionRefunds.map(r=><tr key={r.id}><td>{day(r.completedAt??r.requestedAt)}</td><td>—</td><td>Estorno solicitado</td><td>—</td><td>{r.status==="COMPLETED"?"Concluído":"Solicitado"}</td></tr>)}
+        {!transactionRows.length&&!transactionRefunds.length&&<tr><td colSpan={5}>Nenhuma movimentação vinculada ao clube no mês.</td></tr>}
       </tbody></table></div>
     </>}
   </section>;

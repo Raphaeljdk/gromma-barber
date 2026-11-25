@@ -11,6 +11,19 @@ export type ClubPlanConfig = {
   monthlyAmount: number;
   visitsPerMonth: number | null;
   benefits: string;
+  color?: string;
+  availableQuantity?: number | null;
+  blockingDays?: number;
+  simultaneousServices?: number;
+  attendanceIntervalDays?: number;
+  hidden?: boolean;
+  contractText?: string;
+  professionalIds?: string[];
+  freeWeekdays?: number[];
+  serviceBenefits?: {id:string;discount:number;freeQuantity:number}[];
+  productBenefits?: {id:string;discount:number}[];
+  productCategoryBenefits?: {id:string;discount:number}[];
+  updatedAt?: string;
   /** Descontos do plano; definidos pelo proprietário. Não alteram cobranças já emitidas. */
   subscriberDiscountPercent?: number;
   subscriberDiscountAppliesTo?: "SERVICES"|"PRODUCTS"|"BOTH";

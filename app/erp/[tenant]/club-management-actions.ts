@@ -90,22 +90,9 @@ export async function cancelClubPriceAdjustment(data:FormData) {
 }
 
 export async function requestClubWithdrawal(data:FormData) {
-  const {tenant,viewer,shop,path}=await context(data,"clube-saques");
-  const amount=currency(data.get("amount"));
-  const reason=txt(data,"reason",500);
-  if(amount===null||reason.length<10)redirect(path("erro=campos"));
-  try {
-    await prisma.$transaction(async tx=>{
-      const entity=await tx.barberShop.findUniqueOrThrow({where:{id:shop.id},select:{enabledFeatures:true}});
-      const ws=readWorkspace(entity.enabledFeatures);
-      const id=workspaceId("saque");
-      ws.clubWithdrawalRequests.unshift({id,amount,reason,requestedAt:new Date().toISOString(),requestedBy:viewer.email,status:"REQUESTED"});
-      await tx.barberShop.update({where:{id:shop.id},data:{enabledFeatures:writeWorkspace(entity.enabledFeatures,ws)}});
-      await tx.adminAuditLog.create({data:{barberShopId:shop.id,action:"CLUB_WITHDRAWAL_REQUEST_RECORDED",adminEmail:viewer.email,details:{id,amount,reason}}});
-    },{isolationLevel:"Serializable"});
-  }catch(error){console.error("Failed to request withdrawal",error);redirect(path("erro=saque"))}
-  revalidatePath(`/erp/${encodeURIComponent(tenant)}`,"layout");
-  redirect(path("ok=solicitado"));
+  const {path}=await context(data,"clube-saques");
+  // Fail closed until a verified gateway balance and owner SMS challenge are available.
+  redirect(path("erro=integracao"));
 }
 
 export async function cancelClubWithdrawalRequest(data:FormData) {

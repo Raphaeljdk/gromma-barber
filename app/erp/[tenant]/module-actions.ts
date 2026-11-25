@@ -154,9 +154,24 @@ function audienceRule(raw: string): AudienceRule {
   return AUDIENCE_RULES.includes(raw as AudienceRule) ? raw as AudienceRule : "ALL";
 }
 
+function planExtras(form:FormData) {
+  const integer=(key:string,min:number,max:number)=>{const raw=Number(form.get(key)||0);if(!Number.isInteger(raw)||raw<min||raw>max)throw new Error("Campo inválido: "+key);return raw;};
+  const color=value(form,"color",7);if(!/^#[0-9a-f]{6}$/i.test(color))throw new Error("Cor inválida");
+  const ids=(key:string)=>[...new Set(form.getAll(key).map(String))].slice(0,500);
+  const discounts=(key:string)=>{const rows=JSON.parse(String(form.get(key)||"[]"));if(!Array.isArray(rows)||rows.length>500)throw new Error("Benefícios inválidos");return rows.map((r:{id:string;discount:number;freeQuantity?:number})=>{if(typeof r.id!=="string"||!Number.isFinite(r.discount)||r.discount<0||r.discount>100||!Number.isInteger(r.freeQuantity??0)||(r.freeQuantity??0)<0)throw new Error("Benefício inválido");return {id:r.id,discount:r.discount,freeQuantity:r.freeQuantity??0};});};
+  return {color,availableQuantity:integer("availableQuantity",0,100000)||null,blockingDays:integer("blockingDays",0,3650),simultaneousServices:integer("simultaneousServices",1,100),attendanceIntervalDays:integer("attendanceIntervalDays",0,365),hidden:form.has("hidden"),contractText:value(form,"contractText",20000),professionalIds:ids("professionalIds"),freeWeekdays:ids("freeWeekdays").map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6),serviceBenefits:discounts("serviceBenefits"),productBenefits:discounts("productBenefits"),productCategoryBenefits:discounts("productCategoryBenefits"),updatedAt:new Date().toISOString()};
+}
+export async function archiveClubPlan(formData:FormData){
+  const {tenantCode,viewer,shop}=await moduleContext(formData);
+  const path=modulePath(tenantCode,"clube-planos");
+  if(!allowed(viewer,["OWNER"]))redirect(path+"?erro=permissao");
+  const id=value(formData,"planId",80);
+  try{await persistWorkspace(shop,workspace=>{const plan=workspace.clubPlans.find(p=>p.id===id);if(!plan)throw new Error("Plano inexistente");if(workspace.clubMembers.some(m=>(m.planId===id||m.pendingPlanId===id)&&m.status!=="CANCELED"))throw new Error("Plano possui contratos vigentes");plan.active=false;plan.updatedAt=new Date().toISOString();},{action:"CLUB_PLAN_ARCHIVED",actor:viewer.email,details:{id}});}catch{redirect(path+"?erro=plano");}
+  revalidatePath("/erp/"+encodeURIComponent(tenantCode),"layout");redirect(path+"?ok=excluido");
+}
 export async function saveClubPlan(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
-  const path = modulePath(tenantCode, "assinaturas");
+  const path = modulePath(tenantCode, formData.has("advancedPlan") ? "clube-planos" : "assinaturas");
   if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
 
   const name = value(formData, "name", 100);
@@ -174,6 +189,7 @@ export async function saveClubPlan(formData: FormData) {
         monthlyAmount,
         visitsPerMonth: visitsRaw > 0 ? Math.round(visitsRaw) : null,
         benefits,
+        ...(formData.has("advancedPlan")?planExtras(formData):{}),
         active: true,
         createdAt: new Date().toISOString(),
       });
@@ -189,7 +205,7 @@ export async function saveClubPlan(formData: FormData) {
 
 export async function editClubPlan(formData: FormData) {
   const { tenantCode, viewer, shop } = await moduleContext(formData);
-  const path = modulePath(tenantCode, "assinaturas");
+  const path = modulePath(tenantCode, formData.has("advancedPlan") ? "clube-planos" : "assinaturas");
   if (!allowed(viewer, ["OWNER"])) redirect(`${path}?erro=permissao`);
   const planId = value(formData, "planId", 80);
   const name = value(formData, "name", 100);
@@ -205,6 +221,7 @@ export async function editClubPlan(formData: FormData) {
       plan.monthlyAmount = monthlyAmount;
       plan.visitsPerMonth = visits > 0 ? Math.round(visits) : null;
       plan.benefits = benefits;
+      if(formData.has("advancedPlan"))Object.assign(plan,planExtras(formData));
     });
   } catch (error) { console.error("Failed to edit club plan", error); redirect(`${path}?erro=plano`); }
   revalidatePath(`/erp/${encodeURIComponent(tenantCode)}`, "layout");
