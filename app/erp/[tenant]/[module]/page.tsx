@@ -26,6 +26,7 @@ const MODULES = new Set([
   "clube-novos",
   "clube-ativos",
   "clube-pote",
+  "clube-planos",
   "clube-inadimplentes",
   "clube-saques",
   "clube-transacoes",
